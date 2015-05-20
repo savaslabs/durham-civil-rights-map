@@ -1,0 +1,16 @@
+name: Stark
+type: theme
+description: 'An intentionally plain theme with almost no styling to demonstrate default Drupal’s HTML and CSS. Learn how to build a custom theme from Stark in the <a href="http://drupal.org/theme-guide">Theming Guide</a>.'
+package: Core
+# version: VERSION
+# core: 8.x
+libraries:
+  - stark/global-styling
+stylesheets-remove:
+  - core/assets/vendor/normalize-css/normalize.css
+
+# Information added by Drupal.org packaging script on 2015-04-29
+version: '8.0.0-beta10'
+core: '8.x'
+project: 'drupal'
+datestamp: 1430314871

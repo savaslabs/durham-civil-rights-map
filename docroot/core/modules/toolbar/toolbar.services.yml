@@ -1,0 +1,12 @@
+services:
+  cache.toolbar:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.bin }
+    factory_method: get
+    factory_service: cache_factory
+    arguments: [toolbar]
+  toolbar.page_cache_request_policy.allow_toolbar_path:
+    class: Drupal\toolbar\PageCache\AllowToolbarPath
+    tags:
+      - { name: page_cache_request_policy }
