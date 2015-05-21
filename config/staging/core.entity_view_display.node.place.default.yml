@@ -1,0 +1,24 @@
+uuid: ccbe4b74-e0ea-4ccf-8d01-1b796bb50b6f
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.place.body
+    - node.type.place
+  module:
+    - text
+    - user
+id: node.place.default
+targetEntityType: node
+bundle: place
+mode: default
+content:
+  body:
+    label: hidden
+    type: text_default
+    weight: 101
+    settings: {  }
+    third_party_settings: {  }
+  links:
+    weight: 100
+hidden: {  }
