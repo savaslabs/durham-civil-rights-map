@@ -3,9 +3,17 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.node.place.address_text
     - field.field.node.place.body
+    - field.field.node.place.date
+    - field.field.node.place.field_tags
+    - field.field.node.place.location_coordinates
+    - field.field.node.place.photos
     - node.type.place
   module:
+    - datetime
+    - geofield
+    - image
     - text
     - user
 id: node.place.default
@@ -13,12 +21,47 @@ targetEntityType: node
 bundle: place
 mode: default
 content:
+  address_text:
+    weight: 107
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    type: basic_string
   body:
     label: hidden
     type: text_default
     weight: 101
     settings: {  }
     third_party_settings: {  }
+  date:
+    weight: 103
+    label: above
+    settings:
+      format_type: medium
+    third_party_settings: {  }
+    type: datetime_default
+  field_tags:
+    weight: 106
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    type: entity_reference_label
   links:
     weight: 100
+  location_coordinates:
+    weight: 105
+    label: above
+    settings:
+      output_format: wkt
+    third_party_settings: {  }
+    type: geofield_default
+  photos:
+    weight: 102
+    label: above
+    settings:
+      image_style: ''
+      image_link: ''
+    third_party_settings: {  }
+    type: image
 hidden: {  }
