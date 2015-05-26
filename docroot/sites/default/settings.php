@@ -648,6 +648,7 @@ $settings['container_yamls'][] = __DIR__ . '/services.yml';
  */
 $settings['install_profile'] = 'standard';
 $config_directories['staging'] = '../config/staging';
+$config_directories['active'] = 'sites/default/files/config/active';
 
 if (file_exists(__DIR__ . '/settings.local.php')) {
   include __DIR__ . '/settings.local.php';
