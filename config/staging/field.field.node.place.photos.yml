@@ -1,0 +1,38 @@
+uuid: 50e41a9d-359e-4957-a419-25981fd3e878
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.photos
+    - node.type.place
+  module:
+    - image
+id: node.place.photos
+field_name: photos
+entity_type: node
+bundle: place
+label: Photos
+description: 'These are images associated with this place/story.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  file_directory: place_photos
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: '5 MB'
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+  handler: 'default:node'
+  handler_settings: {  }
+field_type: image

@@ -1,0 +1,21 @@
+uuid: 1db712e3-7189-49a1-9327-39f9d5c2775a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.address_text
+    - node.type.place
+id: node.place.address_text
+field_name: address_text
+entity_type: node
+bundle: place
+label: Address
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: ''
+default_value_callback: ''
+settings: {  }
+field_type: string_long
