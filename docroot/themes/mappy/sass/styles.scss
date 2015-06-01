@@ -14,12 +14,15 @@
 @import "base/base";
 
 /* Layout rules */
-@import "layouts/responsive";
+@import "layouts/base";
+@import "layouts/frontpage";
+@import "layouts/nodepage";
 
 /* Component (SMACSS module) rules */
-@import "components/regions/navigation";
-@import "components/regions/sidebars";
+@import "components/regions/navbar";
+@import "components/regions/sidebar";
 @import "components/regions/map";
+@import "components/regions/footer";
 
 // Optionally, add your own components here.
 
