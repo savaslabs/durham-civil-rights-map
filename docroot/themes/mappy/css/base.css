@@ -1,0 +1,13 @@
+#map {
+    width: 100%;
+    height: 1000px;
+    background: lightblue;
+    z-index: -100;
+}
+
+.layout-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 20px;
+}
