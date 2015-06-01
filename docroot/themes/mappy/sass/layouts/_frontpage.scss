@@ -2,6 +2,12 @@
 body.path-frontpage {
   height: 1024px;
 
+  .navbar {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+  }
+
   #map {
     position: absolute;
     left: 0;
