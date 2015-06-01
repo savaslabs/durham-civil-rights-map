@@ -21,6 +21,9 @@ docroot/sites/*/private
 *.exe
 *.o
 *.so
+*.pyc
+docroot/themes/mappy/.sass-cache/*
+docroot/themes/mappy/css/*
 
 # Packages #
 ############
