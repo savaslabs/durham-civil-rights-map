@@ -1,0 +1,139 @@
+<?php
+
+/**
+ * @file
+ * Updates Drupal core from beta version to beta version.
+ *
+ * NOTICE: make sure you add a head2head_*() function in the appropriate update
+ * series. Upgrades from beta7 to beta8 go in the 88xx series. The
+ * beta2beta_update_helper() ensures that a site on beta8 won't get any 89xx
+ * series updates.
+ *
+ * Only add those functions needed for the most recent beta version! People
+ * running this module are not chasing HEAD and won't need all the updates until
+ * they upgrade to a new version of Drupal core.
+ */
+
+use Drupal\Core\Utility\UpdateException;
+use Drupal\Component\Utility\SafeMarkup;
+
+/**
+ * Ensures that only updates necessary for the current beta version are
+ * completed.
+ *
+ * @param int $head2head_update
+ *   The number of the head2head helper function to run.
+ * @param int $beta_version
+ *   The version of Drupal 8 beta that is being updated to.
+ * @param mixed
+ *   Any additional arguments to pass to the head2head helper function.
+ *
+ * @throws \Drupal\Core\Utility\UpdateException
+ */
+function beta2beta_update_helper($head2head_update, $beta_version) {
+  // Delete any forcibly-set older beta version.
+  \Drupal::service('config.factory')->getEditable('beta2beta.settings')->clear('version')->save();
+  $current_beta_version = beta2beta_get_beta_version();
+  if (!$current_beta_version || $current_beta_version < $beta_version) {
+    throw new UpdateException(SafeMarkup::format('Not yet on Drupal 8.0.0-beta@version.', array('@version' => $beta_version)));
+  }
+  else {
+    // Run the head2head update, passing along any additional arguments that
+    // were provided.
+    $args = func_get_args();
+    array_shift($args);
+    array_shift($args);
+    $function = 'head2head_' . $head2head_update;
+    call_user_func_array($function, $args);
+  }
+}
+
+/**
+ * @defgroup updates-beta-7-to-8 Drupal updates from 8.0.0-beta7 to 8.0.0-beta8
+ * @{
+ */
+
+/**
+ * Remove the 'signatures' property of 'user.settings'.
+ */
+function beta2beta_update_8801() {
+  beta2beta_update_helper('1548204', 8);
+}
+
+/**
+ * Update entity reference field config entities to the new value needed for
+ * the 'handler' setting.
+ */
+function beta2beta_update_8802() {
+  beta2beta_update_helper('2436835', 8);
+}
+
+/**
+ * @} End of "defgroup updates-beta-7-to-8"
+ */
+
+/**
+ * @defgroup updates-beta-9-to-10 Drupal updates from 8.0.0-beta9 to 8.0.0-beta10
+ * @{
+ */
+
+/**
+ * Convert Taxonomy term reference fields to Entity reference.
+ */
+function beta2beta_update_81000() {
+  beta2beta_update_helper('1847596', 10);
+}
+
+/**
+ * Provide a default value for the 'default_langcode' property of 'system.site'.
+ */
+function beta2beta_update_81001() {
+  beta2beta_update_helper('2457653', 10);
+}
+
+/**
+ * Remove the ['settings']['cache']['contexts'] property for block configs.
+ */
+function beta2beta_update_81002() {
+  beta2beta_update_helper('2428805', 10);
+}
+
+/**
+ * Remove the 'cache.page.use_internal' setting from 'system.performance' and
+ * enable the page_cache module if needed.
+ */
+function beta2beta_update_81003() {
+  beta2beta_update_helper('2368987', 10);
+}
+
+/**
+ * Update views to use the entity's field data table, if available.
+ */
+function beta2beta_update_81004() {
+  beta2beta_update_helper('2429447', 10);
+}
+
+/**
+ * Update default langcode and language overrides for active configuration.
+ */
+function beta2beta_update_81005() {
+  beta2beta_update_helper('2212069', 10);
+}
+
+/**
+ * Update views to use Field API handlers instead of custom ones.
+ */
+function beta2beta_update_81006() {
+  beta2beta_update_helper('2393339', 10);
+}
+
+/**
+ * Move fallback image style to the responsive image style entity.
+ */
+function beta2beta_update_81007() {
+  beta2beta_update_helper('2349461', 10);
+}
+
+/**
+ * @} End of "defgroup updates-beta-9-to-10"
+ */

@@ -1,0 +1,697 @@
+<?php
+
+/**
+ * @file
+ * Provides HEAD-HEAD upgrade helpers.
+ */
+
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+
+/**
+ * Converts Taxonomy term reference fields to Entity reference.
+ */
+function head2head_1847596() {
+  // Nothing to do if there are no taxonomy_term_reference fields.
+  if (!$field_storage_configs = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('type' => 'taxonomy_term_reference'))) {
+    return;
+  }
+
+  /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
+  // Update the field storage settings.
+  foreach ($field_storage_configs as $field_storage) {
+    // Since the usual workflow for field storages do not allow changing the
+    // field type, we have to work around it in this case.
+    $new_field_storage = $field_storage->toArray();
+    $new_field_storage['type'] = 'entity_reference';
+    $new_field_storage['module'] = 'core';
+    $new_field_storage['settings']['target_type'] = 'taxonomy_term';
+
+    $vocabulary_name = $new_field_storage['settings']['allowed_values'][0]['vocabulary'];
+    unset($new_field_storage['settings']['allowed_values']);
+
+    $new_field_storage = FieldStorageConfig::create($new_field_storage);
+    $new_field_storage->original = $new_field_storage;
+    $new_field_storage->enforceIsNew(FALSE);
+
+    $new_field_storage->save();
+
+    // Update the field settings.
+    $field_name = $field_storage->getName();
+    if (!$fields = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name' => $field_name))) {
+      continue;
+    }
+
+    /** @var \Drupal\field\FieldConfigInterface $field */
+    // Update the field settings.
+    foreach ($fields as $field) {
+      $new_field = $field->toArray();
+      $new_field['field_type'] = 'entity_reference';
+      $new_field['settings'] = array(
+        'handler' => 'default:taxonomy_term',
+        'handler_settings' => array(
+          'target_bundles' => array($vocabulary_name => $vocabulary_name),
+          // Enable auto-create.
+          'auto_create' => TRUE,
+        ),
+      );
+
+      $new_field = FieldConfig::create($new_field);
+      $new_field->original = $field;
+      $new_field->enforceIsNew(FALSE);
+      $new_field->save();
+
+      // Update entity view displays.
+      $properties = array(
+        'targetEntityType' => $field->getTargetEntityTypeId(),
+        'bundle' => $field->getTargetBundle()
+      );
+      if ($view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadByProperties($properties)) {
+        foreach ($view_displays as $view_display) {
+          if ($component = $view_display->getComponent($field_name)) {
+            // Map taxonomy term reference formatters to entity reference ones.
+            switch ($component['type']) {
+              case 'taxonomy_term_reference_plain':
+                $type = 'entity_reference_label';
+                $settings = array(
+                  'link' => FALSE,
+                );
+                break;
+              case 'taxonomy_term_reference_link':
+                $type = 'entity_reference_label';
+                $settings = array(
+                  'link' => TRUE,
+                );
+                break;
+              case 'taxonomy_term_reference_rss_category':
+                $type = 'entity_reference_rss_category';
+                $settings = array();
+                break;
+            }
+
+            $view_display->setComponent($field_name, array(
+              'type' => $type,
+              'settings' => $settings,
+            ) + $component)->save();
+          }
+        }
+      }
+
+      // Update entity form displays.
+      $properties = array(
+        'targetEntityType' => $field->getTargetEntityTypeId(),
+        'bundle' => $field->getTargetBundle()
+      );
+      if ($form_displays = \Drupal::entityManager()->getStorage('entity_form_display')->loadByProperties($properties)) {
+        foreach ($form_displays as $form_display) {
+          if ($component = $form_display->getComponent($field_name)) {
+            $form_display->setComponent($field_name, array(
+              'type' => 'entity_reference_autocomplete_tags',
+              'settings' => array(
+                'match_operator' => 'CONTAINS',
+                'size' => '60',
+                'placeholder' => '',
+              ),
+            ) + $component)->save();
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Provides a default value for the 'default_langcode' property of 'system.site'.
+ */
+function head2head_2457653() {
+  $config_factory = \Drupal::configFactory();
+  $langcode = $config_factory->get('system.site')->get('langcode');
+  $config_factory->getEditable('system.site')->set('default_langcode', $langcode)->save();
+}
+
+/**
+ * Removes the 'signatures' property of 'user.settings'.
+ */
+function head2head_1548204() {
+  \Drupal::configFactory()->getEditable('user.settings')->clear('signatures')->save();
+}
+
+/**
+ * Removes the ['settings']['cache']['contexts'] property for block configs.
+ */
+function head2head_2428805() {
+  $config_factory = \Drupal::configFactory();
+  foreach ($config_factory->listAll('block.block.') as $block_config_name) {
+    $block = $config_factory->getEditable($block_config_name);
+    $settings = $block->get('settings');
+    if (isset($settings['cache']) && isset($settings['cache']['contexts'])) {
+      unset($settings['cache']['contexts']);
+    }
+    $block->set('settings', $settings);
+    $block->save();
+  }
+}
+
+/**
+ * Removes the 'cache.page.use_internal' setting from 'system.performance' and
+ * enable the page_cache module if needed.
+ */
+function head2head_2368987() {
+  $config_factory = \Drupal::configFactory();
+  $use_page_cache = $config_factory->get('system.performance')->get('cache.page.use_internal');
+  if ($use_page_cache) {
+    \Drupal::service('module_installer')->install(array('page_cache'));
+  }
+  $config_factory->getEditable('system.performance')->clear('cache.page.use_internal')->save();
+}
+
+/**
+ * Updates entity reference field config entities to the new value needed for
+ * the 'handler' setting.
+ */
+function head2head_2436835() {
+  if (!$field_configs = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_type' => 'entity_reference'))) {
+    return;
+  }
+
+  // Loop over the field config entities and update the 'handler' setting. The
+  // code is the same as entity_reference_field_config_presave() but it is
+  // safer to inline it in case that function is moved/renamed.
+  /** @var \Drupal\Core\Field\FieldConfigInterface $field */
+  foreach ($field_configs as $field) {
+    if ($field->isSyncing()) {
+      // Don't change anything during a configuration sync.
+      return;
+    }
+
+    $target_type = $field->getFieldStorageDefinition()->getSetting('target_type');
+    $selection_manager = \Drupal::service('plugin.manager.entity_reference_selection');
+    list($current_handler) = explode(':', $field->getSetting('handler'), 2);
+    $field->settings['handler'] = $selection_manager->getPluginId($target_type, $current_handler);
+    $field->save();
+  }
+}
+
+/**
+ * Updates views to use the entity's field data table, if available.
+ */
+function head2head_2429447() {
+  $entity_manager = \Drupal::entityManager();
+  $base_table_mapping = $data_table_fields = [];
+
+  // Collect a base_table -> data_table mapping as well as a list of all fields
+  // stored in the data table for all content entity types.
+  foreach ($entity_manager->getDefinitions() as $entity_type_id => $entity_type) {
+    if (is_subclass_of($entity_type->getClass(), 'Drupal\Core\Entity\ContentEntityInterface')) {
+      if ($data_table = $entity_type->getDataTable()) {
+        $base_table_mapping[$entity_type->getBaseTable()] = $data_table;
+        $data_table_fields[$entity_type_id] = $entity_manager->getStorage($entity_type_id)->getTableMapping()->getFieldNames($data_table);
+      }
+    }
+  }
+
+  $views = $entity_manager->getStorage('view')->loadMultiple();
+  foreach ($views as $view) {
+    $changed = FALSE;
+
+    // Update the base table name if needed.
+    if (isset($base_table_mapping[$view->get('base_table')])) {
+      $view->set('base_table', $base_table_mapping[$view->get('base_table')]);
+      $changed = TRUE;
+    }
+
+    // Iterate over all displays and update the table name.
+    foreach (array_keys($view->get('display')) as $display_id) {
+      $display = &$view->getDisplay($display_id);
+      foreach (\Drupal\views\Views::getHandlerTypes() as $handler_type) {
+        $handler_type = $handler_type['plural'];
+        if (!isset($display['display_options'][$handler_type])) {
+          continue;
+        }
+        foreach ($display['display_options'][$handler_type] as $id => &$handler_config) {
+          if (isset($handler_config['entity_type']) && isset($handler_config['entity_field'])) {
+            $handler_entity_type = $handler_config['entity_type'];
+            $handler_entity_field = $handler_config['entity_field'];
+
+            if (isset($base_table_mapping[$handler_config['table']]) && isset($data_table_fields[$handler_entity_type][$handler_entity_field])) {
+              $handler_config['table'] = $base_table_mapping[$handler_config['table']];
+              $changed = TRUE;
+            }
+          }
+        }
+      }
+    }
+
+    if ($changed) {
+      $view->save();
+    }
+  }
+}
+
+/**
+ * Updates default langcode and language overrides for active configuration.
+ */
+function head2head_2212069() {
+  // This is basically a copy of locale_system_set_config_langcodes() with some
+  // extra processing for copying any language overrides to the active config
+  // and adding an English language override if needed.
+  $language_manager = \Drupal::languageManager();
+  $default_langcode = $language_manager->getDefaultLanguage()->getId();
+  if ($default_langcode != 'en') {
+    // Update active configuration copies of all prior shipped configuration if
+    // they are still English. It is not enough to change configuration shipped
+    // with the components just installed, because installing a component such
+    // as views or tour module may bring in default configuration from prior
+    // components.
+    $names = \Drupal\locale\Locale::config()->getComponentNames();
+    foreach ($names as $name) {
+      $config = \Drupal::configFactory()->reset($name)->getEditable($name);
+      // Should only update if still exists in active configuration. If locale
+      // module is enabled later, then some configuration may not exist anymore.
+      if (!$config->isNew()) {
+        $langcode = $config->get('langcode');
+        if (empty($langcode) || $langcode == 'en') {
+          // Load the config override in the default langcode so we can copy its
+          // data into the main configuration object.
+          $override = $language_manager->getLanguageConfigOverride($default_langcode, $name);
+
+          // Only try to merge values if an override actually exists.
+          if (!$override->isNew()) {
+            $config_data = $config->get();
+            $override_data = $override->get();
+
+            // Merge any override data into the main configuration object and
+            // delete the override.
+            $merged_data = \Drupal\Component\Utility\NestedArray::mergeDeepArray(array($config_data, $override_data), TRUE);
+            $config->setData($merged_data, FALSE);
+            $override->delete();
+
+            // If any string from the override has been put into the main config
+            // object, we need to create an English override containing all the
+            // string that were overwritten above.
+            if ($english_override_data = \Drupal\Component\Utility\DiffArray::diffAssocRecursive($config_data, $merged_data)) {
+              $english_override = $language_manager->getLanguageConfigOverride('en', $name);
+              $english_override->setData($english_override_data, FALSE)->save();
+            }
+          }
+
+          $config->set('langcode', $default_langcode);
+          $config->save();
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Updates views to use Field API handlers instead of custom ones.
+ */
+function head2head_2393339() {
+  $views = \Drupal\views\Entity\View::loadMultiple();
+  foreach ($views as $view) {
+    // Only update views which are using an entity base table.
+    $executable = $view->getExecutable();
+    $executable->setDisplay();
+    $executable->execute();
+    if (!$executable->getQuery()->getEntityTableInfo()) {
+      continue;
+    }
+
+    // Iterate over all displays and update the table name.
+    foreach (array_keys($view->get('display')) as $display_id) {
+      $display = &$view->getDisplay($display_id);
+      foreach (\Drupal\views\Views::getHandlerTypes() as $handler_type) {
+        $handler_type = $handler_type['plural'];
+        if (!isset($display['display_options'][$handler_type])) {
+          continue;
+        }
+        foreach ($display['display_options'][$handler_type] as $id => &$handler_config) {
+          switch ($handler_config['plugin_id']) {
+            // @see https://www.drupal.org/node/2342045
+            // @see https://www.drupal.org/node/2455131
+            case 'standard':
+              $handler_config['plugin_id'] = 'field';
+              break;
+
+            // @see https://www.drupal.org/node/2454163
+            case 'comment_username':
+              $handler_config['plugin_id'] = 'field';
+              $handler_config['type'] = 'comment_username';
+              unset($handler_config['link_to_user']);
+              break;
+
+            // @see https://www.drupal.org/node/2455149
+            case 'aggregator_xss':
+              $handler_config['plugin_id'] = 'field';
+              $handler_config['type'] = 'aggregator_xss';
+              break;
+
+            // @see https://www.drupal.org/node/2456691
+            case 'user_mail':
+              $handler_config['plugin_id'] = 'field';
+              $handler_config['type'] = 'basic_string';
+              unset($handler_config['link_to_user']);
+              break;
+
+            // @see https://www.drupal.org/node/2456599
+            case 'node_revision':
+
+            // @see https://www.drupal.org/node/2342045
+            case 'numeric':
+            case 'node':
+            case 'boolean':
+
+            // @see https://www.drupal.org/node/2454171
+            case 'node_type':
+
+            // @see https://www.drupal.org/node/2454145
+            case 'user_name':
+            case 'user':
+
+            // @see https://www.drupal.org/node/2456701
+            case 'aggregator_title_link':
+
+            // @see https://www.drupal.org/node/2456705
+            case 'comment':
+
+            // @see https://www.drupal.org/node/2456707
+            case 'block_content':
+
+            // @see https://www.drupal.org/node/2456709
+            case 'file':
+            case 'file_uri':
+            case 'file_filemime':
+            case 'file_extension':
+            case 'file_size':
+            case 'file_status':
+
+            // @see https://www.drupal.org/node/2456713
+            case 'taxonomy':
+              // Handle more complex cases with a callback function.
+              $function = '_head2head_update_views_field_handler_' . $handler_config['plugin_id'];
+              if (function_exists($function)) {
+                // We always need to update the plugin_id, so do it here.
+                $handler_config['plugin_id'] = 'field';
+                $function($handler_config);
+              }
+              break;
+          }
+        }
+      }
+    }
+
+    $view->save();
+  }
+}
+
+/**
+ * Updates the views handler config for the 'numeric' field plugin.
+ */
+function _head2head_update_views_field_handler_numeric(array &$handler_config) {
+  $handler_config['type'] = 'number_integer';
+
+  // 'thousand_separator' is the only setting that we need to migrate.
+  if (isset($handler_config['separator']) && $handler_config['separator']) {
+    $handler_config['settings']['thousand_separator'] = $handler_config['separator'];
+  }
+
+  $keys_to_remove = [
+    'set_precision',
+    'precision',
+    'decimal',
+    'separator',
+    'format_plural',
+    'format_plural_singular',
+    'format_plural_string',
+    'prefix',
+    'suffix',
+  ];
+  foreach ($keys_to_remove as $key) {
+    unset($handler_config[$key]);
+  }
+}
+
+/**
+ * Updates the views handler config for the 'node' field plugin.
+ */
+function _head2head_update_views_field_handler_node(array &$handler_config) {
+  $handler_config['type'] = 'string';
+
+  if (isset($handler_config['link_to_node'])) {
+    $handler_config['settings']['link_to_entity'] = $handler_config['link_to_node'];
+    unset($handler_config['link_to_node']);
+  }
+}
+
+/**
+ * Updates the views handler config for the 'boolean' field plugin.
+ */
+function _head2head_update_views_field_handler_boolean(array &$handler_config) {
+  $old_type = $handler_config['type'];
+  $handler_config['type'] = 'boolean';
+
+  if (isset($handler_config['type_custom_true']) && $handler_config['type_custom_true']) {
+    $handler_config['settings']['format_custom_true'] = $handler_config['type_custom_true'];
+  }
+
+  if (isset($handler_config['type_custom_false']) && $handler_config['type_custom_false']) {
+    $handler_config['settings']['format_custom_false'] = $handler_config['type_custom_false'];
+  }
+
+  if ($old_type == 'published-notpublished') {
+    $handler_config['settings']['format_custom_true'] = 'Published';
+    $handler_config['settings']['format_custom_false'] = 'Unpublished';
+  }
+
+  if ($old_type == 'published-notpublished') {
+    $handler_config['settings']['format_custom_true'] = 'Active';
+    $handler_config['settings']['format_custom_false'] = 'Blocked';
+  }
+}
+
+/**
+ * Updates the views handler config for the 'node_type' field plugin.
+ */
+function _head2head_update_views_field_handler_node_type(array &$handler_config) {
+  $handler_config['type'] = 'entity_reference_label';
+
+  if (isset($handler_config['link_to_node'])) {
+    $handler_config['settings']['link'] = $handler_config['link_to_node'];
+    unset($handler_config['link_to_node']);
+  }
+
+  unset($handler_config['machine_name']);
+}
+
+/**
+ * Updates the views handler config for the 'user_name' field plugin.
+ */
+function _head2head_update_views_field_handler_user_name(array &$handler_config) {
+  $handler_config['type'] = 'user_name';
+
+  if (isset($handler_config['link_to_user'])) {
+    $handler_config['settings']['link_to_entity'] = $handler_config['link_to_user'];
+    unset($handler_config['link_to_user']);
+  }
+
+  $keys_to_remove = [
+    'overwrite_anonymous',
+    'anonymous_text',
+    'format_username',
+  ];
+  foreach ($keys_to_remove as $key) {
+    unset($handler_config[$key]);
+  }
+}
+
+/**
+ * Updates the views handler config for the 'user' field plugin.
+ */
+function _head2head_update_views_field_handler_user(array &$handler_config) {
+  $handler_config['type'] = 'user';
+  unset($handler_config['link_to_user']);
+}
+
+/**
+ * Updates the views handler config for the 'node_revision' field plugin.
+ */
+function _head2head_update_views_field_handler_node_revision(array &$handler_config) {
+  $handler_config['type'] = 'string';
+
+  if (isset($handler_config['link_to_node'])) {
+    $handler_config['settings']['link_to_entity'] = $handler_config['link_to_node'];
+  }
+  unset($handler_config['link_to_node'], $handler_config['link_to_node_revision']);
+}
+
+/**
+ * Updates the views handler config for the 'aggregator_title_link' field plugin.
+ */
+function _head2head_update_views_field_handler_aggregator_title_link(array &$handler_config) {
+  $handler_config['type'] = 'aggregator_title';
+
+  if (isset($handler_config['display_as_link'])) {
+    $handler_config['settings']['display_as_link'] = $handler_config['display_as_link'];
+  }
+  unset($handler_config['display_as_link']);
+}
+
+/**
+ * Updates the views handler config for the 'comment' field plugin.
+ */
+function _head2head_update_views_field_handler_comment(array &$handler_config) {
+  $handler_config['type'] = 'string';
+
+  if (isset($handler_config['link_to_comment'])) {
+    $handler_config['settings']['link_to_entity'] = $handler_config['link_to_comment'];
+  }
+  unset($handler_config['link_to_comment'], $handler_config['link_to_entity']);
+}
+
+/**
+ * Updates the views handler config for the 'block_content' field plugin.
+ */
+function _head2head_update_views_field_handler_block_content(array &$handler_config) {
+  $handler_config['type'] = 'string';
+
+  if (isset($handler_config['link_to_entity'])) {
+    $handler_config['settings']['link_to_entity'] = $handler_config['link_to_entity'];
+    unset($handler_config['link_to_entity']);
+  }
+}
+
+/**
+ * Updates the views handler config for the 'file' field plugin.
+ */
+function _head2head_update_views_field_handler_file(array &$handler_config) {
+  $handler_config['type'] = 'file_link';
+
+  if (isset($handler_config['link_to_file'])) {
+    $handler_config['settings']['link_to_file'] = $handler_config['link_to_file'];
+    unset($handler_config['link_to_file']);
+  }
+}
+
+/**
+ * Updates the views handler config for the 'file_uri' field plugin.
+ */
+function _head2head_update_views_field_handler_file_uri(array &$handler_config) {
+  $handler_config['type'] = 'file_uri';
+
+  if (isset($handler_config['file_download_path'])) {
+    $handler_config['settings']['file_download_path'] = $handler_config['file_download_path'];
+    unset($handler_config['file_download_path']);
+  }
+}
+
+/**
+ * Updates the views handler config for the 'file_filemime' field plugin.
+ */
+function _head2head_update_views_field_handler_file_filemime(array &$handler_config) {
+  $handler_config['type'] = 'file_filemime';
+
+  if (isset($handler_config['filemime_image'])) {
+    $handler_config['settings']['filemime_image'] = $handler_config['filemime_image'];
+    unset($handler_config['filemime_image']);
+  }
+  unset($handler_config['link_to_file']);
+}
+
+/**
+ * Updates the views handler config for the 'file_extension' field plugin.
+ */
+function _head2head_update_views_field_handler_file_extension(array &$handler_config) {
+  $handler_config['type'] = 'file_extension';
+
+  if (isset($handler_config['extension_detect_tar'])) {
+    $handler_config['settings']['extension_detect_tar'] = $handler_config['extension_detect_tar'];
+    unset($handler_config['extension_detect_tar']);
+  }
+}
+
+/**
+ * Updates the views handler config for the 'file_size' field plugin.
+ */
+function _head2head_update_views_field_handler_file_size(array &$handler_config) {
+  $handler_config['type'] = 'file_size';
+  unset($handler_config['file_size_display']);
+}
+
+/**
+ * Updates the views handler config for the 'file_status' field plugin.
+ */
+function _head2head_update_views_field_handler_file_status(array &$handler_config) {
+  $handler_config['type'] = 'boolean';
+  $handler_config['settings']['format'] = 'custom';
+  $handler_config['settings']['format_custom_false'] = 'Temporary';
+  $handler_config['settings']['format_custom_true'] = 'Permanent';
+}
+
+/**
+ * Updates the views handler config for the 'taxonomy' field plugin.
+ */
+function _head2head_update_views_field_handler_taxonomy(array &$handler_config) {
+  $handler_config['plugin_id'] = 'term_name';
+  $handler_config['type'] = 'string';
+
+  if (isset($handler_config['link_to_taxonomy'])) {
+    $handler_config['settings']['link_to_entity'] = $handler_config['link_to_taxonomy'];
+    unset($handler_config['link_to_taxonomy']);
+  }
+
+  if (isset($handler_config['convert_spaces'])) {
+    $handler_config['settings']['convert_spaces'] = $handler_config['convert_spaces'];
+    unset($handler_config['convert_spaces']);
+  }
+}
+
+/**
+ * Moves fallback image style to the responsive image style entity.
+ */
+function head2head_2349461() {
+  // Nothing to do if the Responsive image module is not installed.
+  if (!\Drupal::moduleHandler()->moduleExists('responsive_image')) {
+    return;
+  }
+
+  $warning = FALSE;
+  $fallback_image_styles = [];
+  $fields = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_type' => 'image'));
+  foreach ($fields as $field) {
+    $properties = [
+      'targetEntityType' => $field->getTargetEntityTypeId(),
+      'bundle' => $field->getTargetBundle()
+    ];
+    $entity_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadByProperties($properties);
+
+    foreach ($entity_displays as $entity_display) {
+      if ($component = $entity_display->getComponent($field->getName())) {
+        if ($component['type'] == 'responsive_image' && isset($component['settings']['fallback_image_style'])) {
+          $responsive_image_style = $component['settings']['responsive_image_style'];
+          $fallback_image_style = $component['settings']['fallback_image_style'];
+
+          // We need to emit a warning if a responsive image style would be
+          // configured with multiple fallback image styles.
+          if (!isset($fallback_image_styles[$responsive_image_style])) {
+            $fallback_image_styles[$responsive_image_style] = $fallback_image_style;
+          }
+          else {
+            $warning = TRUE;
+          }
+        }
+      }
+    }
+  }
+
+  if ($fallback_image_styles) {
+    $responsive_image_styles = \Drupal::entityManager()->getStorage('responsive_image_style')->loadMultiple(array_keys($fallback_image_styles));
+    /** @var \Drupal\responsive_image\ResponsiveImageStyleInterface $responsive_image_style */
+    foreach ($responsive_image_styles as $id => $responsive_image_style) {
+      $responsive_image_style->setFallbackImageStyle($fallback_image_styles[$id])->save();
+    }
+  }
+
+  if ($warning) {
+    drupal_set_message(t('Some responsive image styles were not updated with the proper fallback image style because of conflicting entity display configuration.'), 'warning');
+  }
+}

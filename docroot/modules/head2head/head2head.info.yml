@@ -1,0 +1,4 @@
+type: module
+name: 'HEAD to HEAD'
+description: 'Provides helpers to upgrade between versions of Drupal 8 HEAD.'
+core: 8.x

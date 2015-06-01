@@ -1,0 +1,6 @@
+beta2beta.settings:
+  title: Beta 2 Beta
+  parent: system.admin_config_development
+  description: 'Configure Beta 2 Beta settings.'
+  route_name: beta2beta.settings
+  weight: 10

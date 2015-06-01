@@ -1,0 +1,7 @@
+beta2beta.settings:
+  path: '/admin/config/development/beta2beta'
+  defaults:
+    _form: 'Drupal\beta2beta\Form\SettingsForm'
+    _title: 'Beta 2 Beta'
+  requirements:
+    _permission: 'administer site configuration'

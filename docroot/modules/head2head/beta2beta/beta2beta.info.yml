@@ -1,0 +1,7 @@
+type: module
+name: 'Beta to Beta'
+description: 'Provides an upgrade path for beta versions of Drupal 8 until the upgrade path is officially supported in core.'
+core: 8.x
+configure: admin/config/development/beta2beta
+dependencies:
+ - head2head
