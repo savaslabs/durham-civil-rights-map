@@ -9,7 +9,6 @@ namespace Drupal\Core\Entity;
 
 use Drupal\Core\Config\Entity\ConfigDependencyDeleteFormTrait;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Url;
 
 /**
  * Provides a trait for an entity deletion form.
@@ -23,7 +22,7 @@ trait EntityDeleteFormTrait {
   use ConfigDependencyDeleteFormTrait;
 
   /**
-   * Gets the entity of this form.
+   * Returns the entity of this form.
    *
    * Provided by \Drupal\Core\Entity\EntityForm.
    *
@@ -63,7 +62,7 @@ trait EntityDeleteFormTrait {
   }
 
   /**
-   * Gets the message to display to the user after deleting the entity.
+   * Returns the message to display to the user after deleting the entity.
    *
    * @return string
    *   The translated string of the deletion message.
@@ -88,24 +87,6 @@ trait EntityDeleteFormTrait {
     else {
       // Otherwise fall back to the default link template.
       return $entity->urlInfo();
-    }
-  }
-
-  /**
-   * Returns the URL where the user should be redirected after deletion.
-   *
-   * @return \Drupal\Core\Url
-   *   The redirect URL.
-   */
-  protected function getRedirectUrl() {
-    $entity = $this->getEntity();
-    if ($entity->hasLinkTemplate('collection')) {
-      // If available, return the collection URL.
-      return $entity->urlInfo('collection');
-    }
-    else {
-      // Otherwise fall back to the front page.
-      return Url::fromRoute('<front>');
     }
   }
 

@@ -108,7 +108,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets the keyvalue collection for tracking the installed schema.
+   * Returns the keyvalue collection for tracking the installed schema.
    *
    * @return \Drupal\Core\KeyValueStore\KeyValueStoreInterface
    *
@@ -473,7 +473,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets the entity schema for the specified entity type.
+   * Returns the entity schema for the specified entity type.
    *
    * Entity types may override this method in order to optimize the generated
    * schema of the entity tables. However, only cross-field optimizations should
@@ -578,7 +578,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets entity schema definitions for index and key definitions.
+   * Returns entity schema definitions for index and key definitions.
    *
    * @param \Drupal\Core\Entity\ContentEntityTypeInterface $entity_type
    *   The entity type definition.
@@ -616,7 +616,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets an index schema array for a given field.
+   * Returns an index schema array for a given field.
    *
    * @param string $field_name
    *   The name of the field.
@@ -633,7 +633,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets a unique key schema array for a given field.
+   * Returns a unique key schema array for a given field.
    *
    * @param string $field_name
    *   The name of the field.
@@ -650,7 +650,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets field schema data for the given key.
+   * Returns field schema data for the given key.
    *
    * @param string $field_name
    *   The name of the field.
@@ -720,7 +720,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets field foreign keys.
+   * Returns field foreign keys.
    *
    * @param string $field_name
    *   The name of the field.
@@ -1389,7 +1389,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets the schema for a single field definition.
+   * Returns the schema for a single field definition.
    *
    * Entity types may override this method in order to optimize the generated
    * schema for given field. While all optimizations that apply to a single
@@ -1533,7 +1533,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets the SQL schema for a dedicated table.
+   * Returns the SQL schema for a dedicated table.
    *
    * @param \Drupal\Core\Field\FieldStorageDefinitionInterface $storage_definition
    *   The field storage definition.
@@ -1568,7 +1568,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
     }
     else {
       $id_schema = array(
-        'type' => 'varchar_ascii',
+        'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
         'description' => 'The entity id this data is attached to',
@@ -1601,7 +1601,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
       'description' => $description_current,
       'fields' => array(
         'bundle' => array(
-          'type' => 'varchar_ascii',
+          'type' => 'varchar',
           'length' => 128,
           'not null' => TRUE,
           'default' => '',
@@ -1617,7 +1617,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
         'entity_id' => $id_schema,
         'revision_id' => $revision_id_schema,
         'langcode' => array(
-          'type' => 'varchar_ascii',
+          'type' => 'varchar',
           'length' => 32,
           'not null' => TRUE,
           'default' => '',
@@ -1700,7 +1700,7 @@ class SqlContentEntityStorageSchema implements DynamicallyFieldableEntityStorage
   }
 
   /**
-   * Gets the name to be used for the given entity index.
+   * Returns the name to be used for the given entity index.
    *
    * @param \Drupal\Core\Entity\ContentEntityTypeInterface $entity_type
    *   The entity type.

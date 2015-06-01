@@ -29,7 +29,7 @@ interface EntityFormInterface extends BaseFormIdInterface {
   public function setOperation($operation);
 
   /**
-   * Gets the operation identifying the form.
+   * Returns the operation identifying the form.
    *
    * @return string
    *   The name of the operation.
@@ -37,7 +37,7 @@ interface EntityFormInterface extends BaseFormIdInterface {
   public function getOperation();
 
   /**
-   * Gets the form entity.
+   * Returns the form entity.
    *
    * The form entity which has been used for populating form element defaults.
    *

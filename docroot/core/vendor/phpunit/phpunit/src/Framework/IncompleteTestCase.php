@@ -52,8 +52,6 @@ class PHPUnit_Framework_IncompleteTestCase extends PHPUnit_Framework_TestCase
     protected $useOutputBuffering = false;
 
     /**
-     * @param string $className
-     * @param string $methodName
      * @param string $message
      */
     public function __construct($className, $methodName, $message = '')

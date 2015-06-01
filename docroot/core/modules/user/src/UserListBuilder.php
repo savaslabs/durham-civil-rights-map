@@ -174,8 +174,9 @@ class UserListBuilder extends EntityListBuilder {
    * {@inheritdoc}
    */
   public function render() {
-    $build = parent::render();
-    $build['table']['#empty'] = $this->t('No people available.');
+    $build['accounts'] = parent::render();
+    $build['accounts']['#empty'] = $this->t('No people available.');
+    $build['pager']['#type'] = 'pager';
     return $build;
   }
 

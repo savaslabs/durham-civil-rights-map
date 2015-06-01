@@ -8,7 +8,6 @@
 namespace Drupal\taxonomy\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
-use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -56,8 +55,6 @@ use Drupal\taxonomy\TermInterface;
  * )
  */
 class Term extends ContentEntityBase implements TermInterface {
-
-  use EntityChangedTrait;
 
   /**
    * {@inheritdoc}
@@ -181,8 +178,7 @@ class Term extends ContentEntityBase implements TermInterface {
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the term was last edited.'))
-      ->setTranslatable(TRUE);
+      ->setDescription(t('The time that the term was last edited.'));
 
     return $fields;
   }

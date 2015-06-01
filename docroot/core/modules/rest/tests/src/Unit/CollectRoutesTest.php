@@ -76,7 +76,6 @@ class CollectRoutesTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
     $container->set('plugin.manager.views.style', $style_manager);
-    $container->set('renderer', $this->getMock('Drupal\Core\Render\RendererInterface'));
 
     \Drupal::setContainer($container);
 

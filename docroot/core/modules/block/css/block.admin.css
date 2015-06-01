@@ -43,10 +43,13 @@ a.block-demo-backlink:hover {
 .block-list-secondary .form-type-search {
   padding: 0 1em;
 }
-.block-form .form-item-settings-admin-label label {
+#block-placed {
+  background-color: #ffd;
+}
+#edit-settings-admin-label label {
   display: inline;
 }
-.block-form .form-item-settings-admin-label label:after {
+#edit-settings-admin-label label:after {
   content: ':';
 }
 

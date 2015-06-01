@@ -48,7 +48,7 @@ class EntityQueryTest extends EntityUnitTestBase {
   public $greetings;
 
   /**
-   * Field name for the figures field.
+   * Field name for the greetings field.
    *
    * @var string
    */

@@ -50,7 +50,7 @@ class ExportForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'locale_translate_export_form';
   }
 

@@ -126,7 +126,7 @@ interface ContextAwarePluginInterface extends PluginInspectionInterface {
   public function validateContexts();
 
   /**
-   * Gets a mapping of the expected assignment names to their context names.
+   * Returns a mapping of the expected assignment names to their context names.
    *
    * @return array
    *   A mapping of the expected assignment names to their context names. For

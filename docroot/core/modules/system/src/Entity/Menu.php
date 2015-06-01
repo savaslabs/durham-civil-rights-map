@@ -24,12 +24,6 @@ use Drupal\system\MenuInterface;
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label"
- *   },
- *   config_export = {
- *     "id",
- *     "label",
- *     "description",
- *     "locked",
  *   }
  * )
  */

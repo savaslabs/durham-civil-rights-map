@@ -47,14 +47,6 @@ use Drupal\search\SearchPageInterface;
  *     "label" = "label",
  *     "weight" = "weight",
  *     "status" = "status"
- *   },
- *   config_export = {
- *     "id",
- *     "label",
- *     "path",
- *     "weight",
- *     "plugin",
- *     "configuration",
  *   }
  * )
  */
@@ -180,8 +172,8 @@ class SearchPage extends ConfigEntityBase implements SearchPageInterface, Entity
   public function postCreate(EntityStorageInterface $storage) {
     parent::postCreate($storage);
 
-    // @todo Use self::applyDefaultValue() once
-    //   https://www.drupal.org/node/2004756 is in.
+    // @todo Use self::applyDefaultValue() once https://drupal.org/node/2004756
+    //   is in.
     if (!isset($this->weight)) {
       $this->weight = $this->isDefaultSearch() ? -10 : 0;
     }

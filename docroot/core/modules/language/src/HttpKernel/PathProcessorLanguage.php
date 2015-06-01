@@ -8,7 +8,6 @@
 namespace Drupal\language\HttpKernel;
 
 use Drupal\Component\Utility\Unicode;
-use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\PathProcessor\InboundPathProcessorInterface;
 use Drupal\Core\PathProcessor\OutboundPathProcessorInterface;
@@ -95,7 +94,7 @@ class PathProcessorLanguage implements InboundPathProcessorInterface, OutboundPa
   /**
    * {@inheritdoc}
    */
-  public function processOutbound($path, &$options = array(), Request $request = NULL, CacheableMetadata $cacheable_metadata = NULL) {
+  public function processOutbound($path, &$options = array(), Request $request = NULL) {
     if (!isset($this->multilingual)) {
       $this->multilingual = $this->languageManager->isMultilingual();
     }
@@ -106,7 +105,7 @@ class PathProcessorLanguage implements InboundPathProcessorInterface, OutboundPa
         $this->initProcessors($scope);
       }
       foreach ($this->processors[$scope] as $instance) {
-        $path = $instance->processOutbound($path, $options, $request, $cacheable_metadata);
+        $path = $instance->processOutbound($path, $options, $request);
       }
       // No language dependent path allowed in this mode.
       if (empty($this->processors[$scope])) {

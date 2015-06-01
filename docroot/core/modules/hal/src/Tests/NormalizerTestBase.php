@@ -83,7 +83,6 @@ abstract class NormalizerTestBase extends KernelTestBase {
       $class = get_parent_class($class);
     }
     $this->installConfig(array('field', 'language'));
-    \Drupal::service('router.builder')->rebuild();
 
     // Add German as a language.
     ConfigurableLanguage::create(array(
@@ -135,7 +134,8 @@ abstract class NormalizerTestBase extends KernelTestBase {
     ))->save();
 
     $entity_manager = \Drupal::entityManager();
-    $link_manager = new LinkManager(new TypeLinkManager(new MemoryBackend('default'), \Drupal::moduleHandler(), \Drupal::service('config.factory'), \Drupal::service('request_stack')), new RelationLinkManager(new MemoryBackend('default'), $entity_manager, \Drupal::moduleHandler(), \Drupal::service('config.factory'), \Drupal::service('request_stack')));
+    $url_assembler = \Drupal::service('unrouted_url_assembler');
+    $link_manager = new LinkManager(new TypeLinkManager(new MemoryBackend('default'), $url_assembler), new RelationLinkManager(new MemoryBackend('default'), $entity_manager, $url_assembler));
 
     $chain_resolver = new ChainEntityResolver(array(new UuidResolver($entity_manager), new TargetIdResolver()));
 

@@ -323,12 +323,9 @@ class CommentForm extends ContentEntityForm {
     foreach ($violations as $violation) {
       $form_state->setErrorByName('date', $violation->getMessage());
     }
-    $violations = $comment->validate();
-    // Filter out violations for the name path.
+    $violations = $comment->name->validate();
     foreach ($violations as $violation) {
-      if ($violation->getPropertyPath() === 'name') {
-        $form_state->setErrorByName('name', $violation->getMessage());
-      }
+      $form_state->setErrorByName('name', $violation->getMessage());
     }
 
     return $comment;

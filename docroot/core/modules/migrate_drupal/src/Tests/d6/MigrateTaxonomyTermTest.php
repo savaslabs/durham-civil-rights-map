@@ -18,16 +18,13 @@ use Drupal\taxonomy\Entity\Term;
  */
 class MigrateTaxonomyTermTest extends MigrateDrupal6TestBase {
 
-  static $modules = array('taxonomy', 'text');
+  static $modules = array('taxonomy');
 
   /**
    * {@inheritdoc}
    */
   protected function setUp() {
     parent::setUp();
-
-    $this->installEntitySchema('taxonomy_term');
-
     $this->prepareMigrations(array(
       'd6_taxonomy_vocabulary' => array(
         array(array(1), array('vocabulary_1_i_0_')),

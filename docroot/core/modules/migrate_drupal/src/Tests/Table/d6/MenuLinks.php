@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\MenuLinks.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\MenuLinks.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -73,25 +73,25 @@ class MenuLinks extends DrupalDumpBase {
         'hidden' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '6',
           'default' => '0',
         ),
         'external' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '6',
           'default' => '0',
         ),
         'has_children' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '6',
           'default' => '0',
         ),
         'expanded' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '6',
           'default' => '0',
         ),
         'weight' => array(
@@ -103,13 +103,13 @@ class MenuLinks extends DrupalDumpBase {
         'depth' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '6',
           'default' => '0',
         ),
         'customized' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '6',
           'default' => '0',
         ),
         'p1' => array(
@@ -178,7 +178,7 @@ class MenuLinks extends DrupalDumpBase {
         'updated' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '6',
           'default' => '0',
         ),
       ),
@@ -399,7 +399,7 @@ class MenuLinks extends DrupalDumpBase {
       'menu_name' => 'secondary-links',
       'mlid' => '140',
       'plid' => '0',
-      'link_path' => 'https://www.drupal.org',
+      'link_path' => 'http://drupal.org',
       'router_path' => '',
       'link_title' => 'Drupal.org',
       'options' => 'a:1:{s:10:"attributes";a:1:{s:5:"title";s:0:"";}}',
@@ -5157,4 +5157,3 @@ class MenuLinks extends DrupalDumpBase {
   }
 
 }
-#772778397f0cab72b529312c65596781

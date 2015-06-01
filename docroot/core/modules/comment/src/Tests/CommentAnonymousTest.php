@@ -122,10 +122,6 @@ class CommentAnonymousTest extends CommentTestBase {
     $this->assertNoRaw('comments[' . $anonymous_comment3->id() . ']', 'Comment was deleted.');
     $this->drupalLogout();
 
-    // Comment 3 was deleted.
-    $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment/' . $anonymous_comment3->id());
-    $this->assertResponse(403);
-
     // Reset.
     user_role_change_permissions(RoleInterface::ANONYMOUS_ID, array(
       'access comments' => FALSE,
@@ -142,7 +138,9 @@ class CommentAnonymousTest extends CommentTestBase {
 
     // Attempt to view node-comment form while disallowed.
     $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment');
-    $this->assertResponse(403);
+    $this->assertText('You are not authorized to post comments', 'Error attempting to post comment.');
+    $this->assertNoFieldByName('subject[0][value]', '', 'Subject field not found.');
+    $this->assertNoFieldByName('comment_body[0][value]', '', 'Comment field not found.');
 
     user_role_change_permissions(RoleInterface::ANONYMOUS_ID, array(
       'access comments' => TRUE,
@@ -164,7 +162,8 @@ class CommentAnonymousTest extends CommentTestBase {
     $this->assertFieldByName('subject[0][value]', '', 'Subject field found.');
     $this->assertFieldByName('comment_body[0][value]', '', 'Comment field found.');
 
-    $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment/' . $anonymous_comment2->id());
-    $this->assertResponse(403);
+    $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment/' . $anonymous_comment3->id());
+    $this->assertText('You are not authorized to view comments', 'Error attempting to post reply.');
+    $this->assertNoText($author_name, 'Comment not displayed.');
   }
 }

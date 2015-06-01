@@ -106,13 +106,6 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
   protected $third_party_settings = array();
 
   /**
-   * Trust supplied data and not use configuration schema on save.
-   *
-   * @var bool
-   */
-  protected $trustedData = FALSE;
-
-  /**
    * Overrides Entity::__construct().
    */
   public function __construct(array $values, $entity_type) {
@@ -272,31 +265,22 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    */
   public function toArray() {
     $properties = array();
-    /** @var \Drupal\Core\Config\Entity\ConfigEntityTypeInterface $entity_type */
-    $entity_type = $this->getEntityType();
-
-    $properties_to_export = $entity_type->getPropertiesToExport();
-    if (empty($properties_to_export)) {
-      $config_name = $entity_type->getConfigPrefix() . '.' . $this->id();
-      $definition = $this->getTypedConfig()->getDefinition($config_name);
-      if (!isset($definition['mapping'])) {
-        throw new SchemaIncompleteException(SafeMarkup::format('Incomplete or missing schema for @config_name', array('@config_name' => $config_name)));
-      }
-      $properties_to_export = array_combine(array_keys($definition['mapping']), array_keys($definition['mapping']));
+    $config_name = $this->getEntityType()->getConfigPrefix() . '.' . $this->id();
+    $definition = $this->getTypedConfig()->getDefinition($config_name);
+    if (!isset($definition['mapping'])) {
+      throw new SchemaIncompleteException(SafeMarkup::format('Incomplete or missing schema for @config_name', array('@config_name' => $config_name)));
     }
-
-    $id_key = $entity_type->getKey('id');
-    foreach ($properties_to_export as $property_name => $export_name) {
+    $id_key = $this->getEntityType()->getKey('id');
+    foreach (array_keys($definition['mapping']) as $name) {
       // Special handling for IDs so that computed compound IDs work.
       // @see \Drupal\Core\Entity\EntityDisplayBase::id()
-      if ($property_name == $id_key) {
-        $properties[$export_name] = $this->id();
+      if ($name == $id_key) {
+        $properties[$name] = $this->id();
       }
       else {
-        $properties[$export_name] = $this->get($property_name);
+        $properties[$name] = $this->get($name);
       }
     }
-
     if (empty($this->third_party_settings)) {
       unset($properties['third_party_settings']);
     }
@@ -344,7 +328,7 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
         throw new ConfigDuplicateUUIDException(SafeMarkup::format('Attempt to save a configuration entity %id with UUID %uuid when this entity already exists with UUID %original_uuid', array('%id' => $this->id(), '%uuid' => $this->uuid(), '%original_uuid' => $original->uuid())));
       }
     }
-    if (!$this->isSyncing() && !$this->trustedData) {
+    if (!$this->isSyncing()) {
       // Ensure the correct dependencies are present. If the configuration is
       // being written during a configuration synchronization then there is no
       // need to recalculate the dependencies.
@@ -586,30 +570,6 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    */
   public function isInstallable() {
     return TRUE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function trustData() {
-    $this->trustedData = TRUE;
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function hasTrustedData() {
-    return $this->trustedData;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function save() {
-    $return = parent::save();
-    $this->trustedData = FALSE;
-    return $return;
   }
 
 }

@@ -9,13 +9,11 @@ namespace Drupal\rest\LinkManager;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\Core\Extension\ModuleHandlerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\Core\Utility\UnroutedUrlAssemblerInterface;
 
-class RelationLinkManager extends LinkManagerBase implements RelationLinkManagerInterface {
+class RelationLinkManager implements RelationLinkManagerInterface {
 
   /**
    * @var \Drupal\Core\Cache\CacheBackendInterface;
@@ -30,11 +28,11 @@ class RelationLinkManager extends LinkManagerBase implements RelationLinkManager
   protected $entityManager;
 
   /**
-   * Module handler service.
+   * The unrouted URL assembler.
    *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   * @var \Drupal\Core\Utility\UnroutedUrlAssemblerInterface
    */
-  protected $moduleHandler;
+  protected $urlAssembler;
 
   /**
    * Constructor.
@@ -43,35 +41,27 @@ class RelationLinkManager extends LinkManagerBase implements RelationLinkManager
    *   The cache of relation URIs and their associated Typed Data IDs.
    * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
    *   The entity manager.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
-   *   The module handler service.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *   The config factory service.
-   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
-   *   The request stack.
+   * @param \Drupal\Core\Utility\UnroutedUrlAssemblerInterface $url_assembler
+   *   The unrouted URL assembler.
    */
-  public function __construct(CacheBackendInterface $cache, EntityManagerInterface $entity_manager, ModuleHandlerInterface $module_handler, ConfigFactoryInterface $config_factory, RequestStack $request_stack) {
+  public function __construct(CacheBackendInterface $cache, EntityManagerInterface $entity_manager, UnroutedUrlAssemblerInterface $url_assembler) {
     $this->cache = $cache;
     $this->entityManager = $entity_manager;
-    $this->configFactory = $config_factory;
-    $this->moduleHandler = $module_handler;
-    $this->requestStack = $request_stack;
+    $this->urlAssembler = $url_assembler;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getRelationUri($entity_type, $bundle, $field_name, $context = array()) {
-    $uri = $this->getLinkDomain() . "/rest/relation/$entity_type/$bundle/$field_name";
-    $this->moduleHandler->alter('rest_relation_uri', $uri, $context);
-    return $uri;
+  public function getRelationUri($entity_type, $bundle, $field_name) {
+    return $this->urlAssembler->assemble("base:rest/relation/$entity_type/$bundle/$field_name", array('absolute' => TRUE));
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getRelationInternalIds($relation_uri, $context = array()) {
-    $relations = $this->getRelations($context);
+  public function getRelationInternalIds($relation_uri) {
+    $relations = $this->getRelations();
     if (isset($relations[$relation_uri])) {
       return $relations[$relation_uri];
     }
@@ -87,18 +77,15 @@ class RelationLinkManager extends LinkManagerBase implements RelationLinkManager
    * even primitives, are given a relation URI. It is up to the caller to
    * determine which URIs to use.
    *
-   * @param array $context
-   *   Context from the normalizer/serializer operation.
-   *
    * @return array
    *   An array of typed data ids (entity_type, bundle, and field name) keyed
    *   by corresponding relation URI.
    */
-  protected function getRelations($context = array()) {
+  protected function getRelations() {
     $cid = 'rest:links:relations';
     $cache = $this->cache->get($cid);
     if (!$cache) {
-      $this->writeCache($context);
+      $this->writeCache();
       $cache = $this->cache->get($cid);
     }
     return $cache->data;
@@ -106,18 +93,15 @@ class RelationLinkManager extends LinkManagerBase implements RelationLinkManager
 
   /**
    * Writes the cache of relation links.
-   *
-   * @param array $context
-   *   Context from the normalizer/serializer operation.
    */
-  protected function writeCache($context = array()) {
+  protected function writeCache() {
     $data = array();
 
     foreach ($this->entityManager->getDefinitions() as $entity_type) {
       if ($entity_type instanceof ContentEntityTypeInterface) {
         foreach ($this->entityManager->getBundleInfo($entity_type->id()) as $bundle => $bundle_info) {
           foreach ($this->entityManager->getFieldDefinitions($entity_type->id(), $bundle) as $field_definition) {
-            $relation_uri = $this->getRelationUri($entity_type->id(), $bundle, $field_definition->getName(), $context);
+            $relation_uri = $this->getRelationUri($entity_type->id(), $bundle, $field_definition->getName());
             $data[$relation_uri] = array(
               'entity_type' => $entity_type,
               'bundle' => $bundle,

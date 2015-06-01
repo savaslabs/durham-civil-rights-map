@@ -8,23 +8,21 @@
 namespace Drupal\config\Tests;
 
 use Drupal\entity_test\Entity\EntityTest;
-use Drupal\system\Tests\Entity\EntityUnitTestBase;
+use Drupal\simpletest\KernelTestBase;
 
 /**
  * Tests for configuration dependencies.
  *
  * @group config
  */
-class ConfigDependencyTest extends EntityUnitTestBase {
+class ConfigDependencyTest extends KernelTestBase {
 
   /**
    * Modules to enable.
    *
-   * The entity_test module is enabled to provide content entity types.
-   *
    * @var array
    */
-  public static $modules = array('config_test', 'entity_test', 'user');
+  public static $modules = array('system', 'config_test', 'entity_test', 'user');
 
   /**
    * Tests that calculating dependencies for system module.
@@ -43,8 +41,7 @@ class ConfigDependencyTest extends EntityUnitTestBase {
   /**
    * Tests creating dependencies on configuration entities.
    */
-  public function testDependencyManagement() {
-    /** @var \Drupal\Core\Config\ConfigManagerInterface $config_manager */
+  public function testDependencyMangement() {
     $config_manager = \Drupal::service('config.manager');
     $storage = $this->container->get('entity.manager')->getStorage('config_test');
     // Test dependencies between modules.
@@ -113,14 +110,9 @@ class ConfigDependencyTest extends EntityUnitTestBase {
     $this->assertTrue(isset($dependents['config_test.dynamic.entity3']), 'config_test.dynamic.entity3 has a dependency on the Node module.');
     $this->assertTrue(isset($dependents['config_test.dynamic.entity4']), 'config_test.dynamic.entity4 has a dependency on the Node module.');
 
-    // Test dependency on a content entity.
-    $entity_test = entity_create('entity_test', array(
-      'name' => $this->randomString(),
-      'type' => 'entity_test',
-    ));
-    $entity_test->save();
-    $entity2->setEnforcedDependencies(['config' => [$entity1->getConfigDependencyName()], 'content' => [$entity_test->getConfigDependencyName()]])->save();;
-    $dependents = $config_manager->findConfigEntityDependents('content', array($entity_test->getConfigDependencyName()));
+    // Test dependency on a fake content entity.
+    $entity2->setEnforcedDependencies(['config' => [$entity1->getConfigDependencyName()], 'content' => ['node:page:uuid']])->save();;
+    $dependents = $config_manager->findConfigEntityDependents('content', array('node:page:uuid'));
     $this->assertFalse(isset($dependents['config_test.dynamic.entity1']), 'config_test.dynamic.entity1 does not have a dependency on the content entity.');
     $this->assertTrue(isset($dependents['config_test.dynamic.entity2']), 'config_test.dynamic.entity2 has a dependency on the content entity.');
     $this->assertTrue(isset($dependents['config_test.dynamic.entity3']), 'config_test.dynamic.entity3 has a dependency on the content entity (via entity2).');
@@ -159,30 +151,6 @@ class ConfigDependencyTest extends EntityUnitTestBase {
     $this->assertTrue(in_array('config_query_test:entity1', $dependent_ids), 'config_test.query.entity1 has a dependency on config_test module.');
     $this->assertTrue(in_array('config_query_test:entity2', $dependent_ids), 'config_test.query.entity2 has a dependency on config_test module.');
 
-    // Test the ability to find missing content dependencies.
-    $missing_dependencies = $config_manager->findMissingContentDependencies();
-    $this->assertEqual([], $missing_dependencies);
-
-    $expected = [$entity_test->uuid() => [
-      'entity_type' => 'entity_test',
-      'bundle' => $entity_test->bundle(),
-      'uuid' => $entity_test->uuid(),
-    ]];
-    // Delete the content entity so that is it now missing.
-    $entity_test->delete();
-    $missing_dependencies = $config_manager->findMissingContentDependencies();
-    $this->assertEqual($expected, $missing_dependencies);
-
-    // Add a fake missing dependency to ensure multiple missing dependencies
-    // work.
-    $entity1->setEnforcedDependencies(['content' => [$entity_test->getConfigDependencyName(), 'entity_test:bundle:uuid']])->save();;
-    $expected['uuid'] = [
-      'entity_type' => 'entity_test',
-      'bundle' => 'bundle',
-      'uuid' => 'uuid',
-    ];
-    $missing_dependencies = $config_manager->findMissingContentDependencies();
-    $this->assertEqual($expected, $missing_dependencies);
   }
 
   /**
@@ -216,10 +184,6 @@ class ConfigDependencyTest extends EntityUnitTestBase {
       )
     );
     $entity2->save();
-    // Perform a module rebuild so we can know where the node module is located
-    // and uninstall it.
-    // @todo Remove as part of https://www.drupal.org/node/2186491
-    system_rebuild_module_data();
     // Test that doing a config uninstall of the node module deletes entity2
     // since it is dependent on entity1 which is dependent on the node module.
     $config_manager->uninstall('module', 'node');

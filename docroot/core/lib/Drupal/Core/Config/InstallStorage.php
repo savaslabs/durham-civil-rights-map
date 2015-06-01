@@ -8,7 +8,6 @@
 namespace Drupal\Core\Config;
 
 use Drupal\Core\Extension\ExtensionDiscovery;
-use Drupal\Core\Extension\Extension;
 
 /**
  * Storage used by the Drupal installer.
@@ -158,25 +157,14 @@ class InstallStorage extends FileStorage {
   protected function getAllFolders() {
     if (!isset($this->folders)) {
       $this->folders = array();
-      $this->folders += $this->getCoreNames();
-      // Perform an ExtensionDiscovery scan as we cannot use drupal_get_path()
-      // yet because the system module may not yet be enabled during install.
-      // @todo Remove as part of https://www.drupal.org/node/2186491
-      $listing = new ExtensionDiscovery(\Drupal::root());
+      $this->folders += $this->getComponentNames('core', array('core'));
+      // @todo Refactor getComponentNames() to use the extension list directly.
       if ($profile = drupal_get_profile()) {
-        $profile_list = $listing->scan('profile');
-        if (isset($profile_list[$profile])) {
-          // Prime the drupal_get_filename() static cache with the profile info
-          // file location so we can use drupal_get_path() on the active profile
-          // during the module scan.
-          // @todo Remove as part of https://www.drupal.org/node/2186491
-          drupal_get_filename('profile', $profile, $profile_list[$profile]->getPathname());
-          $this->folders += $this->getComponentNames(array($profile_list[$profile]));
-        }
+        $this->folders += $this->getComponentNames('profile', array($profile));
       }
-      // @todo Remove as part of https://www.drupal.org/node/2186491
-      $this->folders += $this->getComponentNames($listing->scan('module'));
-      $this->folders += $this->getComponentNames($listing->scan('theme'));
+      $listing = new ExtensionDiscovery(DRUPAL_ROOT);
+      $this->folders += $this->getComponentNames('module', array_keys($listing->scan('module')));
+      $this->folders += $this->getComponentNames('theme', array_keys($listing->scan('theme')));
     }
     return $this->folders;
   }
@@ -184,21 +172,21 @@ class InstallStorage extends FileStorage {
   /**
    * Get all configuration names and folders for a list of modules or themes.
    *
-   * @param \Drupal\Core\Extension\Extension[] $list
-   *   An associative array of Extension objects, keyed by extension name.
+   * @param string $type
+   *   Type of components: 'module' | 'theme' | 'profile'
+   * @param array $list
+   *   Array of theme or module names.
    *
    * @return array
    *   Folders indexed by configuration name.
    */
-  public function getComponentNames(array $list) {
+  public function getComponentNames($type, array $list) {
     $extension = '.' . $this->getFileExtension();
     $folders = array();
-    foreach ($list as $extension_object) {
-      // We don't have to use ExtensionDiscovery here because our list of
-      // extensions was already obtained through an ExtensionDiscovery scan.
-      $directory = $this->getComponentFolder($extension_object);
+    foreach ($list as $name) {
+      $directory = $this->getComponentFolder($type, $name);
       if (file_exists($directory)) {
-        $files = new \GlobIterator(\Drupal::root() . '/' . $directory . '/*' . $extension);
+        $files = new \GlobIterator(DRUPAL_ROOT . '/' . $directory . '/*' . $extension);
         foreach ($files as $file) {
           $folders[$file->getBasename($extension)] = $directory;
         }
@@ -208,45 +196,18 @@ class InstallStorage extends FileStorage {
   }
 
   /**
-   * Get all configuration names and folders for Drupal core.
-   *
-   * @return array
-   *   Folders indexed by configuration name.
-   */
-  public function getCoreNames() {
-    $extension = '.' . $this->getFileExtension();
-    $folders = array();
-    $directory = $this->getCoreFolder();
-    if (file_exists($directory)) {
-      $files = new \GlobIterator(\Drupal::root() . '/' . $directory . '/*' . $extension);
-      foreach ($files as $file) {
-        $folders[$file->getBasename($extension)] = $directory;
-      }
-    }
-    return $folders;
-  }
-
-  /**
    * Get folder inside each component that contains the files.
    *
-   * @param \Drupal\Core\Extension\Extension $extension
-   *   The Extension object for the component.
+   * @param string $type
+   *   Component type: 'module' | 'theme' | 'profile'
+   * @param string $name
+   *   Component name.
    *
    * @return string
    *   The configuration folder name for this component.
    */
-  protected function getComponentFolder(Extension $extension) {
-    return $extension->getPath() . '/' . $this->getCollectionDirectory();
-  }
-
-  /**
-   * Get folder inside Drupal core that contains the files.
-   *
-   * @return string
-   *   The configuration folder name for core.
-   */
-  protected function getCoreFolder() {
-    return drupal_get_path('core', 'core') . '/' . $this->getCollectionDirectory();
+  protected function getComponentFolder($type, $name) {
+    return drupal_get_path($type, $name) . '/' . $this->getCollectionDirectory();
   }
 
   /**

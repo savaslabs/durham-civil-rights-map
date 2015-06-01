@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\ContentFieldImage.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\ContentFieldImage.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -47,7 +47,7 @@ class ContentFieldImage extends DrupalDumpBase {
         'field_image_list' => array(
           'type' => 'int',
           'not null' => FALSE,
-          'length' => '11',
+          'length' => '4',
         ),
         'field_image_data' => array(
           'type' => 'text',
@@ -85,4 +85,3 @@ class ContentFieldImage extends DrupalDumpBase {
   }
 
 }
-#4e8dc9935bae5fbba4b2364a54cd3cda

@@ -6,10 +6,10 @@ description: 'Test theme which acts as a base theme for other test subthemes.'
 libraries:
   - test_basetheme/global-styling
 stylesheets-remove:
-  - '@theme_test/css/base-remove.css'
+  - @theme_test/css/base-remove.css
 
-# Information added by Drupal.org packaging script on 2015-05-27
-version: '8.0.0-beta11'
+# Information added by Drupal.org packaging script on 2015-04-29
+version: '8.0.0-beta10'
 core: '8.x'
 project: 'drupal'
-datestamp: 1432759049
+datestamp: 1430314871

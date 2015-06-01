@@ -19,7 +19,7 @@ class SessionTestForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'session_test_form';
   }
 

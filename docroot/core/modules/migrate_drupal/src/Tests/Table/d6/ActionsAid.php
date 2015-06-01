@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\ActionsAid.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\ActionsAid.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -40,4 +40,3 @@ class ActionsAid extends DrupalDumpBase {
   }
 
 }
-#1c907838b8bafd88d0d3141fe32b41f6

@@ -20,10 +20,9 @@ class NodePermissions {
   use UrlGeneratorTrait;
 
   /**
-   * Gets an array of content permissions.
+   * Returns an array of content permissions.
    *
    * @return array
-   *   The content permissions.
    */
   public function contentPermissions() {
     return array(
@@ -35,11 +34,9 @@ class NodePermissions {
   }
 
   /**
-   * Gets an array of node type permissions.
+   * Returns an array of node type permissions.
    *
    * @return array
-   *   The node type permissions.
-   *   @see \Drupal\user\PermissionHandlerInterface::getPermissions()
    */
   public function nodeTypePermissions() {
     $perms = array();

@@ -10,25 +10,25 @@ namespace Drupal\views\Entity\Render;
 use Drupal\views\Plugin\views\PluginBase;
 
 /**
- * Trait used to instantiate the view's entity translation renderer.
+ * Trait used to instantiate the view's entity language render.
  */
 trait EntityTranslationRenderTrait {
 
   /**
    * The renderer to be used to render the entity row.
    *
-   * @var \Drupal\views\Entity\Render\EntityTranslationRendererBase
+   * @var \Drupal\views\Entity\Render\RendererBase
    */
-  protected $entityTranslationRenderer;
+  protected $entityLanguageRenderer;
 
   /**
    * Returns the current renderer.
    *
-   * @return \Drupal\views\Entity\Render\EntityTranslationRendererBase
+   * @return \Drupal\views\Entity\Render\RendererBase
    *   The configured renderer.
    */
   protected function getEntityTranslationRenderer() {
-    if (!isset($this->entityTranslationRenderer)) {
+    if (!isset($this->entityLanguageRenderer)) {
       $view = $this->getView();
       $rendering_language = $view->display_handler->getOption('rendering_language');
       $langcode = NULL;
@@ -52,9 +52,9 @@ trait EntityTranslationRenderTrait {
       }
       $class = '\Drupal\views\Entity\Render\\' . $renderer;
       $entity_type = $this->getEntityManager()->getDefinition($this->getEntityTypeId());
-      $this->entityTranslationRenderer = new $class($view, $this->getLanguageManager(), $entity_type, $langcode);
+      $this->entityLanguageRenderer = new $class($view, $this->getLanguageManager(), $entity_type, $langcode);
     }
-    return $this->entityTranslationRenderer;
+    return $this->entityLanguageRenderer;
   }
 
   /**

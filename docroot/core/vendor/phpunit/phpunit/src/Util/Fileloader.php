@@ -59,8 +59,7 @@ class PHPUnit_Util_Fileloader
 
         $newVariables     = get_defined_vars();
         $newVariableNames = array_diff(
-            array_keys($newVariables),
-            $oldVariableNames
+            array_keys($newVariables), $oldVariableNames
         );
 
         foreach ($newVariableNames as $variableName) {

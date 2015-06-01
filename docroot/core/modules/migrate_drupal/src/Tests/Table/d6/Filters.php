@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\Filters.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\Filters.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -45,13 +45,13 @@ class Filters extends DrupalDumpBase {
         'delta' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'weight' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
       ),
@@ -133,4 +133,3 @@ class Filters extends DrupalDumpBase {
   }
 
 }
-#701758e13dac19daf43516e8e4fda93e

@@ -15,7 +15,7 @@ namespace Drupal\Component\Plugin;
 interface ConfigurablePluginInterface extends DependentPluginInterface {
 
   /**
-   * Gets this plugin's configuration.
+   * Returns this plugin's configuration.
    *
    * @return array
    *   An array of this plugin's configuration.
@@ -31,7 +31,7 @@ interface ConfigurablePluginInterface extends DependentPluginInterface {
   public function setConfiguration(array $configuration);
 
   /**
-   * Gets default configuration for this plugin.
+   * Returns default configuration for this plugin.
    *
    * @return array
    *   An associative array with the default configuration.

@@ -101,7 +101,7 @@ class InstallUninstallTest extends ModuleTestBase {
       // Uninstall the original module, and check appropriate
       // hooks, tables, and log messages. (Later, we'll go back and do the
       // same thing for modules that were enabled automatically.)
-      $this->assertSuccessfulUninstall($name, $package);
+      $this->assertSuccessfullUninstall($name, $package);
     }
 
     // Go through all modules that were automatically installed, and try to
@@ -116,7 +116,7 @@ class InstallUninstallTest extends ModuleTestBase {
         $disabled_checkbox = $this->xpath('//input[@type="checkbox" and @disabled="disabled" and @name="uninstall[' . $name . ']"]');
         if (empty($disabled_checkbox)) {
           $automatically_installed = array_diff($automatically_installed, array($name));
-          $this->assertSuccessfulUninstall($name, $package);
+          $this->assertSuccessfullUninstall($name, $package);
         }
       }
       $final_count = count($automatically_installed);
@@ -151,7 +151,7 @@ class InstallUninstallTest extends ModuleTestBase {
    *   (optional) The package of the module to uninstall. Defaults
    *   to 'Core'.
    */
-  protected function assertSuccessfulUninstall($module, $package = 'Core') {
+  protected function assertSuccessfullUninstall($module, $package = 'Core') {
     $edit = array();
     if ($module == 'forum') {
       // Forum cannot be uninstalled until all of the content entities related

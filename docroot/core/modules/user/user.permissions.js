@@ -32,18 +32,16 @@
         // submitted form. If we'd automatically check existing checkboxes, the
         // permission table would be polluted with redundant entries. This
         // is deliberate, but desirable when we automatically check them.
-        var $dummy = $('<input type="checkbox" class="dummy-checkbox js-dummy-checkbox" disabled="disabled" checked="checked" />')
+        var $dummy = $('<input type="checkbox" class="dummy-checkbox" disabled="disabled" checked="checked" />')
           .attr('title', Drupal.t("This permission is inherited from the authenticated user role."))
           .hide();
 
-        $table
-          .find('input[type="checkbox"]')
-          .not('.js-rid-anonymous, .js-rid-authenticated')
-          .addClass('real-checkbox js-real-checkbox')
-          .after($dummy);
+        $table.find('input[type=checkbox]').not('.rid-anonymous, .rid-authenticated').addClass('real-checkbox').each(function () {
+          $dummy.clone().insertAfter(this);
+        });
 
         // Initialize the authenticated user checkbox.
-        $table.find('input[type=checkbox].js-rid-authenticated')
+        $table.find('input[type=checkbox].rid-authenticated')
           .on('click.permissions', self.toggle)
           // .triggerHandler() cannot be used here, as it only affects the first
           // element.
@@ -66,10 +64,10 @@
       // jQuery performs too many layout calculations for .hide() and .show(),
       // leading to a major page rendering lag on sites with many roles and
       // permissions. Therefore, we toggle visibility directly.
-      $row.find('.js-real-checkbox').each(function () {
+      $row.find('.real-checkbox').each(function () {
         this.style.display = (authCheckbox.checked ? 'none' : '');
       });
-      $row.find('.js-dummy-checkbox').each(function () {
+      $row.find('.dummy-checkbox').each(function () {
         this.style.display = (authCheckbox.checked ? '' : 'none');
       });
     }

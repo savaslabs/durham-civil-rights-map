@@ -7,14 +7,14 @@
 
 namespace Drupal\Tests\config\Unit\Menu;
 
-use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
+use Drupal\Tests\Core\Menu\LocalTaskIntegrationTest;
 
 /**
  * Tests existence of config local tasks.
  *
  * @group config
  */
-class ConfigLocalTasksTest extends LocalTaskIntegrationTestBase {
+class ConfigLocalTasksTest extends LocalTaskIntegrationTest {
 
   protected function setUp() {
     $this->directoryList = array('config' => 'core/modules/config');

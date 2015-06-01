@@ -11,7 +11,6 @@ use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Form\ViewsExposedForm;
-use Drupal\views\Plugin\CacheablePluginInterface;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\PluginBase;
@@ -35,7 +34,7 @@ use Drupal\views\Plugin\views\PluginBase;
 /**
  * Base class for Views exposed filter form plugins.
  */
-abstract class ExposedFormPluginBase extends PluginBase implements CacheablePluginInterface {
+abstract class ExposedFormPluginBase extends PluginBase {
 
   /**
    * Overrides Drupal\views\Plugin\Plugin::$usesOptions.
@@ -259,7 +258,6 @@ abstract class ExposedFormPluginBase extends PluginBase implements CacheablePlug
       );
 
       // Get an array of exposed filters, keyed by identifier option.
-      $exposed_filters = [];
       foreach ($this->view->filter as $id => $handler) {
         if ($handler->canExpose() && $handler->isExposed() && !empty($handler->options['expose']['identifier'])) {
           $exposed_filters[$handler->options['expose']['identifier']] = $id;
@@ -331,37 +329,6 @@ abstract class ExposedFormPluginBase extends PluginBase implements CacheablePlug
 
     $form_state->setRedirect('<current>');
     $form_state->setValues([]);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function isCacheable() {
-    return TRUE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheContexts() {
-    $contexts = [];
-    if ($this->options['expose_sort_order']) {
-      // The sort order query arg is just important in case there is a exposed
-      // sort order.
-      $has_exposed_sort_handler = FALSE;
-      /** @var \Drupal\views\Plugin\views\sort\SortPluginBase $sort_handler */
-      foreach ($this->displayHandler->getHandlers('sort') as $sort_handler) {
-        if ($sort_handler->isExposed()) {
-          $has_exposed_sort_handler = TRUE;
-        }
-      }
-
-      if ($has_exposed_sort_handler) {
-        $contexts[] = 'url.query_args:sort_order';
-      }
-    }
-
-    return $contexts;
   }
 
 }

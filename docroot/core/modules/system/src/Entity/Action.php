@@ -24,13 +24,6 @@ use Drupal\Component\Plugin\ConfigurablePluginInterface;
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label"
- *   },
- *   config_export = {
- *     "id",
- *     "label",
- *     "type",
- *     "plugin",
- *     "configuration",
  *   }
  * )
  */

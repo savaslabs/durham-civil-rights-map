@@ -73,11 +73,4 @@ class ListIntegerItem extends ListItemBase {
     }
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  protected static function castAllowedValue($value) {
-    return (int) $value;
-  }
-
 }

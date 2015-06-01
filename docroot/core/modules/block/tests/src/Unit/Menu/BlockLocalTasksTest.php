@@ -7,7 +7,7 @@
 
 namespace Drupal\Tests\block\Unit\Menu;
 
-use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
+use Drupal\Tests\Core\Menu\LocalTaskIntegrationTest;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
@@ -15,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  *
  * @group block
  */
-class BlockLocalTasksTest extends LocalTaskIntegrationTestBase {
+class BlockLocalTasksTest extends LocalTaskIntegrationTest {
 
   protected function setUp() {
     $this->directoryList = array('block' => 'core/modules/block');

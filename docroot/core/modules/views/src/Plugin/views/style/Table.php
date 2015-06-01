@@ -10,7 +10,6 @@ namespace Drupal\views\Plugin\views\style;
 use Drupal\Component\Plugin\Discovery\DiscoveryInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\views\Plugin\CacheablePluginInterface;
 use Drupal\views\Plugin\views\wizard\WizardInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,7 +27,7 @@ use Symfony\Component\HttpFoundation\Request;
  *   display_types = {"normal"}
  * )
  */
-class Table extends StylePluginBase implements CacheablePluginInterface {
+class Table extends StylePluginBase {
 
   /**
    * Does the style plugin for itself support to add fields to it's output.
@@ -409,7 +408,7 @@ class Table extends StylePluginBase implements CacheablePluginInterface {
       '#type' => 'checkbox',
       '#title' => $this->t('Show the empty text in the table'),
       '#default_value' => $this->options['empty_table'],
-      '#description' => $this->t('Per default the table is hidden for an empty view. With this option it is possible to show an empty table with the text in it.'),
+      '#description' => $this->t('Per default the table is hidden for an empty view. With this option it is posible to show an empty table with the text in it.'),
     );
 
     $form['description_markup'] = array(
@@ -429,28 +428,5 @@ class Table extends StylePluginBase implements CacheablePluginInterface {
     }
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function isCacheable() {
-    return TRUE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheContexts() {
-    $contexts = [];
-
-    foreach ($this->options['info'] as $field_id => $info) {
-      if (!empty($info['sortable'])) {
-        $contexts[] = 'url.query_args:order';
-        $contexts[] = 'url.query_args:sort';
-        break;
-      }
-    }
-
-    return $contexts;
-  }
 
 }

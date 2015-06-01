@@ -17,7 +17,7 @@ class ThemeAdminForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'system_themes_admin_form';
   }
 

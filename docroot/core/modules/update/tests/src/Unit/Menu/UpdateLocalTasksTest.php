@@ -7,14 +7,14 @@
 
 namespace Drupal\Tests\update\Unit\Menu;
 
-use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
+use Drupal\Tests\Core\Menu\LocalTaskIntegrationTest;
 
 /**
  * Tests existence of update local tasks.
  *
  * @group update
  */
-class UpdateLocalTasksTest extends LocalTaskIntegrationTestBase {
+class UpdateLocalTasksTest extends LocalTaskIntegrationTest {
 
   protected function setUp() {
     $this->directoryList = array('update' => 'core/modules/update');

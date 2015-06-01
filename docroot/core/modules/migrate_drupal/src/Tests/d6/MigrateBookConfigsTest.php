@@ -26,14 +26,13 @@ class MigrateBookConfigsTest extends MigrateDrupal6TestBase {
    *
    * @var array
    */
-  public static $modules = array('book', 'system', 'node', 'field', 'text', 'entity_reference');
+  public static $modules = array('book');
 
   /**
    * {@inheritdoc}
    */
   protected function setUp() {
     parent::setUp();
-
     $migration = entity_load('migration', 'd6_book_settings');
     $dumps = array(
       $this->getDumpDirectory() . '/Variable.php',

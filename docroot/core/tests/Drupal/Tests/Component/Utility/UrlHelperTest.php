@@ -359,9 +359,9 @@ class UrlHelperTest extends UnitTestCase {
       array('https://example.com/external/path', TRUE),
       array('javascript://fake-external-path', FALSE),
       // External URL without an explicit protocol.
-      array('//www.drupal.org/foo/bar?foo=bar&bar=baz&baz#foo', TRUE),
+      array('//drupal.org/foo/bar?foo=bar&bar=baz&baz#foo', TRUE),
       // Internal URL starting with a slash.
-      array('/www.drupal.org', FALSE),
+      array('/drupal.org', FALSE),
     );
   }
 

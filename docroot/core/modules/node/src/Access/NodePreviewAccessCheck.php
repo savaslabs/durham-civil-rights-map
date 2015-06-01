@@ -14,8 +14,6 @@ use Drupal\node\NodeInterface;
 
 /**
  * Determines access to node previews.
- *
- * @ingroup node_access
  */
 class NodePreviewAccessCheck implements AccessInterface {
 

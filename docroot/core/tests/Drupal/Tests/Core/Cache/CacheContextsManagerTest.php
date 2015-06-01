@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\Container;
  * @coversDefaultClass \Drupal\Core\Cache\CacheContextsManager
  * @group Cache
  */
-class CacheContextsManagerTest extends UnitTestCase {
+class CacheContextsTest extends UnitTestCase {
 
   /**
    * @covers ::optimizeTokens

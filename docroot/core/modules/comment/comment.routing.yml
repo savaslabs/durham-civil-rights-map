@@ -57,7 +57,7 @@ comment.reply:
     _title: 'Add new comment'
     pid: ~
   requirements:
-    _custom_access: '\Drupal\comment\Controller\CommentController::replyFormAccess'
+    _access: 'TRUE'
   options:
     parameters:
       entity:

@@ -85,7 +85,7 @@ class CommentAdminOverview extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'comment_admin_overview';
   }
 
@@ -213,7 +213,7 @@ class CommentAdminOverview extends FormBase {
             '#url' => $commented_entity->urlInfo(),
           ),
         ),
-        'changed' => $this->dateFormatter->format($comment->getChangedTimeAcrossTranslations(), 'short'),
+        'changed' => $this->dateFormatter->format($comment->getChangedTime(), 'short'),
       );
       $comment_uri_options = $comment->urlInfo()->getOptions();
       $links = array();

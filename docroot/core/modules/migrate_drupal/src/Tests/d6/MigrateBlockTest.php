@@ -37,8 +37,6 @@ class MigrateBlockTest extends MigrateDrupal6TestBase {
    */
   protected function setUp() {
     parent::setUp();
-    $this->installEntitySchema('block_content');
-
     $entities = array(
       entity_create('menu', array('id' => 'primary-links')),
       entity_create('menu', array('id' => 'secondary-links')),

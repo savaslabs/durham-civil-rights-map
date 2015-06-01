@@ -126,10 +126,8 @@ class CommentStatistics implements CommentStatisticsInterface {
       }
       // Default to REQUEST_TIME when entity does not have a changed property.
       $last_comment_timestamp = REQUEST_TIME;
-      // @todo Make comment statistics language aware and add some tests. See
-      //   https://www.drupal.org/node/2318875
       if ($entity instanceof EntityChangedInterface) {
-        $last_comment_timestamp = $entity->getChangedTimeAcrossTranslations();
+        $last_comment_timestamp = $entity->getChangedTime();
       }
       $query->values(array(
         'entity_id' => $entity->id(),
@@ -245,9 +243,9 @@ class CommentStatistics implements CommentStatisticsInterface {
         ->fields(array(
           'cid' => 0,
           'comment_count' => 0,
-          // Use the changed date of the entity if it's set, or default to
+          // Use the created date of the entity if it's set, or default to
           // REQUEST_TIME.
-          'last_comment_timestamp' => ($entity instanceof EntityChangedInterface) ? $entity->getChangedTimeAcrossTranslations() : REQUEST_TIME,
+          'last_comment_timestamp' => ($entity instanceof EntityChangedInterface) ? $entity->getChangedTime() : REQUEST_TIME,
           'last_comment_name' => '',
           'last_comment_uid' => $last_comment_uid,
         ))

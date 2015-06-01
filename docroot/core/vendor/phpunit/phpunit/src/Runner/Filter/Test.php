@@ -82,9 +82,7 @@ class PHPUnit_Runner_Filter_Test extends RecursiveFilterIterator
             // Escape delimiters in regular expression. Do NOT use preg_quote,
             // to keep magic characters.
             $filter = sprintf('/%s/', str_replace(
-                '/',
-                '\\/',
-                $filter
+                '/', '\\/', $filter
             ));
         }
 
@@ -105,7 +103,7 @@ class PHPUnit_Runner_Filter_Test extends RecursiveFilterIterator
         $tmp = PHPUnit_Util_Test::describe($test, false);
 
         if ($tmp[0] != '') {
-            $name = implode('::', $tmp);
+            $name = join('::', $tmp);
         } else {
             $name = $tmp[1];
         }

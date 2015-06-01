@@ -269,7 +269,7 @@ class PathAliasTest extends PathTestBase {
   /**
    * Returns the path ID.
    *
-   * @param string $alias
+   * @param $alias
    *   A string containing an aliased path.
    *
    * @return int

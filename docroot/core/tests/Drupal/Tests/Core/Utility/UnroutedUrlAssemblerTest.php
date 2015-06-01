@@ -7,8 +7,6 @@
 
 namespace Drupal\Tests\Core\Utility;
 
-use Drupal\Core\Cache\CacheableMetadata;
-use Drupal\Core\GeneratedUrl;
 use Drupal\Core\Utility\UnroutedUrlAssembler;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -85,9 +83,6 @@ class UnroutedUrlAssemblerTest extends UnitTestCase {
   public function testAssembleWithExternalUrl($uri, array $options, $expected) {
    $this->setupRequestStack(FALSE);
    $this->assertEquals($expected, $this->unroutedUrlAssembler->assemble($uri, $options));
-   $generated_url = $this->unroutedUrlAssembler->assemble($uri, $options, TRUE);
-   $this->assertEquals($expected, $generated_url->getGeneratedUrl());
-   $this->assertInstanceOf('\Drupal\Core\Cache\CacheableMetadata', $generated_url);
   }
 
   /**
@@ -102,7 +97,7 @@ class UnroutedUrlAssemblerTest extends UnitTestCase {
       ['http://example.com/test', ['https' => TRUE], 'https://example.com/test'],
       ['https://example.com/test', ['https' => FALSE], 'http://example.com/test'],
       ['https://example.com/test?foo=1#bar', [], 'https://example.com/test?foo=1#bar'],
-      ['//www.drupal.org', [], '//www.drupal.org'],
+      ['//drupal.org', [], '//drupal.org'],
     ];
   }
 
@@ -149,23 +144,12 @@ class UnroutedUrlAssemblerTest extends UnitTestCase {
    */
   public function testAssembleWithEnabledProcessing() {
     $this->setupRequestStack(FALSE);
-    $this->pathProcessor->expects($this->exactly(2))
+    $this->pathProcessor->expects($this->once())
       ->method('processOutbound')
-      ->willReturnCallback(function($path, &$options = [], Request $request = NULL, CacheableMetadata $cacheable_metadata = NULL) {
-        if ($cacheable_metadata) {
-          $cacheable_metadata->setCacheContexts(['some-cache-context']);
-        }
-        return 'test-other-uri';
-      });
-
+      ->with('test-uri', ['path_processing' => TRUE, 'fragment' => NULL, 'query' => [], 'absolute' => NULL, 'prefix' => NULL, 'script' => NULL])
+      ->willReturn('test-other-uri');
     $result = $this->unroutedUrlAssembler->assemble('base:test-uri', ['path_processing' => TRUE]);
     $this->assertEquals('/test-other-uri', $result);
-
-    $result = $this->unroutedUrlAssembler->assemble('base:test-uri', ['path_processing' => TRUE], TRUE);
-    $expected_generated_url = new GeneratedUrl();
-    $expected_generated_url->setGeneratedUrl('/test-other-uri')
-      ->setCacheContexts(['some-cache-context']);
-    $this->assertEquals($expected_generated_url, $result);
   }
 
   /**

@@ -44,8 +44,7 @@ display:
           table: aggregator_item
           field: title
           id: title
-          plugin_id: field
-          type: aggregator_title
+          plugin_id: aggregator_title_link
           alter:
             alter_text: false
             text: ''
@@ -168,15 +167,7 @@ display:
           entity_type: aggregator_item
           entity_field: description
       filters: {  }
-      sorts:
-        iid:
-          id: iid
-          table: aggregator_item
-          field: iid
-          plugin_id: standard
-          entity_type: aggregator_item
-          entity_field: iid
-          order: 'ASC'
+      sorts: {  }
   feed_1:
     display_plugin: feed
     id: feed_1

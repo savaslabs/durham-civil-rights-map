@@ -77,13 +77,13 @@ display:
         type: fields
       sorts:
         created:
-          field: uid
-          id: uid
-          order: ASC
+          field: created
+          id: created
+          order: DESC
           table: users_field_data
-          plugin_id: field
+          plugin_id: date
           entity_type: user
-          entity_field: uid
+          entity_field: created
       style:
         type: default
       title: test_groupwise_user

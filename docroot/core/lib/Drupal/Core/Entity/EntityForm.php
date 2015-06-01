@@ -129,7 +129,7 @@ class EntityForm extends FormBase implements EntityFormInterface {
   }
 
   /**
-   * Gets the actual form array to be built.
+   * Returns the actual form array to be built.
    *
    * @see \Drupal\Core\Entity\EntityForm::processForm()
    * @see \Drupal\Core\Entity\EntityForm::afterBuild()

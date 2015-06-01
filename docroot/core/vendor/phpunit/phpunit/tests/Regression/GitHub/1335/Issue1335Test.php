@@ -5,62 +5,62 @@
  */
 class Issue1335Test extends PHPUnit_Framework_TestCase
 {
-    public function testGlobalString()
+    function testGlobalString()
     {
         $this->assertEquals("Hello", $GLOBALS['globalString']);
     }
 
-    public function testGlobalIntTruthy()
+    function testGlobalIntTruthy()
     {
         $this->assertEquals(1, $GLOBALS['globalIntTruthy']);
     }
 
-    public function testGlobalIntFalsey()
+    function testGlobalIntFalsey()
     {
         $this->assertEquals(0, $GLOBALS['globalIntFalsey']);
     }
 
-    public function testGlobalFloat()
+    function testGlobalFloat()
     {
         $this->assertEquals(1.123, $GLOBALS['globalFloat']);
     }
 
-    public function testGlobalBoolTrue()
+    function testGlobalBoolTrue()
     {
         $this->assertEquals(true, $GLOBALS['globalBoolTrue']);
     }
 
-    public function testGlobalBoolFalse()
+    function testGlobalBoolFalse()
     {
         $this->assertEquals(false, $GLOBALS['globalBoolFalse']);
     }
 
-    public function testGlobalNull()
+    function testGlobalNull()
     {
         $this->assertEquals(null, $GLOBALS['globalNull']);
     }
 
-    public function testGlobalArray()
+    function testGlobalArray()
     {
         $this->assertEquals(array("foo"), $GLOBALS['globalArray']);
     }
 
-    public function testGlobalNestedArray()
+    function testGlobalNestedArray()
     {
         $this->assertEquals(array(array("foo")), $GLOBALS['globalNestedArray']);
     }
 
-    public function testGlobalObject()
+    function testGlobalObject()
     {
         $this->assertEquals((object)array("foo"=>"bar"), $GLOBALS['globalObject']);
     }
 
-    public function testGlobalObjectWithBackSlashString()
+    function testGlobalObjectWithBackSlashString()
     {
         $this->assertEquals((object)array("foo"=>"back\\slash"), $GLOBALS['globalObjectWithBackSlashString']);
     }
 
-    public function testGlobalObjectWithDoubleBackSlashString()
+    function testGlobalObjectWithDoubleBackSlashString()
     {
         $this->assertEquals((object)array("foo"=>"back\\\\slash"), $GLOBALS['globalObjectWithDoubleBackSlashString']);
     }

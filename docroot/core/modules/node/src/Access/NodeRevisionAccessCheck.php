@@ -16,8 +16,6 @@ use Symfony\Component\Routing\Route;
 
 /**
  * Provides an access checker for node revisions.
- *
- * @ingroup node_access
  */
 class NodeRevisionAccessCheck implements AccessInterface {
 

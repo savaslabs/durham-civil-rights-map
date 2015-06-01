@@ -50,7 +50,8 @@ abstract class FieldUnitTestBase extends KernelTestBase {
 
     $this->installEntitySchema('entity_test');
     $this->installEntitySchema('user');
-    $this->installSchema('system', ['router', 'sequences', 'key_value']);
+    $this->installSchema('system', array('sequences'));
+    $this->installSchema('system', array('router'));
 
     // Set default storage backend and configure the theme system.
     $this->installConfig(array('field', 'system'));

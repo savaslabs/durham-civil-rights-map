@@ -12,7 +12,7 @@ use Drupal\Component\Utility\SafeMarkup;
  */
 function views_token_info() {
   $info['types']['view'] = array(
-    'name' => t('View', [], ['context' => 'View entity type']),
+    'name' => t('View'),
     'description' => t('Tokens related to views.'),
     'needs-data' => 'view',
   );

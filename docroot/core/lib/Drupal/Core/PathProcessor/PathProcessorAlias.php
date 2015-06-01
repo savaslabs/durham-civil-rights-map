@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\PathProcessor;
 
-use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Path\AliasManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -44,7 +43,7 @@ class PathProcessorAlias implements InboundPathProcessorInterface, OutboundPathP
   /**
    * Implements Drupal\Core\PathProcessor\OutboundPathProcessorInterface::processOutbound().
    */
-  public function processOutbound($path, &$options = array(), Request $request = NULL, CacheableMetadata $cacheable_metadata = NULL) {
+  public function processOutbound($path, &$options = array(), Request $request = NULL) {
     if (empty($options['alias'])) {
       $langcode = isset($options['language']) ? $options['language']->getId() : NULL;
       $path = $this->aliasManager->getAliasByPath($path, $langcode);

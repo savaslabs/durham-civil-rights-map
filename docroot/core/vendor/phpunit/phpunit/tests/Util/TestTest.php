@@ -372,7 +372,7 @@ class Util_TestTest extends PHPUnit_Framework_TestCase
      * @covers PHPUnit_Util_Test::getLinesToBeCovered
      * @covers PHPUnit_Util_Test::getLinesToBeCoveredOrUsed
      */
-    public function testGetLinesToBeCoveredSkipsNonExistentMethods()
+    public function testGetLinesToBeCoveredSkipsNonExistantMethods()
     {
         $this->assertSame(
             array(),

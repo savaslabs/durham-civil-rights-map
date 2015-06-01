@@ -8,7 +8,6 @@
  * @package  org\bovigo\vfs
  */
 namespace org\bovigo\vfs;
-use org\bovigo\vfs\content\LargeFileContent;
 use org\bovigo\vfs\visitor\vfsStreamVisitor;
 /**
  * Some utility methods for vfsStream.
@@ -83,7 +82,7 @@ class vfsStream
         $path = str_replace('\\', '/', $path);
         // replace double slashes with single slashes
         $path = str_replace('//', '/', $path);
-        return urldecode($path);
+        return $path;
     }
 
     /**
@@ -246,9 +245,7 @@ class vfsStream
      * names.
      * File permissions are copied as well.
      * Please note that file contents will only be copied if their file size
-     * does not exceed the given $maxFileSize which defaults to 1024 KB. In case
-     * the file is larger file content will be mocked, see
-     * https://github.com/mikey179/vfsStream/wiki/MockingLargeFiles.
+     * does not exceed the given $maxFileSize which is 1024 KB.
      *
      * @param   string              $path         path to copy the structure from
      * @param   vfsStreamDirectory  $baseDir      directory to add the structure to
@@ -270,42 +267,26 @@ class vfsStream
 
         $dir = new \DirectoryIterator($path);
         foreach ($dir as $fileinfo) {
-            switch (filetype($fileinfo->getPathname())) {
-                case 'file':
-                    if ($fileinfo->getSize() <= $maxFileSize) {
-                        $content = file_get_contents($fileinfo->getPathname());
-                    } else {
-                        $content = new LargeFileContent($fileinfo->getSize());
-                    }
+            if ($fileinfo->isFile() === true) {
+                if ($fileinfo->getSize() <= $maxFileSize) {
+                    $content = file_get_contents($fileinfo->getPathname());
+                } else {
+                    $content = '';
+                }
 
-                    self::newFile(
-                            $fileinfo->getFilename(),
-                            octdec(substr(sprintf('%o', $fileinfo->getPerms()), -4))
-                        )
-                        ->withContent($content)
-                        ->at($baseDir);
-                    break;
-
-                case 'dir':
-                    if (!$fileinfo->isDot()) {
-                        self::copyFromFileSystem(
-                                $fileinfo->getPathname(),
-                                self::newDirectory(
-                                        $fileinfo->getFilename(),
-                                        octdec(substr(sprintf('%o', $fileinfo->getPerms()), -4))
-                                )->at($baseDir),
-                                $maxFileSize
-                        );
-                    }
-
-                    break;
-
-                case 'block':
-                    self::newBlock(
-                            $fileinfo->getFilename(),
-                            octdec(substr(sprintf('%o', $fileinfo->getPerms()), -4))
-                        )->at($baseDir);
-                    break;
+                self::newFile($fileinfo->getFilename(),
+                              octdec(substr(sprintf('%o', $fileinfo->getPerms()), -4))
+                      )
+                    ->withContent($content)
+                    ->at($baseDir);
+            } elseif ($fileinfo->isDir() === true && $fileinfo->isDot() === false) {
+                self::copyFromFileSystem($fileinfo->getPathname(),
+                                         self::newDirectory($fileinfo->getFilename(),
+                                                            octdec(substr(sprintf('%o', $fileinfo->getPerms()), -4))
+                                               )
+                                             ->at($baseDir),
+                                         $maxFileSize
+                );
             }
         }
 
@@ -460,3 +441,4 @@ class vfsStream
         self::$dotFiles = true;
     }
 }
+?>

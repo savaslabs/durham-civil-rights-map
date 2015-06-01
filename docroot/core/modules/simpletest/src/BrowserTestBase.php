@@ -52,8 +52,6 @@ use Symfony\Component\HttpFoundation\Request;
  */
 abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
 
-  use SessionTestTrait;
-
   /**
    * Class loader.
    *
@@ -159,6 +157,13 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    * @var string
    */
   protected $profile = 'testing';
+
+  /**
+   * The current session name, if available.
+   *
+   * @var string
+   */
+  protected $sessionName;
 
   /**
    * The current user logged in using the Mink controlled browser.
@@ -697,7 +702,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     ), t('Log in'));
 
     // @see BrowserTestBase::drupalUserIsLoggedIn()
-    $account->sessionId = $this->getSession()->getCookie($this->getSessionName());
+    $account->sessionId = $this->getSession()->getCookie(session_name());
     $this->assertTrue($this->drupalUserIsLoggedIn($account), SafeMarkup::format('User %name successfully logged in.', array('name' => $account->getUsername())));
 
     $this->loggedInUser = $account;
@@ -830,9 +835,11 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
       'passRaw' => $this->randomMachineName(),
     ));
 
-    // The child site derives its session name from the database prefix when
-    // running web tests.
-    $this->generateSessionName($this->databasePrefix);
+    // Some tests (SessionTest and SessionHttpsTest) need to examine whether the
+    // proper session cookies were set on a response. Because the child site
+    // uses the same session name as the test runner, it is necessary to make
+    // that available to test-methods.
+    $this->sessionName = session_name();
 
     // Get parameters for install_drupal() before removing global variables.
     $parameters = $this->installParameters();
@@ -922,7 +929,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // By default, verbosely display all errors and disable all production
     // environment optimizations for all tests to avoid needless overhead and
     // ensure a sane default experience for test authors.
-    // @see https://www.drupal.org/node/2259167
+    // @see https://drupal.org/node/2259167
     $config->getEditable('system.logging')
       ->set('error_level', 'verbose')
       ->save();

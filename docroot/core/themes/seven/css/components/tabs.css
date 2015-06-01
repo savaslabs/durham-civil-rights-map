@@ -56,7 +56,6 @@
   background-color: #fafaf7;
 }
 li.tabs__tab {
-  display: block;
   padding: 0;
 }
 /* This is required to win over specifity of [dir="rtl"] .tabs__tab */

@@ -12,7 +12,6 @@ use Drupal\Tests\UnitTestCase;
 
 /**
  * @coversDefaultClass Drupal\system\SystemRequirements
- * @group system
  */
 class SystemRequirementsTest extends UnitTestCase {
 

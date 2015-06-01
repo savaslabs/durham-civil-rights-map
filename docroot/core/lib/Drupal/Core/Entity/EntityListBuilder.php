@@ -101,7 +101,7 @@ class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderIn
   }
 
   /**
-   * Gets the escaped label of an entity.
+   * Returns the escaped label of an entity.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity being listed.
@@ -234,7 +234,7 @@ class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderIn
   }
 
   /**
-   * Gets the title of the page.
+   * Returns the title of the page.
    *
    * @return string
    *   A string title of the page.

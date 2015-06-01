@@ -7,14 +7,14 @@
 
 namespace Drupal\user\Tests;
 
-use Drupal\content_translation\Tests\ContentTranslationUITestBase;
+use Drupal\content_translation\Tests\ContentTranslationUITest;
 
 /**
  * Tests the User Translation UI.
  *
  * @group user
  */
-class UserTranslationUITest extends ContentTranslationUITestBase {
+class UserTranslationUITest extends ContentTranslationUITest {
 
   /**
    * The user name of the test user.
@@ -40,14 +40,14 @@ class UserTranslationUITest extends ContentTranslationUITestBase {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getTranslatorPermission().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getTranslatorPermission().
    */
   protected function getTranslatorPermissions() {
     return array_merge(parent::getTranslatorPermissions(), array('administer users'));
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getNewEntityValues().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getNewEntityValues().
    */
   protected function getNewEntityValues($langcode) {
     // User name is not translatable hence we use a fixed value.

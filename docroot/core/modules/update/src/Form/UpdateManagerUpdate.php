@@ -50,7 +50,7 @@ class UpdateManagerUpdate extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'update_manager_update_form';
   }
 

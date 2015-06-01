@@ -38,10 +38,10 @@ class ContextualUnitTest extends KernelTestBase {
           'route_parameters' => array(
             'node' => '14031991',
           ),
-          'metadata' => array('langcode' => 'en'),
+          'metadata' => array()
         ),
       ),
-      'id' => 'node:node=14031991:langcode=en',
+      'id' => 'node:node=14031991:',
     );
 
     // Test branch conditions:
@@ -56,10 +56,10 @@ class ContextualUnitTest extends KernelTestBase {
             'key' => 'baz',
             'qux',
           ),
-          'metadata' => array('langcode' => 'en'),
+          'metadata' => array(),
         ),
       ),
-      'id' => 'foo:0=bar&key=baz&1=qux:langcode=en',
+      'id' => 'foo:0=bar&key=baz&1=qux:',
     );
 
     // Test branch conditions:
@@ -75,11 +75,10 @@ class ContextualUnitTest extends KernelTestBase {
           'metadata' => array(
             'location' => 'page',
             'display' => 'page_1',
-            'langcode' => 'en',
           ),
         ),
       ),
-      'id' => 'views_ui_edit:view=frontpage:location=page&display=page_1&langcode=en',
+      'id' => 'views_ui_edit:view=frontpage:location=page&display=page_1',
     );
 
     // Test branch conditions:
@@ -91,7 +90,7 @@ class ContextualUnitTest extends KernelTestBase {
           'route_parameters' => array(
             'node' => '14031991',
           ),
-          'metadata' => array('langcode' => 'en'),
+          'metadata' => array(),
         ),
         'foo' => array(
           'route_parameters' => array(
@@ -99,14 +98,14 @@ class ContextualUnitTest extends KernelTestBase {
             'key' => 'baz',
             'qux',
           ),
-          'metadata' => array('langcode' => 'en'),
+          'metadata' => array(),
         ),
         'edge' => array(
           'route_parameters' => array('20011988'),
-          'metadata' => array('langcode' => 'en'),
+          'metadata' => array(),
         ),
       ),
-      'id' => 'node:node=14031991:langcode=en|foo:0=bar&key=baz&1=qux:langcode=en|edge:0=20011988:langcode=en',
+      'id' => 'node:node=14031991:|foo:0=bar&key=baz&1=qux:|edge:0=20011988:',
     );
 
     return $tests;
@@ -131,5 +130,4 @@ class ContextualUnitTest extends KernelTestBase {
       $this->assertIdentical(_contextual_id_to_links($test['id']), $test['links']);
     }
   }
-
 }

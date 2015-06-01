@@ -7,7 +7,6 @@
 
 namespace Drupal\entity_test\Entity;
 
-use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityChangedInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -32,8 +31,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
  * )
  */
 class EntityTestConstraints extends EntityTest implements EntityChangedInterface {
-
-  use EntityChangedTrait;
 
   /**
    * {@inheritdoc}

@@ -15,7 +15,6 @@ use Drupal\Core\TypedData\Type\FloatInterface;
 use Drupal\Core\TypedData\Type\IntegerInterface;
 use Drupal\Core\TypedData\Type\StringInterface;
 use Drupal\Core\TypedData\Type\UriInterface;
-use Drupal\Core\TypedData\Validation\TypedDataAwareValidatorTrait;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -23,8 +22,6 @@ use Symfony\Component\Validator\ConstraintValidator;
  * Validates the PrimitiveType constraint.
  */
 class PrimitiveTypeConstraintValidator extends ConstraintValidator {
-
-  use TypedDataAwareValidatorTrait;
 
   /**
    * Implements \Symfony\Component\Validator\ConstraintValidatorInterface::validate().
@@ -35,7 +32,7 @@ class PrimitiveTypeConstraintValidator extends ConstraintValidator {
       return;
     }
 
-    $typed_data = $this->getTypedData();
+    $typed_data = $this->context->getMetadata()->getTypedData();
     $valid = TRUE;
     if ($typed_data instanceof BinaryInterface && !is_resource($value)) {
       $valid = FALSE;

@@ -13,11 +13,18 @@ use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Config\ConfigImporter;
 use Drupal\Core\Config\StorageComparer;
+use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Config\StorageInterface;
+use Drupal\Core\Language\Language;
+use Drupal\Core\Session\AccountProxy;
+use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\StreamWrapper\PublicStream;
 use Drupal\Core\Utility\Error;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Base class for Drupal tests.
@@ -26,9 +33,6 @@ use Drupal\Core\Utility\Error;
  * \Drupal\simpletest\WebTestBase or \Drupal\simpletest\KernelTestBase.
  */
 abstract class TestBase {
-
-  use SessionTestTrait;
-
   /**
    * The test run ID.
    *
@@ -126,7 +130,7 @@ abstract class TestBase {
    *
    * @var string
    * @todo Remove all remnants of $GLOBALS['conf'].
-   * @see https://www.drupal.org/node/2183323
+   * @see https://drupal.org/node/2183323
    */
   protected $originalConf;
 
@@ -183,7 +187,7 @@ abstract class TestBase {
   protected $originalProfile;
 
   /**
-   * The name of the session cookie of the test-runner.
+   * The name of the session cookie.
    *
    * @var string
    */
@@ -1140,7 +1144,7 @@ abstract class TestBase {
     $this->originalSettings = Settings::getAll();
     $this->originalConfig = $GLOBALS['config'];
     // @todo Remove all remnants of $GLOBALS['conf'].
-    // @see https://www.drupal.org/node/2183323
+    // @see https://drupal.org/node/2183323
     $this->originalConf = isset($GLOBALS['conf']) ? $GLOBALS['conf'] : NULL;
 
     // Backup statics and globals.
@@ -1277,7 +1281,7 @@ abstract class TestBase {
     }
 
     // Sleep for 50ms to allow shutdown functions and terminate events to
-    // complete. Further information: https://www.drupal.org/node/2194357.
+    // complete. Further information: https://drupal.org/node/2194357.
     usleep(50000);
 
     // Remove all prefixed tables.
@@ -1470,7 +1474,7 @@ abstract class TestBase {
 
     // Starting with a space means that length might not be what is expected.
     // Starting with an @ sign causes CURL to fail if used in conjunction with a
-    // file upload. See https://www.drupal.org/node/2174997.
+    // file upload, see https://drupal.org/node/2174997.
     if (preg_match('/^(\s|@)/', $string)) {
       return FALSE;
     }
@@ -1636,7 +1640,7 @@ abstract class TestBase {
   }
 
   /**
-   * Configuration accessor for tests. Returns non-overridden configuration.
+   * Configuration accessor for tests. Returns non-overriden configuration.
    *
    * @param $name
    *   Configuration name.

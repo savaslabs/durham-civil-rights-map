@@ -404,7 +404,7 @@ class PHPUnit_Util_XML
                 }
 
                 if ($classes) {
-                    $tag['class'] = implode(' ', $classes);
+                    $tag['class'] = join(' ', $classes);
                 }
 
                 if ($attrs) {

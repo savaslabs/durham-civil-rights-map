@@ -7,14 +7,14 @@
 
 namespace Drupal\Tests\action\Unit\Menu;
 
-use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
+use Drupal\Tests\Core\Menu\LocalTaskIntegrationTest;
 
 /**
  * Tests action local tasks.
  *
  * @group action
  */
-class ActionLocalTasksTest extends LocalTaskIntegrationTestBase {
+class ActionLocalTasksTest extends LocalTaskIntegrationTest {
 
   protected function setUp() {
     $this->directoryList = array('action' => 'core/modules/action');

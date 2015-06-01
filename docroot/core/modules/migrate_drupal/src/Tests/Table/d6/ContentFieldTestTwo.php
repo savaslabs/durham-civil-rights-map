@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\ContentFieldTestTwo.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\ContentFieldTestTwo.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -89,4 +89,3 @@ class ContentFieldTestTwo extends DrupalDumpBase {
   }
 
 }
-#4504cbbc74e0d013eb107a371d85275c

@@ -110,11 +110,4 @@ class ListFloatItem extends ListItemBase {
     return $values;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  protected static function castAllowedValue($value) {
-    return (float) $value;
-  }
-
 }

@@ -7,6 +7,8 @@
 
 namespace Drupal\content_translation;
 
+use Drupal\Core\Entity\EntityChangedInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\user\UserInterface;
 
 /**
@@ -15,7 +17,7 @@ use Drupal\user\UserInterface;
  * This acts as a wrapper for an entity translation object, encapsulating the
  * logic needed to retrieve translation metadata.
  */
-interface ContentTranslationMetadataWrapperInterface {
+interface ContentTranslationMetadataWrapperInterface extends EntityChangedInterface {
 
   /**
    * Retrieves the source language for this translation.
@@ -106,14 +108,6 @@ interface ContentTranslationMetadataWrapperInterface {
    * @return $this
    */
   public function setCreatedTime($timestamp);
-
-  /**
-   * Returns the timestamp of the last entity change from current translation.
-   *
-   * @return int
-   *   The timestamp of the last entity save operation.
-   */
-  public function getChangedTime();
 
   /**
    * Sets the translation modification timestamp.

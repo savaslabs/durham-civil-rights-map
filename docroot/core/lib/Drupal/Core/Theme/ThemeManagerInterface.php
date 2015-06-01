@@ -18,9 +18,6 @@ interface ThemeManagerInterface {
   /**
    * Generates themed output.
    *
-   * See the @link themeable Default theme implementations topic @endlink for
-   * details.
-   *
    * @param string $hook
    *   The name of the theme hook to call.
    * @param array $variables
@@ -28,6 +25,8 @@ interface ThemeManagerInterface {
    *
    * @return string
    *   The rendered output.
+   *
+   * @see _theme
    */
   public function render($hook, array $variables);
 

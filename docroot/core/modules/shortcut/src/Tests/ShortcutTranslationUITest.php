@@ -7,8 +7,7 @@
 
 namespace Drupal\shortcut\Tests;
 
-use Drupal\content_translation\Tests\ContentTranslationUITestBase;
-use Drupal\Core\Entity\EntityChangedInterface;
+use Drupal\content_translation\Tests\ContentTranslationUITest;
 use Drupal\Core\Language\Language;
 
 /**
@@ -16,7 +15,7 @@ use Drupal\Core\Language\Language;
  *
  * @group Shortcut
  */
-class ShortcutTranslationUITest extends ContentTranslationUITestBase {
+class ShortcutTranslationUITest extends ContentTranslationUITest {
 
   /**
    * Modules to enable.
@@ -74,7 +73,7 @@ class ShortcutTranslationUITest extends ContentTranslationUITestBase {
         $this->drupalGet('<front>', array('language' => $language));
         $expected_path = \Drupal::urlGenerator()->generateFromRoute('user.page', array(), array('language' => $language));
         $label = $entity->getTranslation($langcode)->label();
-        $elements = $this->xpath('//nav[contains(@class, "toolbar-lining")]/ul[@class="toolbar-menu"]/li/a[contains(@href, :href) and normalize-space(text())=:label]', array(':href' => $expected_path, ':label' => $label));
+        $elements = $this->xpath('//nav[contains(@class, "toolbar-lining")]/ul[@class="menu"]/li/a[contains(@href, :href) and normalize-space(text())=:label]', array(':href' => $expected_path, ':label' => $label));
         $this->assertTrue(!empty($elements), format_string('Translated @language shortcut link @label found.', array('@label' => $label, '@language' => $language->getName())));
       }
     }
@@ -101,18 +100,6 @@ class ShortcutTranslationUITest extends ContentTranslationUITestBase {
         $this->assertRaw($title);
       }
     }
-  }
-
-  /**
-   * Tests the basic translation workflow.
-   */
-  protected function doTestTranslationChanged() {
-    $entity = entity_load($this->entityTypeId, $this->entityId, TRUE);
-
-    $this->assertFalse(
-      $entity instanceof EntityChangedInterface,
-      format_string('%entity is not implementing EntityChangedInterface.' , array('%entity' => $this->entityTypeId))
-    );
   }
 
 }

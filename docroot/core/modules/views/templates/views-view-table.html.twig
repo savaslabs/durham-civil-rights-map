@@ -34,6 +34,8 @@
 #}
 {%
   set classes = [
+    'views-table',
+    'views-view-table',
     'cols-' ~ header|length,
     responsive ? 'responsive-enabled',
     sticky ? 'sticky-enabled',
@@ -71,7 +73,7 @@
               ]
             %}
           {% endif %}
-          <th{{ column.attributes.addClass(column_classes).setAttribute('scope', 'col') }}>
+          <th{{ column.attributes.addClass(column_classes) }} scope="col">
             {{ column.content }}
           </th>
         {% endfor %}

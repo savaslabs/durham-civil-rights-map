@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\ProfileFields.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\ProfileFields.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -64,31 +64,31 @@ class ProfileFields extends DrupalDumpBase {
         'weight' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'required' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'register' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'visibility' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'autocomplete' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'options' => array(
@@ -215,4 +215,3 @@ class ProfileFields extends DrupalDumpBase {
   }
 
 }
-#5b52398061f1ff1fd90ffb8fb91059a2

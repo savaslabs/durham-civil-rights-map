@@ -18,7 +18,7 @@ use Drupal\Component\Utility\SafeMarkup;
 /**
  * Default implementation of the module installer.
  *
- * It registers the module in config, installs its own configuration,
+ * It registers the module in config, install its own configuration,
  * installs the schema, updates the Drupal kernel and more.
  */
 class ModuleInstaller implements ModuleInstallerInterface {
@@ -155,12 +155,10 @@ class ModuleInstaller implements ModuleInstallerInterface {
         // exceptions if the configuration is not valid.
         $config_installer->checkConfigurationToInstall('module', $module);
 
-        // Save this data without checking schema. This is a performance
-        // improvement for module installation.
         $extension_config
           ->set("module.$module", 0)
           ->set('module', module_config_sort($extension_config->get('module')))
-          ->save(TRUE);
+          ->save();
 
         // Prepare the new module list, sorted by weight, including filenames.
         // This list is used for both the ModuleHandler and DrupalKernel. It
@@ -270,7 +268,7 @@ class ModuleInstaller implements ModuleInstallerInterface {
         // Modules can alter theme info, so refresh theme data.
         // @todo ThemeHandler cannot be injected into ModuleHandler, since that
         //   causes a circular service dependency.
-        // @see https://www.drupal.org/node/2208429
+        // @see https://drupal.org/node/2208429
         \Drupal::service('theme_handler')->refreshInfo();
 
         // Allow the module to perform install tasks.
@@ -387,9 +385,8 @@ class ModuleInstaller implements ModuleInstallerInterface {
       // Remove the schema.
       drupal_uninstall_schema($module);
 
-      // Remove the module's entry from the config. Don't check schema when
-      // uninstalling a module since we are only clearing a key.
-      \Drupal::configFactory()->getEditable('core.extension')->clear("module.$module")->save(TRUE);
+      // Remove the module's entry from the config.
+      \Drupal::configFactory()->getEditable('core.extension')->clear("module.$module")->save();
 
       // Update the module handler to remove the module.
       // The current ModuleHandler instance is obsolete with the kernel rebuild
@@ -418,7 +415,7 @@ class ModuleInstaller implements ModuleInstallerInterface {
       // Modules can alter theme info, so refresh theme data.
       // @todo ThemeHandler cannot be injected into ModuleHandler, since that
       //   causes a circular service dependency.
-      // @see https://www.drupal.org/node/2208429
+      // @see https://drupal.org/node/2208429
       \Drupal::service('theme_handler')->refreshInfo();
 
       \Drupal::logger('system')->info('%module module uninstalled.', array('%module' => $module));

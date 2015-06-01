@@ -20,6 +20,5 @@ process:
   filesize: filesize
   status: status
   changed: timestamp
-  uid: uid
 destination:
   plugin: entity:file

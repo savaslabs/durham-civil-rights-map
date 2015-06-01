@@ -7,8 +7,6 @@
 
 namespace Drupal\Core\Routing;
 
-use Drupal\Core\Cache\CacheableMetadata;
-use Drupal\Core\GeneratedUrl;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\RequestContext as SymfonyRequestContext;
 use Symfony\Component\Routing\Route as SymfonyRoute;
@@ -277,13 +275,11 @@ class UrlGenerator implements UrlGeneratorInterface {
   /**
    * {@inheritdoc}
    */
-  public function generateFromRoute($name, $parameters = array(), $options = array(), $collect_cacheability_metadata = FALSE) {
-    $generated_url = $collect_cacheability_metadata ? new GeneratedUrl() : NULL;
-
+  public function generateFromRoute($name, $parameters = array(), $options = array()) {
     $options += array('prefix' => '');
     $route = $this->getRoute($name);
     $name = $this->getRouteDebugMessage($name);
-    $this->processRoute($name, $route, $parameters, $generated_url);
+    $this->processRoute($name, $route, $parameters);
 
     $query_params = [];
     // Symfony adds any parameters that are not path slugs as query strings.
@@ -292,7 +288,7 @@ class UrlGenerator implements UrlGeneratorInterface {
     }
 
     $path = $this->getInternalPathFromRoute($name, $route, $parameters, $query_params);
-    $path = $this->processPath($path, $options, $generated_url);
+    $path = $this->processPath($path, $options);
 
     if (!empty($options['prefix'])) {
       $path = ltrim($path, '/');
@@ -320,8 +316,7 @@ class UrlGenerator implements UrlGeneratorInterface {
         }
       }
 
-      $url = $base_url . $path . $fragment;
-      return $collect_cacheability_metadata ? $generated_url->setGeneratedUrl($url) : $url;
+      return $base_url . $path . $fragment;
     }
 
     $base_url = $this->context->getBaseUrl();
@@ -330,11 +325,10 @@ class UrlGenerator implements UrlGeneratorInterface {
     if (!$absolute || !$host = $this->context->getHost()) {
 
       if ($route->getOption('_only_fragment')) {
-        return $collect_cacheability_metadata ? $generated_url->setGeneratedUrl($fragment) : $fragment;
+        return $fragment;
       }
 
-      $url = $base_url . $path . $fragment;
-      return $collect_cacheability_metadata ? $generated_url->setGeneratedUrl($url) : $url;
+      return $base_url . $path . $fragment;
     }
 
     // Prepare an absolute URL by getting the correct scheme, host and port from
@@ -355,20 +349,13 @@ class UrlGenerator implements UrlGeneratorInterface {
     } elseif ('https' === $scheme && 443 != $this->context->getHttpsPort()) {
       $port = ':' . $this->context->getHttpsPort();
     }
-    if ($collect_cacheability_metadata) {
-      $generated_url->addCacheContexts(['url.site']);
-    }
-    $url = $scheme . '://' . $host . $port . $base_url . $path . $fragment;
-    return $collect_cacheability_metadata ? $generated_url->setGeneratedUrl($url) : $url;
-
+    return $scheme . '://' . $host . $port . $base_url . $path . $fragment;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function generateFromPath($path = NULL, $options = array(), $collect_cacheability_metadata = FALSE) {
-    $generated_url = $collect_cacheability_metadata ? new GeneratedUrl() : NULL;
-
+  public function generateFromPath($path = NULL, $options = array()) {
     $request = $this->requestStack->getCurrentRequest();
     $current_base_path = $request->getBasePath() . '/';
     $current_base_url = $request->getSchemeAndHttpHost() . $current_base_path;
@@ -431,11 +418,10 @@ class UrlGenerator implements UrlGeneratorInterface {
         }
       }
       // Reassemble.
-      $url = $path . $options['fragment'];
-      return $collect_cacheability_metadata ? $generated_url->setGeneratedUrl($url) : $url;
+      return $path . $options['fragment'];
     }
     else {
-      $path = ltrim($this->processPath($path, $options, $generated_url), '/');
+      $path = ltrim($this->processPath($path, $options), '/');
     }
 
     if (!isset($options['script'])) {
@@ -463,20 +449,15 @@ class UrlGenerator implements UrlGeneratorInterface {
     $base = $options['absolute'] ? $options['base_url'] : $current_base_path;
     $prefix = empty($path) ? rtrim($options['prefix'], '/') : $options['prefix'];
 
-    if ($options['absolute'] && $collect_cacheability_metadata) {
-      $generated_url->addCacheContexts(['url.site']);
-    }
-
     $path = str_replace('%2F', '/', rawurlencode($prefix . $path));
     $query = $options['query'] ? ('?' . UrlHelper::buildQuery($options['query'])) : '';
-    $url = $base . $options['script'] . $path . $query . $options['fragment'];
-    return $collect_cacheability_metadata ? $generated_url->setGeneratedUrl($url) : $url;
+    return $base . $options['script'] . $path . $query . $options['fragment'];
   }
 
   /**
    * Passes the path to a processor manager to allow alterations.
    */
-  protected function processPath($path, &$options = array(), CacheableMetadata $cacheable_metadata = NULL) {
+  protected function processPath($path, &$options = array()) {
     // Router-based paths may have a querystring on them.
     if ($query_pos = strpos($path, '?')) {
       // We don't need to do a strict check here because position 0 would mean we
@@ -488,7 +469,7 @@ class UrlGenerator implements UrlGeneratorInterface {
       $actual_path = $path;
       $query_string = '';
     }
-    $path = '/' . $this->pathProcessor->processOutbound(trim($actual_path, '/'), $options, $this->requestStack->getCurrentRequest(), $cacheable_metadata);
+    $path = '/' . $this->pathProcessor->processOutbound(trim($actual_path, '/'), $options, $this->requestStack->getCurrentRequest());
     $path .= $query_string;
     return $path;
   }
@@ -502,11 +483,9 @@ class UrlGenerator implements UrlGeneratorInterface {
    *   The route object to process.
    * @param array $parameters
    *   An array of parameters to be passed to the route compiler.
-   * @param \Drupal\Core\Cache\CacheableMetadata $cacheable_metadata
-   *   (optional) Object to collect route processors' cacheability.
    */
-  protected function processRoute($name, SymfonyRoute $route, array &$parameters, CacheableMetadata $cacheable_metadata = NULL) {
-    $this->routeProcessor->processOutbound($name, $route, $parameters, $cacheable_metadata);
+  protected function processRoute($name, SymfonyRoute $route, array &$parameters) {
+    $this->routeProcessor->processOutbound($name, $route, $parameters);
   }
 
   /**

@@ -23,7 +23,7 @@ use Drupal\Core\Plugin\PluginFormInterface;
 interface SelectionInterface extends PluginFormInterface {
 
   /**
-   * Gets the list of referenceable entities.
+   * Returns a list of referenceable entities.
    *
    * @return array
    *   A nested array of entities, the first level is keyed by the

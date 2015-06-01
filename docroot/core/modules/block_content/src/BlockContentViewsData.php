@@ -28,13 +28,18 @@ class BlockContentViewsData extends EntityViewsData {
 
     $data['block_content_field_data']['type']['field']['id'] = 'field';
 
-    $data['block_content']['block_content_listing_empty'] = array(
-      'title' => t('Empty block library behavior'),
-      'help' => t('Provides a link to add a new block.'),
-      'area' => array(
-        'id' => 'block_content_listing_empty',
-      ),
-    );
+    // @todo Figure out the way to integrate this automatic in
+    //   content_translation https://www.drupal.org/node/2410261.
+    if ($this->moduleHandler->moduleExists('content_translation')) {
+      $data['block_content']['translation_link'] = array(
+        'title' => $this->t('Translation link'),
+        'help' => $this->t('Provide a link to the translations overview for custom blocks.'),
+        'field' => array(
+          'id' => 'content_translation_link',
+        ),
+      );
+    }
+
     // Advertise this table as a possible base table.
     $data['block_content_revision']['table']['base']['help'] = $this->t('Block Content revision is a history of changes to block content.');
     $data['block_content_revision']['table']['base']['defaults']['title'] = 'info';

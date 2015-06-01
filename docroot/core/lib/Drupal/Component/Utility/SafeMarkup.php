@@ -153,13 +153,13 @@ class SafeMarkup {
   }
 
   /**
-  * Gets all strings currently marked as safe.
+  * Retrieves all strings currently marked as safe.
   *
   * This is useful for the batch and form APIs, where it is important to
   * preserve the safe markup state across page requests.
   *
   * @return array
-  *   An array of strings currently marked safe.
+  *   Returns all strings currently marked safe.
   */
   public static function getAll() {
     return static::$safeStrings;

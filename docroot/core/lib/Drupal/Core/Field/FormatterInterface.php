@@ -60,7 +60,7 @@ interface FormatterInterface extends PluginSettingsInterface {
    * items.
    *
    * @param \Drupal\Core\Field\FieldItemListInterface[] $entities_items
-   *   An array with the field values from the multiple entities being rendered.
+   *   Array of field values, keyed by entity ID.
    */
   public function prepareView(array $entities_items);
 

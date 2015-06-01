@@ -18,12 +18,6 @@ use Drupal\editor\EditorInterface;
  *   label = @Translation("Text Editor"),
  *   entity_keys = {
  *     "id" = "format"
- *   },
- *   config_export = {
- *     "format",
- *     "editor",
- *     "settings",
- *     "image_upload",
  *   }
  * )
  */

@@ -18,7 +18,7 @@ use Symfony\Component\Routing\Route;
  * @coversDefaultClass \Drupal\Core\Routing\RouteMatch
  * @group Routing
  */
-class RouteMatchTest extends RouteMatchTestBase {
+class RouteMatchTest extends RouteMatchBaseTest {
 
   /**
    * {@inheritdoc}

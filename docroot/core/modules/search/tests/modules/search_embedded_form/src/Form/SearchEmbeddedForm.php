@@ -18,7 +18,7 @@ class SearchEmbeddedForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'search_embedded_form';
   }
 

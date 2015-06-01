@@ -46,7 +46,7 @@ class EntityReference extends DataReferenceBase {
   protected $id;
 
   /**
-   * Gets the definition of the referenced entity.
+   * Returns the definition of the referenced entity.
    *
    * @return \Drupal\Core\Entity\TypedData\EntityDataDefinitionInterface
    *   The reference target's definition.

@@ -22,8 +22,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Defines a controller class that handles the node grants system.
  *
  * This is used to build node query access.
- *
- * @ingroup node_access
  */
 class NodeGrantDatabaseStorage implements NodeGrantDatabaseStorageInterface {
 

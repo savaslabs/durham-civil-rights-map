@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\Access.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\Access.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -45,7 +45,7 @@ class Access extends DrupalDumpBase {
         'status' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
       ),
@@ -60,4 +60,3 @@ class Access extends DrupalDumpBase {
   }
 
 }
-#906d752540b89c65dcab417eeb749669

@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\NodeType.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\NodeType.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -54,7 +54,7 @@ class NodeType extends DrupalDumpBase {
         'has_title' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '10',
+          'length' => '3',
           'unsigned' => TRUE,
         ),
         'title_label' => array(
@@ -66,7 +66,7 @@ class NodeType extends DrupalDumpBase {
         'has_body' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '10',
+          'length' => '3',
           'unsigned' => TRUE,
         ),
         'body_label' => array(
@@ -78,25 +78,25 @@ class NodeType extends DrupalDumpBase {
         'min_word_count' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '10',
+          'length' => '5',
           'unsigned' => TRUE,
         ),
         'custom' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'modified' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'locked' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
         'orig_type' => array(
@@ -292,4 +292,3 @@ class NodeType extends DrupalDumpBase {
   }
 
 }
-#eed184e2169278835cffc9a9284bd8a1

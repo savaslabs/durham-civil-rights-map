@@ -84,7 +84,7 @@ class PoHeader {
   }
 
   /**
-   * Gets the plural form.
+   * Get the plural form.
    *
    * @return string
    *   Plural form component from the header, for example:
@@ -105,7 +105,7 @@ class PoHeader {
   }
 
   /**
-   * Gets the human readable language name.
+   * Get the human readable language name.
    *
    * @return string
    *   The human readable language name.
@@ -125,7 +125,7 @@ class PoHeader {
   }
 
   /**
-   * Gets the project name.
+   * Get the project name.
    *
    * @return string
    *   The human readable project name.

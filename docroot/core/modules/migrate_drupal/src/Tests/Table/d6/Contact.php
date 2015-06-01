@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\Contact.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\Contact.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -56,7 +56,7 @@ class Contact extends DrupalDumpBase {
         'selected' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
       ),
@@ -94,4 +94,3 @@ class Contact extends DrupalDumpBase {
   }
 
 }
-#e530f86fd4d7ae2251ec4f485ae0e917

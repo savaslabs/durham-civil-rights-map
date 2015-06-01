@@ -13,12 +13,12 @@ namespace Drupal\Component\Annotation;
 interface AnnotationInterface {
 
   /**
-   * Gets the value of an annotation.
+   * Returns the value of an annotation.
    */
   public function get();
 
   /**
-   * Gets the name of the provider of the annotated class.
+   * Returns the name of the provider of the annotated class.
    *
    * @return string
    */
@@ -32,14 +32,14 @@ interface AnnotationInterface {
   public function setProvider($provider);
 
   /**
-   * Gets the unique ID for this annotated class.
+   * Returns the unique ID for this annotated class.
    *
    * @return string
    */
   public function getId();
 
   /**
-   * Gets the class of the annotated class.
+   * Returns the class of the annotated class.
    *
    * @return string
    */

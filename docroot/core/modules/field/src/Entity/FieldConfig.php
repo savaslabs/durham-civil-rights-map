@@ -28,20 +28,6 @@ use Drupal\field\FieldConfigInterface;
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label"
- *   },
- *   config_export = {
- *     "id",
- *     "field_name",
- *     "entity_type",
- *     "bundle",
- *     "label",
- *     "description",
- *     "required",
- *     "translatable",
- *     "default_value",
- *     "default_value_callback",
- *     "settings",
- *     "field_type",
  *   }
  * )
  */
@@ -60,7 +46,7 @@ class FieldConfig extends FieldConfigBase implements FieldConfigInterface {
    *
    * @var bool
    */
-  protected $deleted = FALSE;
+  public $deleted = FALSE;
 
   /**
    * The associated FieldStorageConfig entity.
@@ -160,7 +146,7 @@ class FieldConfig extends FieldConfigBase implements FieldConfigInterface {
 
     if ($this->isNew()) {
       // Notify the entity storage.
-      $entity_manager->onFieldDefinitionCreate($this);
+      $entity_manager->getStorage($this->entity_type)->onFieldDefinitionCreate($this);
     }
     else {
       // Some updates are always disallowed.
@@ -174,7 +160,7 @@ class FieldConfig extends FieldConfigBase implements FieldConfigInterface {
         throw new FieldException("Cannot change an existing field's storage.");
       }
       // Notify the entity storage.
-      $entity_manager->onFieldDefinitionUpdate($this, $this->original);
+      $entity_manager->getStorage($this->entity_type)->onFieldDefinitionUpdate($this, $this->original);
     }
 
     parent::preSave($storage);
@@ -221,7 +207,7 @@ class FieldConfig extends FieldConfigBase implements FieldConfigInterface {
     // Notify the entity storage.
     foreach ($fields as $field) {
       if (!$field->deleted) {
-        \Drupal::entityManager()->onFieldDefinitionDelete($field);
+        \Drupal::entityManager()->getStorage($field->entity_type)->onFieldDefinitionDelete($field);
       }
     }
 

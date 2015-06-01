@@ -8,7 +8,6 @@
 namespace Drupal\migrate_drupal\Tests\d6;
 
 use Drupal\migrate_drupal\Tests\MigrateFullDrupalTestBase;
-use Drupal\user\Entity\User;
 
 /**
  * Tests the complete Drupal 6 migration.
@@ -22,7 +21,7 @@ class MigrateDrupal6Test extends MigrateFullDrupalTestBase {
    *
    * @var array
    */
-  public static $modules = array(
+  static $modules = array(
     'action',
     'aggregator',
     'block',
@@ -34,18 +33,14 @@ class MigrateDrupal6Test extends MigrateFullDrupalTestBase {
     'dblog',
     'entity_reference',
     'file',
-    'filter',
     'forum',
     'image',
-    'language',
     'link',
     'locale',
-    'menu_link_content',
     'menu_ui',
     'node',
     'options',
     'search',
-    'system',
     'simpletest',
     'statistics',
     'syslog',
@@ -53,7 +48,6 @@ class MigrateDrupal6Test extends MigrateFullDrupalTestBase {
     'telephone',
     'text',
     'update',
-    'user',
     'views',
   );
 
@@ -164,39 +158,6 @@ class MigrateDrupal6Test extends MigrateFullDrupalTestBase {
     $config->set('default', 'bartik');
     $config->set('admin', 'seven');
     $config->save();
-
-    foreach (static::$modules as $module) {
-      $function = $module . '_schema';
-      module_load_install($module);
-      if (function_exists($function)) {
-        $schema = $function();
-        $this->installSchema($module, array_keys($schema));
-      }
-    }
-
-    $this->installEntitySchema('aggregator_feed');
-    $this->installEntitySchema('aggregator_item');
-    $this->installEntitySchema('block_content');
-    $this->installEntitySchema('comment');
-    $this->installEntitySchema('file');
-    $this->installEntitySchema('node');
-    $this->installEntitySchema('menu_link_content');
-    $this->installEntitySchema('taxonomy_term');
-    $this->installEntitySchema('user');
-
-    $this->installConfig(['block_content', 'comment', 'file', 'node', 'simpletest']);
-
-    // Install one of D8's test themes.
-    \Drupal::service('theme_handler')->install(array('test_theme'));
-
-    // Create a new user which needs to have UID 1, because that is expected by
-    // the assertions from
-    // \Drupal\migrate_drupal\Tests\d6\MigrateNodeRevisionTest.
-    User::create([
-      'uid' => 1,
-      'name' => $this->randomMachineName(),
-      'status' => 1,
-    ])->enforceIsNew(TRUE)->save();
   }
 
   /**

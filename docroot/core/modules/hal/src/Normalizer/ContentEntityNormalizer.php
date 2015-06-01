@@ -76,7 +76,7 @@ class ContentEntityNormalizer extends NormalizerBase {
           'href' => $this->getEntityUri($entity),
         ),
         'type' => array(
-          'href' => $this->linkManager->getTypeUri($entity->getEntityTypeId(), $entity->bundle(), $context),
+          'href' => $this->linkManager->getTypeUri($entity->getEntityTypeId(), $entity->bundle()),
         ),
       ),
     );
@@ -132,7 +132,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     }
 
     // Create the entity.
-    $typed_data_ids = $this->getTypedDataIds($data['_links']['type'], $context);
+    $typed_data_ids = $this->getTypedDataIds($data['_links']['type']);
     $entity_type = $this->entityManager->getDefinition($typed_data_ids['entity_type']);
     $langcode_key = $entity_type->getKey('langcode');
     $values = array();
@@ -210,14 +210,13 @@ class ContentEntityNormalizer extends NormalizerBase {
    *
    * @param array $types
    *   The type array(s) (value of the 'type' attribute of the incoming data).
-   * @param array $context
-   *   Context from the normalizer/serializer operation.
    *
    * @return array
    *   The typed data IDs.
    *
+   * @throws \Symfony\Component\Serializer\Exception\UnexpectedValueException
    */
-  protected function getTypedDataIds($types, $context = array()) {
+  protected function getTypedDataIds($types) {
     // The 'type' can potentially contain an array of type objects. By default,
     // Drupal only uses a single type in serializing, but allows for multiple
     // types when deserializing.
@@ -232,7 +231,7 @@ class ContentEntityNormalizer extends NormalizerBase {
       $type_uri = $type['href'];
       // Check whether the URI corresponds to a known type on this site. Break
       // once one does.
-      if ($typed_data_ids = $this->linkManager->getTypeInternalIds($type['href'], $context)) {
+      if ($typed_data_ids = $this->linkManager->getTypeInternalIds($type['href'])) {
         break;
       }
     }

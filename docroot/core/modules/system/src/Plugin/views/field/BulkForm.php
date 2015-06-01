@@ -12,11 +12,11 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RedirectDestinationTrait;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
-use Drupal\views\Plugin\views\field\UncacheableFieldHandlerTrait;
 use Drupal\views\Plugin\views\style\Table;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Defines a actions-based bulk operation form element.
@@ -26,7 +26,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class BulkForm extends FieldPluginBase {
 
   use RedirectDestinationTrait;
-  use UncacheableFieldHandlerTrait;
 
   /**
    * The action storage.
@@ -138,6 +137,13 @@ class BulkForm extends FieldPluginBase {
   /**
    * {@inheritdoc}
    */
+  public function render(ResultRow $values) {
+    return '<!--form-item-' . $this->options['id'] . '--' . $values->index . '-->';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function preRender(&$values) {
     parent::preRender($values);
 
@@ -151,12 +157,6 @@ class BulkForm extends FieldPluginBase {
     }
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getValue(ResultRow $row, $field = NULL) {
-    return '<!--form-item-' . $this->options['id'] . '--' . $row->index . '-->';
-  }
 
   /**
    * Form constructor for the bulk form.

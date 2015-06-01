@@ -20,13 +20,6 @@ use Symfony\Component\Validator\ConstraintValidator;
 class CommentNameConstraintValidator extends ConstraintValidator implements ContainerInjectionInterface {
 
   /**
-   * Validator 2.5 and upwards compatible execution context.
-   *
-   * @var \Symfony\Component\Validator\Context\ExecutionContextInterface
-   */
-  protected $context;
-
-  /**
    * User storage handler.
    *
    * @var \Drupal\user\UserStorageInterface
@@ -53,36 +46,41 @@ class CommentNameConstraintValidator extends ConstraintValidator implements Cont
   /**
    * {@inheritdoc}
    */
-  public function validate($entity, Constraint $constraint) {
-    $author_name = $entity->name->value;
-    $owner_id = (int) $entity->uid->target_id;
+  public function validate($items, Constraint $constraint) {
+    /** @var CommentNameConstraint $constraint */
+    if (!isset($items)) {
+      return;
+    }
+    /** @var CommentInterface $comment */
+    $comment = $items->getEntity();
+
+    if (!isset($comment)) {
+      // Looks like we are validating a field not being part of a comment,
+      // nothing we can do then.
+      return;
+    }
+    $author_name = $items->first()->value;
 
     // Do not allow unauthenticated comment authors to use a name that is
     // taken by a registered user.
-    if (isset($author_name) && $author_name !== '' && $owner_id === 0) {
+    if (isset($author_name) && $author_name !== '' && $comment->getOwnerId() === 0) {
       $users = $this->userStorage->loadByProperties(array('name' => $author_name));
       if (!empty($users)) {
-        $this->context->buildViolation($constraint->messageNameTaken, array('%name' => $author_name))
-          ->atPath('name')
-          ->addViolation();
+        $this->context->addViolation($constraint->messageNameTaken, array('%name' => $author_name));
       }
     }
     // If an author name and owner are given, make sure they match.
-    elseif (isset($author_name) && $author_name !== '' && $owner_id) {
-      $owner = $this->userStorage->load($owner_id);
+    elseif (isset($author_name) && $author_name !== '' && $comment->getOwnerId()) {
+      $owner = $comment->getOwner();
       if ($owner->getUsername() != $author_name) {
-        $this->context->buildViolation($constraint->messageMatch)
-          ->atPath('name')
-          ->addViolation();
+        $this->context->addViolation($constraint->messageMatch);
       }
     }
 
     // Anonymous account might be required - depending on field settings.
-    if ($owner_id === 0 && empty($author_name) &&
-      $this->getAnonymousContactDetailsSetting($entity) === COMMENT_ANONYMOUS_MUST_CONTACT) {
-      $this->context->buildViolation($constraint->messageRequired)
-        ->atPath('name')
-        ->addViolation();
+    if ($comment->getOwnerId() === 0 && empty($author_name) &&
+      $this->getAnonymousContactDetailsSetting($comment) === COMMENT_ANONYMOUS_MUST_CONTACT) {
+      $this->context->addViolation($constraint->messageRequired);
     }
   }
 

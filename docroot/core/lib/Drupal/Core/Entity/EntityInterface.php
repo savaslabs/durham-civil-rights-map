@@ -18,7 +18,7 @@ use Drupal\Core\Cache\CacheableDependencyInterface;
 interface EntityInterface extends AccessibleInterface, CacheableDependencyInterface {
 
   /**
-   * Gets the entity UUID (Universally Unique Identifier).
+   * Returns the entity UUID (Universally Unique Identifier).
    *
    * The UUID is guaranteed to be unique and can be used to identify an entity
    * across multiple systems.
@@ -29,7 +29,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function uuid();
 
   /**
-   * Gets the identifier.
+   * Returns the identifier.
    *
    * @return string|int|null
    *   The entity identifier, or NULL if the object does not yet have an
@@ -38,7 +38,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function id();
 
   /**
-   * Gets the language of the entity.
+   * Returns the language of the entity.
    *
    * @return \Drupal\Core\Language\LanguageInterface
    *   The language object.
@@ -46,7 +46,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function language();
 
   /**
-   * Determines whether the entity is new.
+   * Returns whether the entity is new.
    *
    * Usually an entity is new if no ID exists for it yet. However, entities may
    * be enforced to be new with existing IDs too.
@@ -75,7 +75,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function enforceIsNew($value = TRUE);
 
   /**
-   * Gets the ID of the type of the entity.
+   * Returns the ID of the type of the entity.
    *
    * @return string
    *   The entity type ID.
@@ -83,7 +83,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function getEntityTypeId();
 
   /**
-   * Gets the bundle of the entity.
+   * Returns the bundle of the entity.
    *
    * @return string
    *   The bundle of the entity. Defaults to the entity type ID if the entity
@@ -92,7 +92,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function bundle();
 
   /**
-   * Gets the label of the entity.
+   * Returns the label of the entity.
    *
    * @return string|null
    *   The label of the entity, or NULL if there is no label defined.
@@ -100,7 +100,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function label();
 
   /**
-   * Gets the URI elements of the entity.
+   * Returns the URI elements of the entity.
    *
    * URI templates might be set in the links array in an annotation, for
    * example:
@@ -131,7 +131,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function urlInfo($rel = 'canonical', array $options = array());
 
   /**
-   * Gets the public URL for this entity.
+   * Returns the public URL for this entity.
    *
    * @param string $rel
    *   The link relationship type, for example: canonical or edit-form.
@@ -162,7 +162,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function link($text = NULL, $rel = 'canonical', array $options = []);
 
   /**
-   * Gets the internal path for this entity.
+   * Returns the internal path for this entity.
    *
    * self::url() will return the full path including any prefixes, fragments, or
    * query strings. This path does not include those.
@@ -190,7 +190,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function hasLinkTemplate($key);
 
   /**
-   * Gets a list of URI relationships supported by this entity.
+   * Returns a list of URI relationships supported by this entity.
    *
    * @return string[]
    *   An array of link relationships supported by this entity.
@@ -341,7 +341,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function createDuplicate();
 
   /**
-   * Gets the entity type definition.
+   * Returns the entity type definition.
    *
    * @return \Drupal\Core\Entity\EntityTypeInterface
    *   The entity type definition.
@@ -349,7 +349,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function getEntityType();
 
   /**
-   * Gets a list of entities referenced by this entity.
+   * Returns a list of entities referenced by this entity.
    *
    * @return \Drupal\Core\Entity\EntityInterface[]
    *   An array of entities.
@@ -357,7 +357,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function referencedEntities();
 
   /**
-   * Gets the original ID.
+   * Returns the original ID.
    *
    * @return int|string|null
    *   The original ID, or NULL if no ID was set or for entity types that do not
@@ -377,7 +377,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function setOriginalId($id);
 
   /**
-   * Gets an array of all property values.
+   * Returns an array of all property values.
    *
    * @return mixed[]
    *   An array of property values, keyed by property name.
@@ -385,7 +385,7 @@ interface EntityInterface extends AccessibleInterface, CacheableDependencyInterf
   public function toArray();
 
   /**
-   * Gets a typed data object for this entity object.
+   * Returns a typed data object for this entity object.
    *
    * The returned typed data object wraps this entity and allows dealing with
    * entities based on the generic typed data API.

@@ -28,7 +28,7 @@ abstract class EntityHandlerBase {
   protected $moduleHandler;
 
   /**
-   * Gets the module handler.
+   * Returns the module handler.
    *
    * @return \Drupal\Core\Extension\ModuleHandlerInterface
    *   The module handler.

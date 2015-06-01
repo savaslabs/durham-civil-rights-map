@@ -25,13 +25,6 @@ class FeedDeleteForm extends ContentEntityDeleteForm {
   /**
    * {@inheritdoc}
    */
-  protected function getRedirectUrl() {
-    return $this->getCancelUrl();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   protected function getDeletionMessage() {
     return $this->t('The feed %label has been deleted.', array(
       '%label' => $this->entity->label(),

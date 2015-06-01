@@ -68,7 +68,7 @@ class ConfigSingleExportForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'config_single_export_form';
   }
 

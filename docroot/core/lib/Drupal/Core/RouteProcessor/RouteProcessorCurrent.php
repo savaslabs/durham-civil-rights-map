@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\RouteProcessor;
 
-use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Symfony\Component\Routing\Route;
 
@@ -36,7 +35,7 @@ class RouteProcessorCurrent implements OutboundRouteProcessorInterface {
   /**
    * {@inheritdoc}
    */
-  public function processOutbound($route_name, Route $route, array &$parameters, CacheableMetadata $cacheable_metadata = NULL) {
+  public function processOutbound($route_name, Route $route, array &$parameters) {
     if ($route_name === '<current>') {
       if ($current_route = $this->routeMatch->getRouteObject()) {
         $route->setPath($current_route->getPath());
@@ -44,9 +43,6 @@ class RouteProcessorCurrent implements OutboundRouteProcessorInterface {
         $route->setOptions($current_route->getOptions());
         $route->setDefaults($current_route->getDefaults());
         $parameters = array_merge($parameters, $this->routeMatch->getRawParameters()->all());
-        if ($cacheable_metadata) {
-          $cacheable_metadata->addCacheContexts(['route']);
-        }
       }
       else {
         // If we have no current route match available, point to the frontpage.

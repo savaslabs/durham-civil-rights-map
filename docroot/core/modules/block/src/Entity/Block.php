@@ -38,19 +38,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *   links = {
  *     "delete-form" = "/admin/structure/block/manage/{block}/delete",
  *     "edit-form" = "/admin/structure/block/manage/{block}"
- *   },
- *   config_export = {
- *     "id",
- *     "theme",
- *     "region",
- *     "weight",
- *     "provider",
- *     "plugin",
- *     "settings",
- *     "visibility",
- *   },
- *   lookup_keys = {
- *     "theme"
  *   }
  * )
  */

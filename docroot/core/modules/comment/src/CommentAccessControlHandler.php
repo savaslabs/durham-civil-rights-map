@@ -25,16 +25,9 @@ class CommentAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $operation, $langcode, AccountInterface $account) {
-    /** @var \Drupal\comment\CommentInterface|\Drupal\user\EntityOwnerInterface $entity */
+    /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\user\EntityOwnerInterface $entity */
 
-    $comment_admin = $account->hasPermission('administer comments');
-    if ($operation == 'approve') {
-      return AccessResult::allowedIf($comment_admin && !$entity->isPublished())
-        ->cachePerPermissions()
-        ->cacheUntilEntityChanges($entity);
-    }
-
-    if ($comment_admin) {
+    if ($account->hasPermission('administer comments')) {
       $access = AccessResult::allowed()->cachePerPermissions();
       return ($operation != 'view') ? $access : $access->andIf($entity->getCommentedEntity()->access($operation, $account, TRUE));
     }

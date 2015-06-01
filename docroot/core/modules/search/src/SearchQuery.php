@@ -196,9 +196,9 @@ class SearchQuery extends SelectExtender {
   /**
    * Sets the search query expression.
    *
-   * @param string $expression
+   * @param $expression
    *   A search string, which can contain keywords and options.
-   * @param string $type
+   * @param $type
    *   The search type. This maps to {search_index}.type in the database.
    *
    * @return $this
@@ -547,7 +547,7 @@ class SearchQuery extends SelectExtender {
    * Error and warning conditions can apply. Call getStatus() after calling
    * this method to retrieve them.
    *
-   * @return \Drupal\Core\Database\StatementInterface|null
+   * @return
    *   A query result set containing the results of the query.
    */
   public function execute() {

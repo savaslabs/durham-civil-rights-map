@@ -97,16 +97,14 @@ class RssTest extends TaxonomyTestBase {
 
     // Check that the term is displayed when the RSS feed is viewed.
     $this->drupalGet('rss.xml');
-    $test_element = sprintf(
-      '<category %s>%s</category>',
-      'domain="' . $term1->url('canonical', array('absolute' => TRUE)) . '"',
-      $term1->getName()
+    $test_element = array(
+      'key' => 'category',
+      'value' => $term1->getName(),
+      'attributes' => array(
+        'domain' => $term1->url('canonical', array('absolute' => TRUE)),
+      ),
     );
-    $this->assertRaw($test_element, 'Term is displayed when viewing the rss feed.');
-
-    // Test that the feed icon exists for the term.
-    $this->drupalGet("taxonomy/term/{$term1->id()}");
-    $this->assertLinkByHref("taxonomy/term/{$term1->id()}/feed");
+    $this->assertRaw(format_xml_elements(array($test_element)), 'Term is displayed when viewing the rss feed.');
 
     // Test that the feed page exists for the term.
     $this->drupalGet("taxonomy/term/{$term1->id()}/feed");
@@ -123,9 +121,12 @@ class RssTest extends TaxonomyTestBase {
     $view->storage->save();
     // Check the article is shown in the feed.
     $node = $this->drupalGetNodeByTitle($edit['title[0][value]']);
-    $raw_xml = '<title>' . $node->label() . '</title>';
+    $raw_xml = format_xml_elements([[
+      'key' => 'title',
+      'value' => $node->label(),
+    ]]);
     $this->drupalGet('taxonomy/term/all/feed');
-    $this->assertRaw($raw_xml, "Raw text '$raw_xml' is found.");
+    $this->assertRaw($raw_xml);
     // Unpublish the article and check that it is not shown in the feed.
     $node->setPublished(FALSE)->save();
     $this->drupalGet('taxonomy/term/all/feed');

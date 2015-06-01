@@ -8,7 +8,7 @@
 namespace Drupal\node\Tests;
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\content_translation\Tests\ContentTranslationUITestBase;
+use Drupal\content_translation\Tests\ContentTranslationUITest;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
@@ -18,7 +18,7 @@ use Drupal\node\Entity\Node;
  *
  * @group node
  */
-class NodeTranslationUITest extends ContentTranslationUITestBase {
+class NodeTranslationUITest extends ContentTranslationUITest {
 
   /**
    * Modules to enable.
@@ -58,7 +58,7 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getTranslatorPermission().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getTranslatorPermission().
    */
   protected function getTranslatorPermissions() {
     return array_merge(parent::getTranslatorPermissions(), array('administer nodes', "edit any $this->bundle content"));
@@ -79,7 +79,7 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getNewEntityValues().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getNewEntityValues().
    */
   protected function getNewEntityValues($langcode) {
     return array('title' => array(array('value' => $this->randomMachineName()))) + parent::getNewEntityValues($langcode);
@@ -98,7 +98,7 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::assertPublishedStatus().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::assertPublishedStatus().
    */
   protected function doTestPublishedStatus() {
     $entity = entity_load($this->entityTypeId, $this->entityId, TRUE);
@@ -129,7 +129,7 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::assertAuthoringInfo().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::assertAuthoringInfo().
    */
   protected function doTestAuthoringInfo() {
     $entity = entity_load($this->entityTypeId, $this->entityId, TRUE);

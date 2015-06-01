@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\Vocabulary.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\Vocabulary.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -51,35 +51,35 @@ class Vocabulary extends DrupalDumpBase {
         'relations' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '10',
+          'length' => '3',
           'default' => '0',
           'unsigned' => TRUE,
         ),
         'hierarchy' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '10',
+          'length' => '3',
           'default' => '0',
           'unsigned' => TRUE,
         ),
         'multiple' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '10',
+          'length' => '3',
           'default' => '0',
           'unsigned' => TRUE,
         ),
         'required' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '10',
+          'length' => '3',
           'default' => '0',
           'unsigned' => TRUE,
         ),
         'tags' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '10',
+          'length' => '3',
           'default' => '0',
           'unsigned' => TRUE,
         ),
@@ -92,7 +92,7 @@ class Vocabulary extends DrupalDumpBase {
         'weight' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
       ),
@@ -174,4 +174,3 @@ class Vocabulary extends DrupalDumpBase {
   }
 
 }
-#92bb32cf1586d6e70e769372e30aaba1

@@ -11,26 +11,24 @@ use Drupal\Component\Plugin\Exception\PluginException;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\DependencyInjection\ClassResolverInterface;
-use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
-use Drupal\Core\TypedData\Validation\ExecutionContextFactory;
-use Drupal\Core\TypedData\Validation\RecursiveValidator;
+use Drupal\Core\TypedData\Validation\MetadataFactory;
 use Drupal\Core\Validation\ConstraintManager;
 use Drupal\Core\Validation\ConstraintValidatorFactory;
 use Drupal\Core\Validation\DrupalTranslator;
+use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * Manages data type plugins.
  */
 class TypedDataManager extends DefaultPluginManager {
-  use DependencySerializationTrait;
 
   /**
    * The validator used for validating typed data.
    *
-   * @var \Symfony\Component\Validator\Validator\ValidatorInterface
+   * @var \Symfony\Component\Validator\ValidatorInterface
    */
   protected $validator;
 
@@ -333,11 +331,12 @@ class TypedDataManager extends DefaultPluginManager {
    */
   public function getValidator() {
     if (!isset($this->validator)) {
-      $this->validator = new RecursiveValidator(
-        new ExecutionContextFactory(new DrupalTranslator()),
-        new ConstraintValidatorFactory($this->classResolver),
-        $this
-      );
+      $this->validator = Validation::createValidatorBuilder()
+        ->setMetadataFactory(new MetadataFactory($this))
+        ->setTranslator(new DrupalTranslator())
+        ->setConstraintValidatorFactory(new ConstraintValidatorFactory($this->classResolver))
+        ->setApiVersion(Validation::API_VERSION_2_4)
+        ->getValidator();
     }
     return $this->validator;
   }

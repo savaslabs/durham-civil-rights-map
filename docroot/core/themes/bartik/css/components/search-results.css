@@ -1,7 +1,4 @@
-/**
- * @file
- * Visual styles for Bartik's search results.
- */
+/* --------------- Search Results ---------------- */
 
 ol.search-results {
   padding-left: 0; /* LTR */
@@ -20,12 +17,9 @@ ol.search-results {
   padding-bottom: 0;
   margin-bottom: 1em;
 }
-.search-result__title {
-  font-weight: bold;
-}
-.search-result__snippet-info {
+.search-results .search-snippet-info {
   padding-left: 0; /* LTR */
 }
-[dir="rtl"] .search-result__snippet-info {
+[dir="rtl"] .search-results .search-snippet-info {
   padding-right: 0;
 }

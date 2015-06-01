@@ -31,7 +31,7 @@
       'messages--' ~ type,
     ]
   %}
-  <div role="contentinfo" aria-label="{{ status_headings[type] }}"{{ attributes.addClass(classes)|without('role', 'aria-label') }}>
+  <div class="{{ attributes.addClass(classes).class }}" role="contentinfo" aria-label="{{ status_headings[type] }}">
     {% if type == 'error' %}
       <div role="alert">
     {% endif %}

@@ -7,7 +7,6 @@
 
 namespace Drupal\Tests\Core\Plugin\Context;
 
-use Drupal\Core\Plugin\Context\ContextDefinition;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -204,17 +203,6 @@ class ContextDefinitionTest extends UnitTestCase {
       ->willReturn($constraint_array);
 
     $this->assertEquals($expected, $mock_context_definition->getConstraint($constraint));
-  }
-
-  /**
-   * @covers ::getDefaultValue
-   * @covers ::setDefaultValue
-   */
-  public function testDefaultValue() {
-    $context_definition = new ContextDefinition();
-    $this->assertNull($context_definition->getDefaultValue());
-    $context_definition->setDefaultValue('test');
-    $this->assertSame('test', $context_definition->getDefaultValue());
   }
 
 }

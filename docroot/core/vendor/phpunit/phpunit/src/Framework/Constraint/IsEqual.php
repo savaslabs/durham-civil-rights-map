@@ -112,14 +112,7 @@ class PHPUnit_Framework_Constraint_IsEqual extends PHPUnit_Framework_Constraint
      */
     public function evaluate($other, $description = '', $returnResult = false)
     {
-        // If $this->value and $other are identical, they are also equal.
-        // This is the most common path and will allow us to skip
-        // initialization of all the comparators.
-        if ($this->value === $other) {
-            return true;
-        }
-
-        $comparatorFactory = SebastianBergmann\Comparator\Factory::getInstance();
+        $comparatorFactory = new SebastianBergmann\Comparator\Factory;
 
         try {
             $comparator = $comparatorFactory->getComparatorFor(

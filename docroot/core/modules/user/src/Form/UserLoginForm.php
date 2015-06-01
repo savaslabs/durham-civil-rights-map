@@ -102,8 +102,8 @@ class UserLoginForm extends FormBase {
       '#description' => $this->t('Enter your @s username.', array('@s' => $config->get('name'))),
       '#required' => TRUE,
       '#attributes' => array(
-        'autocorrect' => 'none',
-        'autocapitalize' => 'none',
+        'autocorrect' => 'off',
+        'autocapitalize' => 'off',
         'spellcheck' => 'false',
         'autofocus' => 'autofocus',
       ),

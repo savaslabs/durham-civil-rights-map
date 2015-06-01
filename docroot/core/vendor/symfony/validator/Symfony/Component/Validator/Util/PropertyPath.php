@@ -17,7 +17,6 @@ namespace Symfony\Component\Validator\Util;
  * For more extensive functionality, use Symfony's PropertyAccess component.
  *
  * @since  2.5
- *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
 class PropertyPath
@@ -43,7 +42,7 @@ class PropertyPath
                 return $basePath.$subPath;
             }
 
-            return '' !== (string) $basePath ? $basePath.'.'.$subPath : $subPath;
+            return $basePath ? $basePath.'.'.$subPath : $subPath;
         }
 
         return $basePath;

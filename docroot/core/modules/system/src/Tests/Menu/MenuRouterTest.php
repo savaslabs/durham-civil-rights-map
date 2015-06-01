@@ -51,7 +51,6 @@ class MenuRouterTest extends WebTestBase {
   public function testMenuIntegration() {
     $this->doTestTitleMenuCallback();
     $this->doTestMenuOptionalPlaceholders();
-    $this->doTestMenuHierarchy();
     $this->doTestMenuOnRoute();
     $this->doTestMenuName();
     $this->doTestMenuLinksDiscoveredAlter();
@@ -155,12 +154,13 @@ class MenuRouterTest extends WebTestBase {
     $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
     $menu_links = $menu_link_manager->loadLinksByRoute('menu_test.hierarchy_parent');
     $parent_link = reset($menu_links);
-    $menu_links = $menu_link_manager->loadLinksByRoute('menu_test.hierarchy_parent_child');
+    $menu_links = $menu_link_manager->loadLinksByRoute('menu_test.hierarchy_parent.child');
     $child_link = reset($menu_links);
-    $menu_links = $menu_link_manager->loadLinksByRoute('menu_test.hierarchy_parent_child2');
+    $menu_links = $menu_link_manager->loadLinksByRoute('menu_test.hierarchy_parent.child2.child');
     $unattached_child_link = reset($menu_links);
+
     $this->assertEqual($child_link->getParent(), $parent_link->getPluginId(), 'The parent of a directly attached child is correct.');
-    $this->assertEqual($unattached_child_link->getParent(), $child_link->getPluginId(), 'The parent of a non-directly attached child is correct.');
+    $this->assertEqual($unattached_child_link->getParent(), $parent_link->getPluginId(), 'The parent of a non-directly attached child is correct.');
   }
 
   /**

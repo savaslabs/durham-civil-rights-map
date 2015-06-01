@@ -7,6 +7,8 @@
 
 namespace Drupal\Core\Database;
 
+use Drupal\Core\Database\Connection;
+
 /**
  * An implementation of StatementInterface that prefetches all data.
  *
@@ -30,18 +32,20 @@ class StatementPrefetch implements \Iterator, StatementInterface {
   protected $driverOptions;
 
   /**
-   * Reference to the Drupal database connection object for this statement.
+   * Reference to the database connection object for this statement.
    *
-   * @var \Drupal\Core\Database\Connection
+   * This is part of the public interface of \PDOStatement.
+   *
+   * @var \PDO
    */
   public $dbh;
 
   /**
-   * Reference to the PDO connection object for this statement.
+   * Reference to the Drupal database connection object for this statement.
    *
-   * @var \PDO
+   * @var \Drupal\Core\Database\Connection
    */
-  protected $pdoConnection;
+  protected $connection;
 
   /**
    * Main data store.
@@ -131,9 +135,9 @@ class StatementPrefetch implements \Iterator, StatementInterface {
    */
   public $allowRowCount = FALSE;
 
-  public function __construct(\PDO $pdo_connection, Connection $connection, $query, array $driver_options = array()) {
-    $this->pdoConnection = $pdo_connection;
-    $this->dbh = $connection;
+  public function __construct(\PDO $dbh, Connection $connection, $query, array $driver_options = array()) {
+    $this->dbh = $dbh;
+    $this->connection = $connection;
     $this->queryString = $query;
     $this->driverOptions = $driver_options;
   }
@@ -153,7 +157,7 @@ class StatementPrefetch implements \Iterator, StatementInterface {
       if (is_string($options['fetch'])) {
         // Default to an object. Note: db fields will be added to the object
         // before the constructor is run. If you need to assign fields after
-        // the constructor is run. See https://www.drupal.org/node/315092.
+        // the constructor is run, see http://drupal.org/node/315092.
         $this->setFetchMode(\PDO::FETCH_CLASS, $options['fetch']);
       }
       else {
@@ -161,7 +165,7 @@ class StatementPrefetch implements \Iterator, StatementInterface {
       }
     }
 
-    $logger = $this->dbh->getLogger();
+    $logger = $this->connection->getLogger();
     if (!empty($logger)) {
       $query_start = microtime(TRUE);
     }

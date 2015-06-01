@@ -33,7 +33,6 @@ class HandlerFieldUserNameTest extends UserTestBase {
     $view->field['name']->options['link_to_user'] = TRUE;
     $view->field['name']->options['type'] = 'user_name';
     $view->field['name']->init($view, $view->getDisplay('default'));
-    $view->field['name']->options['id'] = 'name';
     $this->executeView($view);
 
     $anon_name = $this->config('user.settings')->get('anonymous');

@@ -12,7 +12,7 @@ require __DIR__ . '/../bootstrap.php';
 PHPUnit_TextUI_Command::main();
 ?>
 --EXPECTF--
-PHPUnit %s by Sebastian Bergmann and contributors.
+PHPUnit %s by Sebastian Bergmann.
 
 TAP version 13
 .ok 1 - BankAccountTest::testBalanceIsInitiallyZero

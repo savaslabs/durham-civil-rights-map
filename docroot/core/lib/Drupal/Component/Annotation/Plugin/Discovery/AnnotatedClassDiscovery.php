@@ -62,7 +62,7 @@ class AnnotatedClassDiscovery implements DiscoveryInterface {
   }
 
   /**
-   * Gets the used doctrine annotation reader.
+   * Returns the used doctrine annotation reader.
    *
    * @return \Doctrine\Common\Annotations\Reader
    *   The annotation reader.
@@ -140,7 +140,7 @@ class AnnotatedClassDiscovery implements DiscoveryInterface {
   }
 
   /**
-   * Gets an array of PSR-0 namespaces to search for plugin classes.
+   * Returns an array of PSR-0 namespaces to search for plugin classes.
    *
    * @return string[]
    */

@@ -66,7 +66,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
     public function __construct(PHPUnit_Runner_TestSuiteLoader $loader = null, PHP_CodeCoverage_Filter $filter = null)
     {
         if ($filter === null) {
-            $filter = $this->getCodeCoverageFilter();
+            $filter = new PHP_CodeCoverage_Filter;
         }
 
         $this->codeCoverageFilter = $filter;
@@ -166,10 +166,6 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
             $suite->setBackupStaticAttributes(true);
         }
 
-        if ($arguments['disallowChangesToGlobalState'] === true) {
-            $suite->setDisallowChangesToGlobalState(true);
-        }
-
         if (is_integer($arguments['repeat'])) {
             $test = new PHPUnit_Extensions_RepeatedTest(
                 $suite,
@@ -221,7 +217,6 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
                 $this->printer = $arguments['printer'];
             } else {
                 $printerClass = 'PHPUnit_TextUI_ResultPrinter';
-
                 if (isset($arguments['printer']) &&
                     is_string($arguments['printer']) &&
                     class_exists($arguments['printer'], false)) {
@@ -236,8 +231,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
                   isset($arguments['stderr']) ? 'php://stderr' : null,
                   $arguments['verbose'],
                   $arguments['colors'],
-                  $arguments['debug'],
-                  $arguments['columns']
+                  $arguments['debug']
                 );
             }
         }
@@ -256,14 +250,6 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
                         $arguments['configuration']->getFilename()
                     )
                 );
-            }
-
-            if (isset($arguments['deprecatedStrictModeOption'])) {
-                print "Deprecated option \"--strict\" used\n\n";
-            }
-
-            if (isset($arguments['deprecatedStrictModeSetting'])) {
-                print "Deprecated configuration setting \"strict\" used\n\n";
             }
         }
 
@@ -318,13 +304,11 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
         if ($codeCoverageReports > 0 && (!extension_loaded('tokenizer') || !$this->canCollectCodeCoverage)) {
             if (!extension_loaded('tokenizer')) {
                 $this->showExtensionNotLoadedMessage(
-                    'tokenizer',
-                    'No code coverage will be generated.'
+                    'tokenizer', 'No code coverage will be generated.'
                 );
             } elseif (!extension_loaded('Xdebug')) {
                 $this->showExtensionNotLoadedMessage(
-                    'Xdebug',
-                    'No code coverage will be generated.'
+                    'Xdebug', 'No code coverage will be generated.'
                 );
             }
 
@@ -333,8 +317,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
 
         if ($codeCoverageReports > 0) {
             $codeCoverage = new PHP_CodeCoverage(
-                null,
-                $this->codeCoverageFilter
+                null, $this->codeCoverageFilter
             );
 
             $codeCoverage->setAddUncoveredFilesFromWhitelist(
@@ -385,8 +368,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
         if (isset($arguments['junitLogfile'])) {
             $result->addListener(
                 new PHPUnit_Util_Log_JUnit(
-                    $arguments['junitLogfile'],
-                    $arguments['logIncompleteSkipped']
+                    $arguments['junitLogfile'], $arguments['logIncompleteSkipped']
                 )
             );
         }
@@ -472,7 +454,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
             if (isset($arguments['coverageText'])) {
                 if ($arguments['coverageText'] == 'php://stdout') {
                     $outputStream = $this->printer;
-                    $colors       = $arguments['colors'];
+                    $colors       = (bool) $arguments['colors'];
                 } else {
                     $outputStream = new PHPUnit_Util_Printer($arguments['coverageText']);
                     $colors       = false;
@@ -580,10 +562,6 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
 
             $phpunitConfiguration = $arguments['configuration']->getPHPUnitConfiguration();
 
-            if (isset($phpunitConfiguration['deprecatedStrictModeSetting'])) {
-                $arguments['deprecatedStrictModeSetting'] = true;
-            }
-
             if (isset($phpunitConfiguration['backupGlobals']) &&
                 !isset($arguments['backupGlobals'])) {
                 $arguments['backupGlobals'] = $phpunitConfiguration['backupGlobals'];
@@ -592,11 +570,6 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
             if (isset($phpunitConfiguration['backupStaticAttributes']) &&
                 !isset($arguments['backupStaticAttributes'])) {
                 $arguments['backupStaticAttributes'] = $phpunitConfiguration['backupStaticAttributes'];
-            }
-
-            if (isset($phpunitConfiguration['disallowChangesToGlobalState']) &&
-                !isset($arguments['disallowChangesToGlobalState'])) {
-                $arguments['disallowChangesToGlobalState'] = $phpunitConfiguration['disallowChangesToGlobalState'];
             }
 
             if (isset($phpunitConfiguration['bootstrap']) &&
@@ -794,8 +767,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
 
             if (isset($loggingConfiguration['plain'])) {
                 $arguments['listeners'][] = new PHPUnit_TextUI_ResultPrinter(
-                    $loggingConfiguration['plain'],
-                    true
+                    $loggingConfiguration['plain'], true
                 );
             }
 
@@ -837,12 +809,19 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
 
                 if (empty($filterConfiguration['whitelist']['include']['directory']) &&
                     empty($filterConfiguration['whitelist']['include']['file'])) {
+                    if (defined('__PHPUNIT_PHAR__')) {
+                        $this->codeCoverageFilter->addFileToBlacklist(__PHPUNIT_PHAR__);
+                    }
+
+                    $blacklist = new PHPUnit_Util_Blacklist;
+
+                    foreach ($blacklist->getBlacklistedDirectories() as $directory) {
+                        $this->codeCoverageFilter->addDirectoryToBlacklist($directory);
+                    }
+
                     foreach ($filterConfiguration['blacklist']['include']['directory'] as $dir) {
                         $this->codeCoverageFilter->addDirectoryToBlacklist(
-                            $dir['path'],
-                            $dir['suffix'],
-                            $dir['prefix'],
-                            $dir['group']
+                            $dir['path'], $dir['suffix'], $dir['prefix'], $dir['group']
                         );
                     }
 
@@ -852,10 +831,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
 
                     foreach ($filterConfiguration['blacklist']['exclude']['directory'] as $dir) {
                         $this->codeCoverageFilter->removeDirectoryFromBlacklist(
-                            $dir['path'],
-                            $dir['suffix'],
-                            $dir['prefix'],
-                            $dir['group']
+                            $dir['path'], $dir['suffix'], $dir['prefix'], $dir['group']
                         );
                     }
 
@@ -866,9 +842,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
 
                 foreach ($filterConfiguration['whitelist']['include']['directory'] as $dir) {
                     $this->codeCoverageFilter->addDirectoryToWhitelist(
-                        $dir['path'],
-                        $dir['suffix'],
-                        $dir['prefix']
+                        $dir['path'], $dir['suffix'], $dir['prefix']
                     );
                 }
 
@@ -878,9 +852,7 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
 
                 foreach ($filterConfiguration['whitelist']['exclude']['directory'] as $dir) {
                     $this->codeCoverageFilter->removeDirectoryFromWhitelist(
-                        $dir['path'],
-                        $dir['suffix'],
-                        $dir['prefix']
+                        $dir['path'], $dir['suffix'], $dir['prefix']
                     );
                 }
 
@@ -894,10 +866,8 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
         $arguments['processUncoveredFilesFromWhitelist'] = isset($arguments['processUncoveredFilesFromWhitelist']) ? $arguments['processUncoveredFilesFromWhitelist'] : false;
         $arguments['backupGlobals']                      = isset($arguments['backupGlobals'])                      ? $arguments['backupGlobals']                      : null;
         $arguments['backupStaticAttributes']             = isset($arguments['backupStaticAttributes'])             ? $arguments['backupStaticAttributes']             : null;
-        $arguments['disallowChangesToGlobalState']       = isset($arguments['disallowChangesToGlobalState'])       ? $arguments['disallowChangesToGlobalState']       : null;
         $arguments['cacheTokens']                        = isset($arguments['cacheTokens'])                        ? $arguments['cacheTokens']                        : false;
-        $arguments['columns']                            = isset($arguments['columns'])                            ? $arguments['columns']                            : 80;
-        $arguments['colors']                             = isset($arguments['colors'])                             ? $arguments['colors']                             : PHPUnit_TextUI_ResultPrinter::COLOR_DEFAULT;
+        $arguments['colors']                             = isset($arguments['colors'])                             ? $arguments['colors']                             : false;
         $arguments['convertErrorsToExceptions']          = isset($arguments['convertErrorsToExceptions'])          ? $arguments['convertErrorsToExceptions']          : true;
         $arguments['convertNoticesToExceptions']         = isset($arguments['convertNoticesToExceptions'])         ? $arguments['convertNoticesToExceptions']         : true;
         $arguments['convertWarningsToExceptions']        = isset($arguments['convertWarningsToExceptions'])        ? $arguments['convertWarningsToExceptions']        : true;
@@ -960,25 +930,5 @@ class PHPUnit_TextUI_TestRunner extends PHPUnit_Runner_BaseTestRunner
         if ($exit) {
             exit(self::EXCEPTION_EXIT);
         }
-    }
-
-    /**
-     * @return PHP_CodeCoverage_Filter
-     */
-    private function getCodeCoverageFilter()
-    {
-        $filter = new PHP_CodeCoverage_Filter;
-
-        if (defined('__PHPUNIT_PHAR__')) {
-            $filter->addFileToBlacklist(__PHPUNIT_PHAR__);
-        }
-
-        $blacklist = new PHPUnit_Util_Blacklist;
-
-        foreach ($blacklist->getBlacklistedDirectories() as $directory) {
-            $filter->addDirectoryToBlacklist($directory);
-        }
-
-        return $filter;
     }
 }

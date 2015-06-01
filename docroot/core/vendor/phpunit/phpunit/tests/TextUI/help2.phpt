@@ -9,7 +9,7 @@ require __DIR__ . '/../bootstrap.php';
 PHPUnit_TextUI_Command::main();
 ?>
 --EXPECTF--
-PHPUnit %s by Sebastian Bergmann and contributors.
+PHPUnit %s by Sebastian Bergmann.
 
 Usage: phpunit [options] UnitTest [UnitTest.php]
        phpunit [options] <directory>
@@ -46,18 +46,16 @@ Test Execution Options:
 
   --report-useless-tests    Be strict about tests that do not test anything.
   --strict-coverage         Be strict about unintentionally covered code.
-  --strict-global-state     Be strict about changes to global state
   --disallow-test-output    Be strict about output during tests.
   --enforce-time-limit      Enforce time limit based on test size.
   --disallow-todo-tests     Disallow @todo-annotated tests.
+  --strict                  Run tests in strict mode (enables all of the above).
 
   --process-isolation       Run each test in a separate PHP process.
   --no-globals-backup       Do not backup and restore $GLOBALS for each test.
   --static-backup           Backup and restore static attributes for each test.
 
-  --colors=<flag>           Use colors in output ("never", "auto" or "always").
-  --columns <n>             Number of columns to use for progress output.
-  --columns max             Use maximum number of columns for progress output.
+  --colors                  Use colors in output.
   --stderr                  Write to STDERR instead of STDOUT.
   --stop-on-error           Stop execution upon first error.
   --stop-on-failure         Stop execution upon first error or failure.

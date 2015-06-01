@@ -37,15 +37,6 @@ use Drupal\node\NodeTypeInterface;
  *     "edit-form" = "/admin/structure/types/manage/{node_type}",
  *     "delete-form" = "/admin/structure/types/manage/{node_type}/delete",
  *     "collection" = "/admin/structure/types",
- *   },
- *   config_export = {
- *     "name",
- *     "type",
- *     "description",
- *     "help",
- *     "new_revision",
- *     "preview_mode",
- *     "display_submitted",
  *   }
  * )
  */
@@ -143,8 +134,8 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
   /**
    * {@inheritdoc}
    */
-  public function setDisplaySubmitted($display_submitted) {
-    $this->display_submitted = $display_submitted;
+  public function setDisplaySubmitted($display_submtited) {
+    $this->display_submitted = $display_submtited;
   }
 
   /**

@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\ContentTypePage.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\ContentTypePage.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -63,4 +63,3 @@ class ContentTypePage extends DrupalDumpBase {
   }
 
 }
-#6452fe645487c928706d25c8299671f2

@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\Permission.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\Permission.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -91,4 +91,3 @@ class Permission extends DrupalDumpBase {
   }
 
 }
-#4b13b70647b513732a91cd7132b08c01

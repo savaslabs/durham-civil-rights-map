@@ -125,14 +125,11 @@ class Serializer extends StylePluginBase {
       $rows[] = $this->view->rowPlugin->render($row);
     }
 
-    // Get the content type configured in the display or fallback to the
-    // default.
-    if ((empty($this->view->live_preview))) {
-      $content_type = $this->displayHandler->getContentType();
+    $content_type = $this->displayHandler->getContentType();
+    if (!empty($this->view->live_preview)) {
+      $content_type = $this->options['formats'] ? reset($this->options['formats']) : 'json';
     }
-    else {
-      $content_type = !empty($this->options['formats']) ? reset($this->options['formats']) : 'json';
-    }
+
     return $this->serializer->serialize($rows, $content_type);
   }
 

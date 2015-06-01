@@ -9,11 +9,9 @@ namespace Drupal\block;
 
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Cache\Cache;
-use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Entity\EntityViewBuilderInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Render\Element;
 
 /**
  * Provides a Block view builder.
@@ -105,7 +103,7 @@ class BlockViewBuilder extends EntityViewBuilder {
     // Remove the block entity from the render array, to ensure that blocks
     // can be rendered without the block config entity.
     unset($build['#block']);
-    if ($content !== NULL && !Element::isEmpty($content)) {
+    if (!empty($content)) {
       // Place the $content returned by the block plugin into a 'content' child
       // element, as a way to allow the plugin to have complete control of its
       // properties and rendering (e.g., its own #theme) without conflicting
@@ -124,8 +122,6 @@ class BlockViewBuilder extends EntityViewBuilder {
       }
       $build['content'] = $content;
     }
-    // Either the block's content is completely empty, or it consists only of
-    // cacheability metadata.
     else {
       // Abort rendering: render as the empty string and ensure this block is
       // render cached, so we can avoid the work of having to repeatedly
@@ -135,15 +131,6 @@ class BlockViewBuilder extends EntityViewBuilder {
         '#markup' => '',
         '#cache' => $build['#cache'],
       );
-      // If $content is not empty, then it contains cacheability metadata, and
-      // we must merge it with the existing cacheability metadata. This allows
-      // blocks to be empty, yet still bubble cacheability metadata, to indicate
-      // why they are empty.
-      if (!empty($content)) {
-        CacheableMetadata::createFromRenderArray($build)
-          ->merge(CacheableMetadata::createFromRenderArray($content))
-          ->applyTo($build);
-      }
     }
     return $build;
    }

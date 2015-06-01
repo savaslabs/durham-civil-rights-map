@@ -34,7 +34,11 @@
 #}
 {%
   set classes = [
-    dom_id ? 'js-view-dom-id-' ~ dom_id,
+    'view',
+    'view-' ~ id|clean_class,
+    'view-id-' ~ id,
+    'view-display-id-' ~ display_id,
+    dom_id ? 'view-dom-id-' ~ dom_id,
   ]
 %}
 <div{{ attributes.addClass(classes) }}>
@@ -44,27 +48,27 @@
   {% endif %}
   {{ title_suffix }}
   {% if header %}
-    <div>
+    <div class="view-header">
       {{ header }}
     </div>
   {% endif %}
   {% if exposed %}
-    <div>
+    <div class="view-filters">
       {{ exposed }}
     </div>
   {% endif %}
   {% if attachment_before %}
-    <div>
+    <div class="attachment attachment-before">
       {{ attachment_before }}
     </div>
   {% endif %}
 
   {% if rows %}
-    <div>
+    <div class="view-content">
       {{ rows }}
     </div>
   {% elseif empty %}
-    <div>
+    <div class="view-empty">
       {{ empty }}
     </div>
   {% endif %}
@@ -73,7 +77,7 @@
     {{ pager }}
   {% endif %}
   {% if attachment_after %}
-    <div>
+    <div class="attachment attachment-after">
       {{ attachment_after }}
     </div>
   {% endif %}
@@ -81,12 +85,12 @@
     {{ more }}
   {% endif %}
   {% if footer %}
-    <div>
+    <div class="view-footer">
       {{ footer }}
     </div>
   {% endif %}
   {% if feed_icons %}
-    <div>
+    <div class="feed-icons">
       {{ feed_icons }}
     </div>
   {% endif %}

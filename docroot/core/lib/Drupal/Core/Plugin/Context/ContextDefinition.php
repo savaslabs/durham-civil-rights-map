@@ -57,13 +57,6 @@ class ContextDefinition implements ContextDefinitionInterface {
   protected $isRequired = TRUE;
 
   /**
-   * The default value.
-   *
-   * @var mixed
-   */
-  protected $defaultValue;
-
-  /**
    * An array of constraints.
    *
    * @var array[]
@@ -97,18 +90,15 @@ class ContextDefinition implements ContextDefinitionInterface {
    *   Whether the context definition is required.
    * @param bool $multiple
    *   Whether the context definition is multivalue.
-   * @param string|null $description
+   * @param mixed string|null $description
    *   The description of this context definition for the UI.
-   * @param mixed $default_value
-   *   The default value of this definition.
    */
-  public function __construct($data_type = 'any', $label = NULL, $required = TRUE, $multiple = FALSE, $description = NULL, $default_value = NULL) {
+  public function __construct($data_type = 'any', $label = NULL, $required = TRUE, $multiple = FALSE, $description = NULL) {
     $this->dataType = $data_type;
     $this->label = $label;
     $this->isRequired = $required;
     $this->isMultiple = $multiple;
     $this->description = $description;
-    $this->defaultValue = $default_value;
   }
 
   /**
@@ -183,21 +173,6 @@ class ContextDefinition implements ContextDefinitionInterface {
    */
   public function setRequired($required = TRUE) {
     $this->isRequired = $required;
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getDefaultValue() {
-    return $this->defaultValue;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setDefaultValue($default_value) {
-    $this->defaultValue = $default_value;
     return $this;
   }
 

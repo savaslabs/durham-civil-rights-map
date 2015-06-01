@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\ContentTypeStory.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\ContentTypeStory.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -102,7 +102,7 @@ class ContentTypeStory extends DrupalDumpBase {
         'field_test_filefield_list' => array(
           'type' => 'int',
           'not null' => FALSE,
-          'length' => '11',
+          'length' => '4',
         ),
         'field_test_filefield_data' => array(
           'type' => 'text',
@@ -112,8 +112,7 @@ class ContentTypeStory extends DrupalDumpBase {
         'field_test_four_value' => array(
           'type' => 'numeric',
           'not null' => FALSE,
-          'precision' => '10',
-          'scale' => '0',
+          'length' => 100,
         ),
         'field_test_text_single_checkbox_value' => array(
           'type' => 'text',
@@ -128,8 +127,7 @@ class ContentTypeStory extends DrupalDumpBase {
         'field_test_float_single_checkbox_value' => array(
           'type' => 'numeric',
           'not null' => FALSE,
-          'precision' => '10',
-          'scale' => '0',
+          'length' => 100,
         ),
         'field_test_decimal_radio_buttons_value' => array(
           'type' => 'numeric',
@@ -161,7 +159,7 @@ class ContentTypeStory extends DrupalDumpBase {
         'field_test_imagefield_list' => array(
           'type' => 'int',
           'not null' => FALSE,
-          'length' => '11',
+          'length' => '4',
         ),
         'field_test_imagefield_data' => array(
           'type' => 'text',
@@ -209,7 +207,7 @@ class ContentTypeStory extends DrupalDumpBase {
       'field_test_three_value' => '42.42',
       'field_test_identical1_value' => '1',
       'field_test_identical2_value' => '1',
-      'field_test_link_url' => 'https://www.drupal.org/project/drupal',
+      'field_test_link_url' => 'http://drupal.org/project/drupal',
       'field_test_link_title' => 'Drupal project page',
       'field_test_link_attributes' => 's:32:"a:1:{s:6:"target";s:6:"_blank";}";',
       'field_test_date_value' => NULL,
@@ -222,7 +220,7 @@ class ContentTypeStory extends DrupalDumpBase {
       'field_test_four_value' => NULL,
       'field_test_text_single_checkbox_value' => '0',
       'field_test_integer_selectlist_value' => '3412',
-      'field_test_float_single_checkbox_value' => '3',
+      'field_test_float_single_checkbox_value' => '3.142',
       'field_test_decimal_radio_buttons_value' => NULL,
       'field_test_phone_value' => NULL,
       'field_test_exclude_unset_value' => 'This is a field with exclude unset.',
@@ -237,7 +235,7 @@ class ContentTypeStory extends DrupalDumpBase {
       'field_test_three_value' => '42.42',
       'field_test_identical1_value' => '1',
       'field_test_identical2_value' => '1',
-      'field_test_link_url' => 'https://www.drupal.org/project/drupal',
+      'field_test_link_url' => 'http://drupal.org/project/drupal',
       'field_test_link_title' => 'Drupal project page',
       'field_test_link_attributes' => 's:32:"a:1:{s:6:"target";s:6:"_blank";}";',
       'field_test_date_value' => NULL,
@@ -318,4 +316,3 @@ class ContentTypeStory extends DrupalDumpBase {
   }
 
 }
-#9a56fc4e90fa0eecfefb64eeaee69dfd

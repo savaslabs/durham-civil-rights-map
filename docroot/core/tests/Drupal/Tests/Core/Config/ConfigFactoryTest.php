@@ -9,7 +9,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
  * @group Config
- * @coversDefaultClass \Drupal\Core\Config\ConfigFactory
  */
 class ConfigFactoryTest extends UnitTestCase {
 

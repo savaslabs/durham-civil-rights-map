@@ -16,6 +16,7 @@ use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Url;
+use Drupal\Core\Utility\LinkGeneratorInterface;
 
 /**
  * A class providing Drupal Twig extensions.
@@ -32,6 +33,13 @@ class TwigExtension extends \Twig_Extension {
    * @var \Drupal\Core\Routing\UrlGeneratorInterface
    */
   protected $urlGenerator;
+
+  /**
+   * The link generator.
+   *
+   * @var \Drupal\Core\Utility\LinkGeneratorInterface
+   */
+  protected $linkGenerator;
 
   /**
    * The renderer.
@@ -60,6 +68,19 @@ class TwigExtension extends \Twig_Extension {
    */
   public function setGenerators(UrlGeneratorInterface $url_generator) {
     $this->urlGenerator = $url_generator;
+    return $this;
+  }
+
+  /**
+   * Sets the link generator.
+   *
+   * @param \Drupal\Core\Utility\LinkGeneratorInterface $link_generator
+   *   The link generator.
+   *
+   * @return $this
+   */
+  public function setLinkGenerator(LinkGeneratorInterface $link_generator) {
+    $this->linkGenerator = $link_generator;
     return $this;
   }
 
@@ -180,14 +201,8 @@ class TwigExtension extends \Twig_Extension {
    * @todo Add an option for scheme-relative URLs.
    */
   public function getUrl($name, $parameters = array(), $options = array()) {
-    // Generate URL.
     $options['absolute'] = TRUE;
-    $generated_url = $this->urlGenerator->generateFromRoute($name, $parameters, $options, TRUE);
-
-    // Return as render array, so we can bubble the cacheability metadata.
-    $build = ['#markup' => $generated_url->getGeneratedUrl()];
-    $generated_url->applyTo($build);
-    return $build;
+    return $this->urlGenerator->generateFromRoute($name, $parameters, $options);
   }
 
   /**
@@ -205,14 +220,8 @@ class TwigExtension extends \Twig_Extension {
    * @deprecated in Drupal 8.0.x-dev and will be removed before Drupal 8.0.0.
    */
   public function getUrlFromPath($path, $options = array()) {
-    // Generate URL.
     $options['absolute'] = TRUE;
-    $generated_url = $this->urlGenerator->generateFromPath($path, $options, TRUE);
-
-    // Return as render array, so we can bubble the cacheability metadata.
-    $build = ['#markup' => $generated_url->getGeneratedUrl()];
-    $generated_url->applyTo($build);
-    return $build;
+    return $this->urlGenerator->generateFromPath($path, $options);
   }
 
   /**
@@ -222,28 +231,15 @@ class TwigExtension extends \Twig_Extension {
    *   The link text for the anchor tag as a translated string.
    * @param \Drupal\Core\Url|string $url
    *   The URL object or string used for the link.
-   * @param array $attributes
-   *   An optional array of link attributes.
    *
-   * @return array
-   *   A render array representing a link to the given URL.
+   * @return string
+   *   An HTML string containing a link to the given url.
    */
-  public function getLink($text, $url, array $attributes = []) {
+  public function getLink($text, $url) {
     if (!$url instanceof Url) {
       $url = Url::fromUri($url);
     }
-    if ($attributes) {
-      if ($existing_attributes = $url->getOption('attributes')) {
-        $attributes = array_merge($existing_attributes, $attributes);
-      }
-      $url->setOption('attributes', $attributes);
-    }
-    $build = [
-      '#type' => 'link',
-      '#title' => $text,
-      '#url' => $url,
-    ];
-    return $build;
+    return $this->linkGenerator->generate($text, $url);
   }
 
   /**

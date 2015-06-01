@@ -41,13 +41,6 @@ use Drupal\filter\Plugin\FilterInterface;
  *   links = {
  *     "edit-form" = "/admin/config/content/formats/manage/{filter_format}",
  *     "disable" = "/admin/config/content/formats/manage/{filter_format}/disable"
- *   },
- *   config_export = {
- *     "name",
- *     "format",
- *     "weight",
- *     "roles",
- *     "filters",
  *   }
  * )
  */

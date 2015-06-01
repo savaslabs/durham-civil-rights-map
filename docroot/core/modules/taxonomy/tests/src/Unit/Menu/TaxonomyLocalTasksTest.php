@@ -7,14 +7,14 @@
 
 namespace Drupal\Tests\taxonomy\Unit\Menu;
 
-use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
+use Drupal\Tests\Core\Menu\LocalTaskIntegrationTest;
 
 /**
  * Tests existence of taxonomy local tasks.
  *
  * @group taxonomy
  */
-class TaxonomyLocalTasksTest extends LocalTaskIntegrationTestBase {
+class TaxonomyLocalTasksTest extends LocalTaskIntegrationTest {
 
   protected function setUp() {
     $this->directoryList = array('taxonomy' => 'core/modules/taxonomy');

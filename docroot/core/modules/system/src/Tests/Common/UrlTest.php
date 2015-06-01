@@ -8,7 +8,6 @@
 namespace Drupal\system\Tests\Common;
 
 use Drupal\Component\Utility\UrlHelper;
-use Drupal\Core\Cache\Cache;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Url;
 use Drupal\simpletest\WebTestBase;
@@ -23,7 +22,7 @@ use Drupal\simpletest\WebTestBase;
  */
 class UrlTest extends WebTestBase {
 
-  public static $modules = array('common_test', 'url_alter_test');
+  public static $modules = array('common_test');
 
   /**
    * Confirms that invalid URLs are filtered in link generating functions.
@@ -43,33 +42,6 @@ class UrlTest extends WebTestBase {
   }
 
   /**
-   * Tests that #type=link bubbles outbound route/path processors' cacheability.
-   */
-  function testLinkCacheability() {
-    $cases = [
-      ['Regular link', 'internal:/user', [], ['contexts' => [], 'tags' => [], 'max-age' => Cache::PERMANENT]],
-      ['Regular link, absolute', 'internal:/user', ['absolute' => TRUE], ['contexts' => ['url.site'], 'tags' => [], 'max-age' => Cache::PERMANENT]],
-      ['Route processor link', 'route:system.run_cron', [], ['contexts' => [], 'tags' => [], 'max-age' => 0]],
-      ['Route processor link, absolute', 'route:system.run_cron', ['absolute' => TRUE], ['contexts' => ['url.site'], 'tags' => [], 'max-age' => 0]],
-      ['Path processor link', 'internal:/user/1', [], ['contexts' => [], 'tags' => ['user:1'], 'max-age' => Cache::PERMANENT]],
-      ['Path processor link, absolute', 'internal:/user/1', ['absolute' => TRUE], ['contexts' => ['url.site'], 'tags' => ['user:1'], 'max-age' => Cache::PERMANENT]],
-    ];
-
-    foreach ($cases as $case) {
-      list($title, $uri, $options, $expected_cacheability) = $case;
-      $link = [
-        '#type' => 'link',
-        '#title' => $title,
-        '#options' => $options,
-        '#url' => Url::fromUri($uri),
-      ];
-      drupal_render($link);
-      $this->pass($title);
-      $this->assertEqual($expected_cacheability, $link['#cache']);
-    }
-  }
-
-  /**
    * Tests that default and custom attributes are handled correctly on links.
    */
   function testLinkAttributes() {
@@ -80,7 +52,7 @@ class UrlTest extends WebTestBase {
       '#options' => array(
         'language' => $language,
       ),
-      '#url' => Url::fromUri('https://www.drupal.org'),
+      '#url' => Url::fromUri('http://drupal.org'),
       '#title' => 'bar',
     );
     $langcode = $language->getId();
@@ -158,18 +130,18 @@ class UrlTest extends WebTestBase {
    */
   function testLinkRenderArrayText() {
     // Build a link with _l() for reference.
-    $l = \Drupal::l('foo', Url::fromUri('https://www.drupal.org'));
+    $l = \Drupal::l('foo', Url::fromUri('http://drupal.org'));
 
     // Test a renderable array passed to _l().
     $renderable_text = array('#markup' => 'foo');
-    $l_renderable_text = \Drupal::l($renderable_text, Url::fromUri('https://www.drupal.org'));
+    $l_renderable_text = \Drupal::l($renderable_text, Url::fromUri('http://drupal.org'));
     $this->assertEqual($l_renderable_text, $l);
 
     // Test a themed link with plain text 'text'.
     $type_link_plain_array = array(
       '#type' => 'link',
       '#title' => 'foo',
-      '#url' => Url::fromUri('https://www.drupal.org'),
+      '#url' => Url::fromUri('http://drupal.org'),
     );
     $type_link_plain = drupal_render($type_link_plain_array);
     $this->assertEqual($type_link_plain, $l);
@@ -178,7 +150,7 @@ class UrlTest extends WebTestBase {
     $type_link_nested_array = array(
       '#type' => 'link',
       '#title' => array('#markup' => 'foo'),
-      '#url' => Url::fromUri('https://www.drupal.org'),
+      '#url' => Url::fromUri('http://drupal.org'),
     );
     $type_link_nested = drupal_render($type_link_nested_array);
     $this->assertEqual($type_link_nested, $l);
@@ -241,7 +213,7 @@ class UrlTest extends WebTestBase {
   function testDrupalParseUrl() {
     // Relative, absolute, and external URLs, without/with explicit script path,
     // without/with Drupal path.
-    foreach (array('', '/', 'https://www.drupal.org/') as $absolute) {
+    foreach (array('', '/', 'http://drupal.org/') as $absolute) {
       foreach (array('', 'index.php/') as $script) {
         foreach (array('', 'foo/bar') as $path) {
           $url = $absolute . $script . $path . '?foo=bar&bar=baz&baz#foo';
@@ -265,7 +237,7 @@ class UrlTest extends WebTestBase {
     $this->assertEqual(UrlHelper::parse($url), $result, 'Relative URL parsed correctly.');
 
     // Test that drupal can recognize an absolute URL. Used to prevent attack vectors.
-    $url = 'https://www.drupal.org/foo/bar?foo=bar&bar=baz&baz#foo';
+    $url = 'http://drupal.org/foo/bar?foo=bar&bar=baz&baz#foo';
     $this->assertTrue(UrlHelper::isExternal($url), 'Correctly identified an external URL.');
 
     // Test that UrlHelper::parse() does not allow spoofing a URL to force a malicious redirect.
@@ -277,7 +249,7 @@ class UrlTest extends WebTestBase {
    * Tests external URL handling.
    */
   function testExternalUrls() {
-    $test_url = 'https://www.drupal.org/';
+    $test_url = 'http://drupal.org/';
 
     // Verify external URL can contain a fragment.
     $url = $test_url . '#drupal';
@@ -288,7 +260,7 @@ class UrlTest extends WebTestBase {
     $url = $test_url . '#drupal';
     $fragment = $this->randomMachineName(10);
     $result = Url::fromUri($url, array('fragment' => $fragment))->toString();
-    $this->assertEqual($test_url . '#' . $fragment, $result, 'External URL fragment is overridden with a custom fragment in $options.');
+    $this->assertEqual($test_url . '#' . $fragment, $result, 'External URL fragment is overidden with a custom fragment in $options.');
 
     // Verify external URL can contain a query string.
     $url = $test_url . '?drupal=awesome';

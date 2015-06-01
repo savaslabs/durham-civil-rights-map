@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Menu;
 
-use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -54,7 +53,7 @@ class MenuParentFormSelector implements MenuParentFormSelectorInterface {
   /**
    * {@inheritdoc}
    */
-  public function getParentSelectOptions($id = '', array $menus = NULL, CacheableMetadata &$cacheability = NULL) {
+  public function getParentSelectOptions($id = '', array $menus = NULL) {
     if (!isset($menus)) {
       $menus = $this->getMenuOptions();
     }
@@ -73,7 +72,7 @@ class MenuParentFormSelector implements MenuParentFormSelectorInterface {
         array('callable' => 'menu.default_tree_manipulators:generateIndexAndSort'),
       );
       $tree = $this->menuLinkTree->transform($tree, $manipulators);
-      $this->parentSelectOptionsTreeWalk($tree, $menu_name, '--', $options, $id, $depth_limit, $cacheability);
+      $this->parentSelectOptionsTreeWalk($tree, $menu_name, '--', $options, $id, $depth_limit);
     }
     return $options;
   }
@@ -82,8 +81,7 @@ class MenuParentFormSelector implements MenuParentFormSelectorInterface {
    * {@inheritdoc}
    */
   public function parentSelectElement($menu_parent, $id = '', array $menus = NULL) {
-    $options_cacheability = new CacheableMetadata();
-    $options = $this->getParentSelectOptions($id, $menus, $options_cacheability);
+    $options = $this->getParentSelectOptions($id, $menus);
     // If no options were found, there is nothing to select.
     if ($options) {
       $element = array(
@@ -100,7 +98,6 @@ class MenuParentFormSelector implements MenuParentFormSelectorInterface {
         // Only provide the default value if it is valid among the options.
         $element += array('#default_value' => $menu_parent);
       }
-      $options_cacheability->applyTo($element);
       return $element;
     }
     return array();
@@ -140,29 +137,13 @@ class MenuParentFormSelector implements MenuParentFormSelectorInterface {
    *   An excluded menu link.
    * @param int $depth_limit
    *   The maximum depth of menu links considered for the select options.
-   * @param \Drupal\Core\Cache\CacheableMetadata|NULL &$cacheability
-   *   The object to add cacheability metadata to, if not NULL.
    */
-  protected function parentSelectOptionsTreeWalk(array $tree, $menu_name, $indent, array &$options, $exclude, $depth_limit, CacheableMetadata &$cacheability = NULL) {
+  protected function parentSelectOptionsTreeWalk(array $tree, $menu_name, $indent, array &$options, $exclude, $depth_limit) {
     foreach ($tree as $element) {
       if ($element->depth > $depth_limit) {
         // Don't iterate through any links on this level.
         break;
       }
-
-      // Collect the cacheability metadata of the access result, as well as the
-      // link.
-      if ($cacheability) {
-        $cacheability = $cacheability
-          ->merge(CacheableMetadata::createFromObject($element->access))
-          ->merge(CacheableMetadata::createFromObject($element->link));
-      }
-
-      // Only show accessible links.
-      if (!$element->access->isAllowed()) {
-        continue;
-      }
-
       $link = $element->link;
       if ($link->getPluginId() != $exclude) {
         $title = $indent . ' ' . Unicode::truncate($link->getTitle(), 30, TRUE, FALSE);
@@ -171,7 +152,7 @@ class MenuParentFormSelector implements MenuParentFormSelectorInterface {
         }
         $options[$menu_name . ':' . $link->getPluginId()] = $title;
         if (!empty($element->subtree)) {
-          $this->parentSelectOptionsTreeWalk($element->subtree, $menu_name, $indent . '--', $options, $exclude, $depth_limit, $cacheability);
+          $this->parentSelectOptionsTreeWalk($element->subtree, $menu_name, $indent . '--', $options, $exclude, $depth_limit);
         }
       }
     }

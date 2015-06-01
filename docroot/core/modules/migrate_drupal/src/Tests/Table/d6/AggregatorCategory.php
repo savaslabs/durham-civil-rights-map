@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\AggregatorCategory.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\AggregatorCategory.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -44,7 +44,7 @@ class AggregatorCategory extends DrupalDumpBase {
         'block' => array(
           'type' => 'int',
           'not null' => TRUE,
-          'length' => '11',
+          'length' => '4',
           'default' => '0',
         ),
       ),
@@ -59,4 +59,3 @@ class AggregatorCategory extends DrupalDumpBase {
   }
 
 }
-#f9b4a42a7a6c1f7bd027bd95c1a4ef83

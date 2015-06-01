@@ -43,8 +43,7 @@ class UpdateFetcherTest extends UnitTestCase {
    * Tests that buildFetchUrl() builds the URL correctly.
    *
    * @param array $project
-   *   A keyed array of project information matching results from
-   *   \Drupal\Update\UpdateManager::getProjects().
+   *   A keyed array of project information matching results from update_get_projects().
    * @param string $site_key
    *   A string to mimic an anonymous site key hash.
    * @param string $expected

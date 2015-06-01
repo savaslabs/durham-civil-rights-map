@@ -7,7 +7,6 @@
 
 namespace Drupal\views\Plugin\views\query;
 
-use Drupal\Core\Cache\Cache;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\CacheablePluginInterface;
 use Drupal\views\Plugin\views\PluginBase;
@@ -340,13 +339,6 @@ abstract class QueryPluginBase extends PluginBase implements CacheablePluginInte
    */
   public function getCacheTags() {
     return [];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheMaxAge() {
-    return Cache::PERMANENT;
   }
 
 }

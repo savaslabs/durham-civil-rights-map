@@ -25,13 +25,6 @@ class MenuLinkContentDeleteForm extends ContentEntityDeleteForm {
   /**
    * {@inheritdoc}
    */
-  protected function getRedirectUrl() {
-    return $this->getCancelUrl();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   protected function getDeletionMessage() {
     return $this->t('The menu link %title has been deleted.', array('%title' => $this->entity->label()));
   }

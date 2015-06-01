@@ -50,16 +50,6 @@ use Drupal\Core\StringTranslation\TranslationWrapper;
  *   }
  * @endcode
  *
- * Specifying a default value for the context definition:
- * @code
- *   context = {
- *     "message" = @ContextDefinition("string",
- *       label = @Translation("Message"),
- *       default_value = @Translation("Checkout complete! Thank you for your purchase.")
- *     )
- *   }
- * @endcode
- *
  * @see annotation
  *
  * @}
@@ -95,8 +85,6 @@ class ContextDefinition extends Plugin {
    *   - required: (optional) Whether the context definition is required.
    *   - multiple: (optional) Whether the context definition is multivalue.
    *   - description: (optional) The UI description of this context definition.
-   *   - default_value: (optional) The default value in case the underlying
-   *     value is not set.
    *   - class: (optional) A custom ContextDefinitionInterface class.
    *
    * @throws \Exception
@@ -107,7 +95,6 @@ class ContextDefinition extends Plugin {
     $values += array(
       'required' => TRUE,
       'multiple' => FALSE,
-      'default_value' => NULL,
     );
     // Annotation classes extract data from passed annotation classes directly
     // used in the classes they pass to.
@@ -124,7 +111,7 @@ class ContextDefinition extends Plugin {
       throw new \Exception('ContextDefinition class must implement \Drupal\Core\Plugin\Context\ContextDefinitionInterface.');
     }
     $class = isset($values['class']) ? $values['class'] : 'Drupal\Core\Plugin\Context\ContextDefinition';
-    $this->definition = new $class($values['value'], $values['label'], $values['required'], $values['multiple'], $values['description'], $values['default_value']);
+    $this->definition = new $class($values['value'], $values['label'], $values['required'], $values['multiple'], $values['description']);
   }
 
   /**

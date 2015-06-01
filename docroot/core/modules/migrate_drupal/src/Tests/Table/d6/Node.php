@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\Node.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\Node.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -268,4 +268,3 @@ class Node extends DrupalDumpBase {
   }
 
 }
-#3840cb30566e683edd201fe502399e30

@@ -8,7 +8,6 @@
 namespace Drupal\user\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
-use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -62,8 +61,6 @@ use Drupal\user\UserInterface;
  * )
  */
 class User extends ContentEntityBase implements UserInterface {
-
-  use EntityChangedTrait;
 
   /**
    * Stores a reference for a reusable anonymous user entity.
@@ -505,8 +502,7 @@ class User extends ContentEntityBase implements UserInterface {
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the user was last edited.'))
-      ->setTranslatable(TRUE);
+      ->setDescription(t('The time that the user was last edited.'));
 
     $fields['access'] = BaseFieldDefinition::create('timestamp')
       ->setLabel(t('Last access'))

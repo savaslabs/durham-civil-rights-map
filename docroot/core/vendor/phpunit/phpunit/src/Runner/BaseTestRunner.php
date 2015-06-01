@@ -55,8 +55,7 @@ abstract class PHPUnit_Runner_BaseTestRunner
             !is_file($suiteClassName . '.php') && empty($suiteClassFile)) {
             $facade = new File_Iterator_Facade;
             $files  = $facade->getFilesAsArray(
-                $suiteClassName,
-                $suffixes
+                $suiteClassName, $suffixes
             );
 
             $suite = new PHPUnit_Framework_TestSuite($suiteClassName);
@@ -67,13 +66,12 @@ abstract class PHPUnit_Runner_BaseTestRunner
 
         try {
             $testClass = $this->loadSuiteClass(
-                $suiteClassName,
-                $suiteClassFile
+                $suiteClassName, $suiteClassFile
             );
         } catch (PHPUnit_Framework_Exception $e) {
             $this->runFailed($e->getMessage());
 
-            return;
+            return null;
         }
 
         try {
@@ -84,7 +82,7 @@ abstract class PHPUnit_Runner_BaseTestRunner
                     'suite() method must be static.'
                 );
 
-                return;
+                return null;
             }
 
             try {
@@ -97,7 +95,7 @@ abstract class PHPUnit_Runner_BaseTestRunner
                     )
                 );
 
-                return;
+                return null;
             }
         } catch (ReflectionException $e) {
             try {

@@ -7,7 +7,7 @@
 
 namespace Drupal\taxonomy\Tests;
 
-use Drupal\content_translation\Tests\ContentTranslationUITestBase;
+use Drupal\content_translation\Tests\ContentTranslationUITest;
 use Drupal\Core\Language\LanguageInterface;
 
 /**
@@ -15,7 +15,7 @@ use Drupal\Core\Language\LanguageInterface;
  *
  * @group taxonomy
  */
-class TermTranslationUITest extends ContentTranslationUITestBase {
+class TermTranslationUITest extends ContentTranslationUITest {
 
   /**
    * The vocabulary used for creating terms.
@@ -38,7 +38,7 @@ class TermTranslationUITest extends ContentTranslationUITestBase {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::setupBundle().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::setupBundle().
    */
   protected function setupBundle() {
     parent::setupBundle();
@@ -55,14 +55,14 @@ class TermTranslationUITest extends ContentTranslationUITestBase {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getTranslatorPermission().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getTranslatorPermission().
    */
   protected function getTranslatorPermissions() {
     return array_merge(parent::getTranslatorPermissions(), array('administer taxonomy'));
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getNewEntityValues().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getNewEntityValues().
    */
   protected function getNewEntityValues($langcode) {
     return array('name' => $this->randomMachineName()) + parent::getNewEntityValues($langcode);
@@ -88,7 +88,7 @@ class TermTranslationUITest extends ContentTranslationUITestBase {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::testTranslationUI().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::testTranslationUI().
    */
   public function testTranslationUI() {
     parent::testTranslationUI();

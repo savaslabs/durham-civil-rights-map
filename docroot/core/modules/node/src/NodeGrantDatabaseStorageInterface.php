@@ -11,8 +11,6 @@ use Drupal\Core\Session\AccountInterface;
 
 /**
  * Provides an interface for node access grant storage.
- *
- * @ingroup node_access
  */
 interface NodeGrantDatabaseStorageInterface {
 

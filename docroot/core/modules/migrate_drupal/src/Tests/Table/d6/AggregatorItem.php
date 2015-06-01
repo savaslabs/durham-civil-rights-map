@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\AggregatorItem.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\AggregatorItem.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -94,4 +94,3 @@ class AggregatorItem extends DrupalDumpBase {
   }
 
 }
-#1164613d3b2596dfdfddefdc52da8bc7

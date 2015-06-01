@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\Core\Entity\ContentEntityNullStorage.
+ * Contains \Drupal\Core\Entity\FieldableNullStorage.
  */
 
 namespace Drupal\Core\Entity;
@@ -79,7 +79,7 @@ class ContentEntityNullStorage extends ContentEntityStorageBase {
    * {@inheritdoc}
    */
   protected function getQueryServiceName() {
-    return 'entity.query.null';
+    throw new QueryException('Null implementation can not be queried.');
   }
 
   /**

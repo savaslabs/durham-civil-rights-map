@@ -392,12 +392,12 @@ class ForumTest extends WebTestBase {
   /**
    * Creates a forum container or a forum.
    *
-   * @param string $type
+   * @param $type
    *   The forum type (forum container or forum).
-   * @param int $parent
+   * @param $parent
    *   The forum parent. This defaults to 0, indicating a root forum.
    *
-   * @return \Drupal\Core\Database\StatementInterface
+   * @return
    *   The created taxonomy term data.
    */
   function createForum($type, $parent = 0) {
@@ -441,7 +441,7 @@ class ForumTest extends WebTestBase {
   /**
    * Deletes a forum.
    *
-   * @param int $tid
+   * @param $tid
    *   The forum ID.
    */
   function deleteForum($tid) {
@@ -461,9 +461,9 @@ class ForumTest extends WebTestBase {
   /**
    * Runs basic tests on the indicated user.
    *
-   * @param \Drupal\Core\Session\AccountInterface $user
+   * @param $user
    *   The logged in user.
-   * @param bool $admin
+   * @param $admin
    *   User has 'access administration pages' privilege.
    */
   private function doBasicTests($user, $admin) {
@@ -565,9 +565,9 @@ class ForumTest extends WebTestBase {
    *
    * @param \Drupal\Core\Entity\EntityInterface $node
    *   The node being checked.
-   * @param bool $admin
+   * @param $admin
    *   Boolean to indicate whether the user can 'access administration pages'.
-   * @param int $response
+   * @param $response
    *   The expected HTTP response code.
    */
   private function verifyForums(EntityInterface $node, $admin, $response = 200) {
@@ -639,9 +639,9 @@ class ForumTest extends WebTestBase {
   /**
    * Verifies the display of a forum page.
    *
-   * @param array $forum
+   * @param $forum
    *   A row from the taxonomy_term_data table in an array.
-   * @param array $parent
+   * @param $parent
    *   (optional) An array representing the forum's parent.
    */
   private function verifyForumView($forum, $parent = NULL) {

@@ -264,11 +264,11 @@ class SearchMultilingualEntityTest extends SearchTestBase {
   /**
    * Verifies the indexing status counts.
    *
-   * @param int $remaining
+   * @param $remaining
    *   Count of remaining items to verify.
-   * @param int $total
+   * @param $total
    *   Count of total items to verify.
-   * @param string $message
+   * @param $message
    *   Message to use, something like "after updating the search index".
    */
   protected function assertIndexCounts($remaining, $total, $message) {

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\help_test\SupernovaGenerator.
+ * Contains \Drupal\help_test\SuperNovaGenerator.
  */
 
 namespace Drupal\help_test;
@@ -13,7 +13,7 @@ use Symfony\Component\Routing\RequestContext;
 /**
  * Implements a URL generator which always thrown an exception.
  */
-class SupernovaGenerator implements UrlGeneratorInterface {
+class SuperNovaGenerator implements UrlGeneratorInterface {
 
   /**
    * {@inheritdoc}
@@ -39,7 +39,7 @@ class SupernovaGenerator implements UrlGeneratorInterface {
   /**
    * {@inheritdoc}
    */
-  public function generateFromPath($path = NULL, $options = array(), $collect_cacheability_metadata = FALSE) {
+  public function generateFromPath($path = NULL, $options = array()) {
     throw new \Exception();
   }
 
@@ -53,7 +53,7 @@ class SupernovaGenerator implements UrlGeneratorInterface {
   /**
    * {@inheritdoc}
    */
-  public function generateFromRoute($name, $parameters = array(), $options = array(), $collect_cacheability_metadata = FALSE) {
+  public function generateFromRoute($name, $parameters = array(), $options = array()) {
     throw new \Exception();
   }
 

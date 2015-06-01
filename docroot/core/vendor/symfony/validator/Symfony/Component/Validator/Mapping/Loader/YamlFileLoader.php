@@ -85,7 +85,7 @@ class YamlFileLoader extends FileLoader
         $values = array();
 
         foreach ($nodes as $name => $childNodes) {
-            if (is_numeric($name) && is_array($childNodes) && 1 === count($childNodes)) {
+            if (is_numeric($name) && is_array($childNodes) && count($childNodes) == 1) {
                 $options = current($childNodes);
 
                 if (is_array($options)) {

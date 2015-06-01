@@ -13,7 +13,6 @@ use Drupal\Core\Database\Database;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DrupalKernel;
 use Drupal\Core\Entity\Sql\SqlEntityStorageInterface;
-use Drupal\Core\Extension\ExtensionDiscovery;
 use Drupal\Core\KeyValueStore\KeyValueMemoryFactory;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Site\Settings;
@@ -246,7 +245,7 @@ EOD;
     // Tests based on this class are entitled to use Drupal's File and
     // StreamWrapper APIs.
     // @todo Move StreamWrapper management into DrupalKernel.
-    // @see https://www.drupal.org/node/2028109
+    // @see https://drupal.org/node/2028109
     file_prepare_directory($this->publicFilesDirectory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
     $this->settingsSet('file_public_path', $this->publicFilesDirectory);
     $this->streamWrappers = array();
@@ -268,7 +267,7 @@ EOD;
     // state variables in Drupal, stream wrappers are a global state construct
     // of PHP core, which has to be maintained manually.
     // @todo Move StreamWrapper management into DrupalKernel.
-    // @see https://www.drupal.org/node/2028109
+    // @see https://drupal.org/node/2028109
     foreach ($this->streamWrappers as $scheme => $type) {
       $this->unregisterStreamWrapper($scheme, $type);
     }
@@ -484,14 +483,6 @@ EOD;
    *   The new modules are only added to the active module list and loaded.
    */
   protected function enableModules(array $modules) {
-    // Perform an ExtensionDiscovery scan as this function may receive a
-    // profile that is not the current profile, and we don't yet have a cached
-    // way to receive inactive profile information.
-    // @todo Remove as part of https://www.drupal.org/node/2186491
-    $listing = new ExtensionDiscovery(\Drupal::root());
-    $module_list = $listing->scan('module');
-    // In ModuleHandlerTest we pass in a profile as if it were a module.
-    $module_list += $listing->scan('profile');
     // Set the list of modules in the extension handler.
     $module_handler = $this->container->get('module_handler');
 
@@ -501,7 +492,7 @@ EOD;
     $extensions = $active_storage->read('core.extension');
 
     foreach ($modules as $module) {
-      $module_handler->addModule($module, $module_list[$module]->getPath());
+      $module_handler->addModule($module, drupal_get_path('module', $module));
       // Maintain the list of enabled modules in configuration.
       $extensions['module'][$module] = 0;
     }

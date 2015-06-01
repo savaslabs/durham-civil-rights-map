@@ -20,7 +20,7 @@ abstract class MigrateTestCase extends UnitTestCase {
   /**
    * Retrieve a mocked migration.
    *
-   * @return \Drupal\migrate\Entity\MigrationInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @return \Drupal\migrate\Entity\MigrationInterface
    *   The mocked migration.
    */
   protected function getMigration() {

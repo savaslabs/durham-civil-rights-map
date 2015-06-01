@@ -35,7 +35,7 @@
       // Render the main menu as a nested, collapsible accordion.
       if ('drupalToolbarMenu' in $.fn) {
         this.$el
-          .children('.toolbar-menu')
+          .children('.menu')
           .drupalToolbarMenu();
       }
     }

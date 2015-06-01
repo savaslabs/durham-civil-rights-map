@@ -157,22 +157,16 @@ class ConfigInstaller implements ConfigInstallerInterface {
    * {@inheritdoc}
    */
   public function installOptionalConfig(StorageInterface $storage = NULL, $dependency = []) {
-    $profile = $this->drupalGetProfile();
     if (!$storage) {
       // Search the install profile's optional configuration too.
       $storage = new ExtensionInstallStorage($this->getActiveStorages(StorageInterface::DEFAULT_COLLECTION), InstallStorage::CONFIG_OPTIONAL_DIRECTORY, StorageInterface::DEFAULT_COLLECTION, TRUE);
       // The extension install storage ensures that overrides are used.
       $profile_storage = NULL;
     }
-    elseif (isset($profile)) {
-      // Creates a profile storage to search for overrides.
-      $profile_install_path = $this->drupalGetPath('module', $profile) . '/' . InstallStorage::CONFIG_OPTIONAL_DIRECTORY;
-      $profile_storage = new FileStorage($profile_install_path, StorageInterface::DEFAULT_COLLECTION);
-    }
     else {
-      // Profile has not been set yet. For example during the first steps of the
-      // installer or during unit tests.
-      $profile_storage = NULL;
+      // Creates a profile storage to search for overrides.
+      $profile_install_path = $this->drupalGetPath('module', $this->drupalGetProfile()) . '/' . InstallStorage::CONFIG_OPTIONAL_DIRECTORY;
+      $profile_storage = new FileStorage($profile_install_path, StorageInterface::DEFAULT_COLLECTION);
     }
 
     $collection_info = $this->configManager->getConfigCollectionInfo();
@@ -310,11 +304,11 @@ class ConfigInstaller implements ConfigInstallerInterface {
           $entity = $entity_storage->createFromStorageRecord($new_config->get());
         }
         if ($entity->isInstallable()) {
-          $entity->trustData()->save();
+          $entity->save();
         }
       }
       else {
-        $new_config->save(TRUE);
+        $new_config->save();
       }
     }
   }

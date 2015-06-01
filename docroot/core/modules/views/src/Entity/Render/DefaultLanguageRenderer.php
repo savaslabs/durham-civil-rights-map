@@ -12,7 +12,7 @@ use Drupal\views\ResultRow;
 /**
  * Renders entities in their default language.
  */
-class DefaultLanguageRenderer extends EntityTranslationRendererBase {
+class DefaultLanguageRenderer extends RendererBase {
 
   /**
    * {@inheritdoc}

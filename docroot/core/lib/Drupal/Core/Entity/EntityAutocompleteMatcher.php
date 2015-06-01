@@ -34,7 +34,7 @@ class EntityAutocompleteMatcher {
   }
 
   /**
-   * Gets matched labels based on a given search string.
+   * Returns matched labels based on a given search string.
    *
    * @param string $target_type
    *   The ID of the target entity type.

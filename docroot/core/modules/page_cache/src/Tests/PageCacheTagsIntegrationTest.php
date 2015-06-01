@@ -78,9 +78,7 @@ class PageCacheTagsIntegrationTest extends WebTestBase {
       'theme',
       'timezone',
       'user.permissions',
-      // The cache contexts associated with the (in)accessible menu links are
-      // bubbled.
-      'user.roles:authenticated',
+      'user.roles',
     ];
 
     // Full node page 1.

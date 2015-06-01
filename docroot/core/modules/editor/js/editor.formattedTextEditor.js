@@ -171,9 +171,11 @@
       var fieldID = this.fieldModel.get('fieldID');
 
       // Create a Drupal.ajax instance to load the form.
-      var textLoaderAjax = Drupal.ajax({
+      var textLoaderAjax = new Drupal.ajax(fieldID, this.$el, {
         url: Drupal.quickedit.util.buildUrl(fieldID, Drupal.url('editor/!entity_type/!id/!field_name/!langcode/!view_mode')),
-        submit: {nocssjs: true}
+        event: 'editor-internal.editor',
+        submit: {nocssjs: true},
+        progress: {type: null} // No progress indicator.
       });
 
       // Implement a scoped editorGetUntransformedText AJAX command: calls the
@@ -184,7 +186,7 @@
 
       // This will ensure our scoped editorGetUntransformedText AJAX command
       // gets called.
-      textLoaderAjax.execute();
+      this.$el.trigger('editor-internal.editor');
     }
 
   });

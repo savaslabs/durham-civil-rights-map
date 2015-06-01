@@ -15,7 +15,7 @@ use Drupal\Core\TypedData\ComplexDataDefinitionInterface;
 interface EntityDataDefinitionInterface extends ComplexDataDefinitionInterface {
 
   /**
-   * Gets the entity type ID.
+   * Returns the entity type ID.
    *
    * @return string|null
    *   The entity type ID, or NULL if the entity type is unknown.
@@ -33,7 +33,7 @@ interface EntityDataDefinitionInterface extends ComplexDataDefinitionInterface {
   public function setEntityTypeId($entity_type_id);
 
   /**
-   * Gets the array of possible entity bundles.
+   * Returns the array of possible entity bundles.
    *
    * @return array|null
    *   The array of possible bundles, or NULL for any.

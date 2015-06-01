@@ -100,7 +100,6 @@ class ViewsIntegrationTest extends ViewUnitTestBase {
 
     // Disable replacing variables and check that the tokens aren't replaced.
     $view->destroy();
-    $view->storage->invalidateCaches();
     $view->initHandlers();
     $this->executeView($view);
     $view->initStyle();

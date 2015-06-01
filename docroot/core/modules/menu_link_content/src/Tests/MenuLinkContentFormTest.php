@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\menu_link_content\Tests\MenuLinkContentFormTest.
+ * Contains \Drupal\menu_link_content\Tests\MenuLinkContentUITest.
  */
 
 namespace Drupal\menu_link_content\Tests;

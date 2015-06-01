@@ -8,7 +8,6 @@
 namespace Drupal\Core\Queue;
 
 use Drupal\Core\Database\Connection;
-use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 
 /**
  * Default queue implementation.
@@ -16,8 +15,6 @@ use Drupal\Core\DependencyInjection\DependencySerializationTrait;
  * @ingroup queue
  */
 class DatabaseQueue implements ReliableQueueInterface {
-
-  use DependencySerializationTrait;
 
   /**
    * The name of the queue this instance is working with.

@@ -135,7 +135,7 @@ class ModulesUninstallConfirmForm extends ConfirmFormBase {
 
     // Prevent this page from showing when the module list is empty.
     if (empty($this->modules)) {
-      return $this->redirect('system.modules_uninstall');
+      return new RedirectResponse('/admin/modules/uninstall');
     }
 
     $data = system_rebuild_module_data();

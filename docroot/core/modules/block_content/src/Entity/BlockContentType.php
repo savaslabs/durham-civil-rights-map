@@ -38,12 +38,6 @@ use Drupal\block_content\BlockContentTypeInterface;
  *     "delete-form" = "/admin/structure/block/block-content/manage/{block_content_type}/delete",
  *     "edit-form" = "/admin/structure/block/block-content/manage/{block_content_type}",
  *     "collection" = "/admin/structure/block/block-content/types",
- *   },
- *   config_export = {
- *     "id",
- *     "label",
- *     "revision",
- *     "description",
  *   }
  * )
  */

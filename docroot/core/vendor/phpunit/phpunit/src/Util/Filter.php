@@ -62,8 +62,7 @@ class PHPUnit_Util_Filter
 
         if (!self::frameExists($eTrace, $eFile, $eLine)) {
             array_unshift(
-                $eTrace,
-                array('file' => $eFile, 'line' => $eLine)
+                $eTrace, array('file' => $eFile, 'line' => $eLine)
             );
         }
 

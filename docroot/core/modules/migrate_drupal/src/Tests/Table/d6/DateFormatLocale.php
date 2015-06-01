@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\migrate_drupal\Tests\Table\d6\DateFormatLocale.
+ * Contains \Drupal\migrate_drupal\Tests\Dump\DateFormatLocale.
  *
  * THIS IS A GENERATED FILE. DO NOT EDIT.
  *
- * @see core/scripts/migrate-db.sh
+ * @see cores/scripts/dump-database-d6.sh
  * @see https://www.drupal.org/sandbox/benjy/2405029
  */
 
@@ -52,4 +52,3 @@ class DateFormatLocale extends DrupalDumpBase {
   }
 
 }
-#6e387a5e7422422cef12532b9c153f4b

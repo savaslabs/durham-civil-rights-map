@@ -44,7 +44,7 @@ class ImmutableConfig extends Config {
   /**
    * {@inheritdoc}
    */
-  public function save($has_trusted_data = FALSE) {
+  public function save() {
     throw new ImmutableConfigException(SafeMarkup::format('Can not save immutable configuration !name. Use \Drupal\Core\Config\ConfigFactoryInterface::getEditable() to retrieve a mutable configuration object', ['!name' => $this->getName()]));
   }
 

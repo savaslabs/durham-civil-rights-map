@@ -654,6 +654,13 @@ class EntityType implements EntityTypeInterface {
   /**
    * {@inheritdoc}
    */
+  public function getConfigPrefix() {
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getRevisionDataTable() {
     return $this->revision_data_table;
   }

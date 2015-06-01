@@ -87,7 +87,7 @@ class FieldStorageAddForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'field_ui_field_storage_add_form';
   }
 

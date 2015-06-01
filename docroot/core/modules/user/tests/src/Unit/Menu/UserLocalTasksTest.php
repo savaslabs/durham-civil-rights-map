@@ -7,14 +7,14 @@
 
 namespace Drupal\Tests\user\Unit\Menu;
 
-use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
+use Drupal\Tests\Core\Menu\LocalTaskIntegrationTest;
 
 /**
  * Tests user local tasks.
  *
  * @group user
  */
-class UserLocalTasksTest extends LocalTaskIntegrationTestBase {
+class UserLocalTasksTest extends LocalTaskIntegrationTest {
 
   protected function setUp() {
     $this->directoryList = array('user' => 'core/modules/user');

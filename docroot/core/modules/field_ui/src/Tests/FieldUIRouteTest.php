@@ -7,8 +7,6 @@
 
 namespace Drupal\field_ui\Tests;
 
-use Drupal\Core\Entity\Entity\EntityFormMode;
-use Drupal\Core\Entity\Entity\EntityViewMode;
 use Drupal\simpletest\WebTestBase;
 
 /**
@@ -77,7 +75,7 @@ class FieldUIRouteTest extends WebTestBase {
 
     // Create new view mode and verify it's available on the Manage Display
     // screen after enabling it.
-    EntityViewMode::create(array(
+    entity_create('entity_view_mode' ,array(
       'id' => 'user.test',
       'label' => 'Test',
       'targetEntityType' => 'user',
@@ -90,7 +88,7 @@ class FieldUIRouteTest extends WebTestBase {
 
     // Create new form mode and verify it's available on the Manage Form
     // Display screen after enabling it.
-    EntityFormMode::create(array(
+    entity_create('entity_form_mode' ,array(
       'id' => 'user.test',
       'label' => 'Test',
       'targetEntityType' => 'user',

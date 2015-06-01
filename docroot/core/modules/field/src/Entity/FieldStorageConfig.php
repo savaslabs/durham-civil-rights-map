@@ -30,19 +30,6 @@ use Drupal\field\FieldStorageConfigInterface;
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "id"
- *   },
- *   config_export = {
- *     "id",
- *     "field_name",
- *     "entity_type",
- *     "type",
- *     "settings",
- *     "module",
- *     "locked",
- *     "cardinality",
- *     "translatable",
- *     "indexes",
- *     "persist_with_no_fields",
  *   }
  * )
  */
@@ -701,7 +688,7 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
    *
    * Using the Serialize interface and serialize() / unserialize() methods
    * breaks entity forms in PHP 5.4.
-   * @todo Investigate in https://www.drupal.org/node/2074253.
+   * @todo Investigate in https://drupal.org/node/2074253.
    */
   public function __sleep() {
     // Only serialize necessary properties, excluding those that can be

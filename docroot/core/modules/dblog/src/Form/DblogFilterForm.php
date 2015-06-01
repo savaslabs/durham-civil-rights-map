@@ -18,7 +18,7 @@ class DblogFilterForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'dblog_filter_form';
   }
 

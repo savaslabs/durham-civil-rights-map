@@ -45,6 +45,7 @@
 .toolbar .toolbar-bar .toolbar-tab > .toolbar-item:focus {
   background-image: -webkit-linear-gradient(rgba(255, 255, 255, 0.125) 20%, transparent 200%);
   background-image: linear-gradient(rgba(255, 255, 255, 0.125) 20%, transparent 200%);
+  text-decoration: none;
 }
 .toolbar .toolbar-bar .toolbar-tab > .toolbar-item.is-active {
   background-image: -webkit-linear-gradient(rgba(255, 255, 255, 0.25) 20%, transparent 200%);
@@ -98,7 +99,7 @@
   color: #000;
   text-decoration: underline;
 }
-.toolbar .toolbar-menu {
+.toolbar .menu {
   background-color: #ffffff;
 }
 .toolbar .toolbar-tray-horizontal .menu-item + .menu-item {
@@ -123,21 +124,21 @@
 .toolbar .toolbar-tray-vertical .menu-item .menu-item {
   border: 0 none;
 }
-.toolbar .toolbar-tray-vertical .toolbar-menu ul ul {
+.toolbar .toolbar-tray-vertical .menu ul ul {
   border-bottom: 1px solid #dddddd;
   border-top: 1px solid #dddddd;
 }
 .toolbar .toolbar-tray-vertical .menu-item:last-child > ul {
   border-bottom: 0;
 }
-.toolbar .toolbar-tray-vertical .toolbar-menu .toolbar-menu .toolbar-menu .toolbar-menu {
+.toolbar .toolbar-tray-vertical .menu .menu .menu .menu {
   margin-left: 0.25em; /* LTR */
 }
-[dir="rtl"] .toolbar .toolbar-tray-vertical .toolbar-menu .toolbar-menu .toolbar-menu .toolbar-menu {
+[dir="rtl"] .toolbar .toolbar-tray-vertical .menu .menu .menu .menu {
   margin-left: 0;
   margin-right: 0.25em;
 }
-.toolbar .toolbar-menu .toolbar-menu a {
+.toolbar .menu .menu a {
   color: #434343;
 }
 

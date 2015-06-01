@@ -67,7 +67,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Gets the entity manager.
+   * Returns the entity manager.
    *
    * @return \Drupal\Core\Entity\EntityManagerInterface
    */
@@ -76,7 +76,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Gets the language manager.
+   * Returns the language manager.
    *
    * @return \Drupal\Core\Language\LanguageManagerInterface
    */
@@ -85,7 +85,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Gets the UUID generator.
+   * Returns the UUID generator.
    *
    * @return \Drupal\Component\Uuid\UuidInterface
    */
@@ -204,15 +204,8 @@ abstract class Entity implements EntityInterface {
     $uri
       ->setOption('entity_type', $this->getEntityTypeId())
       ->setOption('entity', $this);
-
-    // Display links by default based on the current language.
-    if ($rel !== 'collection') {
-      $options += ['language' => $this->language()];
-    }
-
     $uri_options = $uri->getOptions();
     $uri_options += $options;
-
     return $uri->setOptions($uri_options);
   }
 
@@ -235,7 +228,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Gets an array link templates.
+   * Returns an array link templates.
    *
    * @return array
    *   An array of link templates containing paths.
@@ -274,7 +267,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Gets an array of placeholders for this entity.
+   * Returns an array of placeholders for this entity.
    *
    * Individual entity classes may override this method to add additional
    * placeholders if desired. If so, they should be sure to replicate the
@@ -330,16 +323,13 @@ abstract class Entity implements EntityInterface {
    * {@inheritdoc}
    */
   public function language() {
-    if ($key = $this->getEntityType()->getKey('langcode')) {
-      $langcode = $this->$key;
-      $language = $this->languageManager()->getLanguage($langcode);
-      if ($language) {
-        return $language;
-      }
+    $langcode = $this->{$this->getEntityType()->getKey('langcode')};
+    $language = $this->languageManager()->getLanguage($langcode);
+    if (!$language) {
+      // Make sure we return a proper language object.
+      $langcode = $this->langcode ?: LanguageInterface::LANGCODE_NOT_SPECIFIED;
+      $language = new Language(array('id' => $langcode));
     }
-    // Make sure we return a proper language object.
-    $langcode = !empty($this->langcode) ? $this->langcode : LanguageInterface::LANGCODE_NOT_SPECIFIED;
-    $language = new Language(array('id' => $langcode));
     return $language;
   }
 
@@ -457,8 +447,7 @@ abstract class Entity implements EntityInterface {
    * {@inheritdoc}
    */
   public function getCacheTags() {
-    // @todo Add bundle-specific listing cache tag?
-    //   https://www.drupal.org/node/2145751
+    // @todo Add bundle-specific listing cache tag? https://drupal.org/node/2145751
     return [$this->entityTypeId . ':' . $this->id()];
   }
 

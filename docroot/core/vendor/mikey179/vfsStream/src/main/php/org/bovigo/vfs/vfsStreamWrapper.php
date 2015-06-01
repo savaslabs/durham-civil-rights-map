@@ -124,7 +124,6 @@ class vfsStreamWrapper
     public static function setRoot(vfsStreamContainer $root)
     {
         self::$root = $root;
-        clearstatcache();
         return self::$root;
     }
 
@@ -482,11 +481,7 @@ class vfsStreamWrapper
         switch ($option) {
             case STREAM_META_TOUCH:
                 if (null === $content) {
-                    $content = $this->createFile($path, null, STREAM_REPORT_ERRORS);
-                    // file creation may not be allowed at provided path
-                    if (false === $content) {
-                        return false;
-                    }
+                    $content = $this->createFile($path);
                 }
 
                 $currentTime = time();

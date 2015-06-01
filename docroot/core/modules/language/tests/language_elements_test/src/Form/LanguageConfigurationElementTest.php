@@ -17,7 +17,7 @@ class LanguageConfigurationElementTest extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'language_elements_configuration_element_test';
   }
 

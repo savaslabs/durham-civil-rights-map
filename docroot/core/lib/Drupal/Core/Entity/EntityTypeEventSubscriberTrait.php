@@ -19,7 +19,7 @@ namespace Drupal\Core\Entity;
 trait EntityTypeEventSubscriberTrait {
 
   /**
-   * Gets the subscribed events.
+   * Returns the subscribed events.
    *
    * @return array
    *   An array of subscribed event names.
