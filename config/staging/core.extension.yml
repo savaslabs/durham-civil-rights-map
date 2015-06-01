@@ -1,5 +1,4 @@
 module:
-  beta2beta: 0
   block: 0
   block_content: 0
   breakpoint: 0
@@ -19,7 +18,6 @@ module:
   filter: 0
   geofield: 0
   geophp: 0
-  head2head: 0
   help: 0
   history: 0
   image: 0
