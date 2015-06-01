@@ -7,11 +7,11 @@ base theme: test_basetheme
 libraries:
   - test_subtheme/global-styling
 stylesheets-remove:
-  - @theme_test/css/sub-remove.css
-  - @test_basetheme/base-add.sub-remove.css
+  - '@theme_test/css/sub-remove.css'
+  - '@test_basetheme/base-add.sub-remove.css'
 
-# Information added by Drupal.org packaging script on 2015-04-29
-version: '8.0.0-beta10'
+# Information added by Drupal.org packaging script on 2015-05-27
+version: '8.0.0-beta11'
 core: '8.x'
 project: 'drupal'
-datestamp: 1430314871
+datestamp: 1432759049
