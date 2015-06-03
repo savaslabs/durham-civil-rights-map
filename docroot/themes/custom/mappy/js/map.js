@@ -15,7 +15,6 @@
     map.addLayer(baseLayer);
 
     // Add points.
-    // TODO: get popups working.
     function addDataToMap(data, map) {
         var dataLayer = L.geoJson(data, {
             onEachFeature: function(feature, layer) {
