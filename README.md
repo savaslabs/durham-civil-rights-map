@@ -9,6 +9,9 @@ Durham Civil Rights Map, a project of the Pauli Murray Project
 4. Download the DB from the dev site (ssh in, `drush sql-dump --gzip --result-file`), and install it locally.
 5. Run `drush config-import staging` to make sure that config is synced
 
+## Sass
+From the theme directory (docroot/themes/mappy), run `bundle exec compass compile` to compile the Sass files into styles.css
+
 ## Working with config changes
 
 Always after pulling new changes from the repo, run `drush config-import staging` to sync your config with code (this is like reverting features for D7).
