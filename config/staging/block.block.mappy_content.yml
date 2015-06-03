@@ -1,0 +1,22 @@
+uuid: 7bbdf52d-6a3c-4ad4-ae00-e7fe66d3ac52
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - mappy
+id: mappy_content
+theme: mappy
+region: content
+weight: 0
+provider: null
+plugin: system_main_block
+settings:
+  id: system_main_block
+  label: 'Main page content'
+  provider: system
+  label_display: '0'
+  cache:
+    max_age: -1
+visibility: {  }

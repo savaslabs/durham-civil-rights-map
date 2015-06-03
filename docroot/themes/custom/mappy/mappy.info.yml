@@ -5,6 +5,7 @@ description: 'D8 Theme for a basic leaflet site.'
 core: 8.x
 libraries:
  - mappy/global-styling
+ - mappy/leaflet
 regions:
   navbar: 'Top Navigation Bar'
   content: Content

@@ -1,0 +1,22 @@
+uuid: c9b696f1-53a4-4c82-a600-fc80650bce21
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - mappy
+id: mappy_messages
+theme: mappy
+region: navbar
+weight: 0
+provider: null
+plugin: system_messages_block
+settings:
+  id: system_messages_block
+  label: 'Status messages'
+  provider: system
+  label_display: '0'
+  cache:
+    max_age: -1
+visibility: {  }

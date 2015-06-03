@@ -2,5 +2,13 @@ global-styling:
   css:
     theme:
       css/styles.css: {}
-#  js:
-#    js/mappy.js: {}
+
+leaflet:
+  css:
+    theme:
+      css/leaflet.css: {}
+  js:
+    js/leaflet.js: {}
+    js/map.js: {}
+  dependencies:
+    - core/jquery
