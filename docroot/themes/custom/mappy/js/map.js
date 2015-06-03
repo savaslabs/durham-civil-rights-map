@@ -26,12 +26,10 @@
         dataLayer.addTo(map);
     }
 
-    // TODO: what should this path be?
-    $.getJSON('/pmp/docroot/points', function(data) {
+    $.getJSON('/points', function(data) {
         addDataToMap(data, map);
     });
-
-    // TODO: this path too.
-    L.Icon.Default.imagePath = '/pmp/docroot/themes/custom/mappy/images/leaflet';
+    
+    L.Icon.Default.imagePath = '/themes/custom/mappy/images/leaflet';
 
 })(jQuery);
