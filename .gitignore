@@ -23,8 +23,8 @@ docroot/sites/*/private
 *.o
 *.so
 *.pyc
-docroot/themes/mappy/.sass-cache/*
-docroot/themes/mappy/css/*
+docroot/themes/custom/mappy/.sass-cache/*
+docroot/themes/custom/mappy/css/*
 
 # Packages #
 ############
