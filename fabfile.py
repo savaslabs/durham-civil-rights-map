@@ -53,18 +53,18 @@ deploy:branch=develop` or `fab prod deploy:tag=1.1.0`.')
         env.code = tag
     if (confirm('Backup database?')):
         with cd(env.code_dir):
-            run('drush7 -r %s sql-dump --result-file --gzip' % env.code_dir)
+            run('./vendor/bin/drush -r %s sql-dump --result-file --gzip' % env.code_dir)
 
 
 def post_deploy():
      # Prompt to import config
 
     # Run update hooks. `updb` clears caches, hence the `else` below.
-    if confirm('Run `drush7 updb`?'):
-        run('drush7 -r %s updb' % env.code_dir)
+    if confirm('Run `./vendor/bin/drush updb`?'):
+        run('./vendor/bin/drush -r %s updb' % env.code_dir)
     else:
         if confirm('Clear all caches?'):
-            run('drush7 -r %s cc all' % env.code_dir)
+            run('./vendor/bin/drush -r %s cc all' % env.code_dir)
 
 
 def deploy(branch='', tag=''):
@@ -79,5 +79,5 @@ def status():
         local('echo "Checked out code on %s: %s"' % (
             env.hosts, checked_out_code))
         run('git status')
-        run('drush7 cc drush')
-        run('drush7 fl')
+        run('./vendor/bin/drush cc drush')
+        run('./vendor/bin/drush fl')
