@@ -57,16 +57,17 @@ deploy:branch=develop` or `fab prod deploy:tag=1.1.0`.')
 
 
 def post_deploy():
-    # Prompt to import config
-    if confirm('Import configuration from code?'):
-        run('../vendor/bin/drush -r %s config-import staging' % env.code_dir)
+    with cd(env.code_dir):
+        # Prompt to import config
+        if confirm('Import configuration from code?'):
+            run('../vendor/bin/drush -r %s config-import staging' % env.code_dir)
 
-    # Run update hooks. `updb` clears caches, hence the `else` below.
-    if confirm('Run `../vendor/bin/drush updb`?'):
-        run('../vendor/bin/drush -r %s updb' % env.code_dir)
-    else:
-        if confirm('Clear all caches?'):
-            run('../vendor/bin/drush -r %s cr' % env.code_dir)
+        # Run update hooks. `updb` clears caches, hence the `else` below.
+        if confirm('Run `../vendor/bin/drush updb`?'):
+            run('../vendor/bin/drush -r %s updb' % env.code_dir)
+        else:
+            if confirm('Clear all caches?'):
+                run('../vendor/bin/drush -r %s cr' % env.code_dir)
 
 
 def deploy(branch='', tag=''):
