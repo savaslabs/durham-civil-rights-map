@@ -1,6 +1,6 @@
 uuid: b07dab9e-088f-4dd5-bd00-c461bfe88ef3
 langcode: en
-status: true
+status: false
 dependencies:
   config:
     - system.menu.tools
@@ -10,7 +10,7 @@ dependencies:
     - mappy
 id: mappy_tools
 theme: mappy
-region: navbar
+region: '-1'
 weight: 0
 provider: null
 plugin: 'system_menu_block:tools'

@@ -1,6 +1,6 @@
 uuid: 7893869d-8d93-4d7a-ae00-cec44dd05ee7
 langcode: en
-status: true
+status: false
 dependencies:
   module:
     - help
@@ -8,7 +8,7 @@ dependencies:
     - mappy
 id: mappy_help
 theme: mappy
-region: navbar
+region: '-1'
 weight: 0
 provider: null
 plugin: help_block

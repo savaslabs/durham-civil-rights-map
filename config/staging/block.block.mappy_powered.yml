@@ -1,6 +1,6 @@
 uuid: 49038ecb-f119-4fc1-b749-735d33f9c937
 langcode: en
-status: true
+status: false
 dependencies:
   module:
     - system
@@ -8,8 +8,8 @@ dependencies:
     - mappy
 id: mappy_powered
 theme: mappy
-region: navbar
-weight: 10
+region: '-1'
+weight: -6
 provider: null
 plugin: system_powered_by_block
 settings:
