@@ -26,11 +26,11 @@ body.path-frontpage {
     padding: 10px;
     z-index: 1;
 
-    @media screen and (min-width: $small-screen) {
+    @media screen and (min-width: $mobile) {
       border-radius: 5px;
     }
 
-    @media screen and (max-width: $small-screen) {
+    @media screen and (max-width: $mobile) {
       top: auto;
       bottom: 0;
       left: 0;

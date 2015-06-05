@@ -1,5 +1,33 @@
-// Colors
-$beige: #ffffee;
+// File adapted from the Basic theme.
 
-// Breakpoints
-$small-screen: 768px;
+// Import variables and mixins to be used (Bourbon).
+@import "lib/bourbon/bourbon";
+@import "lib/neat/neat-helpers";
+
+// Bourbon grid display. Comment out to remove display.
+$visual-grid:       true;
+$visual-grid-color: #EEEEEE;
+
+// Set to false if you'd like to remove the responsiveness.
+$responsive:    true;
+
+// Set number of columns.
+$grid-columns:  12;
+
+// We set the max width of the page using the px to em function in Bourbon.
+// the first value is the pixel value of the width and the second is the base font size of your theme.
+// In this instance we want the max width to be 1088px and on Line 6 of style.sass we have reset the base
+// font size to 13px so the first value would be 1088 and the second 13
+// ex. em(1088, 13)
+$font-size:     16px;
+//$max-width-px:  1088px;
+//$max-width:     em($max-width-px, $font-size);
+
+// Define breakpoints.
+$mobile:        new-breakpoint(min-width em(320px, $font-size) 4);
+$tablet:        new-breakpoint(min-width em(720px, $font-size) 8);
+$desktop:       new-breakpoint(min-width em(960px, $font-size) 15);
+
+// Import grid to be used (Bourbon Neat).
+// We load this after we provide our overrides: https://github.com/thoughtbot/neat#changing-the-defaults
+@import "lib/neat/neat";
