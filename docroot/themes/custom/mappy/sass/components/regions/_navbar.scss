@@ -1,5 +1,28 @@
 .navbar {
   background: $background-color;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+
+
+  @include media($wide) {
+    .site-name {
+      @include span-columns(6);
+    }
+
+    .region-navbar {
+      @include span-columns(6);
+    }
+
+    .menu {
+      float: right;
+
+      .menu-item {
+        display: inline;
+      }
+    }
+  }
 
   .menu-item {
     padding: 10px;

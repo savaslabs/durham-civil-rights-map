@@ -27,9 +27,10 @@ $font-size:     16px;
 //$max-width:     em($max-width-px, $font-size);
 
 // Define breakpoints.
-$mobile:        new-breakpoint(min-width em(320px, $font-size) 4);
-$tablet:        new-breakpoint(min-width em(720px, $font-size) 8);
-$desktop:       new-breakpoint(min-width em(960px, $font-size) 15);
+// The last number is the number of columns.
+$mobile:   new-breakpoint(min-width em(320px, $font-size) $grid-columns);
+$narrow:   new-breakpoint(min-width em(560px, $font-size) $grid-columns);
+$wide:     new-breakpoint(min-width em(851px, $font-size) $grid-columns);
 
 // Import grid to be used (Bourbon Neat).
 // We load this after we provide our overrides: https://github.com/thoughtbot/neat#changing-the-defaults
