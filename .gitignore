@@ -3,6 +3,7 @@
 # Ignore configuration files that may contain sensitive information.
 *.local.php
 !example.settings.local.php
+development.services.yml
 
 # User Generated Content #
 ##########################
