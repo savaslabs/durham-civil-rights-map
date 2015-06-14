@@ -5,38 +5,29 @@ header {
   left: 0;
   z-index: 1;
 
-  .site-name {
-    display: inline-block;
-    float: left;
-  }
-
-  .menu {
-    display: inline-block;
-    float: right;
-  }
-
-  @include media($wide) {
-    .menu-item {
-      display: inline;
-    }
-  }
-
   // Bourbon's navigation refill -----------------------------------------------
 
-  $large-screen: $wide;
   $navigation-background: $background-color;
   $navigation-color: $link-color;
   $navigation-color-hover: $link-hover;
-  $navigation-height: 60px;
+  $navigation-height: 73px;
   $navigation-active-link-color: $link-color;
-  $horizontal-bar-mode: $large-screen;
+  $horizontal-bar-mode: $wide;
+  $navigation-padding: 1em;
 
   .navigation-wrapper {
     position: relative;
     z-index: 9999;
   }
 
-  // Mobile view
+  .site-name {
+    display: inline-block;
+    float: left;
+    max-height: $navigation-height;
+    padding-left: $navigation-padding;
+  }
+
+  // Mobile view.
 
   .navigation-menu-button {
     color: $navigation-color;
@@ -58,7 +49,7 @@ header {
     }
   }
 
-  // Nav menu
+  // Nav menu.
 
   nav {
     float: none;
@@ -71,7 +62,7 @@ header {
   }
 
   ul {
-    -webkit-transform-style: preserve-3d; // stop webkit flicker
+    -webkit-transform-style: preserve-3d; // Stop webkit flicker.
     clear: both;
     display: none;
     margin: 0 auto;
@@ -91,14 +82,14 @@ header {
     }
   }
 
-  // The nav items
+  // The nav items.
 
-  ul li.nav-link {
+  ul li {
     background: $navigation-background;
     display: block;
-    line-height: $navigation-height;
+    line-height: 2em;
     overflow: hidden;
-    padding-right: 0.8em;
+    padding-right: $navigation-padding;
     text-align: right;
     width: 100%;
     z-index: 9999;
@@ -127,25 +118,10 @@ header {
       }
     }
   }
-
+  // TODO: rename this to whatever drupal applies on active nav link.
   .active-nav-item a {
     border-bottom: 1px solid $navigation-active-link-color;
     padding-bottom: 3px;
-  }
-
-  // Elements on the far right
-
-  .navigation-tools {
-    background: #505050;
-    clear: both;
-    display: block;
-    height: $navigation-height;
-
-    @include media($horizontal-bar-mode) {
-      background: transparent;
-      clear: none;
-      float: right;
-    }
   }
 }
 
