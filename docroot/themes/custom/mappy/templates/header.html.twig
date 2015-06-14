@@ -1,0 +1,17 @@
+{#
+/**
+* @file
+* Header template, to be included on every page.
+#}
+
+<header>
+    <div class="site-name">
+        <a href="{{ front_page }}" title="{{ 'Home'|t }}" rel="home">
+            <h2 class="site-name__heading">{{ site_name }}</h2>
+        </a>
+    </div>
+    <div class="navigation-wrapper">
+        <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu">MENU</a>
+        {{ page.navbar }}
+    </div>
+</header>
