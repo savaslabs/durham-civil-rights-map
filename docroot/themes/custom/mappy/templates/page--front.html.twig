@@ -57,6 +57,7 @@
  * @see html.html.twig
  */
 #}
+{#{{ kint() }}#}
 
 <header>
     <div class="site-name">
@@ -64,7 +65,10 @@
             <h2>{{ site_name }}</h2>
         </a>
     </div>
-    {{ page.navbar }}
+    <div class="navigation-wrapper">
+        <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu">MENU</a>
+        {{ page.navbar }}
+    </div>
 </header>
 
 <div class="sidebar">

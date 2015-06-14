@@ -1,8 +1,9 @@
 // Colors
-$background-color: #FFFFF9;   // Eggshell
-$heading-color: #5F1251;      // Purple. Consider darkening.
-$link-color: #709130;         // Green
-$copytext-color: #5C5240;     // Brown
+$background-color: #FFFFF9;             // Eggshell
+$heading-color: #5F1251;                // Purple. Consider darkening.
+$link-color: #709130;                   // Green
+$link-hover: lighten($link-color, 25%); // Lighter green
+$copytext-color: #5C5240;               // Brown
 
 // Fonts
 $heading-font: unquote('Noto Serif, Georgia, serif');

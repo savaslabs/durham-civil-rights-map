@@ -1,4 +1,5 @@
 body {
+  @include outer-container;
   font-family: $copytext-font;
 }
 
