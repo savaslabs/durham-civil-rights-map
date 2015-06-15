@@ -1,5 +1,6 @@
 header {
   @include span-columns(12);
+  @include box-shadow;
   background: $element-background-color;
   min-height: $navigation-height;
   left: 0;

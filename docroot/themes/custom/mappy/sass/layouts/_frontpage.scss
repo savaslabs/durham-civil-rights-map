@@ -20,6 +20,7 @@ body.path-frontpage {
 
   .sidebar {
     @include span-columns(12);
+    @include box-shadow;
     bottom: 0;
     left: 0;
     position: absolute;

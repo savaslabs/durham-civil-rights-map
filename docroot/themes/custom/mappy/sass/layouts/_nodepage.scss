@@ -9,6 +9,7 @@
     .node-title-box {
       @include span-columns(4 of 8);
       @include shift(2 of 8);
+      @include box-shadow;
       background-color: $element-background-color;
       border-radius: $border-radius;
       margin-bottom: $general-spacing;

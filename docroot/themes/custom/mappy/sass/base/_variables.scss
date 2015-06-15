@@ -22,3 +22,8 @@ $navigation-height: 73px;
 $navigation-active-link-color: $link-color;
 $horizontal-bar-mode: $wide;
 $navigation-padding: 1em;
+
+// Mixins
+@mixin box-shadow {
+  box-shadow: 0 2px 4px lighten($copytext-color, 10%);
+}
