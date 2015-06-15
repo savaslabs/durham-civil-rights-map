@@ -1,3 +1,5 @@
-.navbar {
-  width: 100%;
+// Site-wide layout styles.
+
+body {
+  @include outer-container();
 }
