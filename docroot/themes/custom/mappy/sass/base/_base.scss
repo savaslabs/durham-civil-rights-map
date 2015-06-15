@@ -1,4 +1,6 @@
 body {
+  background-color: $page-background-color;
+  color: $copytext-color;
   font-family: $copytext-font;
 }
 
@@ -17,4 +19,12 @@ h6 {
   color: $heading-color;
   font-family: $heading-font;
   text-decoration: none;
+}
+
+hr {
+  background-color: $heading-color; // For modern browsers.
+  border: none;
+  color: $heading-color; // For old IE.
+  height: 2px;
+  width: 80%;
 }

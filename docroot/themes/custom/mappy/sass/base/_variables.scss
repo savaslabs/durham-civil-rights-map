@@ -1,5 +1,6 @@
 // Colors
-$background-color: #FFFFF9;             // Eggshell
+$element-background-color: #FFFFF9;     // Eggshell
+$page-background-color: #DDE0D0;        // Taupe
 $heading-color: #5F1251;                // Purple. Consider darkening.
 $link-color: #709130;                   // Green
 $link-hover: lighten($link-color, 25%); // Lighter green
@@ -9,8 +10,12 @@ $copytext-color: #5C5240;               // Brown
 $heading-font: unquote('Noto Serif, Georgia, serif');
 $copytext-font: unquote('Open Sans, Arial, sans-serif');
 
+// Other styles
+$border-radius: 8px;
+$general-spacing: 3em;
+
 // Navigation refill variables
-$navigation-background: $background-color;
+$navigation-background: $element-background-color;
 $navigation-color: $link-color;
 $navigation-color-hover: $link-hover;
 $navigation-height: 73px;
