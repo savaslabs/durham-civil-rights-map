@@ -9,7 +9,7 @@ dependencies:
 id: mappy_help
 theme: mappy
 region: '-1'
-weight: 0
+weight: -3
 provider: null
 plugin: help_block
 settings:

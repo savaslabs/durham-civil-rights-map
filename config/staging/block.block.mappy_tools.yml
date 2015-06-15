@@ -11,7 +11,7 @@ dependencies:
 id: mappy_tools
 theme: mappy
 region: '-1'
-weight: 0
+weight: -2
 provider: null
 plugin: 'system_menu_block:tools'
 settings:
