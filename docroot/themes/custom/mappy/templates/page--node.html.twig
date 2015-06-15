@@ -57,15 +57,12 @@
  * @see html.html.twig
  */
 #}
-{% include '@mappy/header.html.twig' %}
+
+{{ page.header }}
 
 <main>
     {{ page.content }}
     <div id="map" class="map--node"></div>
 </main>
 
-<footer>
-    <div class="footer">
-        {{  page.footer }}
-    </div>
-</footer>
+{{ page.footer }}
