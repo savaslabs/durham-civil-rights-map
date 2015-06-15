@@ -10,7 +10,7 @@ dependencies:
     - mappy
 id: mappy_main_menu
 theme: mappy
-region: navbar
+region: header
 weight: 0
 provider: null
 plugin: 'system_menu_block:main'

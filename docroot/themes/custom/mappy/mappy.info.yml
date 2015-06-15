@@ -7,7 +7,7 @@ libraries:
  - mappy/global-styling
  - mappy/leaflet
 regions:
-  navbar: 'Top Navigation Bar'
+  header: 'Header'
   content: Content
   sidebar: 'Sidebar'
   footer: 'Footer'

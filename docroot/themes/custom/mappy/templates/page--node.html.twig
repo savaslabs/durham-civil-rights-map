@@ -57,34 +57,12 @@
  * @see html.html.twig
  */
 #}
-<header>
-<div class="navbar">
-    <strong class="site-name">
-        <a href="{{ front_page }}" title="{{ 'Home'|t }}" rel="home">{{ site_name }}</a>
-    </strong>
 
-    {{ page.navbar }}
-</div>
-</header>
+{{ page.header }}
 
 <main>
-    {{ title_prefix }}
-    {% if title %}
-        <h1>{{ title }}</h1>
-    {% endif %}
-    {{ title_suffix }}
-
-    {{ tabs }}
-
-    {% if action_links %}
-        <nav class="action-links">{{ action_links }}</nav>
-    {% endif %}
-
     {{ page.content }}
+    <div id="map" class="map--node"></div>
 </main>
 
-<footer>
-    <div class="footer">
-        {{  page.footer }}
-    </div>
-</footer>
+{{ page.footer }}

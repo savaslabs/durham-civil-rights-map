@@ -8,7 +8,7 @@ dependencies:
     - mappy
 id: mappy_search
 theme: mappy
-region: navbar
+region: content
 weight: -1
 provider: null
 plugin: search_form_block

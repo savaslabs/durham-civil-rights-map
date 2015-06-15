@@ -1,6 +1,6 @@
 uuid: c59bc3aa-26d0-40a4-b003-3a38c9ce7c36
 langcode: en
-status: true
+status: false
 dependencies:
   module:
     - system
@@ -8,8 +8,8 @@ dependencies:
     - mappy
 id: mappy_breadcrumbs
 theme: mappy
-region: navbar
-weight: 0
+region: '-1'
+weight: -5
 provider: null
 plugin: system_breadcrumb_block
 settings:

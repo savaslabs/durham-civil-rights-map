@@ -1,0 +1,30 @@
+body {
+  background-color: $page-background-color;
+  color: $copytext-color;
+  font-family: $copytext-font;
+}
+
+a {
+  color: $link-color;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h4,
+h5,
+h6 {
+  color: $heading-color;
+  font-family: $heading-font;
+  text-decoration: none;
+}
+
+hr {
+  background-color: $heading-color; // For modern browsers.
+  border: none;
+  color: $heading-color; // For old IE.
+  height: 2px;
+  width: 80%;
+}

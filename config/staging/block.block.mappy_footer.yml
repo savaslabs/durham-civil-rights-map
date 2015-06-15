@@ -1,6 +1,6 @@
 uuid: 80bf9b59-8dc7-458f-af18-24c287563540
 langcode: en
-status: true
+status: false
 dependencies:
   config:
     - system.menu.footer
@@ -10,8 +10,8 @@ dependencies:
     - mappy
 id: mappy_footer
 theme: mappy
-region: navbar
-weight: 0
+region: '-1'
+weight: -4
 provider: null
 plugin: 'system_menu_block:footer'
 settings:

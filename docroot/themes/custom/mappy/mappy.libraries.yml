@@ -2,6 +2,10 @@ global-styling:
   css:
     theme:
       css/styles.css: {}
+  js:
+    js/navigation.js: {}
+  dependencies:
+    - core/jquery
 
 leaflet:
   css:

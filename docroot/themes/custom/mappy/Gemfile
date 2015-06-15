@@ -1,8 +1,7 @@
 source "https://rubygems.org"
-# Replace 4.3.2 with the version of Foundation you want to use
-gem "compass"
-# gem "guard"
 
-# For more information on this file see:
-# http://foundation.zurb.com/docs/sass.html
-# http://zslabs.com/articles/versioned-dependencies-with-compass
+gem 'compass'
+gem 'sass'
+gem 'sass-globbing'  # Import Sass files based on globbing pattern.
+gem 'bourbon'        # Import Bourbon SASS framework.
+gem 'neat'           # Import Bourbon Neat grid framework

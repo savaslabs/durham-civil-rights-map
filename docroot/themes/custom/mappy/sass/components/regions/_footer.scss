@@ -1,3 +1,10 @@
-.footer {
-  background: $beige;
+footer {
+  @include span-columns(12);
+  @include clearfix;
+  background: $element-background-color;
+  border-bottom: 7px solid $heading-color;
+  text-align: center;
+  z-index: 1;
+
+
 }
