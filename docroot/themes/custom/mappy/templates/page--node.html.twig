@@ -60,19 +60,20 @@
 {% include '@mappy/header.html.twig' %}
 
 <main>
-    {{ title_prefix }}
-    {% if title %}
-        <h1>{{ title }}</h1>
-    {% endif %}
-    {{ title_suffix }}
+    <div class="node-title-box">
+        {{ title_prefix }}
+        {% if title %}
+            <h2>{{ title }}</h2>
+        {% endif %}
+        {{ title_suffix }}
+        <hr>
+        {{ page.content.address_text }}
+    </div>
 
-    {{ tabs }}
+    {{ page.content.photos }}
+    {{ page.content.body }}
 
-    {% if action_links %}
-        <nav class="action-links">{{ action_links }}</nav>
-    {% endif %}
-
-    {{ page.content }}
+    <div id="map" class="map--node"></div>
 </main>
 
 <footer>
