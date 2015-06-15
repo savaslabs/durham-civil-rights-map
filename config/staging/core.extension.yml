@@ -10,6 +10,7 @@ module:
   contextual: 0
   datetime: 0
   dblog: 0
+  devel: 0
   editor: 0
   entity_reference: 0
   field: 0
@@ -21,6 +22,7 @@ module:
   help: 0
   history: 0
   image: 0
+  kint: 0
   leaflet: 0
   link: 0
   menu_ui: 0

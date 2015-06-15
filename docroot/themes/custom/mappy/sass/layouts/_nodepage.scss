@@ -1,0 +1,10 @@
+.path-node {
+  header {
+    top: 0;
+  }
+
+  main {
+    @include clearfix;
+    margin-top: $navigation-height;
+  }
+}

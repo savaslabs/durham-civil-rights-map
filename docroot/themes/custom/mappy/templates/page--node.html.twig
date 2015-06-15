@@ -60,19 +60,7 @@
 {% include '@mappy/header.html.twig' %}
 
 <main>
-    <div class="node-title-box">
-        {{ title_prefix }}
-        {% if title %}
-            <h2>{{ title }}</h2>
-        {% endif %}
-        {{ title_suffix }}
-        <hr>
-        {{ page.content.address_text }}
-    </div>
-
-    {{ page.content.photos }}
-    {{ page.content.body }}
-
+    {{ page.content }}
     <div id="map" class="map--node"></div>
 </main>
 

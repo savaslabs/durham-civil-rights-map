@@ -4,7 +4,12 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.node.teaser
+    - field.field.node.place.address_text
     - field.field.node.place.body
+    - field.field.node.place.date
+    - field.field.node.place.field_tags
+    - field.field.node.place.location_coordinates
+    - field.field.node.place.photos
     - node.type.place
   module:
     - text
@@ -23,4 +28,9 @@ content:
     third_party_settings: {  }
   links:
     weight: 100
-hidden: {  }
+hidden:
+  address_text: true
+  date: true
+  field_tags: true
+  location_coordinates: true
+  photos: true
