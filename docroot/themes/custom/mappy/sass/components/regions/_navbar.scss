@@ -1,8 +1,10 @@
 header {
   @include span-columns(12);
-  background: $background-color;
-  position: absolute;
+  background: $element-background-color;
+  min-height: $navigation-height;
   left: 0;
+  position: absolute;
+  top: 0;
   z-index: 1;
 
   // Bourbon's navigation refill -----------------------------------------------
@@ -80,6 +82,7 @@ header {
   ul li {
     background: $navigation-background;
     display: block;
+    font-family: $heading-font;
     line-height: 2em;
     overflow: hidden;
     padding-right: $navigation-padding;
