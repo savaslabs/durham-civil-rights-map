@@ -7,15 +7,8 @@ header {
 
   // Bourbon's navigation refill -----------------------------------------------
 
-  $navigation-background: $background-color;
-  $navigation-color: $link-color;
-  $navigation-color-hover: $link-hover;
-  $navigation-height: 73px;
-  $navigation-active-link-color: $link-color;
-  $horizontal-bar-mode: $wide;
-  $navigation-padding: 1em;
-
   .navigation-wrapper {
+    @include clearfix;
     position: relative;
     z-index: 9999;
   }
