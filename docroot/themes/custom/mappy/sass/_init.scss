@@ -18,13 +18,13 @@ $responsive:    true;
 $grid-columns:  12;
 
 // We set the max width of the page using the px to em function in Bourbon.
-// the first value is the pixel value of the width and the second is the base font size of your theme.
+// the first value is the pi  xel value of the width and the second is the base font size of your theme.
 // In this instance we want the max width to be 1088px and on Line 6 of style.sass we have reset the base
 // font size to 13px so the first value would be 1088 and the second 13
 // ex. em(1088, 13)
 $font-size:     16px;
-//$max-width-px:  1088px;
-//$max-width:     em($max-width-px, $font-size);
+$max-width-px:  2000px;
+$max-width:     em($max-width-px, $font-size);
 
 // Define breakpoints.
 // The last number is the number of columns.
