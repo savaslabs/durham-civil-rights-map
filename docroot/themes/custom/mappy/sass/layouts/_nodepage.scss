@@ -1,20 +1,41 @@
 .path-node {
 
+  // Main: 10 columns on mobile, 8 columns on narrow and up.
   main {
-    @include span-columns(8);
-    @include shift(2);
+    @include span-columns(10);
+    @include shift(1);
     @include clearfix;
-    margin-top: $navigation-height;
 
+    @include media ($wide) {
+      @include span-columns(8);
+      @include shift(2);
+
+      .field-node--photos {
+        @include span-columns(4 of 8);
+      }
+
+      .field-node--body {
+        @include span-columns(4 of 8);
+      }
+    }
+    // Title box: 10 columns on mobile and narrow, 6 on wide and up.
     .node-title-box {
-      @include span-columns(4 of 8);
-      @include shift(2 of 8);
+      @include span-columns(10 of 10);
       @include box-shadow;
       background-color: $element-background-color;
       border-radius: $border-radius;
-      margin-bottom: $general-spacing;
       margin-top: $general-spacing;
+      margin-bottom: $general-spacing;
       text-align: center;
+
+      @include media ($wide) {
+        margin-top: em($navigation-height) + $general-spacing;
+      }
+
+      @include media ($horizontal-bar-mode) {
+        @include span-columns(6 of 8);
+        @include shift(1 of 8);
+      }
 
       h2 {
         color: $copytext-color;
@@ -23,15 +44,6 @@
       .field-node--address-text {
         padding-bottom: 1.5em;
       }
-    }
-
-    .field-node--photos {
-      @include span-columns(3 of 8);
-      @include shift(1 of 8);
-    }
-
-    .field-node--body {
-      @include span-columns(3 of 8);
     }
   }
 }
