@@ -58,7 +58,12 @@ deploy:branch=develop` or `fab prod deploy:tag=1.1.0`.')
 
 def post_deploy():
     with cd(env.code_dir):
+        # Recompile SASS
+        with cd("%s/%s" % (env.code_dir,
+                           '/themes/custom/mappy')):
+            run('bundler exec compass compile')
         # Prompt to import config
+        run('../vendor/bin/drush -r %s cr' % env.code_dir)
         if confirm('Import configuration from code?'):
             run('../vendor/bin/drush -r %s config-import staging' % env.code_dir)
 
