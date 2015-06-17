@@ -31,6 +31,7 @@ $max-width:     em($max-width-px, $font-size);
 $mobile:   new-breakpoint(min-width em(320px, $font-size) $grid-columns);
 $narrow:   new-breakpoint(min-width em(560px, $font-size) $grid-columns);
 $wide:     new-breakpoint(min-width em(851px, $font-size) $grid-columns);
+$horizontal-bar-mode: new-breakpoint(min-width em(950px, $font-size) $grid-columns);
 
 // Import grid to be used (Bourbon Neat).
 // We load this after we provide our overrides: https://github.com/thoughtbot/neat#changing-the-defaults
