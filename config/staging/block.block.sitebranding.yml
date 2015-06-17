@@ -1,0 +1,25 @@
+uuid: 1e1e0ef8-68c3-4f05-b809-9fd08065ab9c
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - mappy
+id: sitebranding
+theme: mappy
+region: header
+weight: null
+provider: null
+plugin: system_branding_block
+settings:
+  id: system_branding_block
+  label: 'Site branding'
+  provider: system
+  label_display: '0'
+  cache:
+    max_age: -1
+  use_site_logo: false
+  use_site_name: true
+  use_site_slogan: false
+visibility: {  }
