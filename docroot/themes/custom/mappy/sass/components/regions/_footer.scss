@@ -3,8 +3,7 @@ footer {
   @include clearfix;
   background: $element-background-color;
   border-bottom: 7px solid $heading-color;
+  margin-top: $general-spacing;
   text-align: center;
   z-index: 1;
-
-
 }
