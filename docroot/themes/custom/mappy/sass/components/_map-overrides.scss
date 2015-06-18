@@ -29,3 +29,23 @@
     font-size: 14px;
   }
 }
+
+// Zoom controls.
+.leaflet-bar {
+  background-color: $element-background-color;
+  border-radius: 2px;
+
+  a {
+    color: $link-color;
+  }
+}
+
+.leaflet-control-zoom-in {
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+}
+
+.leaflet-control-zoom-out {
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+}

@@ -6,6 +6,7 @@
 
     // Create map and set center and zoom.
     var map = L.map('map', {
+        zoomControl: false,
         scrollWheelZoom: false,
         center: [35.9908385, -78.9005222],
         zoom: 12
@@ -29,6 +30,10 @@
         addDataToMap(data, map);
     });
 
+    // Set path to marker image. TODO: Update this to something custom.
     L.Icon.Default.imagePath = '/themes/custom/mappy/images/leaflet';
+
+    // Add zoom controls in bottom right of map.
+    new L.Control.Zoom({ position: 'bottomright' }).addTo(map);
 
 })(jQuery);
