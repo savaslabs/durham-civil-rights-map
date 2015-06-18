@@ -6,6 +6,7 @@
 
 // Map markers.
 .leaflet-popup-content-wrapper {
+  background-color: $element-background-color;
   border: solid 2px $heading-color;
   border-radius: $border-radius;
 }
@@ -19,4 +20,12 @@
   border-right: solid 2px $heading-color;
   box-shadow: none;
   margin-top: -9px;
+}
+
+.leaflet-popup {
+  a {
+    color: $link-color;
+    font-family: $copytext-font;
+    font-size: 14px;
+  }
 }
