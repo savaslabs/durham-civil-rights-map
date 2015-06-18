@@ -1,0 +1,51 @@
+/**
+ * @file
+ *
+ * Override leaflet.css.
+ */
+
+// Map markers.
+.leaflet-popup-content-wrapper {
+  background-color: $element-background-color;
+  border: solid 2px $heading-color;
+  border-radius: $border-radius;
+}
+
+.leaflet-popup-tip-container {
+  overflow: visible;
+}
+
+.leaflet-popup-tip {
+  border-bottom: solid 2px $heading-color;
+  border-right: solid 2px $heading-color;
+  box-shadow: none;
+  margin-top: -9px;
+}
+
+.leaflet-popup {
+  a {
+    color: $link-color;
+    font-family: $copytext-font;
+    font-size: 14px;
+  }
+}
+
+// Zoom controls.
+.leaflet-bar {
+  background-color: $element-background-color;
+  border-radius: 2px;
+
+  a {
+    color: $link-color;
+  }
+}
+
+.leaflet-control-zoom-in {
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+}
+
+.leaflet-control-zoom-out {
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+}

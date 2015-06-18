@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * Styles for the footer region.
+ */
+
 footer {
   @include span-columns(12);
   @include clearfix;
