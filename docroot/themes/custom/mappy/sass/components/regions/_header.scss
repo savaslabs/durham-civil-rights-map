@@ -1,0 +1,144 @@
+/**
+ * @file
+ *
+ * Styles for the header region.
+ */
+
+header {
+  @include span-columns(12);
+  left: 0;
+  position: absolute;
+  top: 0;
+  z-index: 1;
+
+  @include media ($wide) {
+    @include box-shadow;
+    background: $element-background-color;
+    border-top: 7px solid $heading-color;
+    min-height: $navigation-height;
+  }
+
+  // Bourbon's navigation refill -----------------------------------------------
+
+  .navigation-wrapper {
+    @include clearfix;
+    position: relative;
+    z-index: 9999;
+  }
+
+  .site-name {
+    display: none;
+
+    @include media ($wide) {
+      display: inline-block;
+      float: left;
+      max-height: $navigation-height;
+      padding-left: $navigation-padding;
+
+      h3 {
+        line-height: $navigation-height;
+        margin: 0;
+      }
+    }
+  }
+
+  // Mobile view.
+
+  .navigation-menu-button {
+    color: $navigation-color;
+    display: block;
+    float: right;
+    font-weight: 700;
+    margin: 0;
+    padding-right: .5em;
+    padding-top: .5em;
+    text-transform: uppercase;
+
+    @include media($wide) {
+      line-height: $navigation-height;
+      padding-top: 0;
+    }
+
+    @include media ($horizontal-bar-mode) {
+      display: none;
+    }
+
+    &:focus,
+    &:hover {
+      color: $navigation-color-hover;
+    }
+  }
+
+  // Nav menu.
+
+  nav {
+    float: none;
+    min-height: $navigation-height;
+    z-index: 9999999;
+
+    @include media ($horizontal-bar-mode) {
+      float: right;
+    }
+  }
+
+  ul {
+    -webkit-transform-style: preserve-3d; // Stop webkit flicker.
+    clear: both;
+    display: none;
+    margin: 0 auto;
+    overflow: visible;
+    padding: 0;
+    width: 100%;
+    z-index: 9999;
+
+    &.show {
+      display: block;
+    }
+
+    @include media ($horizontal-bar-mode) {
+      display: inline;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  // The nav items.
+
+  ul li {
+    background: $navigation-background;
+    display: block;
+    font-family: $heading-font;
+    line-height: 2em;
+    overflow: hidden;
+    padding-right: $navigation-padding;
+    text-align: right;
+    width: 100%;
+    z-index: 9999;
+
+    @include media ($horizontal-bar-mode) {
+      background: transparent;
+      display: inline;
+      line-height: $navigation-height;
+      text-decoration: none;
+      width: auto;
+    }
+
+    a {
+      color: $navigation-color;
+      display: inline-block;
+      font-weight: 400;
+      text-decoration: none;
+
+      &:focus,
+      &:hover {
+        color: $navigation-color-hover;
+      }
+    }
+  }
+  // TODO: rename this to whatever drupal applies on active nav link.
+  .active-nav-item a {
+    border-bottom: 1px solid $navigation-active-link-color;
+    padding-bottom: 3px;
+  }
+}
+
