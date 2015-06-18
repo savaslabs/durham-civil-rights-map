@@ -1,0 +1,20 @@
+/**
+ * @file
+ *
+ * Override leaflet.css.
+ */
+
+// Map markers.
+.leaflet-popup-content-wrapper {
+  border: solid 2px $heading-color;
+  border-radius: $border-radius;
+}
+
+.leaflet-popup-tip {
+  border-bottom: solid 2px $heading-color;
+  border-right: solid 2px $heading-color;
+}
+
+.leaflet-popup-tip-container {
+  overflow: visible;
+}
