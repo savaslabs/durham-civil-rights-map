@@ -10,11 +10,13 @@
   border-radius: $border-radius;
 }
 
+.leaflet-popup-tip-container {
+  overflow: visible;
+}
+
 .leaflet-popup-tip {
   border-bottom: solid 2px $heading-color;
   border-right: solid 2px $heading-color;
-}
-
-.leaflet-popup-tip-container {
-  overflow: visible;
+  box-shadow: none;
+  margin-top: -9px;
 }

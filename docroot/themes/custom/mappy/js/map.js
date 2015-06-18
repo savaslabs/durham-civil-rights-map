@@ -28,7 +28,7 @@
     $.getJSON('/points', function(data) {
         addDataToMap(data, map);
     });
-    
+
     L.Icon.Default.imagePath = '/themes/custom/mappy/images/leaflet';
 
 })(jQuery);
