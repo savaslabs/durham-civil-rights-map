@@ -4,7 +4,7 @@
  * Custom variables, mixins, and functions.
  */
 
-// Colors
+// Colors ----------------------------------------------------------------------
 $element-background-color: #FFFFF9;     // Eggshell
 $page-background-color: #DDE0D0;        // Taupe
 $heading-color: #5F1251;                // Purple. Consider darkening.
@@ -12,16 +12,16 @@ $link-color: #709130;                   // Green
 $link-hover: lighten($link-color, 25%); // Lighter green
 $copytext-color: #5C5240;               // Brown
 
-// Fonts
+// Fonts -----------------------------------------------------------------------
 $heading-font: unquote('Noto Serif, Georgia, serif');
 $copytext-font: unquote('Open Sans, Arial, sans-serif');
 
-// Other styles
+// Other styles ----------------------------------------------------------------
 $border-radius: 8px;
 $general-spacing: 3em;
 $footer-height: 61px; // For sticky footer.
 
-// Navigation refill variables
+// Navigation refill variables -------------------------------------------------
 $navigation-background: $element-background-color;
 $navigation-color: $link-color;
 $navigation-color-hover: $link-hover;
@@ -29,7 +29,7 @@ $navigation-height: 73px;
 $navigation-active-link-color: $link-color;
 $navigation-padding: 1.5em;
 
-// Mixins
+// Mixins ----------------------------------------------------------------------
 @mixin box-shadow {
   box-shadow: 0 2px 4px lighten($copytext-color, 10%);
 }
@@ -37,7 +37,6 @@ $navigation-padding: 1.5em;
 @mixin inverse-box-shadow {
   box-shadow: 0 -2px 4px lighten($copytext-color, 10%);
 }
-
 @mixin title-box {
   // To account for mobile menu.
   margin-top: $general-spacing * 1.8;
