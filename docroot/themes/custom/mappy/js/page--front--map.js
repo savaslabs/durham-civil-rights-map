@@ -21,6 +21,9 @@
             onEachFeature: function(feature, layer) {
                 var popupText = feature.properties.name;
                 layer.bindPopup(popupText);
+                layer.on('click', function(e) {
+                    $("div.sidebar").html(feature.properties.description);
+                });
             }
         });
         dataLayer.addTo(map);
