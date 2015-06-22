@@ -13,6 +13,17 @@ leaflet:
       css/leaflet.css: {}
   js:
     js/leaflet.js: {}
-    js/map.js: {}
   dependencies:
     - core/jquery
+
+frontpage_map:
+  js:
+    js/page--front--map.js: {}
+  dependencies:
+   - mappy/leaflet
+
+nodepage_map:
+  js:
+    js/page--node--map.js: {}
+  dependencies:
+   - mappy/leaflet
