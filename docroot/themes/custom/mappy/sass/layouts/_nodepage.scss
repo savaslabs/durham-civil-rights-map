@@ -6,7 +6,7 @@
 
 .path-node {
 
-  // Main: 10 columns on mobile, 8 columns on narrow and up.
+  // Main: 10 columns on mobile and narrow, 8 columns on wide and up.
   main {
     @include span-columns(10);
     @include shift(1);
@@ -28,7 +28,7 @@
         @include span-columns(4 of 8);
       }
     }
-    // Title box: 10 columns on mobile and narrow, 6 on wide and up.
+    // Title box: 10 columns on mobile and narrow, 6 on wide +.
     .node-title-box {
       @include span-columns(10 of 10);
       @include box-shadow;
@@ -56,6 +56,18 @@
 
       .field-node--address-text {
         padding-bottom: 1.5em;
+      }
+    }
+
+    .map--node {
+      @include span-columns(10 of 10);
+      @include aspect-ratio(5,3);
+      border-radius: $border-radius;
+      margin-top: $general-spacing;
+
+      @include media ($wide) {
+        @include span-columns(6 of 8);
+        @include shift(1 of 8);
       }
     }
   }
