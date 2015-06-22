@@ -6,14 +6,14 @@
 
 header {
   @include span-columns(12);
+  @include box-shadow;
+  background-color: $element-background-color;
   left: 0;
   position: absolute;
   top: 0;
   z-index: 1;
 
   @include media ($wide) {
-    @include box-shadow;
-    background: $element-background-color;
     border-top: 7px solid $heading-color;
     min-height: $navigation-height;
   }
@@ -50,12 +50,12 @@ header {
     float: right;
     font-weight: 700;
     margin: 0;
-    padding-right: .5em;
-    padding-top: .5em;
+    padding: .5em;
     text-transform: uppercase;
 
     @include media($wide) {
       line-height: $navigation-height;
+      padding-bottom: 0;
       padding-top: 0;
     }
 
@@ -73,8 +73,11 @@ header {
 
   nav {
     float: none;
-    min-height: $navigation-height;
     z-index: 9999999;
+
+    @include media($wide) {
+      min-height: $navigation-height;
+    }
 
     @include media ($horizontal-bar-mode) {
       float: right;
