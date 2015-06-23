@@ -16,25 +16,34 @@
     map.addLayer(baseLayer);
 
     // Add points.
-    function addDataToMap(data, map) {
+    function addDataToMap(data, map, icon) {
         var dataLayer = L.geoJson(data, {
-            onEachFeature: function(feature, layer) {
+            pointToLayer: function(feature, latLng) {
+                // TODO: pull in node title and compare to name to only print
+                // the point whose page we're on.
                 var popupText = feature.properties.name;
-                layer.bindPopup(popupText);
-                layer.on('click', function(e) {
-                    $("div.sidebar").html(feature.properties.description);
-                });
+                layer.bindPopup(popupText).openPopup();
+                return L.marker(latLng, {icon: icon}).addTo(map);
             }
         });
         dataLayer.addTo(map);
     }
 
-    $.getJSON('/points', function(data) {
-        addDataToMap(data, map);
-    });
-
     // Set path to marker image. TODO: Update this to something custom.
     L.Icon.Default.imagePath = '/themes/custom/mappy/images/leaflet';
+    var pmpIcon = L.Icon.extend({
+        options: {
+            iconUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green.png',
+            iconRetinaUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green-2x.png',
+            iconSize: [26, 42],
+            iconAnchor: [13, 40],
+            popupAnchor: [1, -46]
+        }
+    });
+
+    $.getJSON('/points', function(data) {
+        addDataToMap(data, map, new pmpIcon);
+    });
 
     // Add zoom controls in bottom right of map.
     new L.Control.Zoom({ position: 'bottomright' }).addTo(map);
