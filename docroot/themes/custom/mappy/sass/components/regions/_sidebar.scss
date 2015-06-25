@@ -8,10 +8,15 @@
   .sidebar {
     @include box-shadow;
     background: $element-background-color;
+    text-align: center;
 
+    i {
+      @include media($wide) {
+        display: none;
+      }
+    }
     .sidebar__node-content {
       padding: 1em;
-      text-align: center;
 
       h3 {
         margin: 0;
