@@ -26,20 +26,16 @@ header {
     z-index: 9999;
   }
 
-  .site-name {
-    display: none;
+  .home-link--back-arrow {
+    float: left;
+    line-height: 38px;
+    padding-left: 8px;
 
-    @include media ($wide) {
-      display: inline-block;
-      float: left;
-      max-height: $navigation-height;
-      padding-left: $navigation-padding;
-
-      h3 {
-        line-height: $navigation-height;
-        margin: 0;
-      }
+    &:hover,
+    &:focus {
+      color: $link-hover;
     }
+
   }
 
   // Mobile view.
@@ -145,3 +141,48 @@ header {
   }
 }
 
+// Home link styles. -----------------------------------------------------------
+
+// For all pages besides node pages.
+header {
+  .home-link {
+    display: none;
+
+    @include media ($wide) {
+      display: inline-block;
+      float: left;
+      max-height: $navigation-height;
+      padding-left: $navigation-padding;
+
+      .home-link--heading {
+        line-height: $navigation-height;
+        margin: 0;
+      }
+
+      .home-link--back-arrow {
+        display: none;
+      }
+    }
+  }
+}
+
+// For node pages.
+.path-node {
+  .home-link {
+    display: block;
+
+    .home-link--heading {
+      display: none;
+    }
+
+    @include media($wide) {
+      .home-link--back-arrow {
+        display: none;
+      }
+
+      .home-link--heading {
+        display: block;
+      }
+    }
+  }
+}
