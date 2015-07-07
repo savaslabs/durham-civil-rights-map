@@ -25,7 +25,9 @@
                 var popupText = feature.properties.name;
                 layer.bindPopup(popupText);
                 layer.on('click', function(e) {
-                    $("div.sidebar").html(feature.properties.description);
+                    // I don't know why it's called 'nothing,' nor how to change
+                    // it, but this is the entire node display.
+                    $("div.sidebar").html(feature.properties.nothing);
                 });
             }
         });

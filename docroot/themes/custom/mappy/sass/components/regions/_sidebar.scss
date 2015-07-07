@@ -6,6 +6,30 @@
 
 .path-frontpage {
   .sidebar {
+    @include box-shadow;
     background: $element-background-color;
+
+    .sidebar__node-content {
+      padding: 1em;
+      text-align: center;
+
+      h3 {
+        margin: 0;
+      }
+
+      hr {
+        width: 100%;
+      }
+
+      .sidebar__node-content__address {
+        p {
+          margin-top: 0;
+        }
+      }
+
+      .sidebar__node-content__body {
+        text-align: left;
+      }
+    }
   }
 }
