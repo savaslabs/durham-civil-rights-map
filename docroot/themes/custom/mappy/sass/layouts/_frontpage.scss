@@ -3,7 +3,7 @@
  *
  * Front page layout.
  *
- * On small screens, map takes up 90% of viewport height (vh) and sidebar
+ * On small screens, map takes up 85% of viewport height (vh) and sidebar
  * is below. On larger screens, everything is on top of map with 100% width
  * and height.
  */
@@ -14,7 +14,7 @@ body.path-frontpage {
     position: absolute;
     left: 0;
     width: 100%;
-    height: 90vh;
+    height: 100%;
     z-index: 0;
 
     @include media($wide) {
@@ -24,11 +24,9 @@ body.path-frontpage {
 
   .sidebar {
     @include span-columns(12);
-    @include box-shadow;
-    bottom: 0;
     left: 0;
     position: absolute;
-    top: 90vh;
+    top: 85vh;
     z-index: 1;
 
     @include media($wide) {
