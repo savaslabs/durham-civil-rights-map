@@ -25,20 +25,22 @@
                 var popupText = feature.properties.name;
                 layer.bindPopup(popupText);
                 layer.on('click', function(e) {
-                    $("div.sidebar").html(feature.properties.description);
+                    // I don't know why it's called 'nothing,' nor how to change
+                    // it, but this is the entire node display.
+                    $("div.sidebar__content").html(feature.properties.nothing);
                 });
             }
         });
         dataLayer.addTo(map);
     }
 
-    // Set path to marker image. TODO: Update this to something custom.
+    // Set path to marker image.
     L.Icon.Default.imagePath = '/themes/custom/mappy/images/leaflet';
     var pmpIcon = L.Icon.extend({
         options: {
             iconUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green.png',
             iconRetinaUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green-2x.png',
-            iconSize: [26, 42],
+            iconSize: [25, 41],
             iconAnchor: [13, 40],
             popupAnchor: [1, -46]
         }

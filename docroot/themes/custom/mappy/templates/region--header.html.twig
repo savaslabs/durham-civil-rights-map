@@ -6,10 +6,11 @@
 
 <header>
   <div class="navigation-wrapper">
-    <div class="site-name">
-        <a href="/" title="{{ 'Home'|t }}" rel="home">
-            <h3 class="site-name__heading">{{ elements.sitebranding.content.site_name['#markup'] }}</h3>
-        </a>
+    <div class="home-link">
+      <a href="/" title="{{ 'Home'|t }}" rel="home">
+        <h3 class="home-link--heading">{{ elements.sitebranding.content.site_name['#markup'] }}</h3>
+        <i class="home-link--back-arrow fa fa-lg fa-arrow-circle-left"></i>
+      </a>
     </div>
     <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu">MENU</a>
     {{ elements.mappy_main_menu }}

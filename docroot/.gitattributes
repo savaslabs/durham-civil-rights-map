@@ -50,3 +50,8 @@
 *.jpg     -text diff
 *.png     -text diff
 *.phar    -text diff
+*.otf binary
+*.eot binary
+*.svg binary
+*.ttf binary
+*.woff binary

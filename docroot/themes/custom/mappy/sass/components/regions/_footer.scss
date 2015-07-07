@@ -6,6 +6,7 @@
 
 footer {
   @include span-columns(12);
+  @include inverse-box-shadow;
   @include clearfix;
   background: $element-background-color;
   border-bottom: 7px solid $heading-color;
