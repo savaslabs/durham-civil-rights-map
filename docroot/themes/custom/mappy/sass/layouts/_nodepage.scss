@@ -12,6 +12,10 @@
     @include shift(1);
     @include clearfix;
 
+    .field-node--photos {
+      margin-bottom: $general-spacing;
+    }
+
     @include media ($wide) {
       @include span-columns(8);
       @include shift(2);
@@ -30,7 +34,8 @@
       @include box-shadow;
       background-color: $element-background-color;
       border-radius: $border-radius;
-      margin-top: $general-spacing;
+      // To account for mobile menu.
+      margin-top: $general-spacing * 1.8;
       margin-bottom: $general-spacing;
       text-align: center;
 
