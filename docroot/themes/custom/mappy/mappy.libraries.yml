@@ -32,4 +32,3 @@ nodepage_map:
     js/page--node--map.js: {}
   dependencies:
    - mappy/leaflet
-   - core/drupalSettings

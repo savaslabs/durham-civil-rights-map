@@ -4,20 +4,9 @@
  * @file
  * Functions to support theming in the Mappy theme.
  */
-
 /**
  * Implements template_preproccess_node().
  */
 function mappy_preprocess_node(&$variables) {
   $variables['photo_slideshow_view'] = views_embed_view('photo_slideshow', 'default');
-}
-
-function mappy_page_attachments_alter(&$page) {
-  $current_path = \Drupal::service('path.current')->getPath();
-  $path_args = explode('/', $current_path);
-  if (sizeof($path_args) > 2) {
-    $page['#attached']['drupalSettings']['mappy']['nodepageMap']['nid'] = $path_args[2];
-  } else {
-    return null;
-  }
 }
