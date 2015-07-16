@@ -4,3 +4,14 @@
  * @file
  * Functions to support theming in the Mappy theme.
  */
+
+/**
+ * Implements hook_page_attachments_alter().
+ */
+function mappy_page_attachments_alter(&$page) {
+  $current_path = \Drupal::service('path.current')->getPath();
+  $path_args = explode('/', $current_path);
+  if (sizeof($path_args) > 2) {
+    $page['#attached']['drupalSettings']['mappy']['nodepageMap']['nid'] = $path_args[2];
+  }
+}
