@@ -19,23 +19,27 @@
     function addDataToMap(data, map, icon) {
         var dataLayer = L.geoJson(data, {
             pointToLayer: function(feature, latLng) {
-                // TODO: pull in node title and compare to name to only print
-                // the point whose page we're on.
-                var popupText = feature.properties.name;
-                layer.bindPopup(popupText).openPopup();
                 return L.marker(latLng, {icon: icon}).addTo(map);
+            },
+            onEachFeature: function(feature, layer) {
+                var popupText = feature.properties.name;
+                if (feature.properties.nid == drupalSettings.mappy.nodepageMap.nid) {
+                    layer.bindPopup(popupText).openPopup();
+                } else {
+                    layer.bindPopup(popupText);
+                }
             }
         });
         dataLayer.addTo(map);
     }
 
-    // Set path to marker image. TODO: Update this to something custom.
+    // Set path to marker image.
     L.Icon.Default.imagePath = '/themes/custom/mappy/images/leaflet';
     var pmpIcon = L.Icon.extend({
         options: {
             iconUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green.png',
             iconRetinaUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green-2x.png',
-            iconSize: [26, 42],
+            iconSize: [25, 41],
             iconAnchor: [13, 40],
             popupAnchor: [1, -46]
         }
