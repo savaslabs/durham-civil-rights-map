@@ -57,10 +57,14 @@
  * @see html.html.twig
  */
 #}
-
 {{ attach_library('mappy/nodepage_map') }}
 
 {{ page.header }}
+{% if node.bundle == "place" %}
+    <script type="text/javascript">
+        var nodePoint = [{{ node.location_coordinates[0].lat }},{{ node.location_coordinates[0].lon }}];
+    </script>
+{% endif %}
 
 <main>
     {{ page.content }}
