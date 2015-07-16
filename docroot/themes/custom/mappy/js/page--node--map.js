@@ -21,6 +21,7 @@
             pointToLayer: function(feature, latLng) {
                 return L.marker(latLng, {icon: icon}).addTo(map);
             },
+            // Only add marker for current node.
             onEachFeature: function(feature, layer) {
                 var popupText = feature.properties.name;
                 if (feature.properties.nid == drupalSettings.mappy.nodepageMap.nid) {
