@@ -79,8 +79,10 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
     {% if label %}
       <h2>{{ label }}</h2>
     {% endif %}
+    {% if content.address_text %}
     <hr>
     {{ content.address_text }}
+    {% endif %}
   </div>
 
   <div{{ content_attributes.addClass('node__content') }}>
