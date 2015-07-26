@@ -5,18 +5,27 @@
  */
 
 .path-frontpage {
+  // Slightly different classes for /about node and marker nodes,
+  // because the content is pulled into the side bar differently.
   .sidebar {
     @include box-shadow;
     background: $element-background-color;
     text-align: center;
 
+    // Down arrow on mobile
     i {
       @include media($wide) {
         display: none;
       }
     }
-    .sidebar__node-content {
+
+    .sidebar__content {
       padding: 1em;
+
+      // Hide /about node title
+      .node-title-box h2 {
+        display: none;
+      }
 
       h3 {
         margin: 0;
@@ -32,8 +41,14 @@
         }
       }
 
+      .field-node--body p,
       .sidebar__node-content__body {
         text-align: left;
+      }
+
+      // TODO: fix aspect ratio issue.
+      img {
+        max-width: 100%;
       }
     }
   }
