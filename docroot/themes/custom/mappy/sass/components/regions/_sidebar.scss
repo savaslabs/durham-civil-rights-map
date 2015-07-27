@@ -5,18 +5,27 @@
  */
 
 .path-frontpage {
+  // Slightly different classes for /welcome node and marker nodes,
+  // because the content is pulled into the side bar differently.
   .sidebar {
     @include box-shadow;
     background: $element-background-color;
     text-align: center;
 
+    // Down arrow on mobile
     i {
       @include media($wide) {
         display: none;
       }
     }
-    .sidebar__node-content {
+
+    .sidebar__content {
       padding: 1em;
+
+      // Hide /welcome node title
+      .node-title-box h2 {
+        display: none;
+      }
 
       h3 {
         margin: 0;
@@ -32,8 +41,19 @@
         }
       }
 
+      .field-node--body p,
       .sidebar__node-content__body {
         text-align: left;
+      }
+
+      img {
+        display: block;
+        // Maintain aspect ratio.
+        height: 100%;
+        width: 100%;
+        max-height: 236px;
+        max-width: 360px;
+
       }
     }
   }

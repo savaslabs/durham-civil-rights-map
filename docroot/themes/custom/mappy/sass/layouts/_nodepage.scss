@@ -6,31 +6,19 @@
 
 .path-node {
 
-  // Main: 10 columns on mobile, 8 columns on narrow and up.
-  main {
+  // For all nodes pages.
+  article {
+    // 10 columns on mobile, 8 columns on narrow and up.
     @include span-columns(10);
     @include shift(1);
     @include clearfix;
 
-    .field-node--photos {
-      margin-bottom: $general-spacing;
-    }
-
     @include media ($wide) {
       @include span-columns(8);
       @include shift(2);
-
-      .field-node--photos {
-        @include span-columns(4 of 8);
-      }
-
-      .field-node--body {
-        @include span-columns(4 of 8);
-      }
     }
-    // Title box: 10 columns on mobile and narrow, 6 on wide and up.
+
     .node-title-box {
-      @include span-columns(10 of 10);
       @include box-shadow;
       background-color: $element-background-color;
       border-radius: $border-radius;
@@ -43,20 +31,67 @@
         margin-top: em($navigation-height) + $general-spacing;
       }
 
-      @include media ($horizontal-bar-mode) {
-        @include span-columns(6 of 8);
-        @include shift(1 of 8);
-      }
-
       h2 {
         color: $copytext-color;
         padding-left: .5em;
         padding-right: .5em;
       }
+    }
+  }
+
+  // For Place nodes.
+  // 10 columns on mobile, 8 columns on narrow and up.
+  .node--type-place {
+
+    .field-node--photos {
+      margin-bottom: $general-spacing;
+    }
+
+    @include media ($wide) {
+      .field-node--photos {
+        @include span-columns(4 of 8);
+      }
+
+      .field-node--body {
+        @include span-columns(4 of 8);
+      }
+    }
+
+    // Title box: 10 columns on mobile and narrow, 6 on wide and up.
+    .node-title-box {
+      @include span-columns(10 of 10);
+
+      @include media ($horizontal-bar-mode) {
+        @include span-columns(6 of 8);
+        @include shift(1 of 8);
+      }
 
       .field-node--address-text {
         padding-bottom: 1.5em;
       }
+    }
+  }
+
+  // For Basic Page nodes (e.g. About).
+  .node--type-page {
+
+    // Title box: 10 columns on mobile and narrow, 8 on wide and up.
+    .node-title-box {
+      @include span-columns(10 of 10);
+
+      @include media ($horizontal-bar-mode) {
+        @include span-columns(8 of 8);
+      }
+    }
+
+    p {
+      clear: both;
+    }
+
+    img {
+      @include box-shadow;
+      margin: 3em auto;
+      max-width: 100%;
     }
   }
 }
