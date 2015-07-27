@@ -134,10 +134,10 @@ header {
       }
     }
   }
-  // TODO: rename this to whatever drupal applies on active nav link.
-  .active-nav-item a {
-    border-bottom: 1px solid $navigation-active-link-color;
-    padding-bottom: 3px;
+  // Need to match specificity of system CSS file to override it.
+  ul.menu a.is-active {
+    color: $navigation-active-link-color;
+    font-weight: bold;
   }
 }
 
