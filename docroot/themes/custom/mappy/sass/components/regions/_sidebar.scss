@@ -46,9 +46,14 @@
         text-align: left;
       }
 
-      // TODO: fix aspect ratio issue.
       img {
-        max-width: 100%;
+        display: block;
+        // Maintain aspect ratio.
+        height: 100%;
+        width: 100%;
+        max-height: 236px;
+        max-width: 360px;
+
       }
     }
   }
