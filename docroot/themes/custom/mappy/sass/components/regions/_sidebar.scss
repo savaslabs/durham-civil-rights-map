@@ -5,7 +5,7 @@
  */
 
 .path-frontpage {
-  // Slightly different classes for /about node and marker nodes,
+  // Slightly different classes for /welcome node and marker nodes,
   // because the content is pulled into the side bar differently.
   .sidebar {
     @include box-shadow;
@@ -22,7 +22,7 @@
     .sidebar__content {
       padding: 1em;
 
-      // Hide /about node title
+      // Hide /welcome node title
       .node-title-box h2 {
         display: none;
       }
