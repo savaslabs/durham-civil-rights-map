@@ -8,11 +8,7 @@
 
   // For all nodes pages.
   article {
-    // 10 columns on mobile, 8 columns on narrow and up.
-    @include span-columns(10);
-    @include shift(1);
-    @include clearfix;
-
+    // 10 columns on mobile (see _base.scss), 8 columns on narrow and up.
     @include media ($wide) {
       @include span-columns(8);
       @include shift(2);
