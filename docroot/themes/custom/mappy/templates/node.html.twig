@@ -89,6 +89,7 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
     {% if node.bundle == 'place' %}
       {{ photo_slideshow_view }}
     {% endif %}
+	{{ content.soundcloud_link }}
 
     {{ content.body }}
   </div>
