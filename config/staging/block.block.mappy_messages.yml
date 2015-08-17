@@ -8,8 +8,8 @@ dependencies:
     - mappy
 id: mappy_messages
 theme: mappy
-region: content
-weight: 0
+region: header
+weight: -4
 provider: null
 plugin: system_messages_block
 settings:
