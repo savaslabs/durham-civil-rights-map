@@ -5,6 +5,7 @@
  */
 
 .path-frontpage {
+
   // Slightly different classes for /welcome node and marker nodes,
   // because the content is pulled into the side bar differently.
   .sidebar {
@@ -12,9 +13,13 @@
     background: $element-background-color;
     text-align: center;
 
-    // Down arrow on mobile
-    i {
-      @include media($wide) {
+    // Styles for larger screens only.
+    @include media($wide) {
+      border-radius: 5px;
+      overflow: scroll;
+
+      // Down arrow on mobile
+      i {
         display: none;
       }
     }
