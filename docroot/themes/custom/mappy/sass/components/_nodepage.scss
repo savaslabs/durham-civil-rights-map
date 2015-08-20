@@ -1,0 +1,45 @@
+/**
+ * @file
+ *
+ * Theme styles for node pages.
+ */
+
+.path-node {
+
+  // For all nodes pages.
+  article {
+
+    .node-title-box {
+      @include box-shadow;
+      background-color: $element-background-color;
+      border-radius: $border-radius;
+      text-align: center;
+
+      h2 {
+        color: $copytext-color;
+        padding-left: .5em;
+        padding-right: .5em;
+      }
+    }
+  }
+
+  // For Place nodes.
+  .node--type-place {
+  }
+
+  // For Basic Page nodes (e.g. About).
+  .node--type-page {
+
+    p {
+      clear: both;
+    }
+
+    img {
+      @include box-shadow;
+      margin: 3em auto;
+      max-width: 100%;
+    }
+  }
+}
+
+
