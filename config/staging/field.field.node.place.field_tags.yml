@@ -24,5 +24,5 @@ settings:
       tags: tags
     sort:
       field: _none
-    auto_create: false
+    auto_create: true
 field_type: entity_reference
