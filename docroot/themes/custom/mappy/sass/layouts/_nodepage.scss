@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * Styles for node pages.
+ * Node page layout styles.
  */
 
 .path-node {
@@ -15,22 +15,12 @@
     }
 
     .node-title-box {
-      @include box-shadow;
-      background-color: $element-background-color;
-      border-radius: $border-radius;
       // To account for mobile menu.
       margin-top: $general-spacing * 1.8;
       margin-bottom: $general-spacing;
-      text-align: center;
 
       @include media ($wide) {
         margin-top: em($navigation-height) + $general-spacing;
-      }
-
-      h2 {
-        color: $copytext-color;
-        padding-left: .5em;
-        padding-right: .5em;
       }
     }
   }
@@ -78,16 +68,6 @@
       @include media ($horizontal-bar-mode) {
         @include span-columns(8 of 8);
       }
-    }
-
-    p {
-      clear: both;
-    }
-
-    img {
-      @include box-shadow;
-      margin: 3em auto;
-      max-width: 100%;
     }
   }
 }

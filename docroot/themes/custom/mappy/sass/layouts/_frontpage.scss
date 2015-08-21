@@ -32,9 +32,7 @@ body.path-frontpage {
     @include media($wide) {
       @include span-columns(3.5);
       @include shift(.5);
-      border-radius: 5px;
       height: 80%;
-      overflow: scroll;
       top: 15%;
     }
 

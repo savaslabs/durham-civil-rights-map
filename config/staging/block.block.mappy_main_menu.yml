@@ -11,7 +11,7 @@ dependencies:
 id: mappy_main_menu
 theme: mappy
 region: header
-weight: 0
+weight: -5
 provider: null
 plugin: 'system_menu_block:main'
 settings:
