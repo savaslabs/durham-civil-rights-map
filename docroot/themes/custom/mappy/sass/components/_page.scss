@@ -1,0 +1,21 @@
+/**
+ * @file
+ *
+ * Theme styles for basic pages.
+ */
+
+// Styles for user page (login, recover password, etc).
+.path-user {
+  .tabs {
+
+    .is-active a {
+      background-color: $element-background-color;
+      font-weight: bold;
+    }
+
+    a:hover,
+    a:focus {
+      background-color: $element-background-color;
+    }
+  }
+}
