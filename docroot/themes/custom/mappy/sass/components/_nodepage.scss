@@ -25,7 +25,10 @@
     img {
       @include box-shadow;
       margin: 3em auto;
-      max-width: 100%;
+      // Maintain aspect ratio.
+      height: 100%;
+      width: 100%;
+      max-width: 360px;
     }
   }
 }
