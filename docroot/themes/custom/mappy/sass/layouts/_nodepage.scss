@@ -15,13 +15,7 @@
     }
 
     .node-title-box {
-      // To account for mobile menu.
-      margin-top: $general-spacing * 1.8;
-      margin-bottom: $general-spacing;
-
-      @include media ($wide) {
-        margin-top: em($navigation-height) + $general-spacing;
-      }
+      @include title-box;
     }
   }
 
