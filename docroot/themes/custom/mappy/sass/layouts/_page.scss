@@ -5,9 +5,15 @@
  */
 
 .page-layout-container {
+  min-height: 100%; // For sticky footer.
+
   main {
     @include span-columns(10);
     @include shift(1);
+
+    // For sticky footer.
+    overflow: auto;
+    padding-bottom: $general-spacing + em($footer-height);
 
     .page-title-box {
       @include title-box;

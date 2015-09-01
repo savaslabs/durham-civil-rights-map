@@ -107,13 +107,10 @@
 
   </main>
 
-  {# Only display footer on /list. #}
-  {% if page['#contextual_links']['entity.view.edit_form']['metadata']['name'] == 'full_list' %}
-  <footer>
-    <div class="copyright">
-      <p>Copyright &copy; {{ 'now'|date('Y') }}</p>
-    </div>
-  </footer>
-  {% endif %}
+</div>{# /.page-layout-container #}
 
-</div>{# /.layout-container #}
+<footer>
+  <div class="copyright">
+    <p>Copyright &copy; {{ 'now'|date('Y') }}</p>
+  </div>
+</footer>

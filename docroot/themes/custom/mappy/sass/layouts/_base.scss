@@ -4,6 +4,12 @@
  * Site-wide layout styles.
  */
 
+html,
+body {
+  // For sticky footer.
+  height: 100%;
+}
+
 body {
   @include outer-container();
 

@@ -7,10 +7,13 @@
 footer {
   @include span-columns(12);
   @include inverse-box-shadow;
-  @include clearfix;
+
   background: $element-background-color;
   border-bottom: 7px solid $heading-color;
-  margin-top: $general-spacing;
+  clear: both;
+  height: $footer-height;
+  margin-top: -$footer-height;
+  position: relative;
   text-align: center;
   z-index: 1;
 }
