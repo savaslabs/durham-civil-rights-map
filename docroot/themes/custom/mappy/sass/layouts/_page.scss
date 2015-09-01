@@ -21,6 +21,30 @@
     .region-content {
       clear: both;
     }
+
+    // Search form
+    .search-block-form {
+      input[type='search'] {
+        display: block;
+        margin: 0 auto 5px;
+        max-width: 100%;
+        width: 15em;
+
+        @include media($narrow) {
+          display: inline;
+          margin: 0 5px 0 0;
+        }
+      }
+
+      input[type='submit'] {
+        display: block;
+        margin: 0 auto;
+
+        @include media($narrow) {
+          display: inline;
+        }
+      }
+    }
   }
 }
 
@@ -28,5 +52,16 @@
 .path-user {
   .tabs {
     clear: both;
+  }
+}
+
+// Styles for search results.
+.path-search {
+  .search-results li {
+    border-bottom: 1px solid $heading-color;
+
+    &:last-child {
+      border-bottom: none;
+    }
   }
 }
