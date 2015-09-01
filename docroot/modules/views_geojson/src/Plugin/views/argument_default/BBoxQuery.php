@@ -5,6 +5,7 @@ namespace Drupal\views_geojson\Plugin\views\argument_default;
 
 // TODO: Which need to be included?
 use Drupal\views\Plugin\views\argument_default\QueryParameter;
+use \Drupal\core\form\FormStateInterface;
 
 // TODO: What should be included in annotations?
 /**
