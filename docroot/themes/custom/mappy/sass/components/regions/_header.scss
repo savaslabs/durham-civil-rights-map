@@ -49,13 +49,7 @@ header {
     padding: .5em;
     text-transform: uppercase;
 
-    @include media($wide) {
-      line-height: $navigation-height;
-      padding-bottom: 0;
-      padding-top: 0;
-    }
-
-    @include media ($horizontal-bar-mode) {
+    @include media ($wide) {
       display: none;
     }
 
@@ -71,12 +65,10 @@ header {
     float: none;
     z-index: 9999999;
 
-    @include media($wide) {
-      min-height: $navigation-height;
-    }
-
-    @include media ($horizontal-bar-mode) {
+    @include media ($wide) {
       float: right;
+      min-height: $navigation-height;
+
     }
   }
 
@@ -94,7 +86,7 @@ header {
       display: block;
     }
 
-    @include media ($horizontal-bar-mode) {
+    @include media ($wide) {
       display: inline;
       margin: 0;
       padding: 0;
@@ -114,7 +106,7 @@ header {
     width: 100%;
     z-index: 9999;
 
-    @include media ($horizontal-bar-mode) {
+    @include media ($wide) {
       background: transparent;
       display: inline;
       line-height: $navigation-height;
