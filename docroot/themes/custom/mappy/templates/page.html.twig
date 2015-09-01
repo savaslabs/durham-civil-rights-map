@@ -57,7 +57,7 @@
  * @see html.html.twig
  */
 #}
-<div class="layout-container">
+<div class="page-layout-container">
 
   {{ page.header }}
 
@@ -76,11 +76,13 @@
     <div class="layout-content">
       {{ page.highlighted }}
 
-      {{ title_prefix }}
-      {% if title %}
-        <h1>{{ title }}</h1>
-      {% endif %}
-      {{ title_suffix }}
+      <div class="page-title-box">
+        {{ title_prefix }}
+        {% if title %}
+          <h2>{{ title }}</h2>
+        {% endif %}
+        {{ title_suffix }}
+      </div>
 
       {{ tabs }}
 
@@ -104,5 +106,14 @@
     {% endif %}
 
   </main>
+
+  {# Only display footer on /list. #}
+  {% if page['#contextual_links']['entity.view.edit_form']['metadata']['name'] == 'full_list' %}
+  <footer>
+    <div class="copyright">
+      <p>Copyright &copy; {{ 'now'|date('Y') }}</p>
+    </div>
+  </footer>
+  {% endif %}
 
 </div>{# /.layout-container #}

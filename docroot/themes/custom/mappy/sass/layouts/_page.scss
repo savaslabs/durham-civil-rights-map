@@ -1,0 +1,25 @@
+/**
+ * @file
+ *
+ * Basic page layout styles.
+ */
+
+.page-layout-container {
+  main {
+    @include span-columns(10);
+    @include shift(1);
+
+    .page-title-box {
+      @include title-box;
+
+      @include media($narrow) {
+        @include span-columns(6 of 10);
+        @include shift(2 of 10);
+      }
+    }
+
+    .region-content {
+      clear: both;
+    }
+  }
+}
