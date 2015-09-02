@@ -37,6 +37,7 @@
   border-radius: 2px;
 
   a {
+    background-color: $element-background-color;
     color: $link-color;
     &:hover,
     &:focus {
@@ -63,10 +64,59 @@
 }
 
 // Search bar.
-.leaflet-top .leaflet-fusesearch-control,
-.leaflet-fusesearch-panel {
+.leaflet-top .leaflet-fusesearch-control {
+  background-color: $element-background-color;
   margin-top: 50px;
+
   @media only screen and (min-width: 851px) {
     margin-top: 100px;
+  }
+
+  .button {
+    height: 40px;
+    width: 40px;
+  }
+}
+
+// Style search results.
+.leaflet-container {
+  a {
+    color: $link-color;
+  }
+
+  .leaflet-fusesearch-panel {
+    cursor: auto;
+    margin-top: 50px;
+    padding-top: 10px;
+
+    @media only screen and (min-width: 851px) {
+      margin-top: 100px;
+    }
+
+    .content {
+      background-color: $element-background-color;
+    }
+
+    .search-image {
+      display: none;
+    }
+
+    .close {
+      background: $element-background-color;
+      color: $copytext-color;
+      right: 15px;
+    }
+
+    .result-list {
+      margin-top: 2em;
+    }
+
+    .result-item {
+      border-bottom: 1px solid $copytext-color;
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
   }
 }
