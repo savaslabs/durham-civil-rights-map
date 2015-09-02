@@ -19,7 +19,7 @@ leaflet:
 frontpage_map:
   css:
     theme:
-      js/leaflet-fusesearch/src/leaflet.fusesearch.css: {}
+      css/leaflet.fusesearch.css: {}
   js:
     js/fuse.js: {}
     js/leaflet-fusesearch/src/leaflet.fusesearch.js: {}
