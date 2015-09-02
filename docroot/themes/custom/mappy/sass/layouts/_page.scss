@@ -60,14 +60,3 @@
     clear: both;
   }
 }
-
-// Styles for search results.
-.path-search {
-  .search-results li {
-    border-bottom: 1px solid $heading-color;
-
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-}

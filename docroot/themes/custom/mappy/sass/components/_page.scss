@@ -19,3 +19,92 @@
     }
   }
 }
+
+// Styles for search results.
+.path-search {
+  .search-results li {
+    border-bottom: 1px solid $element-background-color;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+// Styles for "Explore all points."
+.path-list {
+  .views-row {
+    border-bottom: 1px solid $element-background-color;
+    padding: 1.5em;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .views-field-title {
+    font-family: $heading-font;
+    font-size: 1.2em;
+    margin-bottom: .75em;
+    text-align: center;
+
+    @include media($narrow) {
+      font-size: 1.5em;
+      text-align: left;
+    }
+  }
+
+  .views-field-photos {
+    margin: 1.5em 0;
+
+    @include media($narrow) {
+      float: left;
+      margin: 0 1em 0;
+    }
+
+    @media screen and (min-width: 950px) {
+      display: inline-block;
+      margin: 0;
+      width: 20%;
+    }
+
+    li {
+      list-style: none;
+      margin: 0;
+
+      img {
+        @include box-shadow;
+        display: block;
+        max-width: 100%;
+        margin: 0 auto;
+      }
+    }
+  }
+
+  .views-field-body {
+    @media screen and (min-width: 950px) {
+      display: inline-block;
+      vertical-align: top;
+      width: 80%;
+
+      .field-content {
+        margin-left: 1em;
+
+        p {
+          margin-top: 0;
+        }
+      }
+    }
+  }
+
+  // "Read more" link.
+  .views-field-nothing {
+    clear: both;
+    margin-bottom: 1.5em;
+
+    a {
+      display: inline-block;
+      float: right;
+    }
+  }
+}
