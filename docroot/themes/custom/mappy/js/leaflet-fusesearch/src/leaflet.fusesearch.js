@@ -294,13 +294,8 @@ L.Control.FuseSearch = L.Control.extend({
         if (undefined !== popup) {
             L.DomUtil.addClass(resultItem, 'clickable');
             resultItem.onclick = function() {
-                
-                if (window.matchMedia("(max-width:480px)").matches) {
-                    _this.hidePanel();
-                    feature.layer.openPopup();
-                } else {
-                    _this._panAndPopup(feature, popup);
-                }
+                _this.hidePanel();
+                feature.layer.openPopup();
             };
         }
 
