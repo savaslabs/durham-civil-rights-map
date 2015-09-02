@@ -17,7 +17,12 @@ leaflet:
     - core/jquery
 
 frontpage_map:
+  css:
+    theme:
+      js/leaflet-fusesearch/src/leaflet.fusesearch.css: {}
   js:
+    js/fuse.js: {}
+    js/leaflet-fusesearch/src/leaflet.fusesearch.js: {}
     js/page--front--map.js: {}
   dependencies:
    - mappy/leaflet

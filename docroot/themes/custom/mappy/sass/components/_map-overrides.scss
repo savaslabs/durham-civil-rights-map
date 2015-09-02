@@ -61,3 +61,12 @@
     bottom: 15vh;
   }
 }
+
+// Search bar.
+.leaflet-top .leaflet-fusesearch-control,
+.leaflet-fusesearch-panel {
+  margin-top: 50px;
+  @media only screen and (min-width: 851px) {
+    margin-top: 100px;
+  }
+}

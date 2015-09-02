@@ -15,6 +15,10 @@
   // Add basemap to map.
   map.addLayer(baseLayer);
 
+  // Add search.
+  var searchCtrl = L.control.fuseSearch();
+  searchCtrl.addTo(map);
+
   // Add points.
   function addDataToMap(data, map, icon) {
     var dataLayer = L.geoJson(data, {
@@ -22,6 +26,7 @@
         return L.marker(latLng, {icon: icon}).addTo(map);
       },
       onEachFeature: function (feature, layer) {
+        feature.layer = layer;
         var popupText = feature.properties.name;
         layer.bindPopup(popupText);
         layer.on('click', function (e) {
@@ -48,6 +53,7 @@
 
   $.getJSON('/points', function (data) {
     addDataToMap(data, map, new pmpIcon);
+    searchCtrl.indexFeatures(data, ['name', 'address_text', 'description', 'field_tags']);
   });
 
   // Add zoom controls in bottom right of map.
