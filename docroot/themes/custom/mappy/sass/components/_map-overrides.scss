@@ -118,6 +118,11 @@
         border-bottom: none;
       }
 
+      // Change color of place title.
+      b {
+        color: $heading-color;
+      }
+
       // Hide description from search results.
       p span {
         display: none;

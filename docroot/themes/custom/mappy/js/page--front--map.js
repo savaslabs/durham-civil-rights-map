@@ -53,7 +53,7 @@
 
   $.getJSON('/points', function (data) {
     addDataToMap(data, map, new pmpIcon);
-    searchCtrl.indexFeatures(data, ['name', 'address_text', 'description', 'field_tags']);
+    searchCtrl.indexFeatures(data, ['title_1', 'address_text', 'description', 'field_tags']);
   });
 
   // Add zoom controls in bottom right of map.
