@@ -117,6 +117,11 @@
       &:last-child {
         border-bottom: none;
       }
+
+      // Hide description from search results.
+      p span {
+        display: none;
+      }
     }
   }
 }
