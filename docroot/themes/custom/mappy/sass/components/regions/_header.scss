@@ -49,13 +49,7 @@ header {
     padding: .5em;
     text-transform: uppercase;
 
-    @include media($wide) {
-      line-height: $navigation-height;
-      padding-bottom: 0;
-      padding-top: 0;
-    }
-
-    @include media ($horizontal-bar-mode) {
+    @include media ($wide) {
       display: none;
     }
 
@@ -71,12 +65,10 @@ header {
     float: none;
     z-index: 9999999;
 
-    @include media($wide) {
-      min-height: $navigation-height;
-    }
-
-    @include media ($horizontal-bar-mode) {
+    @include media ($wide) {
       float: right;
+      min-height: $navigation-height;
+
     }
   }
 
@@ -94,7 +86,7 @@ header {
       display: block;
     }
 
-    @include media ($horizontal-bar-mode) {
+    @include media ($wide) {
       display: inline;
       margin: 0;
       padding: 0;
@@ -114,7 +106,7 @@ header {
     width: 100%;
     z-index: 9999;
 
-    @include media ($horizontal-bar-mode) {
+    @include media ($wide) {
       background: transparent;
       display: inline;
       line-height: $navigation-height;
@@ -139,50 +131,36 @@ header {
     color: $navigation-active-link-color;
     font-weight: bold;
   }
-}
 
 // Home link styles. -----------------------------------------------------------
 
-// For all pages besides node pages.
-header {
   .home-link {
-    display: none;
+    display: inline-block;
+    float: left;
 
-    @include media ($wide) {
-      display: inline-block;
-      float: left;
-      max-height: $navigation-height;
-      padding-left: $navigation-padding;
+    .home-link--heading {
+      display: none;
 
-      .home-link--heading {
+      @include media($wide) {
+        display: block;
         line-height: $navigation-height;
         margin: 0;
+        padding-left: $navigation-padding;
       }
+    }
 
-      .home-link--back-arrow {
+    .home-link--back-arrow {
+      display: block;
+      padding-left: .5em;
+
+      @include media($wide) {
         display: none;
       }
     }
   }
 }
 
-// For node pages.
-.path-node {
-  .home-link {
-    display: block;
-
-    .home-link--heading {
-      display: none;
-    }
-
-    @include media($wide) {
-      .home-link--back-arrow {
-        display: none;
-      }
-
-      .home-link--heading {
-        display: block;
-      }
-    }
-  }
+// Hide back arrow on front page.
+.path-frontpage header .home-link .home-link--back-arrow {
+  display: none;
 }

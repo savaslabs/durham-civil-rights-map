@@ -12,3 +12,4 @@ permissions:
   - 'use text format restricted_html'
   - 'access comments'
   - 'access site-wide contact form'
+  - 'search content'

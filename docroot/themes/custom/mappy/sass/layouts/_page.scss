@@ -1,0 +1,62 @@
+/**
+ * @file
+ *
+ * Basic page layout styles.
+ */
+
+.page-layout-container {
+  min-height: 100%; // For sticky footer.
+
+  main {
+    @include span-columns(10);
+    @include shift(1);
+
+    // For sticky footer.
+    overflow: auto;
+    padding-bottom: $general-spacing + em($footer-height);
+
+    .page-title-box {
+      @include title-box;
+
+      @include media($narrow) {
+        @include span-columns(6 of 10);
+        @include shift(2 of 10);
+      }
+    }
+
+    .region-content {
+      clear: both;
+    }
+
+    // Search form
+    .search-block-form {
+      input[type='search'] {
+        display: block;
+        margin: 0 auto 5px;
+        max-width: 100%;
+        width: 15em;
+
+        @include media($narrow) {
+          display: inline;
+          margin: 0 5px 0 0;
+        }
+      }
+
+      input[type='submit'] {
+        display: block;
+        margin: 0 auto;
+
+        @include media($narrow) {
+          display: inline;
+        }
+      }
+    }
+  }
+}
+
+// Styles for user page (login, recover password, etc).
+.path-user {
+  .tabs {
+    clear: both;
+  }
+}

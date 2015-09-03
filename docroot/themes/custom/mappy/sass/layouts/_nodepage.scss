@@ -6,6 +6,10 @@
 
 .path-node {
 
+  main {
+    min-height: 100%; // For sticky footer.
+  }
+
   // For all nodes pages.
   article {
     // 10 columns on mobile (see _base.scss), 8 columns on narrow and up.
@@ -14,14 +18,12 @@
       @include shift(2);
     }
 
-    .node-title-box {
-      // To account for mobile menu.
-      margin-top: $general-spacing * 1.8;
-      margin-bottom: $general-spacing;
+    // For sticky footer.
+    overflow: auto;
+    padding-bottom: $general-spacing + em($footer-height);
 
-      @include media ($wide) {
-        margin-top: em($navigation-height) + $general-spacing;
-      }
+    .node-title-box {
+      @include title-box;
     }
   }
 
@@ -47,7 +49,7 @@
     .node-title-box {
       @include span-columns(10 of 10);
 
-      @include media ($horizontal-bar-mode) {
+      @include media ($wide) {
         @include span-columns(6 of 8);
         @include shift(1 of 8);
       }
@@ -65,7 +67,7 @@
     .node-title-box {
       @include span-columns(10 of 10);
 
-      @include media ($horizontal-bar-mode) {
+      @include media ($wide) {
         @include span-columns(8 of 8);
       }
     }

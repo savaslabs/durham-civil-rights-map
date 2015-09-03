@@ -1,14 +1,15 @@
 uuid: cbdf229a-76a3-4501-845a-9031fe339f77
 langcode: en
-status: false
+status: true
 dependencies:
   module:
     - search
+    - system
   theme:
     - mappy
 id: mappy_search
 theme: mappy
-region: '-1'
+region: content
 weight: -1
 provider: null
 plugin: search_form_block
@@ -16,7 +17,12 @@ settings:
   id: search_form_block
   label: Search
   provider: search
-  label_display: visible
+  label_display: '0'
   cache:
     max_age: -1
-visibility: {  }
+visibility:
+  request_path:
+    id: request_path
+    pages: list
+    negate: false
+    context_mapping: {  }

@@ -1,0 +1,5 @@
+index:
+  minimum_word_size: 3
+  overlap_cjk: false
+  cron_limit: 10
+logging: false

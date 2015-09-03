@@ -19,6 +19,7 @@ $copytext-font: unquote('Open Sans, Arial, sans-serif');
 // Other styles
 $border-radius: 8px;
 $general-spacing: 3em;
+$footer-height: 61px; // For sticky footer.
 
 // Navigation refill variables
 $navigation-background: $element-background-color;
@@ -35,4 +36,25 @@ $navigation-padding: 1.5em;
 
 @mixin inverse-box-shadow {
   box-shadow: 0 -2px 4px lighten($copytext-color, 10%);
+}
+
+@mixin title-box {
+  // To account for mobile menu.
+  margin-top: $general-spacing * 1.8;
+  margin-bottom: $general-spacing;
+
+  @include media ($wide) {
+    margin-top: em($navigation-height) + $general-spacing;
+  }
+
+  @include box-shadow;
+  background-color: $element-background-color;
+  border-radius: $border-radius;
+  text-align: center;
+
+  h2 {
+    color: $copytext-color;
+    margin: 0;
+    padding: 1em .5em;
+  }
 }
