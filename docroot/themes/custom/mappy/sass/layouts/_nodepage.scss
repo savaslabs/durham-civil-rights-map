@@ -31,19 +31,12 @@
   // 10 columns on mobile, 8 columns on narrow and up.
   .node--type-place {
 
-    .field-node--photos {
-      margin-bottom: $general-spacing;
-    }
-
     @include media ($wide) {
-      .field-node--photos {
-        @include span-columns(4 of 8);
-      }
-
-      .field-node--body {
-        @include span-columns(4 of 8);
+      p {
+        margin: 0;
       }
     }
+    
 
     // Title box: 10 columns on mobile and narrow, 6 on wide and up.
     .node-title-box {
