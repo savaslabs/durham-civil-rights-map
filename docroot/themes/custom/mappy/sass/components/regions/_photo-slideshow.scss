@@ -1,0 +1,61 @@
+/**
+ * @file
+ *
+ * Photo slideshow styles.
+ */
+
+.view-photo-slideshow {
+  padding-bottom: 1em;
+
+  .view-content {
+
+    .views_slideshow_cycle_teaser_section {
+      margin: 0 auto;
+    }
+
+    .views_slideshow_cycle_slide {
+      height: 305px;
+    }
+
+    img {
+      @include box-shadow;
+    }
+  }
+
+  .views-slideshow-controls-top {
+    display: block;
+    padding: .5em 0;
+    margin: 0 auto;
+    width: 300px;
+  }
+
+  .views_slideshow_slide_counter {
+    text-align: center;
+  }
+
+  .views_slideshow_controls_text {
+
+    .views_slideshow_controls_text_previous {
+      float: left;
+      padding-left: 4em;
+
+      a {
+        content: url(../images/back-arrow.png);
+      }
+    }
+
+    .views_slideshow_controls_text_next {
+      float: right;
+      padding-right: 4em;
+
+      a {
+        content: url(../images/forward-arrow.png);
+      }
+    }
+
+    .views_slideshow_controls_text_pause {
+      display: none;
+    }
+  }
+
+}
