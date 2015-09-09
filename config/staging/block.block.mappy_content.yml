@@ -9,7 +9,7 @@ dependencies:
 id: mappy_content
 theme: mappy
 region: content
-weight: 0
+weight: -6
 provider: null
 plugin: system_main_block
 settings:

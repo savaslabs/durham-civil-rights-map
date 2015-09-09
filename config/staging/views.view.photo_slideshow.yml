@@ -95,13 +95,13 @@ display:
                   photos: 0
                 views_slideshow_pager_fields_hover: 0
               views_slideshow_controls:
-                enable: 0
+                enable: 1
                 weight: '1'
-                hide_on_single_slide: 0
+                hide_on_single_slide: 1
                 type: views_slideshow_controls_text
               views_slideshow_slide_counter:
-                enable: 0
-                weight: '1'
+                enable: 1
+                weight: '2'
             bottom:
               views_slideshow_pager:
                 enable: 0
@@ -112,13 +112,13 @@ display:
                   photos: photos
                 views_slideshow_pager_fields_hover: 1
               views_slideshow_controls:
-                enable: 1
+                enable: 0
                 weight: '1'
                 hide_on_single_slide: 1
                 type: views_slideshow_controls_text
               views_slideshow_slide_counter:
                 enable: 0
-                weight: '1'
+                weight: '2'
           skin_info:
             name: Default
             class: default
@@ -178,8 +178,8 @@ display:
           click_sort_column: target_id
           type: image
           settings:
-            image_style: ''
-            image_link: ''
+            image_style: slideshow
+            image_link: content
           group_column: ''
           group_columns: {  }
           group_rows: false
