@@ -191,8 +191,6 @@ L.Control.FuseSearch = L.Control.extend({
     showPanel: function () {
         if (! this.isPanelVisible()) {
             L.DomUtil.addClass(this._panel, 'visible');
-            // Preserve map centre
-            this._map.panBy([this.getOffset() * 0.5, 0], {duration: 0.5});
             this.fire('show');
             this._input.select();
             // Search again as visibility of features might have changed
@@ -203,11 +201,6 @@ L.Control.FuseSearch = L.Control.extend({
     hidePanel: function (e) {
         if (this.isPanelVisible()) {
             L.DomUtil.removeClass(this._panel, 'visible');
-            // Move back the map centre - only if we still hold this._map
-            // as this might already have been cleared up by removeFrom()
-            if (null !== this._map) {
-                this._map.panBy([this.getOffset() * -0.5, 0], {duration: 0.5});
-            };
             this.fire('hide');
             if(e) {
                 L.DomEvent.stopPropagation(e);
@@ -296,6 +289,7 @@ L.Control.FuseSearch = L.Control.extend({
             resultItem.onclick = function() {
                 _this.hidePanel();
                 feature.layer.openPopup();
+                $("div.sidebar__content").html(feature.properties.nothing);
             };
         }
 
