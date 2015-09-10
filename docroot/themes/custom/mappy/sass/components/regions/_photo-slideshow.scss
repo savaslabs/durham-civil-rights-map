@@ -5,26 +5,35 @@
  */
 
 .view-photo-slideshow {
-  padding-bottom: 1em;
+  background-color: $element-background-color;
+  height: 277px;
+  padding-top: 10px;
+  width: 320px;
 
   .view-content {
 
     .views_slideshow_cycle_teaser_section {
-      margin: 0 auto;
+      height: 215px;
     }
 
     .views_slideshow_cycle_slide {
-      height: 305px;
+      left: auto !important;
+      position: static !important;
+      top: auto !important;
     }
 
     img {
       @include box-shadow;
+      display: block;
+      margin: 0 auto;
+      max-height: 215px;
+      width: auto;
     }
   }
 
-  .views-slideshow-controls-top {
+  .views-slideshow-controls-bottom {
     display: block;
-    padding: .5em 0;
+    padding: 10px 0;
     margin: 0 auto;
     width: 300px;
   }
