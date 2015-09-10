@@ -4,6 +4,11 @@
  * Photo slideshow styles.
  */
 
+// Fix for flicker in slideshow (see http://malsup.com/jquery/cycle/faq.html)
+#views_slideshow_cycle_main_-default {
+  overflow: hidden;
+}
+
 .view-photo-slideshow {
   background-color: $element-background-color;
   height: 277px;
