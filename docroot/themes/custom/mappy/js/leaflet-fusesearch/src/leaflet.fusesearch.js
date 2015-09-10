@@ -289,6 +289,7 @@ L.Control.FuseSearch = L.Control.extend({
             resultItem.onclick = function() {
                 _this.hidePanel();
                 feature.layer.openPopup();
+                $("div.sidebar__content").html(feature.properties.nothing);
             };
         }
 
