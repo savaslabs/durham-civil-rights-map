@@ -10,15 +10,24 @@
 }
 
 .view-photo-slideshow {
+  @include box-shadow;
   background-color: $element-background-color;
-  height: 277px;
+  height: 238px;
   padding-top: 10px;
-  width: 320px;
+
+  @include media(em(400)) {
+    height: 277px;
+    width: 320px;
+  }
 
   .view-content {
 
     .views_slideshow_cycle_teaser_section {
-      height: 215px;
+      height: 176px;
+
+      @include media(em(400)) {
+        height: 215px;
+      }
     }
 
     .views_slideshow_cycle_slide {
@@ -27,20 +36,41 @@
       top: auto !important;
     }
 
+    .field-content {
+      @include display(flex);
+      @include justify-content(center);
+
+      a {
+        padding: 0 10px;
+
+        @include media(em(400)) {
+          padding: 0;
+        }
+      }
+    }
+
     img {
-      @include box-shadow;
-      display: block;
-      margin: 0 auto;
-      max-height: 215px;
+      height: auto;
+      max-height: 176px;
+      max-width: 100%;
       width: auto;
+
+      @include media(em(400)) {
+        max-height: 215px;
+      }
     }
   }
 
+  // Controls and pager.
   .views-slideshow-controls-bottom {
     display: block;
-    padding: 10px 0;
+    padding: 10px;
     margin: 0 auto;
-    width: 300px;
+
+    @include media(em(400)) {
+      padding: 10px 0;
+      width: 300px;
+    }
   }
 
   .views_slideshow_slide_counter {

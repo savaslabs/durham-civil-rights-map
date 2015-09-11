@@ -42,13 +42,14 @@
       clear: both;
     }
 
+    .view-photo-slideshow {
+      margin: 0 auto $general-spacing;
+    }
+
     @include media ($x-wide) {
       .view-photo-slideshow {
         float: left;
         margin: 0 1em 1em 0;
-      }
-
-      .field-node--body {
       }
 
       p {
