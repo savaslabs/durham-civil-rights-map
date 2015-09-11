@@ -40,20 +40,20 @@
 
     .node__content {
       clear: both;
-    }
 
-    .view-photo-slideshow {
-      margin: 0 auto $general-spacing;
-    }
-
-    @include media ($x-wide) {
       .view-photo-slideshow {
-        float: left;
-        margin: 0 1em 1em 0;
+        margin: 0 auto $general-spacing;
       }
 
-      p {
-        margin: 0;
+      @include media ($x-wide) {
+        .view-photo-slideshow {
+          float: left;
+          margin: 0 1em 1em 0;
+        }
+
+        p {
+          margin: 0;
+        }
       }
     }
 
