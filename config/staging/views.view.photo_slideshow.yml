@@ -12,7 +12,7 @@ dependencies:
 id: photo_slideshow
 label: 'Photo slideshow'
 module: views
-description: ''
+description: 'A slideshow of photos for node pages'
 tag: ''
 base_table: node_field_data
 base_field: nid
@@ -179,7 +179,7 @@ display:
           type: image
           settings:
             image_style: ''
-            image_link: content
+            image_link: file
           group_column: ''
           group_columns: {  }
           group_rows: false
