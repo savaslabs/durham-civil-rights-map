@@ -4,3 +4,10 @@
  * @file
  * Functions to support theming in the Mappy theme.
  */
+
+/**
+ * Implements template_preproccess_node().
+ */
+function mappy_preprocess_node(&$variables) {
+  $variables['photo_slideshow_view'] = views_embed_view('photo_slideshow', 'default');
+}

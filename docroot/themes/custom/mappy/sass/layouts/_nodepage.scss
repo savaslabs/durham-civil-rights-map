@@ -28,20 +28,31 @@
   }
 
   // For Place nodes.
-  // 10 columns on mobile, 8 columns on narrow and up.
-  .node--type-place {
+  // 10 columns on all screens.
+  &.node--type-place {
 
-    .field-node--photos {
-      margin-bottom: $general-spacing;
+    article {
+      @include media ($wide) {
+        @include span-columns(10);
+        @include shift(1);
+      }
     }
 
-    @include media ($wide) {
-      .field-node--photos {
-        @include span-columns(4 of 8);
+    .node__content {
+      clear: both;
+    }
+
+    @include media ($x-wide) {
+      .view-photo-slideshow {
+        float: left;
+        margin: 0 1em 1em 0;
       }
 
       .field-node--body {
-        @include span-columns(4 of 8);
+      }
+
+      p {
+        margin: 0;
       }
     }
 
@@ -61,7 +72,7 @@
   }
 
   // For Basic Page nodes (e.g. About).
-  .node--type-page {
+  &.node--type-page {
 
     // Title box: 10 columns on mobile and narrow, 8 on wide and up.
     .node-title-box {

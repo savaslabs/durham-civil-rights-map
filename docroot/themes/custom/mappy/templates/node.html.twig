@@ -86,7 +86,10 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
   </div>
 
   <div{{ content_attributes.addClass('node__content') }}>
-    {{ content.photos }}
+    {% if node.bundle == 'place' %}
+      {{ photo_slideshow_view }}
+    {% endif %}
+
     {{ content.body }}
   </div>
 
