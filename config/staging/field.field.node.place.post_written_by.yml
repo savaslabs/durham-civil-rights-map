@@ -1,0 +1,21 @@
+uuid: 913e46b3-442a-41f6-8500-dcae70684dcd
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.post_written_by
+    - node.type.place
+id: node.place.post_written_by
+field_name: post_written_by
+entity_type: node
+bundle: place
+label: 'Post written by'
+description: 'Name of the person who wrote the post'
+required: false
+translatable: false
+default_value:
+  -
+    value: ''
+default_value_callback: ''
+settings: {  }
+field_type: string

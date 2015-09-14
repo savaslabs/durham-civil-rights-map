@@ -9,6 +9,7 @@ dependencies:
     - field.field.node.place.field_tags
     - field.field.node.place.location_coordinates
     - field.field.node.place.photos
+    - field.field.node.place.post_written_by
     - node.type.place
   module:
     - datetime
@@ -57,5 +58,12 @@ content:
       output_format: wkt
     third_party_settings: {  }
     label: above
+  post_written_by:
+    type: string
+    weight: 108
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    label: visually_hidden
 hidden:
   photos: true
