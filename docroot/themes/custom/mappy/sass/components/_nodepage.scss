@@ -13,6 +13,19 @@
     .node-title-box h2 {
       padding-bottom: 0;
     }
+
+    .post_author {
+      margin-bottom: .5em;
+      text-align: center;
+
+      @include media($x-wide) {
+        text-align: left;
+      }
+
+      h3, .field, .field-items, .field-item {
+        display: inline;
+      }
+    }
   }
 
   // For Basic Page nodes (e.g. About).
