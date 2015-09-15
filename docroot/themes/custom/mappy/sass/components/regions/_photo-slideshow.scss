@@ -1,0 +1,105 @@
+/**
+ * @file
+ *
+ * Photo slideshow styles.
+ */
+
+// Fix for flicker in slideshow (see http://malsup.com/jquery/cycle/faq.html)
+#views_slideshow_cycle_main_-default {
+  overflow: hidden;
+}
+
+.view-photo-slideshow {
+  @include box-shadow;
+  background-color: $element-background-color;
+  height: 238px;
+  padding-top: 10px;
+
+  @include media(em(400)) {
+    height: 277px;
+    width: 320px;
+  }
+
+  .view-content {
+
+    .views_slideshow_cycle_teaser_section {
+      height: 176px;
+
+      @include media(em(400)) {
+        height: 215px;
+      }
+    }
+
+    .views_slideshow_cycle_slide {
+      left: auto !important;
+      position: static !important;
+      top: auto !important;
+    }
+
+    .field-content {
+      @include display(flex);
+      @include justify-content(center);
+
+      a {
+        padding: 0 10px;
+
+        @include media(em(400)) {
+          padding: 0;
+        }
+      }
+    }
+
+    img {
+      height: auto;
+      max-height: 176px;
+      max-width: 100%;
+      width: auto;
+
+      @include media(em(400)) {
+        max-height: 215px;
+      }
+    }
+  }
+
+  // Controls and pager.
+  .views-slideshow-controls-bottom {
+    display: block;
+    padding: 10px;
+    margin: 0 auto;
+
+    @include media(em(400)) {
+      padding: 10px 0;
+      width: 300px;
+    }
+  }
+
+  .views_slideshow_slide_counter {
+    text-align: center;
+  }
+
+  .views_slideshow_controls_text {
+
+    .views_slideshow_controls_text_previous {
+      float: left;
+      padding-left: 4em;
+
+      a {
+        content: url(../images/back-arrow.png);
+      }
+    }
+
+    .views_slideshow_controls_text_next {
+      float: right;
+      padding-right: 4em;
+
+      a {
+        content: url(../images/forward-arrow.png);
+      }
+    }
+
+    .views_slideshow_controls_text_pause {
+      display: none;
+    }
+  }
+
+}

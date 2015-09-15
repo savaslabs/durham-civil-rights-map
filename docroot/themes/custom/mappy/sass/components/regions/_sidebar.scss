@@ -52,11 +52,13 @@
       }
 
       img {
+        @include box-shadow;
         display: block;
         // Maintain aspect ratio.
         height: 100%;
-        width: 100%;
-        max-width: 360px;
+        margin: 0 auto;
+        max-height: 300px;
+        max-width: 100%;
 
       }
     }

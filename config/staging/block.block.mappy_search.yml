@@ -10,7 +10,7 @@ dependencies:
 id: mappy_search
 theme: mappy
 region: content
-weight: -1
+weight: -7
 provider: null
 plugin: search_form_block
 settings:
