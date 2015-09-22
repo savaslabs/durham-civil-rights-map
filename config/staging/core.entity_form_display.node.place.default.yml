@@ -10,13 +10,12 @@ dependencies:
     - field.field.node.place.field_tags
     - field.field.node.place.location_coordinates
     - field.field.node.place.photos
-    - field.field.node.place.soundcloud_link
+    - field.field.node.place.soundcloud_url
     - node.type.place
   module:
     - datetime
     - geofield
     - image
-    - link
     - path
     - text
 id: node.place.default
@@ -88,13 +87,13 @@ content:
     settings:
       display_label: true
     third_party_settings: {  }
-  soundcloud_link:
-    type: link_default
-    weight: 6
+  soundcloud_url:
+    weight: 26
     settings:
-      placeholder_url: ''
-      placeholder_title: ''
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
+    type: string_textfield
   sticky:
     type: boolean_checkbox
     weight: 12

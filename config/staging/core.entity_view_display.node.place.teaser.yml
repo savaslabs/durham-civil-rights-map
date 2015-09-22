@@ -11,7 +11,6 @@ dependencies:
     - field.field.node.place.field_tags
     - field.field.node.place.location_coordinates
     - field.field.node.place.photos
-    - field.field.node.place.soundcloud_link
     - node.type.place
   module:
     - text
@@ -37,4 +36,3 @@ hidden:
   field_tags: true
   location_coordinates: true
   photos: true
-  soundcloud_link: true

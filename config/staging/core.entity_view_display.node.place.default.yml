@@ -10,12 +10,12 @@ dependencies:
     - field.field.node.place.field_tags
     - field.field.node.place.location_coordinates
     - field.field.node.place.photos
-    - field.field.node.place.soundcloud_link
+    - field.field.node.place.soundcloud_url
     - node.type.place
   module:
     - datetime
     - geofield
-    - link
+    - image
     - text
     - user
 id: node.place.default
@@ -75,15 +75,11 @@ content:
       image_link: ''
     third_party_settings: {  }
     label: visually_hidden
-  soundcloud_link:
-    type: link
+  soundcloud_url:
     weight: 8
+    label: above
     settings:
-      trim_length: 80
-      url_only: false
-      url_plain: false
-      rel: ''
-      target: ''
+      link_to_entity: false
     third_party_settings: {  }
-    label: hidden
+    type: string
 hidden: {  }

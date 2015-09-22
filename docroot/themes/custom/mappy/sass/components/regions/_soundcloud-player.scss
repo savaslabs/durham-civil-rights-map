@@ -1,0 +1,12 @@
+.field-node--soundcloud-url {
+  @include box-shadow;
+}
+
+.field-node--soundcloud-url, .field-node--soundcloud-url iframe {
+  height: 160px;
+
+  @include media(em(400)) {
+    height: 160px;
+    width: 320px;
+  }
+}

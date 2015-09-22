@@ -41,13 +41,18 @@
     .node__content {
       clear: both;
 
-      .view-photo-slideshow {
+      .view-photo-slideshow,
+      .field-node--soundcloud-url {
         margin: 0 auto $general-spacing;
       }
 
       @include media ($x-wide) {
-        .view-photo-slideshow {
+        .node-left-pane {
           float: left;
+        }
+
+        .view-photo-slideshow,
+        .field-node--soundcloud-url {
           margin: 0 1em 1em 0;
         }
 
