@@ -93,16 +93,5 @@
         @include span-columns(8 of 8);
       }
     }
-
-    .map--node {
-      @include span-columns(10 of 10);
-      border-radius: $border-radius;
-      margin-top: $general-spacing;
-
-      @include media ($wide) {
-        @include span-columns(6 of 8);
-        @include shift(1 of 8);
-      }
-    }
   }
 }
