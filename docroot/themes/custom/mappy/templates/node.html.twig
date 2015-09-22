@@ -101,7 +101,9 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
     {% endif %}
     {{ content.body }}
 
-    <div id="map" class="map--node"></div>
+    {% if node.bundle == "place" %}
+     <div id="map" class="map--node"></div>
+    {% endif %}
   </div>
 
   {% if content.links %}
