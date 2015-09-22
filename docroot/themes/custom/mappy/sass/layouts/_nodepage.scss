@@ -46,6 +46,11 @@
         margin: 0 auto $general-spacing;
       }
 
+      .map--node {
+        width: 300px;
+        height: 300px;
+      }
+
       @include media ($x-wide) {
         .node-left-pane {
           float: left;
@@ -91,7 +96,6 @@
 
     .map--node {
       @include span-columns(10 of 10);
-      @include aspect-ratio(5,3);
       border-radius: $border-radius;
       margin-top: $general-spacing;
 
