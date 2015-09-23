@@ -4,14 +4,12 @@ status: true
 dependencies:
   config:
     - field.field.node.place.address_text
-    - field.field.node.place.author_name
     - field.field.node.place.body
     - field.field.node.place.date
     - field.field.node.place.field_tags
     - field.field.node.place.location_coordinates
     - field.field.node.place.photos
     - field.field.node.place.post_written_by
-    - field.field.node.place.soundcloud_url
     - node.type.place
   module:
     - datetime
@@ -25,49 +23,47 @@ mode: default
 content:
   address_text:
     type: basic_string
-    weight: 5
+    weight: 107
     settings: {  }
     third_party_settings: {  }
-    label: hidden
+    label: visually_hidden
   body:
     type: text_default
-    weight: 1
+    weight: 101
     settings: {  }
     third_party_settings: {  }
     label: hidden
   date:
     type: datetime_default
-    weight: 2
+    weight: 103
     settings:
       format_type: medium
     third_party_settings: {  }
     label: above
   field_tags:
     type: entity_reference_label
-    weight: 4
+    weight: 106
     settings:
       link: true
     third_party_settings: {  }
     label: above
   links:
-    weight: 0
+    weight: 100
     settings: {  }
     third_party_settings: {  }
   location_coordinates:
     type: geofield_default
-    weight: 3
+    weight: 105
     settings:
       output_format: wkt
     third_party_settings: {  }
     label: above
   post_written_by:
     type: string
-    weight: 6
+    weight: 108
     settings:
       link_to_entity: false
     third_party_settings: {  }
     label: inline
 hidden:
-  author_name: true
   photos: true
-  soundcloud_url: true
