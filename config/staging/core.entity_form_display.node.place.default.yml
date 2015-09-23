@@ -107,4 +107,6 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  author_name: true
+  soundcloud_url: true

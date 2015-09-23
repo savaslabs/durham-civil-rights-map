@@ -5,12 +5,14 @@ dependencies:
   config:
     - core.entity_view_mode.node.teaser
     - field.field.node.place.address_text
+    - field.field.node.place.author_name
     - field.field.node.place.body
     - field.field.node.place.date
     - field.field.node.place.field_tags
     - field.field.node.place.location_coordinates
     - field.field.node.place.photos
     - field.field.node.place.post_written_by
+    - field.field.node.place.soundcloud_url
     - node.type.place
   module:
     - text
@@ -31,8 +33,10 @@ content:
     weight: 100
 hidden:
   address_text: true
+  author_name: true
   date: true
   field_tags: true
   location_coordinates: true
   photos: true
   post_written_by: true
+  soundcloud_url: true
