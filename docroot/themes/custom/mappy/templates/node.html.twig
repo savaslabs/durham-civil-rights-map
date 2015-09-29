@@ -92,7 +92,15 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
         {{ content.soundcloud_url }}
       </div>
     {% endif %}
-    {{ content.body }}
+    <div class="node-body">
+      {% if content.by %}
+        <div class="post_author">
+          {{ content.by }}
+        </div>
+      {% endif %}
+      {{ content.body }}
+    </div>
+
 
   </div>
 

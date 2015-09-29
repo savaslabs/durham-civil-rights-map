@@ -33,6 +33,12 @@
 
 // Styles for "Explore all points."
 .path-list {
+  .search-block-form {
+    input {
+      margin-left: 1em !important;
+    }
+  }
+
   .views-row {
     border-bottom: 1px solid $element-background-color;
     padding: 1.5em;

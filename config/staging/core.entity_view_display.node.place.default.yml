@@ -5,6 +5,7 @@ dependencies:
   config:
     - field.field.node.place.address_text
     - field.field.node.place.body
+    - field.field.node.place.by
     - field.field.node.place.date
     - field.field.node.place.field_tags
     - field.field.node.place.location_coordinates
@@ -34,6 +35,13 @@ content:
     settings: {  }
     third_party_settings: {  }
     label: hidden
+  by:
+    type: string
+    weight: 9
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    label: inline
   date:
     type: datetime_default
     weight: 4
@@ -68,10 +76,10 @@ content:
     third_party_settings: {  }
     label: visually_hidden
   soundcloud_url:
+    type: string
     weight: 8
-    label: above
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    type: string
+    label: above
 hidden: {  }

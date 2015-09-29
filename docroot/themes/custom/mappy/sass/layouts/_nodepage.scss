@@ -14,8 +14,8 @@
   article {
     // 10 columns on mobile (see _base.scss), 8 columns on narrow and up.
     @include media ($wide) {
-      @include span-columns(8);
-      @include shift(2);
+      @include span-columns(8 of 10);
+      @include shift(1 of 10);
     }
 
     // For sticky footer.
@@ -28,14 +28,12 @@
   }
 
   // For Place nodes.
-  // 10 columns on all screens.
+  // 10 columns on all screens. Switch to 2-column layout on x-wide screens.
   &.node--type-place {
 
     article {
-      @include media ($wide) {
-        @include span-columns(10);
-        @include shift(1);
-      }
+      @include span-columns(10 of 10);
+      @include shift(0);
     }
 
     .node__content {
@@ -48,12 +46,11 @@
 
       @include media ($x-wide) {
         .node-left-pane {
-          float: left;
+          @include span-columns(4 of 10);
         }
 
-        .view-photo-slideshow,
-        .field-node--soundcloud-url {
-          margin: 0 2em 1em 0;
+        .node-body {
+          @include span-columns(6 of 10);
         }
 
         p {
