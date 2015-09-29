@@ -4,7 +4,6 @@ status: true
 dependencies:
   config:
     - field.field.node.place.address_text
-    - field.field.node.place.author_name
     - field.field.node.place.body
     - field.field.node.place.date
     - field.field.node.place.field_tags
@@ -28,13 +27,6 @@ content:
     weight: 3
     settings:
       rows: 3
-      placeholder: ''
-    third_party_settings: {  }
-  author_name:
-    type: string_textfield
-    weight: 1
-    settings:
-      size: 60
       placeholder: ''
     third_party_settings: {  }
   body:

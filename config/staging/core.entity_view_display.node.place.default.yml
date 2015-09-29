@@ -4,7 +4,6 @@ status: true
 dependencies:
   config:
     - field.field.node.place.address_text
-    - field.field.node.place.author_name
     - field.field.node.place.body
     - field.field.node.place.date
     - field.field.node.place.field_tags
@@ -29,13 +28,6 @@ content:
     settings: {  }
     third_party_settings: {  }
     label: visually_hidden
-  author_name:
-    type: string
-    weight: 1
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    label: hidden
   body:
     type: text_default
     weight: 2
