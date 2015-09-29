@@ -79,8 +79,9 @@
     .map--node {
       @include box-shadow;
 
-      width: 100%;
       height: 300px;
+      margin-top: $general-spacing;
+      width: 100%;
     }
 
   }
