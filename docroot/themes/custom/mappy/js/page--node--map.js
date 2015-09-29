@@ -1,37 +1,37 @@
-if (nodePoint) {
-    (function ($) {
-        // Add basemap.
-        var baseLayer = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
-        });
+(function ($) {
+    // Add basemap.
+    var baseLayer = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
+    });
 
-        // Create map and set center and zoom.
-        var map = L.map('map', {
-            zoomControl: false,
-            scrollWheelZoom: false,
-            center: nodePoint,
-            zoom: 14
-        });
+    nodePoint = [drupalSettings.mappy.nodepageMap.lat, drupalSettings.mappy.nodepageMap.lon];
 
-        // Add basemap to map.
-        map.addLayer(baseLayer);
+    // Create map and set center and zoom.
+    var map = L.map('map', {
+        zoomControl: false,
+        scrollWheelZoom: false,
+        center: nodePoint,
+        zoom: 14
+    });
 
-        // Set path to marker image.
-        L.Icon.Default.imagePath = '/themes/custom/mappy/images/leaflet';
-        var pmpIcon = L.Icon.extend({
-            options: {
-                iconUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green.png',
-                iconRetinaUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green-2x.png',
-                iconSize: [25, 41],
-                iconAnchor: [13, 40],
-                popupAnchor: [1, -46]
-            }
-        });
+    // Add basemap to map.
+    map.addLayer(baseLayer);
 
-        L.marker(nodePoint, {icon: new pmpIcon}).addTo(map).bindPopup(nodeTitle);;
+    // Set path to marker image.
+    L.Icon.Default.imagePath = '/themes/custom/mappy/images/leaflet';
+    var pmpIcon = L.Icon.extend({
+        options: {
+            iconUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green.png',
+            iconRetinaUrl: '/themes/custom/mappy/images/leaflet/pmp-marker-icon-green-2x.png',
+            iconSize: [25, 41],
+            iconAnchor: [13, 40],
+            popupAnchor: [1, -46]
+        }
+    });
 
-        // Add zoom controls in bottom right of map.
-        new L.Control.Zoom({position: 'bottomright'}).addTo(map);
+    L.marker(nodePoint, {icon: new pmpIcon}).addTo(map).bindPopup(drupalSettings.mappy.nodepageMap.label).openPopup();
 
-    })(jQuery);
-}
+    // Add zoom controls in bottom right of map.
+    new L.Control.Zoom({position: 'bottomright'}).addTo(map);
+
+})(jQuery);

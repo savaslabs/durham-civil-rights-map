@@ -26,6 +26,8 @@ frontpage_map:
     js/page--front--map.js: {}
   dependencies:
    - mappy/leaflet
+   - core/drupalSettings
+
 
 nodepage_map:
   js:

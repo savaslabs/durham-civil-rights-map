@@ -76,9 +76,6 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
 
 {% if node.bundle == "place" %}
   {{ attach_library('mappy/nodepage_map') }}
-  <script type="text/javascript">
-    var nodePoint = [{{ node.location_coordinates[0].lat }},{{ node.location_coordinates[0].lon }}];
-  </script>
 {% endif %}
 <article{{ attributes.addClass(classes) }}>
 
@@ -102,9 +99,10 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
     {{ content.body }}
 
     {% if node.bundle == "place" %}
-     <div id="map" class="map--node"></div>
+      <div id="map" class="map--node"></div>
     {% endif %}
   </div>
+
 
   {% if content.links %}
     <div class="node__links">
