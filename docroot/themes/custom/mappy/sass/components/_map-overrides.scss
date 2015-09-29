@@ -124,7 +124,8 @@
       }
 
       // Hide description from search results.
-      p span {
+      p span,
+      p {
         display: none;
       }
     }
