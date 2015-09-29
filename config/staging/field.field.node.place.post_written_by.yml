@@ -9,7 +9,7 @@ id: node.place.post_written_by
 field_name: post_written_by
 entity_type: node
 bundle: place
-label: 'Post written by'
+label: By
 description: 'Name of the person who wrote the post'
 required: false
 translatable: false

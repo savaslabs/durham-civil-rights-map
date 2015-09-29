@@ -90,13 +90,9 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
       {{ photo_slideshow_view }}
     {% endif %}
 
-    {% if content.post_written_by %}
-      <div class="post_author">
-        <h3>By {{ content.post_written_by }}</h3>
-      </div>
-    {% endif %}
-
+    {{ content.post_written_by }}
     {{ content.body }}
+
   </div>
 
   {% if content.links %}
