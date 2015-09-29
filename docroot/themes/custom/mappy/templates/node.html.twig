@@ -87,10 +87,13 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
 
   <div{{ content_attributes.addClass('node__content') }}>
     {% if node.bundle == 'place' %}
-      {{ photo_slideshow_view }}
+      <div class="node-left-pane">
+        {{ photo_slideshow_view }}
+        {{ content.soundcloud_url }}
+      </div>
     {% endif %}
-
     {{ content.body }}
+
   </div>
 
   {% if content.links %}

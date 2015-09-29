@@ -9,10 +9,12 @@ dependencies:
     - field.field.node.place.field_tags
     - field.field.node.place.location_coordinates
     - field.field.node.place.photos
+    - field.field.node.place.soundcloud_url
     - node.type.place
   module:
     - datetime
     - geofield
+    - image
     - text
     - user
 id: node.place.default
@@ -22,40 +24,54 @@ mode: default
 content:
   address_text:
     type: basic_string
-    weight: 107
+    weight: 7
     settings: {  }
     third_party_settings: {  }
     label: visually_hidden
   body:
     type: text_default
-    weight: 101
+    weight: 2
     settings: {  }
     third_party_settings: {  }
     label: hidden
   date:
     type: datetime_default
-    weight: 103
+    weight: 4
     settings:
       format_type: medium
     third_party_settings: {  }
     label: above
   field_tags:
     type: entity_reference_label
-    weight: 106
+    weight: 6
     settings:
       link: true
     third_party_settings: {  }
     label: above
   links:
-    weight: 100
+    weight: 0
     settings: {  }
     third_party_settings: {  }
   location_coordinates:
     type: geofield_default
-    weight: 105
+    weight: 5
     settings:
       output_format: wkt
     third_party_settings: {  }
     label: above
-hidden:
-  photos: true
+  photos:
+    type: image
+    weight: 3
+    settings:
+      image_style: ''
+      image_link: ''
+    third_party_settings: {  }
+    label: visually_hidden
+  soundcloud_url:
+    weight: 8
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    type: string
+hidden: {  }
