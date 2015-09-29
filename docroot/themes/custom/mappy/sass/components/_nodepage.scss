@@ -13,6 +13,20 @@
     .node-title-box h2 {
       padding-bottom: 0;
     }
+
+    .post_author {
+      @extend h3;
+      margin-bottom: .5em;
+      text-align: center;
+
+      .field-label {
+        font-weight: normal;
+      }
+
+      @include media($x-wide) {
+        text-align: left;
+      }
+    }
   }
 
   // For Basic Page nodes (e.g. About).
