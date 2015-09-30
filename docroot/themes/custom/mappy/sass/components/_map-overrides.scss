@@ -58,7 +58,7 @@
 
 // On mobile, move zoom controls up so sidebar content doesn't cover it.
 @media only screen and (max-width: 851px) {
-  .leaflet-bottom {
+  .path-frontpage .leaflet-bottom {
     bottom: 15vh;
   }
 }

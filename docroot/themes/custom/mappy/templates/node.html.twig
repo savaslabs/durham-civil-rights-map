@@ -73,6 +73,10 @@
   not node.isPublished() ? 'node--unpublished',
 view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
 ] %}
+
+{% if node.bundle == "place" %}
+  {{ attach_library('mappy/nodepage_map') }}
+{% endif %}
 <article{{ attributes.addClass(classes) }}>
 
   <div class="node-title-box">
@@ -102,7 +106,11 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
     </div>
 
 
+    {% if node.bundle == "place" %}
+      <div id="map" class="map--node"></div>
+    {% endif %}
   </div>
+
 
   {% if content.links %}
     <div class="node__links">

@@ -72,6 +72,15 @@
         padding-bottom: 1.5em;
       }
     }
+
+    .map--node {
+      @include box-shadow;
+
+      height: 300px;
+      margin-top: $general-spacing;
+      width: 100%;
+    }
+
   }
 
   // For Basic Page nodes (e.g. About).
