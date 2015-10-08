@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Handler\FieldCounterTest.
+ * Contains \Drupal\views\Tests\Handler\FieldCounterTest.
  */
 
 namespace Drupal\views\Tests\Handler;
 
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 
 /**
@@ -15,7 +15,7 @@ use Drupal\views\Views;
  *
  * @group views
  */
-class FieldCounterTest extends ViewUnitTestBase {
+class FieldCounterTest extends ViewKernelTestBase {
 
   /**
    * Modules to enable.
@@ -51,12 +51,13 @@ class FieldCounterTest extends ViewUnitTestBase {
     $view->preview();
 
     $counter = $view->style_plugin->getField(0, 'counter');
-    $this->assertEqual($counter, 1, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => 1, '@counter' => $counter)));
+    $this->assertEqual($counter, '1', format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => 1, '@counter' => $counter)));
     $counter = $view->style_plugin->getField(1, 'counter');
-    $this->assertEqual($counter, 2, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => 2, '@counter' => $counter)));
+    $this->assertEqual($counter, '2', format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => 2, '@counter' => $counter)));
     $counter = $view->style_plugin->getField(2, 'counter');
-    $this->assertEqual($counter, 3, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => 3, '@counter' => $counter)));
+    $this->assertEqual($counter, '3', format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => 3, '@counter' => $counter)));
     $view->destroy();
+    $view->storage->invalidateCaches();
 
     $view->setDisplay();
     $rand_start = rand(5, 10);
@@ -79,13 +80,13 @@ class FieldCounterTest extends ViewUnitTestBase {
 
     $counter = $view->style_plugin->getField(0, 'counter');
     $expected_number = 0 + $rand_start;
-    $this->assertEqual($counter, $expected_number, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => $expected_number, '@counter' => $counter)));
+    $this->assertEqual($counter, (string) $expected_number, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => $expected_number, '@counter' => $counter)));
     $counter = $view->style_plugin->getField(1, 'counter');
     $expected_number = 1 + $rand_start;
-    $this->assertEqual($counter, $expected_number, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => $expected_number, '@counter' => $counter)));
+    $this->assertEqual($counter, (string) $expected_number, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => $expected_number, '@counter' => $counter)));
     $counter = $view->style_plugin->getField(2, 'counter');
     $expected_number = 2 + $rand_start;
-    $this->assertEqual($counter, $expected_number, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => $expected_number, '@counter' => $counter)));
+    $this->assertEqual($counter, (string) $expected_number, format_string('Make sure the expected number (@expected) patches with the rendered number (@counter)', array('@expected' => $expected_number, '@counter' => $counter)));
   }
 
   // @TODO: Write tests for pager.

@@ -9,12 +9,8 @@ use Drupal\Component\Utility\Environment;
 
 /**
  * Minimum value of PHP memory_limit for SimpleTest.
- *
- * @todo Reduce the memory required to use SimpleTest on some environments in
- *   https://www.drupal.org/node/2289201 and
- *   https://www.drupal.org/node/2307163 and then decrease this limit.
  */
-const SIMPLETEST_MINIMUM_PHP_MEMORY_LIMIT = '192M';
+const SIMPLETEST_MINIMUM_PHP_MEMORY_LIMIT = '128M';
 
 /**
  * Implements hook_requirements().
@@ -32,7 +28,7 @@ function simpletest_requirements($phase) {
   );
   if (!$has_curl) {
     $requirements['curl']['severity'] = REQUIREMENT_ERROR;
-    $requirements['curl']['description'] = t('The testing framework could not be installed because the PHP <a href="@curl_url">cURL</a> library is not available.', array('@curl_url' => 'http://php.net/manual/curl.setup.php'));
+    $requirements['curl']['description'] = t('The testing framework could not be installed because the PHP <a href=":curl_url">cURL</a> library is not available.', array(':curl_url' => 'http://php.net/manual/curl.setup.php'));
   }
 
   $requirements['php_domdocument'] = array(
@@ -41,19 +37,19 @@ function simpletest_requirements($phase) {
   );
   if (!$has_domdocument) {
     $requirements['php_domdocument']['severity'] = REQUIREMENT_ERROR;
-    $requirements['php_domdocument']['description'] = t('The testing framework requires the DOMDocument class to be available. Check the configure command at the <a href="@link-phpinfo">PHP info page</a>.', array('@link-phpinfo' => \Drupal::url('system.php')));
+    $requirements['php_domdocument']['description'] = t('The testing framework requires the DOMDocument class to be available. Check the configure command at the <a href=":link-phpinfo">PHP info page</a>.', array(':link-phpinfo' => \Drupal::url('system.php')));
   }
 
   // SimpleTest currently needs 2 cURL options which are incompatible with
   // having PHP's open_basedir restriction set.
-  // See http://drupal.org/node/674304.
+  // See https://www.drupal.org/node/674304.
   $requirements['php_open_basedir'] = array(
     'title' => t('PHP open_basedir restriction'),
     'value' => $open_basedir ? t('Enabled') : t('Disabled'),
   );
   if ($open_basedir) {
     $requirements['php_open_basedir']['severity'] = REQUIREMENT_ERROR;
-    $requirements['php_open_basedir']['description'] = t('The testing framework requires the PHP <a href="@open_basedir-url">open_basedir</a> restriction to be disabled. Check your webserver configuration or contact your web host.', array('@open_basedir-url' => 'http://php.net/manual/ini.core.php#ini.open-basedir'));
+    $requirements['php_open_basedir']['description'] = t('The testing framework requires the PHP <a href=":open_basedir-url">open_basedir</a> restriction to be disabled. Check your webserver configuration or contact your web host.', array(':open_basedir-url' => 'http://php.net/manual/ini.core.php#ini.open-basedir'));
   }
 
   // Check the current memory limit. If it is set too low, SimpleTest will fail
@@ -61,7 +57,7 @@ function simpletest_requirements($phase) {
   $memory_limit = ini_get('memory_limit');
   if (!Environment::checkMemoryLimit(SIMPLETEST_MINIMUM_PHP_MEMORY_LIMIT, $memory_limit)) {
     $requirements['php_memory_limit']['severity'] = REQUIREMENT_WARNING;
-    $requirements['php_memory_limit']['description'] = t('The testing framework requires the PHP memory limit to be at least %memory_minimum_limit. The current value is %memory_limit. <a href="@url">Follow these steps to continue</a>.', array('%memory_limit' => $memory_limit, '%memory_minimum_limit' => SIMPLETEST_MINIMUM_PHP_MEMORY_LIMIT, '@url' => 'http://drupal.org/node/207036'));
+    $requirements['php_memory_limit']['description'] = t('The testing framework requires the PHP memory limit to be at least %memory_minimum_limit. The current value is %memory_limit. <a href=":url">Follow these steps to continue</a>.', array('%memory_limit' => $memory_limit, '%memory_minimum_limit' => SIMPLETEST_MINIMUM_PHP_MEMORY_LIMIT, ':url' => 'https://www.drupal.org/node/207036'));
   }
 
   $site_directory = 'sites/simpletest';
@@ -108,7 +104,7 @@ function simpletest_schema() {
         'description' => 'Test ID, messages belonging to the same ID are reported together',
       ),
       'test_class' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
@@ -127,14 +123,14 @@ function simpletest_schema() {
         'description' => 'The message itself.',
       ),
       'message_group' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
         'description' => 'The message group this message belongs to. For example: warning, browser, user.',
       ),
       'function' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
@@ -160,7 +156,7 @@ function simpletest_schema() {
     ),
   );
   $schema['simpletest_test_id'] = array(
-    'description' => 'Stores simpletest test IDs, used to auto-incrament the test ID so that a fresh test ID is used.',
+    'description' => 'Stores simpletest test IDs, used to auto-increment the test ID so that a fresh test ID is used.',
     'fields' => array(
       'test_id'  => array(
         'type' => 'serial',

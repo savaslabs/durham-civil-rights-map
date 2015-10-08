@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\Tests\simpletest\Unit\TestInfoParsingTest.
+ */
+
 namespace Drupal\Tests\simpletest\Unit;
 
 use Drupal\Tests\UnitTestCase;
@@ -73,6 +78,45 @@ class TestInfoParsingTest extends UnitTestCase {
  *
  * @group field
  */
+ ",
+    ];
+
+    // Test with a different amount of leading spaces.
+    $tests[] = [
+      // Expected result.
+      [
+        'name' => 'Drupal\field\Tests\BulkDeleteTest',
+        'group' => 'field',
+        'description' => 'Bulk delete storages and fields, and clean up afterwards.',
+      ],
+      // Classname.
+      'Drupal\field\Tests\BulkDeleteTest',
+      // Doc block.
+      "/**
+   * Bulk delete storages and fields, and clean up afterwards.
+   *
+   * @group field
+   */
+ ",
+    ];
+
+    // Make sure that a "* @" inside a string does not get parsed as an
+    // annotation.
+    $tests[] = [
+      // Expected result.
+      [
+        'name' => 'Drupal\field\Tests\BulkDeleteTest',
+        'group' => 'field',
+        'description' => 'Bulk delete storages and fields, and clean up afterwards. * @',
+      ],
+      // Classname.
+      'Drupal\field\Tests\BulkDeleteTest',
+      // Doc block.
+      "/**
+   * Bulk delete storages and fields, and clean up afterwards. * @
+   *
+   * @group field
+   */
  ",
     ];
 
@@ -176,8 +220,6 @@ EOT;
 
   /**
    * @covers ::getTestInfo
-   * @expectedException \Drupal\simpletest\Exception\MissingSummaryLineException
-   * @expectedExceptionMessage Missing PHPDoc summary line in Drupal\field\Tests\BulkDeleteTest
    */
   public function testTestInfoParserMissingSummary() {
     $classname = 'Drupal\field\Tests\BulkDeleteTest';
@@ -186,7 +228,8 @@ EOT;
  * @group field
  */
 EOT;
-    \Drupal\simpletest\TestDiscovery::getTestInfo($classname, $doc_comment);
+    $info = \Drupal\simpletest\TestDiscovery::getTestInfo($classname, $doc_comment);
+    $this->assertEmpty($info['description']);
   }
 
 }

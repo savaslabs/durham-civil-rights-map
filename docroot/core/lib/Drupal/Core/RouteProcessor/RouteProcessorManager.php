@@ -2,11 +2,12 @@
 
 /**
  * @file
- * Contains \Drupal\Tests\Core\RouteProcessor\RouteProcessorManager.
+ * Contains \Drupal\Core\RouteProcessor\RouteProcessorManager.
  */
 
 namespace Drupal\Core\RouteProcessor;
 
+use Drupal\Core\Render\BubbleableMetadata;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -50,10 +51,10 @@ class RouteProcessorManager implements OutboundRouteProcessorInterface {
   /**
    * {@inheritdoc}
    */
-  public function processOutbound($route_name, Route $route, array &$parameters) {
+  public function processOutbound($route_name, Route $route, array &$parameters, BubbleableMetadata $bubbleable_metadata = NULL) {
     $processors = $this->getOutbound();
     foreach ($processors as $processor) {
-      $processor->processOutbound($route_name, $route, $parameters);
+      $processor->processOutbound($route_name, $route, $parameters, $bubbleable_metadata);
     }
   }
 

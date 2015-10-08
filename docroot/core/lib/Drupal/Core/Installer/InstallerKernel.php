@@ -16,13 +16,11 @@ class InstallerKernel extends DrupalKernel {
 
   /**
    * {@inheritdoc}
-   *
-   * @param bool $rebuild
-   *   Force a container rebuild. Unlike the parent method, this defaults to
-   *   TRUE.
    */
-  protected function initializeContainer($rebuild = TRUE) {
-    $container = parent::initializeContainer($rebuild);
+  protected function initializeContainer() {
+    // Always force a container rebuild.
+    $this->containerNeedsRebuild = TRUE;
+    $container = parent::initializeContainer();
     return $container;
   }
 
@@ -40,11 +38,4 @@ class InstallerKernel extends DrupalKernel {
     $this->configStorage = NULL;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function addServiceFiles($service_yamls) {
-    // In the beginning there is no settings.php and no service YAMLs.
-    return parent::addServiceFiles($service_yamls ?: []);
-  }
 }

@@ -8,7 +8,7 @@
 namespace Drupal\taxonomy\Tests;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\entity_reference\Tests\EntityReferenceTestTrait;
+use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\language\Entity\ConfigurableLanguage;
 
@@ -78,6 +78,10 @@ trait TaxonomyTranslationTestTrait {
 
   /**
    * Adds term reference field for the article content type.
+   *
+   * @param bool $translatable
+   *   (optional) If TRUE, create a translatable term reference field. Defaults
+   *   to FALSE.
    */
   protected function setUpTermReferenceField() {
     $handler_settings = array(

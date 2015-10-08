@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\block\Tests\BlockHiddenRegionTest.
+ * Contains \Drupal\block\Tests\BlockHiddenRegionTest.
  */
 
 namespace Drupal\block\Tests;
@@ -42,6 +42,7 @@ class BlockHiddenRegionTest extends WebTestBase {
 
     $this->drupalLogin($this->adminUser);
     $this->drupalPlaceBlock('search_form_block');
+    $this->drupalPlaceBlock('local_tasks_block');
   }
 
   /**

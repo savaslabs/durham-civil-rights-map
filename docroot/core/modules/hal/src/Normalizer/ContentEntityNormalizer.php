@@ -8,6 +8,7 @@
 namespace Drupal\hal\Normalizer;
 
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\rest\LinkManager\LinkManagerInterface;
@@ -76,7 +77,7 @@ class ContentEntityNormalizer extends NormalizerBase {
           'href' => $this->getEntityUri($entity),
         ),
         'type' => array(
-          'href' => $this->linkManager->getTypeUri($entity->getEntityTypeId(), $entity->bundle()),
+          'href' => $this->linkManager->getTypeUri($entity->getEntityTypeId(), $entity->bundle(), $context),
         ),
       ),
     );
@@ -132,7 +133,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     }
 
     // Create the entity.
-    $typed_data_ids = $this->getTypedDataIds($data['_links']['type']);
+    $typed_data_ids = $this->getTypedDataIds($data['_links']['type'], $context);
     $entity_type = $this->entityManager->getDefinition($typed_data_ids['entity_type']);
     $langcode_key = $entity_type->getKey('langcode');
     $values = array();
@@ -195,14 +196,19 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * Constructs the entity URI.
    *
-   * @param $entity
+   * @param \Drupal\Core\Entity\EntityInterface
    *   The entity.
-   *
    * @return string
    *   The entity URI.
    */
-  protected function getEntityUri($entity) {
-    return $entity->url('canonical', array('absolute' => TRUE));
+  protected function getEntityUri(EntityInterface $entity) {
+    // Some entity types don't provide a canonical link template, at least call
+    // out to ->url().
+    if ($entity->isNew() || !$entity->hasLinkTemplate('canonical')) {
+      return $entity->url('canonical', []);
+    }
+    $url = $entity->urlInfo('canonical', ['absolute' => TRUE]);
+    return $url->setRouteParameter('_format', 'hal_json')->toString();
   }
 
   /**
@@ -210,13 +216,14 @@ class ContentEntityNormalizer extends NormalizerBase {
    *
    * @param array $types
    *   The type array(s) (value of the 'type' attribute of the incoming data).
+   * @param array $context
+   *   Context from the normalizer/serializer operation.
    *
    * @return array
    *   The typed data IDs.
    *
-   * @throws \Symfony\Component\Serializer\Exception\UnexpectedValueException
    */
-  protected function getTypedDataIds($types) {
+  protected function getTypedDataIds($types, $context = array()) {
     // The 'type' can potentially contain an array of type objects. By default,
     // Drupal only uses a single type in serializing, but allows for multiple
     // types when deserializing.
@@ -231,7 +238,7 @@ class ContentEntityNormalizer extends NormalizerBase {
       $type_uri = $type['href'];
       // Check whether the URI corresponds to a known type on this site. Break
       // once one does.
-      if ($typed_data_ids = $this->linkManager->getTypeInternalIds($type['href'])) {
+      if ($typed_data_ids = $this->linkManager->getTypeInternalIds($type['href'], $context)) {
         break;
       }
     }

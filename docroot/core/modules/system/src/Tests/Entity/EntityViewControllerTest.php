@@ -34,13 +34,12 @@ class EntityViewControllerTest extends WebTestBase {
     parent::setUp();
     // Create some dummy entity_test entities.
     for ($i = 0; $i < 2; $i++) {
-      $random_label = $this->randomMachineName();
-      $data = array('bundle' => 'entity_test', 'name' => $random_label);
-      $entity_test = $this->container->get('entity.manager')->getStorage('entity_test')->create($data);
+      $entity_test = $this->createTestEntity('entity_test');
       $entity_test->save();
       $this->entities[] = $entity_test;
     }
 
+    $this->drupalLogin($this->drupalCreateUser(['view test entity']));
   }
 
   /**
@@ -48,12 +47,9 @@ class EntityViewControllerTest extends WebTestBase {
    */
   function testEntityViewController() {
     $get_label_markup = function($label) {
-      return '<h1><div class="field field-entity-test--name field-name-name field-type-string field-label-hidden">
-    <div class="field-items">
-          <div class="field-item">' . $label . '</div>
-      </div>
-</div>
-</h1>';
+      return '<h1 class="page-title">
+            <div class="field field--name-name field--type-string field--label-hidden field__item">' . $label . '</div>
+      </h1>';
     };
 
     foreach ($this->entities as $entity) {
@@ -114,6 +110,33 @@ class EntityViewControllerTest extends WebTestBase {
     $this->drupalGet('entity_test/' . $entity->id());
     $xpath = $this->xpath('//div[@data-field-item-attr="foobar" and @property="schema:text"]/p[text()=:value]', array(':value' => $test_value));
     $this->assertTrue($xpath, 'The field item attributes from both modules have been found in the rendered output of the field.');
+  }
+
+  /**
+   * Tests that a view builder can successfully override the view builder.
+   */
+  public function testEntityViewControllerViewBuilder() {
+    $entity_test = $this->createTestEntity('entity_test_view_builder');
+    $entity_test->save();
+    $this->drupalGet('entity_test_view_builder/' . $entity_test->id());
+    $this->assertText($entity_test->label());
+  }
+
+  /**
+   * Creates an entity for testing.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface
+   *   The created entity.
+   */
+  protected function createTestEntity($entity_type) {
+    $data = array(
+      'bundle' => $entity_type,
+      'name' => $this->randomMachineName(),
+    );
+    return $this->container->get('entity.manager')->getStorage($entity_type)->create($data);
   }
 
 }

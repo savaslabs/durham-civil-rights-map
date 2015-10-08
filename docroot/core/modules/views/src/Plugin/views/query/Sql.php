@@ -748,7 +748,8 @@ class Sql extends QueryPluginBase {
     // Make sure an alias is assigned
     $alias = $alias ? $alias : $field;
 
-    // PostgreSQL truncates aliases to 63 characters: http://drupal.org/node/571548
+    // PostgreSQL truncates aliases to 63 characters:
+    //   https://www.drupal.org/node/571548.
 
     // We limit the length of the original alias up to 60 characters
     // to get a unique alias later if its have duplicates
@@ -1400,14 +1401,14 @@ class Sql extends QueryPluginBase {
       // (e.g. COUNT DISTINCT(1) ...) and no pager will return.
       // See pager.inc > PagerDefault::execute()
       // http://api.drupal.org/api/drupal/includes--pager.inc/function/PagerDefault::execute/7
-      // See http://drupal.org/node/1046170.
+      // See https://www.drupal.org/node/1046170.
       $count_query->preExecute();
 
       // Build the count query.
       $count_query = $count_query->countQuery();
 
       // Add additional arguments as a fake condition.
-      // XXX: this doesn't work... because PDO mandates that all bound arguments
+      // XXX: this doesn't work, because PDO mandates that all bound arguments
       // are used on the query. TODO: Find a better way to do this.
       if (!empty($additional_arguments)) {
         // $query->where('1 = 1', $additional_arguments);
@@ -1453,7 +1454,7 @@ class Sql extends QueryPluginBase {
           drupal_set_message($e->getMessage(), 'error');
         }
         else {
-          throw new DatabaseExceptionWrapper(format_string('Exception in @label[@view_name]: @message', array('@label' => $view->storage->label(), '@view_name' => $view->storage->id(), '@message' => $e->getMessage())));
+          throw new DatabaseExceptionWrapper("Exception in {$view->storage->label()}[{$view->storage->id()}]: {$e->getMessage()}");
         }
       }
 
@@ -1552,14 +1553,43 @@ class Sql extends QueryPluginBase {
     $tags = [];
     // Add cache tags for each row, if there is an entity associated with it.
     if (!$this->hasAggregate) {
-      foreach ($this->view->result as $row)  {
-        if ($row->_entity) {
-          $tags = Cache::mergeTags($row->_entity->getCacheTags(), $tags);
-        }
+      foreach ($this->getAllEntities() as $entity) {
+        $tags = Cache::mergeTags($entity->getCacheTags(), $tags);
       }
     }
 
     return $tags;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheMaxAge() {
+    $max_age = parent::getCacheMaxAge();
+    foreach ($this->getAllEntities() as $entity) {
+      $max_age = Cache::mergeMaxAges($max_age, $entity->getCacheMaxAge());
+    }
+
+    return $max_age;
+  }
+
+  /**
+   * Gets all the involved entities of the view.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface[]
+   */
+  protected function getAllEntities() {
+    $entities = [];
+    foreach ($this->view->result as $row) {
+      if ($row->_entity) {
+        $entities[] = $row->_entity;
+      }
+      foreach ($row->_relationship_entities as $entity) {
+        $entities[] = $entity;
+      }
+    }
+
+    return $entities;
   }
 
   public function addSignature(ViewExecutable $view) {
@@ -1718,9 +1748,9 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\query\QueryPluginBase::getDateFormat().
+   * {@inheritdoc}
    */
-  public function getDateFormat($field, $format) {
+  public function getDateFormat($field, $format, $string_date = FALSE) {
     $db_type = Database::getConnection()->databaseType();
     switch ($db_type) {
       case 'mysql':
@@ -1767,7 +1797,12 @@ class Sql extends QueryPluginBase {
           'A' => 'AM',
         );
         $format = strtr($format, $replace);
-        return "TO_CHAR($field, '$format')";
+        if (!$string_date) {
+          return "TO_CHAR($field, '$format')";
+        }
+        // In order to allow for partials (eg, only the year), transform to a
+        // date, back to a string again.
+        return "TO_CHAR(TO_TIMESTAMP($field, 'YYYY-MM-DD HH24:MI:SS'), '$format')";
       case 'sqlite':
         $replace = array(
           'Y' => '%Y',
@@ -1797,15 +1832,19 @@ class Sql extends QueryPluginBase {
           'A' => '',
         );
         $format = strtr($format, $replace);
+
+        // Don't use the 'unixepoch' flag for string date comparisons.
+        $unixepoch = $string_date ? '' : ", 'unixepoch'";
+
         // SQLite does not have a ISO week substitution string, so it needs
         // special handling.
         // @see http://en.wikipedia.org/wiki/ISO_week_date#Calculation
         // @see http://stackoverflow.com/a/15511864/1499564
         if ($format === '%W') {
-          $expression = "((strftime('%j', date(strftime('%Y-%m-%d', $field, 'unixepoch'), '-3 days', 'weekday 4')) - 1) / 7 + 1)";
+          $expression = "((strftime('%j', date(strftime('%Y-%m-%d', $field" . $unixepoch . "), '-3 days', 'weekday 4')) - 1) / 7 + 1)";
         }
         else {
-          $expression = "strftime('$format', $field, 'unixepoch')";
+          $expression = "strftime('$format', $field" . $unixepoch . ")";
         }
         // The expression yields a string, but the comparison value is an
         // integer in case the comparison value is a float, integer, or numeric.

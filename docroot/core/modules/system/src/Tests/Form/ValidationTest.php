@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Form\ValidationTest.
+ * Contains \Drupal\system\Tests\Form\ValidationTest.
  */
 
 namespace Drupal\system\Tests\Form;
@@ -75,6 +75,14 @@ class ValidationTest extends WebTestBase {
   }
 
   /**
+   * Tests that a form with a disabled CSRF token can be validated.
+   */
+  function testDisabledToken() {
+    $this->drupalPostForm('form-test/validate-no-token', [], 'Save');
+    $this->assertText('The form_test_validate_no_token form has been submitted successfully.');
+  }
+
+  /**
    * Tests partial form validation through #limit_validation_errors.
    */
   function testValidateLimitErrors() {
@@ -109,19 +117,19 @@ class ValidationTest extends WebTestBase {
     // validated, but the #element_validate handler for the 'test' field
     // is triggered.
     $this->drupalPostForm($path, $edit, t('Partial validate'));
-    $this->assertNoText(t('!name field is required.', array('!name' => 'Title')));
+    $this->assertNoText(t('@name field is required.', array('@name' => 'Title')));
     $this->assertText('Test element is invalid');
 
     // Edge case of #limit_validation_errors containing numeric indexes: same
     // thing with the 'Partial validate (numeric index)' button and the
     // 'test_numeric_index' field.
     $this->drupalPostForm($path, $edit, t('Partial validate (numeric index)'));
-    $this->assertNoText(t('!name field is required.', array('!name' => 'Title')));
+    $this->assertNoText(t('@name field is required.', array('@name' => 'Title')));
     $this->assertText('Test (numeric index) element is invalid');
 
     // Ensure something like 'foobar' isn't considered "inside" 'foo'.
     $this->drupalPostForm($path, $edit, t('Partial validate (substring)'));
-    $this->assertNoText(t('!name field is required.', array('!name' => 'Title')));
+    $this->assertNoText(t('@name field is required.', array('@name' => 'Title')));
     $this->assertText('Test (substring) foo element is invalid');
 
     // Ensure not validated values are not available to submit handlers.
@@ -131,7 +139,7 @@ class ValidationTest extends WebTestBase {
     // Now test full form validation and ensure that the #element_validate
     // handler is still triggered.
     $this->drupalPostForm($path, $edit, t('Full validate'));
-    $this->assertText(t('!name field is required.', array('!name' => 'Title')));
+    $this->assertText(t('@name field is required.', array('@name' => 'Title')));
     $this->assertText('Test element is invalid');
   }
 
@@ -208,11 +216,11 @@ class ValidationTest extends WebTestBase {
 
     foreach (Element::children($form) as $key) {
       if (isset($form[$key]['#required_error'])) {
-        $this->assertNoText(t('!name field is required.', array('!name' => $form[$key]['#title'])));
+        $this->assertNoText(t('@name field is required.', array('@name' => $form[$key]['#title'])));
         $this->assertText($form[$key]['#required_error']);
       }
       elseif (isset($form[$key]['#form_test_required_error'])) {
-        $this->assertNoText(t('!name field is required.', array('!name' => $form[$key]['#title'])));
+        $this->assertNoText(t('@name field is required.', array('@name' => $form[$key]['#title'])));
         $this->assertText($form[$key]['#form_test_required_error']);
       }
     }
@@ -228,14 +236,15 @@ class ValidationTest extends WebTestBase {
 
     foreach (Element::children($form) as $key) {
       if (isset($form[$key]['#required_error'])) {
-        $this->assertNoText(t('!name field is required.', array('!name' => $form[$key]['#title'])));
+        $this->assertNoText(t('@name field is required.', array('@name' => $form[$key]['#title'])));
         $this->assertNoText($form[$key]['#required_error']);
       }
       elseif (isset($form[$key]['#form_test_required_error'])) {
-        $this->assertNoText(t('!name field is required.', array('!name' => $form[$key]['#title'])));
+        $this->assertNoText(t('@name field is required.', array('@name' => $form[$key]['#title'])));
         $this->assertNoText($form[$key]['#form_test_required_error']);
       }
     }
     $this->assertNoText(t('An illegal choice has been detected. Please contact the site administrator.'));
   }
+
 }

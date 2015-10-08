@@ -7,18 +7,17 @@
 
 namespace Drupal\taxonomy;
 
-use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\Entity\BundleEntityFormBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\language\Entity\ContentLanguageSettings;
-use Drupal\taxonomy\VocabularyStorageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Base form for vocabulary edit forms.
  */
-class VocabularyForm extends EntityForm {
+class VocabularyForm extends BundleEntityFormBase {
 
   /**
    * The vocabulary storage.
@@ -83,7 +82,7 @@ class VocabularyForm extends EntityForm {
     // $form['langcode'] is not wrapped in an
     // if ($this->moduleHandler->moduleExists('language')) check because the
     // language_select form element works also without the language module being
-    // installed. http://drupal.org/node/1749954 documents the new element.
+    // installed. https://www.drupal.org/node/1749954 documents the new element.
     $form['langcode'] = array(
       '#type' => 'language_select',
       '#title' => $this->t('Vocabulary language'),
@@ -112,27 +111,8 @@ class VocabularyForm extends EntityForm {
       '#value' => '0',
     );
 
-    return parent::form($form, $form_state, $vocabulary);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function actions(array $form, FormStateInterface $form_state) {
-    // If we are displaying the delete confirmation skip the regular actions.
-    if (!$form_state->get('confirm_delete')) {
-      $actions = parent::actions($form, $form_state);
-      // We cannot leverage the regular submit handler definition because we
-      // have button-specific ones here. Hence we need to explicitly set it for
-      // the submit action, otherwise it would be ignored.
-      if ($this->moduleHandler->moduleExists('content_translation')) {
-        array_unshift($actions['submit']['#submit'], 'content_translation_language_configuration_element_submit');
-      }
-      return $actions;
-    }
-    else {
-      return array();
-    }
+    $form = parent::form($form, $form_state);
+    return $this->protectBundleIdElement($form);
   }
 
   /**
@@ -167,14 +147,14 @@ class VocabularyForm extends EntityForm {
   /**
    * Determines if the vocabulary already exists.
    *
-   * @param string $id
-   *   The vocabulary ID
+   * @param string $vid
+   *   The vocabulary ID.
    *
    * @return bool
    *   TRUE if the vocabulary exists, FALSE otherwise.
    */
-  public function exists($id) {
-    $action = $this->vocabularyStorage->load($id);
+  public function exists($vid) {
+    $action = $this->vocabularyStorage->load($vid);
     return !empty($action);
   }
 

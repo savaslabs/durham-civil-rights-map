@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Component\PhpStorage\FileStorage.
+ * Contains \Drupal\Component\PhpStorage\FileReadOnlyStorage.
  */
 
 namespace Drupal\Component\PhpStorage;
@@ -100,6 +100,12 @@ class FileReadOnlyStorage implements PhpStorageInterface {
       }
     }
     return $names;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function garbageCollection() {
   }
 
 }

@@ -8,6 +8,7 @@
 namespace Drupal\menu_link_content\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -51,6 +52,8 @@ use Drupal\menu_link_content\MenuLinkContentInterface;
  * )
  */
 class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterface {
+
+  use EntityChangedTrait;
 
   /**
    * A flag for whether this entity is wrapped in a plugin instance.
@@ -127,13 +130,6 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
    */
   public function getWeight() {
     return (int) $this->get('weight')->value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getChangedTime() {
-    return $this->get('changed')->value;
   }
 
   /**
@@ -250,6 +246,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setLabel(t('Bundle'))
       ->setDescription(t('The content menu link bundle.'))
       ->setSetting('max_length', EntityTypeInterface::BUNDLE_MAX_LENGTH)
+      ->setSetting('is_ascii', TRUE)
       ->setReadOnly(TRUE);
 
     $fields['title'] = BaseFieldDefinition::create('string')
@@ -257,9 +254,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setDescription(t('The text to be used for this link in the menu.'))
       ->setRequired(TRUE)
       ->setTranslatable(TRUE)
-      ->setSettings(array(
-        'max_length' => 255,
-      ))
+      ->setSetting('max_length', 255)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'string',
@@ -275,9 +270,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setLabel(t('Description'))
       ->setDescription(t('Shown when hovering over the menu link.'))
       ->setTranslatable(TRUE)
-      ->setSettings(array(
-        'max_length' => 255,
-      ))
+      ->setSetting('max_length', 255)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'string',
@@ -291,7 +284,8 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
     $fields['menu_name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Menu name'))
       ->setDescription(t('The menu name. All links with the same menu name (such as "tools") are part of the same menu.'))
-      ->setDefaultValue('tools');
+      ->setDefaultValue('tools')
+      ->setSetting('is_ascii', TRUE);
 
     $fields['link'] = BaseFieldDefinition::create('link')
       ->setLabel(t('Link'))
@@ -375,7 +369,8 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the menu link was last edited.'));
+      ->setDescription(t('The time that the menu link was last edited.'))
+      ->setTranslatable(TRUE);
 
     return $fields;
   }

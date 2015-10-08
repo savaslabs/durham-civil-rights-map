@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Theme\ThemeEarlyInitializationTest.
+ * Contains \Drupal\system\Tests\Theme\ThemeEarlyInitializationTest.
  */
 
 namespace Drupal\system\Tests\Theme;
@@ -33,6 +33,6 @@ class ThemeEarlyInitializationTest extends WebTestBase {
     $this->assertRaw('Themed output generated in a KernelEvents::REQUEST listener');
     // Verify that the default theme's CSS still appears even though the theme
     // system was initialized early.
-    $this->assertRaw('classy/css/layout.css');
+    $this->assertRaw('classy/css/components/action-links.css');
   }
 }

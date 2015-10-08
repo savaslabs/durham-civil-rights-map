@@ -8,6 +8,9 @@
 namespace Drupal\Tests\Core\Entity;
 
 use Drupal\Core\Entity\EntityType;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -29,6 +32,29 @@ class EntityTypeTest extends UnitTestCase {
       'id' => 'example_entity_type',
     );
     return new EntityType($definition);
+  }
+
+  /**
+   * @covers ::get
+   *
+   * @dataProvider providerTestGet
+   */
+  public function testGet(array $defintion, $key, $expected) {
+    $entity_type = $this->setUpEntityType($defintion);
+    $this->assertSame($expected, $entity_type->get($key));
+  }
+
+  /**
+   * @covers ::set
+   * @covers ::get
+   *
+   * @dataProvider providerTestSet
+   */
+  public function testSet($key, $value) {
+    $entity_type = $this->setUpEntityType([]);
+    $this->assertInstanceOf('Drupal\Core\Entity\EntityTypeInterface', $entity_type->set($key, $value));
+    $this->assertSame($value, $entity_type->get($key));
+    $this->assertNoPublicProperties($entity_type);
   }
 
   /**
@@ -62,6 +88,34 @@ class EntityTypeTest extends UnitTestCase {
     $this->assertSame(!empty($expected['bundle']), $entity_type->hasKey('bundle'));
     $this->assertSame(!empty($expected['id']), $entity_type->hasKey('id'));
     $this->assertSame(FALSE, $entity_type->hasKey('bananas'));
+  }
+
+  /**
+   * Provides test data for testGet.
+   */
+  public function providerTestGet() {
+    return [
+      [[], 'provider', NULL],
+      [['provider' => ''], 'provider', ''],
+      [['provider' => 'test'], 'provider', 'test'],
+      [[], 'something_additional', NULL],
+      [['something_additional' => ''], 'something_additional', ''],
+      [['something_additional' => 'additional'], 'something_additional', 'additional'],
+    ];
+  }
+
+  /**
+   * Provides test data for testSet.
+   */
+  public function providerTestSet() {
+    return [
+      ['provider', NULL],
+      ['provider', ''],
+      ['provider', 'test'],
+      ['something_additional', NULL],
+      ['something_additional', ''],
+      ['something_additional', 'additional'],
+    ];
   }
 
   /**
@@ -232,6 +286,44 @@ class EntityTypeTest extends UnitTestCase {
   }
 
   /**
+   * @covers ::getLabel
+   */
+  public function testGetLabel() {
+    $translatable_label = new TranslatableMarkup($this->randomMachineName());
+    $entity_type = $this->setUpEntityType(array('label' => $translatable_label));
+    $this->assertSame($translatable_label, $entity_type->getLabel());
+
+    $label = $this->randomMachineName();
+    $entity_type = $this->setUpEntityType(array('label' => $label));
+    $this->assertSame($label, $entity_type->getLabel());
+  }
+
+  /**
+   * @covers ::getGroupLabel
+   */
+  public function testGetGroupLabel() {
+    $translatable_group_label = new TranslatableMarkup($this->randomMachineName());
+    $entity_type = $this->setUpEntityType(array('group_label' => $translatable_group_label));
+    $this->assertSame($translatable_group_label, $entity_type->getGroupLabel());
+
+    $default_label = $this->randomMachineName();
+    $entity_type = $this->setUpEntityType(array('group_label' => $default_label));
+    $this->assertSame($default_label, $entity_type->getGroupLabel());
+
+    $default_label = new TranslatableMarkup('Other', array(), array('context' => 'Entity type group'));
+    $entity_type = $this->setUpEntityType([]);
+
+    $string_translation = $this->getMock(TranslationInterface::class);
+    $string_translation->expects($this->atLeastOnce())
+      ->method('translate')
+      ->with('Other', array(), array('context' => 'Entity type group'))
+      ->willReturn($default_label);
+    $entity_type->setStringTranslation($string_translation);
+
+    $this->assertSame($default_label, $entity_type->getGroupLabel());
+  }
+
+  /**
    * Gets a mock controller class name.
    *
    * @return string
@@ -270,6 +362,16 @@ class EntityTypeTest extends UnitTestCase {
     $this->assertEquals($definition['constraints'] + ['Test' => NULL], $entity_type->getConstraints());
     $entity_type->setConstraints([]);
     $this->assertEquals([], $entity_type->getConstraints());
+  }
+
+  /**
+   * Asserts there on no public properties on the object instance.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
+   */
+  protected function assertNoPublicProperties(EntityTypeInterface $entity_type) {
+    $reflection = new \ReflectionObject($entity_type);
+    $this->assertEmpty($reflection->getProperties(\ReflectionProperty::IS_PUBLIC));
   }
 
 }

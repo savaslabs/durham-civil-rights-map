@@ -6,12 +6,15 @@
  */
 
 use GuzzleHttp\Exception\RequestException;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 
 /**
  * Load the common translation API.
  */
 // @todo Combine functions differently in files to avoid unnecessary includes.
-// Follow-up issue http://drupal.org/node/1834298
+// Follow-up issue: https://www.drupal.org/node/1834298.
 require_once __DIR__ . '/locale.translation.inc';
 
 /**
@@ -96,7 +99,7 @@ function locale_translation_batch_status_finished($success, $results) {
   if ($success) {
     if (isset($results['failed_files'])) {
       if (\Drupal::moduleHandler()->moduleExists('dblog') && \Drupal::currentUser()->hasPermission('access site reports')) {
-        $message = \Drupal::translation()->formatPlural(count($results['failed_files']), 'One translation file could not be checked. <a href="@url">See the log</a> for details.', '@count translation files could not be checked. <a href="@url">See the log</a> for details.', array('@url' => \Drupal::url('dblog.overview')));
+        $message = \Drupal::translation()->formatPlural(count($results['failed_files']), 'One translation file could not be checked. <a href=":url">See the log</a> for details.', '@count translation files could not be checked. <a href=":url">See the log</a> for details.', array(':url' => \Drupal::url('dblog.overview')));
       }
       else {
         $message = \Drupal::translation()->formatPlural(count($results['failed_files']), 'One translation files could not be checked. See the log for details.', '@count translation files could not be checked. See the log for details.');
@@ -234,15 +237,20 @@ function locale_translation_batch_fetch_finished($success, $results) {
 function locale_translation_http_check($uri) {
   $logger = \Drupal::logger('locale');
   try {
-    $response = \Drupal::httpClient()->head($uri);
+    $actual_uri = NULL;
+    $response = \Drupal::service('http_client_factory')->fromOptions(['allow_redirects' => [
+      'on_redirect' => function(RequestInterface $request, ResponseInterface $response, UriInterface $request_uri) use (&$actual_uri) {
+        $actual_uri = (string) $request_uri;
+      }
+    ]])->head($uri);
     $result = array();
 
     // Return the effective URL if it differs from the requested.
-    if ($response->getEffectiveUrl() != $uri) {
-      $result['location'] = $response->getEffectiveUrl();
+    if ($actual_uri && $actual_uri !== $uri) {
+      $result['location'] = $actual_uri;
     }
 
-    $result['last_modified'] = $response->hasHeader('Last-Modified') ? strtotime($response->getHeader('Last-Modified')) : 0;
+    $result['last_modified'] = $response->hasHeader('Last-Modified') ? strtotime($response->getHeaderLine('Last-Modified')) : 0;
     return $result;
   }
   catch (RequestException $e) {

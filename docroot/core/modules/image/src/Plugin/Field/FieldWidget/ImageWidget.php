@@ -97,8 +97,8 @@ class ImageWidget extends FileWidget {
     if ($cardinality == 1) {
       // If there's only one field, return it as delta 0.
       if (empty($elements[0]['#default_value']['fids'])) {
-        $file_upload_help['#description'] = $this->fieldFilterXss($this->fieldDefinition->getDescription());
-        $elements[0]['#description'] = drupal_render($file_upload_help);
+        $file_upload_help['#description'] = $this->fieldDefinition->getDescription();
+        $elements[0]['#description'] = \Drupal::service('renderer')->renderPlain($file_upload_help);
       }
     }
     else {
@@ -127,8 +127,6 @@ class ImageWidget extends FileWidget {
     $extensions = array_intersect(explode(' ', $extensions), $supported_extensions);
     $element['#upload_validators']['file_validate_extensions'][0] = implode(' ', $extensions);
 
-    // Add all extra functionality provided by the image widget.
-    $element['#process'][] = array(get_class($this), 'process');
     // Add properties needed by process() method.
     $element['#preview_image_style'] = $this->getSetting('preview_image_style');
     $element['#title_field'] = $field_settings['title_field'];
@@ -162,7 +160,6 @@ class ImageWidget extends FileWidget {
     $item['fids'] = $element['fids']['#value'];
 
     $element['#theme'] = 'image_widget';
-    $element['#attached']['library'][] = 'image/form';
 
     // Add the image preview.
     if (!empty($element['#files']) && $element['#preview_image_style']) {
@@ -229,7 +226,7 @@ class ImageWidget extends FileWidget {
       '#type' => 'textfield',
       '#default_value' => isset($item['alt']) ? $item['alt'] : '',
       '#description' => t('This text will be used by screen readers, search engines, or when the image cannot be loaded.'),
-      // @see https://drupal.org/node/465106#alt-text
+      // @see https://www.drupal.org/node/465106#alt-text
       '#maxlength' => 512,
       '#weight' => -12,
       '#access' => (bool) $item['fids'] && $element['#alt_field'],

@@ -106,14 +106,23 @@ class BreakpointManager extends DefaultPluginManager implements BreakpointManage
    *   The string translation service.
    */
   public function __construct(ModuleHandlerInterface $module_handler, ThemeHandlerInterface $theme_handler, CacheBackendInterface $cache_backend, TranslationInterface $string_translation) {
-    $this->discovery = new YamlDiscovery('breakpoints', $module_handler->getModuleDirectories() + $theme_handler->getThemeDirectories());
-    $this->discovery = new ContainerDerivativeDiscoveryDecorator($this->discovery);
     $this->factory = new ContainerFactory($this);
     $this->moduleHandler = $module_handler;
     $this->themeHandler = $theme_handler;
     $this->setStringTranslation($string_translation);
     $this->alterInfo('breakpoints');
     $this->setCacheBackend($cache_backend, 'breakpoints', array('breakpoints'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getDiscovery() {
+    if (!isset($this->discovery)) {
+      $this->discovery = new YamlDiscovery('breakpoints', $this->moduleHandler->getModuleDirectories() + $this->themeHandler->getThemeDirectories());
+      $this->discovery = new ContainerDerivativeDiscoveryDecorator($this->discovery);
+    }
+    return $this->discovery;
   }
 
   /**
@@ -136,28 +145,8 @@ class BreakpointManager extends DefaultPluginManager implements BreakpointManage
   /**
    * {@inheritdoc}
    */
-  protected function findDefinitions() {
-    $definitions = $this->discovery->getDefinitions();
-    foreach ($definitions as $plugin_id => &$definition) {
-      $this->processDefinition($definition, $plugin_id);
-    }
-    if ($this->alterHook) {
-      $this->moduleHandler->alter($this->alterHook, $definitions);
-    }
-    // If this plugin was provided by a module that does not exist, remove the
-    // plugin definition.
-    foreach ($definitions as $plugin_id => $plugin_definition) {
-      // If the plugin definition is an object, attempt to convert it to an
-      // array, if that is not possible, skip further processing.
-      if (is_object($plugin_definition) && !($plugin_definition = (array) $plugin_definition)) {
-        continue;
-      }
-      // Allow themes to provide breakpoints.
-      if (isset($plugin_definition['provider']) && !in_array($plugin_definition['provider'], array('core', 'component')) && !$this->moduleHandler->moduleExists($plugin_definition['provider']) && !$this->themeHandler->themeExists($plugin_definition['provider'])) {
-        unset($definitions[$plugin_id]);
-      }
-    }
-    return $definitions;
+  protected function providerExists($provider) {
+    return $this->moduleHandler->moduleExists($provider) || $this->themeHandler->themeExists($provider);
   }
 
   /**
@@ -180,6 +169,7 @@ class BreakpointManager extends DefaultPluginManager implements BreakpointManage
         $this->breakpointsByGroup[$group] = $breakpoints;
       }
     }
+
     $instances = array();
     foreach ($this->breakpointsByGroup[$group] as $plugin_id => $definition) {
       if (!isset($this->instances[$plugin_id])) {

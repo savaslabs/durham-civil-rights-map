@@ -1,7 +1,7 @@
 <?php
 
 use Drupal\node\NodeInterface;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Access\AccessResult;
 
@@ -209,7 +209,7 @@ function hook_node_access_records(\Drupal\node\NodeInterface $node) {
  *
  * A module may deny all access to a node by setting $grants to an empty array.
  *
- * @param $grants
+ * @param array $grants
  *   The $grants array returned by hook_node_access_records().
  * @param \Drupal\node\NodeInterface $node
  *   The node for which the grants were acquired.
@@ -319,15 +319,13 @@ function hook_node_grants_alter(&$grants, \Drupal\Core\Session\AccountInterface 
  *   - "view"
  * @param \Drupal\Core\Session\AccountInterface $account
  *   The user object to perform the access check operation on.
- * @param object $langcode
- *   The language code to perform the access check operation on.
  *
  * @return \Drupal\Core\Access\AccessResultInterface
  *    The access result.
  *
  * @ingroup node_access
  */
-function hook_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account, $langcode) {
+function hook_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account) {
   $type = $node->bundle();
 
   switch ($op) {
@@ -364,8 +362,6 @@ function hook_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Se
  *
  * @param \Drupal\node\NodeInterface $node
  *   The node being displayed in a search result.
- * @param $langcode
- *   Language code of result being displayed.
  *
  * @return array
  *   Extra information to be displayed with search result. This information
@@ -378,7 +374,7 @@ function hook_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Se
  *
  * @ingroup entity_crud
  */
-function hook_node_search_result(\Drupal\node\NodeInterface $node, $langcode) {
+function hook_node_search_result(\Drupal\node\NodeInterface $node) {
   $rating = db_query('SELECT SUM(points) FROM {my_rating} WHERE nid = :nid', array('nid' => $node->id()))->fetchField();
   return array('rating' => \Drupal::translation()->formatPlural($rating, '1 point', '@count points'));
 }
@@ -391,19 +387,17 @@ function hook_node_search_result(\Drupal\node\NodeInterface $node, $langcode) {
  *
  * @param \Drupal\node\NodeInterface $node
  *   The node being indexed.
- * @param $langcode
- *   Language code of the variant of the node being indexed.
  *
  * @return string
  *   Additional node information to be indexed.
  *
  * @ingroup entity_crud
  */
-function hook_node_update_index(\Drupal\node\NodeInterface $node, $langcode) {
+function hook_node_update_index(\Drupal\node\NodeInterface $node) {
   $text = '';
   $ratings = db_query('SELECT title, description FROM {my_ratings} WHERE nid = :nid', array(':nid' => $node->id()));
   foreach ($ratings as $rating) {
-    $text .= '<h2>' . SafeMarkup::checkPlain($rating->title) . '</h2>' . Xss::filter($rating->description);
+    $text .= '<h2>' . Html::escape($rating->title) . '</h2>' . Xss::filter($rating->description);
   }
   return $text;
 }
@@ -429,7 +423,7 @@ function hook_node_update_index(\Drupal\node\NodeInterface $node, $langcode) {
  * and then the weighted scores from all ranking mechanisms are added, which
  * brings about the same result as a weighted average.
  *
- * @return
+ * @return array
  *   An associative array of ranking data. The keys should be strings,
  *   corresponding to the internal name of the ranking mechanism, such as
  *   'recent', or 'comments'. The values should be arrays themselves, with the
@@ -485,8 +479,8 @@ function hook_ranking() {
  * @param array &$context
  *   Various aspects of the context in which the node links are going to be
  *   displayed, with the following keys:
- *   - 'view_mode': the view mode in which the comment is being viewed
- *   - 'langcode': the language in which the comment is being viewed
+ *   - 'view_mode': the view mode in which the node is being viewed
+ *   - 'langcode': the language in which the node is being viewed
  *
  * @see \Drupal\node\NodeViewBuilder::renderLinks()
  * @see \Drupal\node\NodeViewBuilder::buildLinks()

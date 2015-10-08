@@ -7,8 +7,6 @@
 
 namespace Drupal\views;
 
-use Drupal\Component\Utility\SafeMarkup;
-
 /**
  * Static service container wrapper for views.
  */
@@ -157,7 +155,7 @@ class Views {
       }
 
       if (empty($plugin['no_ui']) && (empty($base) || empty($plugin['base']) || array_intersect($base, $plugin['base']))) {
-        $plugins[$id] = (string) $plugin['title'];
+        $plugins[$id] = $plugin['title'];
       }
     }
 
@@ -194,44 +192,47 @@ class Views {
   }
 
   /**
-   * Return a list of all views and display IDs that have a particular
+   * Return a list of all view IDs and display IDs that have a particular
    * setting in their display's plugin settings.
    *
    * @param string $type
    *   A flag from the display plugin definitions (e.g, 'uses_menu_links').
    *
    * @return array
-   *   A list of arrays containing the $view and $display_id.
+   *   A list of arrays containing the $view_id and $display_id.
    * @code
    * array(
-   *   array($view, $display_id),
-   *   array($view, $display_id),
+   *   array($view_id, $display_id),
+   *   array($view_id, $display_id),
    * );
    * @endcode
    */
   public static function getApplicableViews($type) {
     // Get all display plugins which provides the type.
     $display_plugins = static::pluginManager('display')->getDefinitions();
-    $ids = array();
+
+    $plugin_ids = [];
     foreach ($display_plugins as $id => $definition) {
       if (!empty($definition[$type])) {
-        $ids[$id] = $id;
+        $plugin_ids[$id] = $id;
       }
     }
 
     $entity_ids = \Drupal::service('entity.query')->get('view')
       ->condition('status', TRUE)
-      ->condition("display.*.display_plugin", $ids, 'IN')
+      ->condition("display.*.display_plugin", $plugin_ids, 'IN')
       ->execute();
 
     $result = array();
     foreach (\Drupal::entityManager()->getStorage('view')->loadMultiple($entity_ids) as $view) {
       // Check each display to see if it meets the criteria and is enabled.
-      $executable = $view->getExecutable();
-      $executable->initDisplay();
-      foreach ($executable->displayHandlers as $id => $handler) {
-        if (!empty($handler->definition[$type]) && $handler->isEnabled()) {
-          $result[] = array($executable, $id);
+
+      foreach ($view->get('display') as $id => $display) {
+        // If the key doesn't exist, enabled is assumed.
+        $enabled = !empty($display['display_options']['enabled']) || !array_key_exists('enabled', $display['display_options']);
+
+        if ($enabled && in_array($display['display_plugin'], $plugin_ids)) {
+          $result[] = [$view->id(), $id];
         }
       }
     }
@@ -395,8 +396,8 @@ class Views {
           if (!isset($plugins[$key])) {
             $plugins[$key] = array(
               'type' => $type,
-              'title' => SafeMarkup::checkPlain($info[$name]['title']),
-              'provider' => SafeMarkup::checkPlain($info[$name]['provider']),
+              'title' => $info[$name]['title'],
+              'provider' => $info[$name]['provider'],
               'views' => array(),
             );
           }

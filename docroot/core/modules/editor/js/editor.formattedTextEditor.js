@@ -10,26 +10,48 @@
  * JavaScript would use:
  *  - Drupal.editors.magical.attachInlineEditor()
  */
+
 (function ($, Drupal, drupalSettings) {
 
   "use strict";
 
-  Drupal.quickedit.editors.editor = Drupal.quickedit.EditorView.extend({
+  Drupal.quickedit.editors.editor = Drupal.quickedit.EditorView.extend(/** @lends Drupal.quickedit.editors.editor# */{
 
-    // The text format for this field.
+    /**
+     * The text format for this field.
+     *
+     * @type {string}
+     */
     textFormat: null,
 
-    // Indicates whether this text format has transformations.
+    /**
+     * Indicates whether this text format has transformations.
+     *
+     * @type {bool}
+     */
     textFormatHasTransformations: null,
 
-    // Stores a reference to the text editor object for this field.
+    /**
+     * Stores a reference to the text editor object for this field.
+     *
+     * @type {Drupal.quickedit.EditorModel}
+     */
     textEditor: null,
 
-    // Stores the textual DOM element that is being in-place edited.
+    /**
+     * Stores the textual DOM element that is being in-place edited.
+     *
+     * @type {jQuery}
+     */
     $textElement: null,
 
     /**
-     * {@inheritdoc}
+     * @constructs
+     *
+     * @augments Drupal.quickedit.EditorView
+     *
+     * @param {object} options
+     *   Options for the editor view.
      */
     initialize: function (options) {
       Drupal.quickedit.EditorView.prototype.initialize.call(this, options);
@@ -41,19 +63,33 @@
 
       // Store the actual value of this field. We'll need this to restore the
       // original value when the user discards his modifications.
-      this.$textElement = this.$el.find('.field-item').eq(0);
+      var $fieldItems = this.$el.find('.quickedit-field');
+      if ($fieldItems.length) {
+        this.$textElement = $fieldItems.eq(0);
+      }
+      else {
+        this.$textElement = this.$el;
+      }
       this.model.set('originalValue', this.$textElement.html());
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @return {jQuery}
+     *   The text element edited.
      */
     getEditedElement: function () {
       return this.$textElement;
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @param {object} fieldModel
+     *   The field model.
+     * @param {string} state
+     *   The current state.
      */
     stateChange: function (fieldModel, state) {
       var editorModel = this.model;
@@ -143,14 +179,17 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @return {object}
+     *   The sttings for the quick edit UI.
      */
     getQuickEditUISettings: function () {
       return {padding: true, unifiedToolbar: true, fullWidthToolbar: true, popup: false};
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     revert: function () {
       this.$textElement.html(this.model.get('originalValue'));
@@ -162,7 +201,7 @@
      * More accurately: it re-filters formatted text to exclude transformation
      * filters used by the text format.
      *
-     * @param Function callback
+     * @param {function} callback
      *   A callback function that will receive the untransformed text.
      *
      * @see \Drupal\editor\Ajax\GetUntransformedTextCommand
@@ -171,11 +210,9 @@
       var fieldID = this.fieldModel.get('fieldID');
 
       // Create a Drupal.ajax instance to load the form.
-      var textLoaderAjax = new Drupal.ajax(fieldID, this.$el, {
+      var textLoaderAjax = Drupal.ajax({
         url: Drupal.quickedit.util.buildUrl(fieldID, Drupal.url('editor/!entity_type/!id/!field_name/!langcode/!view_mode')),
-        event: 'editor-internal.editor',
-        submit: {nocssjs: true},
-        progress: {type: null} // No progress indicator.
+        submit: {nocssjs: true}
       });
 
       // Implement a scoped editorGetUntransformedText AJAX command: calls the
@@ -186,7 +223,7 @@
 
       // This will ensure our scoped editorGetUntransformedText AJAX command
       // gets called.
-      this.$el.trigger('editor-internal.editor');
+      textLoaderAjax.execute();
     }
 
   });

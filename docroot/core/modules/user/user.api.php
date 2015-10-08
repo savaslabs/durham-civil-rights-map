@@ -28,11 +28,11 @@ use Drupal\Core\Entity\EntityInterface;
  * Expensive operations should be added to the global account cancellation batch
  * by using batch_set().
  *
- * @param $edit
+ * @param array $edit
  *   The array of form values submitted by the user.
- * @param $account
+ * @param \Drupal\Core\Session\AccountInterface $account
  *   The user object on which the operation is being performed.
- * @param $method
+ * @param string $method
  *   The account cancellation method.
  *
  * @see user_cancel_methods()
@@ -81,7 +81,7 @@ function hook_user_cancel($edit, $account, $method) {
  *   a method. If 'access' is defined, the method cannot be configured as
  *   default method.
  *
- * @param $methods
+ * @param array $methods
  *   An array containing user account cancellation methods, keyed by method id.
  *
  * @see user_cancel_methods()
@@ -107,36 +107,36 @@ function hook_user_cancel_methods_alter(&$methods) {
 /**
  * Alter the username that is displayed for a user.
  *
- * Called by user_format_name() to allow modules to alter the username that's
- * displayed. Can be used to ensure user privacy in situations where
+ * Called by $account->getDisplayName() to allow modules to alter the username
+ * that is displayed. Can be used to ensure user privacy in situations where
  * $account->name is too revealing.
  *
- * @param $name
- *   The string that user_format_name() will return.
+ * @param string $name
+ *   The string that $account->getDisplayName() will return.
  *
  * @param $account
  *   The account object passed to user_format_name().
  *
- * @see user_format_name()
+ * @see $account->getDisplayName()
  */
 function hook_user_format_name_alter(&$name, $account) {
   // Display the user's uid instead of name.
   if ($account->id()) {
-    $name = t('User !uid', array('!uid' => $account->id()));
+    $name = t('User @uid', array('@uid' => $account->id()));
   }
 }
 
 /**
  * The user just logged in.
  *
- * @param $account
+ * @param object $account
  *   The user object on which the operation was just performed.
  */
 function hook_user_login($account) {
   $config = \Drupal::config('system.date');
   // If the user has a NULL time zone, notify them to set a time zone.
   if (!$account->getTimezone() && $config->get('timezone.user.configurable') && $config->get('timezone.user.warn')) {
-    drupal_set_message(t('Configure your <a href="@user-edit">account time zone setting</a>.', array('@user-edit' => $account->url('edit-form', array('query' => \Drupal::destination()->getAsArray(), 'fragment' => 'edit-timezone')))));
+    drupal_set_message(t('Configure your <a href=":user-edit">account time zone setting</a>.', array(':user-edit' => $account->url('edit-form', array('query' => \Drupal::destination()->getAsArray(), 'fragment' => 'edit-timezone')))));
   }
 }
 

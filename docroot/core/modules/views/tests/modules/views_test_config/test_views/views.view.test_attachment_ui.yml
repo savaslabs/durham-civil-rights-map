@@ -19,7 +19,7 @@ display:
         options:
           perm: 'views_test_data test permission'
       cache:
-        type: none
+        type: tag
       exposed_form:
         type: basic
       pager:
@@ -67,7 +67,7 @@ display:
       path: test_attachment_ui_feed
   page_1:
     display_plugin: page
-    display_title: Page
+    display_title: <em>Page</em>
     display_options:
       path: test_attachment_ui
     id: page_1

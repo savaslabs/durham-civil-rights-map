@@ -7,11 +7,11 @@
 
 namespace Drupal\Core\EventSubscriber;
 
+use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Cache\CacheableResponseInterface;
 use Drupal\Core\DependencyInjection\ClassResolverInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -51,6 +51,14 @@ class MainContentViewSubscriber implements EventSubscriberInterface {
   protected $mainContentRenderers;
 
   /**
+   * URL query attribute to indicate the wrapper used to render a request.
+   *
+   * The wrapper format determines how the HTML is wrapped, for example in a
+   * modal dialog.
+   */
+  const WRAPPER_FORMAT = '_wrapper_format';
+
+  /**
    * Constructs a new MainContentViewSubscriber object.
    *
    * @param \Drupal\Core\DependencyInjection\ClassResolverInterface $class_resolver
@@ -76,22 +84,22 @@ class MainContentViewSubscriber implements EventSubscriberInterface {
     $request = $event->getRequest();
     $result = $event->getControllerResult();
 
-    $format = $request->getRequestFormat();
-
     // Render the controller result into a response if it's a render array.
-    if (is_array($result)) {
-      if (isset($this->mainContentRenderers[$format])) {
-        $renderer = $this->classResolver->getInstanceFromDefinition($this->mainContentRenderers[$format]);
-        $event->setResponse($renderer->renderResponse($result, $request, $this->routeMatch));
+    if (is_array($result) && ($request->query->has(static::WRAPPER_FORMAT) || $request->getRequestFormat() == 'html')) {
+      $wrapper = $request->query->get(static::WRAPPER_FORMAT, 'html');
+
+      // Fall back to HTML if the requested wrapper envelope is not available.
+      $wrapper = isset($this->mainContentRenderers[$wrapper]) ? $wrapper : 'html';
+
+      $renderer = $this->classResolver->getInstanceFromDefinition($this->mainContentRenderers[$wrapper]);
+      $response = $renderer->renderResponse($result, $request, $this->routeMatch);
+      // The main content render array is rendered into a different Response
+      // object, depending on the specified wrapper format.
+      if ($response instanceof CacheableResponseInterface) {
+        $main_content_view_subscriber_cacheability = (new CacheableMetadata())->setCacheContexts(['url.query_args:' . static::WRAPPER_FORMAT]);
+        $response->addCacheableDependency($main_content_view_subscriber_cacheability);
       }
-      else {
-        $supported_formats = array_keys($this->mainContentRenderers);
-        $supported_mimetypes = array_map([$request, 'getMimeType'], $supported_formats);
-        $event->setResponse(new JsonResponse([
-          'message' => 'Not Acceptable.',
-          'supported_mime_types' => $supported_mimetypes,
-        ], 406));
-      }
+      $event->setResponse($response);
     }
   }
 

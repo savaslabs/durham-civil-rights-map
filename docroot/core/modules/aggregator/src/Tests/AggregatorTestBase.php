@@ -2,12 +2,13 @@
 
 /**
  * @file
- * Definition of Drupal\aggregator\Tests\AggregatorTestBase.
+ * Contains \Drupal\aggregator\Tests\AggregatorTestBase.
  */
 
 namespace Drupal\aggregator\Tests;
 
 use Drupal\aggregator\Entity\Feed;
+use Drupal\Component\Utility\Html;
 use Drupal\simpletest\WebTestBase;
 use Drupal\aggregator\FeedInterface;
 
@@ -28,7 +29,7 @@ abstract class AggregatorTestBase extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('node', 'aggregator', 'aggregator_test', 'views');
+  public static $modules = ['block', 'node', 'aggregator', 'aggregator_test', 'views'];
 
   /**
    * {@inheritdoc}
@@ -43,6 +44,7 @@ abstract class AggregatorTestBase extends WebTestBase {
 
     $this->adminUser = $this->drupalCreateUser(array('access administration pages', 'administer news feeds', 'access news feeds', 'create article content'));
     $this->drupalLogin($this->adminUser);
+    $this->drupalPlaceBlock('local_tasks_block');
   }
 
   /**
@@ -64,7 +66,7 @@ abstract class AggregatorTestBase extends WebTestBase {
   public function createFeed($feed_url = NULL, array $edit = array()) {
     $edit = $this->getFeedEditArray($feed_url, $edit);
     $this->drupalPostForm('aggregator/sources/add', $edit, t('Save'));
-    $this->assertRaw(t('The feed %name has been added.', array('%name' => $edit['title[0][value]'])), format_string('The feed !name has been added.', array('!name' => $edit['title[0][value]'])));
+    $this->assertRaw(t('The feed %name has been added.', array('%name' => $edit['title[0][value]'])), format_string('The feed @name has been added.', array('@name' => $edit['title[0][value]'])));
 
     $fid = db_query("SELECT fid FROM {aggregator_feed} WHERE title = :title AND url = :url", array(':title' => $edit['title[0][value]'], ':url' => $edit['url[0][value]']))->fetchField();
     $this->assertTrue(!empty($fid), 'The feed found in database.');
@@ -183,7 +185,7 @@ abstract class AggregatorTestBase extends WebTestBase {
 
     if ($expected_count !== NULL) {
       $feed->item_count = count($feed->items);
-      $this->assertEqual($expected_count, $feed->item_count, format_string('Total items in feed equal to the total items in database (!val1 != !val2)', array('!val1' => $expected_count, '!val2' => $feed->item_count)));
+      $this->assertEqual($expected_count, $feed->item_count, format_string('Total items in feed equal to the total items in database (@val1 != @val2)', array('@val1' => $expected_count, '@val2' => $feed->item_count)));
     }
   }
 
@@ -243,7 +245,7 @@ abstract class AggregatorTestBase extends WebTestBase {
   public function getValidOpml(array $feeds) {
     // Properly escape URLs so that XML parsers don't choke on them.
     foreach ($feeds as &$feed) {
-      $feed['url[0][value]'] = htmlspecialchars($feed['url[0][value]']);
+      $feed['url[0][value]'] = Html::escape($feed['url[0][value]']);
     }
     /**
      * Does not have an XML declaration, must pass the parser.

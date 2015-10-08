@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\comment\Tests\CommentAnonymousTest.
+ * Contains \Drupal\comment\Tests\CommentAnonymousTest.
  */
 
 namespace Drupal\comment\Tests;
@@ -39,6 +39,32 @@ class CommentAnonymousTest extends CommentTestBase {
     $this->drupalLogin($this->adminUser);
     $this->setCommentAnonymous(COMMENT_ANONYMOUS_MAYNOT_CONTACT);
     $this->drupalLogout();
+
+    // Preview comments (with `skip comment approval` permission).
+    $edit = [];
+    $title = 'comment title with skip comment approval';
+    $body = 'comment body with skip comment approval';
+    $edit['subject[0][value]'] = $title;
+    $edit['comment_body[0][value]'] = $body;
+    $this->drupalPostForm($this->node->urlInfo(), $edit, t('Preview'));
+    // Cannot use assertRaw here since both title and body are in the form.
+    $preview = (string) $this->cssSelect('.preview')[0]->asXML();
+    $this->assertTrue(strpos($preview, $title) !== FALSE, 'Anonymous user can preview comment title.');
+    $this->assertTrue(strpos($preview, $body) !== FALSE, 'Anonymous user can preview comment body.');
+
+    // Preview comments (without `skip comment approval` permission).
+    user_role_revoke_permissions(RoleInterface::ANONYMOUS_ID, ['skip comment approval']);
+    $edit = [];
+    $title = 'comment title without skip comment approval';
+    $body = 'comment body without skip comment approval';
+    $edit['subject[0][value]'] = $title;
+    $edit['comment_body[0][value]'] = $body;
+    $this->drupalPostForm($this->node->urlInfo(), $edit, t('Preview'));
+    // Cannot use assertRaw here since both title and body are in the form.
+    $preview = (string) $this->cssSelect('.preview')[0]->asXML();
+    $this->assertTrue(strpos($preview, $title) !== FALSE, 'Anonymous user can preview comment title.');
+    $this->assertTrue(strpos($preview, $body) !== FALSE, 'Anonymous user can preview comment body.');
+    user_role_grant_permissions(RoleInterface::ANONYMOUS_ID, ['skip comment approval']);
 
     // Post anonymous comment without contact info.
     $anonymous_comment1 = $this->postComment($this->node, $this->randomMachineName(), $this->randomMachineName());
@@ -101,6 +127,7 @@ class CommentAnonymousTest extends CommentTestBase {
     $this->drupalLogin($this->adminUser);
     $this->drupalGet('comment/' . $anonymous_comment3->id() . '/edit');
     $this->assertRaw($author_name, "The anonymous user's name is correct when editing the comment.");
+    $this->assertFieldByName('uid', '', 'The author field is empty (i.e. anonymous) when editing the comment.');
     $this->assertRaw($author_mail, "The anonymous user's email address is correct when editing the comment.");
 
     // Unpublish comment.
@@ -122,6 +149,10 @@ class CommentAnonymousTest extends CommentTestBase {
     $this->assertNoRaw('comments[' . $anonymous_comment3->id() . ']', 'Comment was deleted.');
     $this->drupalLogout();
 
+    // Comment 3 was deleted.
+    $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment/' . $anonymous_comment3->id());
+    $this->assertResponse(403);
+
     // Reset.
     user_role_change_permissions(RoleInterface::ANONYMOUS_ID, array(
       'access comments' => FALSE,
@@ -138,9 +169,7 @@ class CommentAnonymousTest extends CommentTestBase {
 
     // Attempt to view node-comment form while disallowed.
     $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment');
-    $this->assertText('You are not authorized to post comments', 'Error attempting to post comment.');
-    $this->assertNoFieldByName('subject[0][value]', '', 'Subject field not found.');
-    $this->assertNoFieldByName('comment_body[0][value]', '', 'Comment field not found.');
+    $this->assertResponse(403);
 
     user_role_change_permissions(RoleInterface::ANONYMOUS_ID, array(
       'access comments' => TRUE,
@@ -162,8 +191,8 @@ class CommentAnonymousTest extends CommentTestBase {
     $this->assertFieldByName('subject[0][value]', '', 'Subject field found.');
     $this->assertFieldByName('comment_body[0][value]', '', 'Comment field found.');
 
-    $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment/' . $anonymous_comment3->id());
-    $this->assertText('You are not authorized to view comments', 'Error attempting to post reply.');
-    $this->assertNoText($author_name, 'Comment not displayed.');
+    $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment/' . $anonymous_comment2->id());
+    $this->assertResponse(403);
   }
+
 }

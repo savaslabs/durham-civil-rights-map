@@ -7,11 +7,13 @@
 
 namespace Drupal\Tests\views\Unit\Controller {
 
+use Drupal\Core\Render\RenderContext;
 use Drupal\Tests\UnitTestCase;
 use Drupal\views\Ajax\ViewAjaxResponse;
 use Drupal\views\Controller\ViewAjaxController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * @coversDefaultClass \Drupal\views\Controller\ViewAjaxController
@@ -76,6 +78,11 @@ class ViewAjaxControllerTest extends UnitTestCase {
         $elements['#attached'] = [];
         return isset($elements['#markup']) ? $elements['#markup'] : '';
       }));
+    $this->renderer->expects($this->any())
+      ->method('executeInRenderContext')
+      ->willReturnCallback(function (RenderContext $context, callable $callable) {
+        return $callable();
+      });
     $this->currentPath = $this->getMockBuilder('Drupal\Core\Path\CurrentPathStack')
       ->disableOriginalConstructor()
       ->getMock();
@@ -83,8 +90,25 @@ class ViewAjaxControllerTest extends UnitTestCase {
 
     $this->viewAjaxController = new ViewAjaxController($this->viewStorage, $this->executableFactory, $this->renderer, $this->currentPath, $this->redirectDestination);
 
+    $element_info_manager = $this->getMock('\Drupal\Core\Render\ElementInfoManagerInterface');
+    $request_stack = new RequestStack();
+    $request_stack->push(new Request());
+    $args = [
+      $this->getMock('\Drupal\Core\Controller\ControllerResolverInterface'),
+      $this->getMock('\Drupal\Core\Theme\ThemeManagerInterface'),
+      $element_info_manager,
+      $this->getMock('\Drupal\Core\Render\PlaceholderGeneratorInterface'),
+      $this->getMock('\Drupal\Core\Render\RenderCacheInterface'),
+      $request_stack,
+      [
+        'required_cache_contexts' => [
+          'languages:language_interface',
+          'theme',
+        ],
+      ],
+    ];
     $this->renderer = $this->getMockBuilder('Drupal\Core\Render\Renderer')
-      ->disableOriginalConstructor()
+      ->setConstructorArgs($args)
       ->setMethods(NULL)
       ->getMock();
     $container = new ContainerBuilder();
@@ -264,7 +288,7 @@ class ViewAjaxControllerTest extends UnitTestCase {
 
     $commands = $this->getCommands($response);
     $this->assertEquals('viewsScrollTop', $commands[0]['command']);
-    $this->assertEquals('.view-dom-id-' . $dom_id, $commands[0]['selector']);
+    $this->assertEquals('.js-view-dom-id-' . $dom_id, $commands[0]['selector']);
 
     $this->assertViewResultCommand($response, 1);
   }

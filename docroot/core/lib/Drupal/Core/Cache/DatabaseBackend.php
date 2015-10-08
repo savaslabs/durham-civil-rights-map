@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Cache\DatabaseBackend.
+ * Contains \Drupal\Core\Cache\DatabaseBackend.
  */
 
 namespace Drupal\Core\Cache;
@@ -147,17 +147,26 @@ class DatabaseBackend implements CacheBackendInterface {
   }
 
   /**
-   * Implements Drupal\Core\Cache\CacheBackendInterface::set().
+   * {@inheritdoc}
    */
   public function set($cid, $data, $expire = Cache::PERMANENT, array $tags = array()) {
-    Cache::validateTags($tags);
-    $tags = array_unique($tags);
-    // Sort the cache tags so that they are stored consistently in the database.
-    sort($tags);
+    $this->setMultiple([
+      $cid => [
+        'data' => $data,
+        'expire' => $expire,
+        'tags' => $tags,
+      ],
+    ]);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setMultiple(array $items) {
     $try_again = FALSE;
     try {
       // The bin might not yet exist.
-      $this->doSet($cid, $data, $expire, $tags);
+      $this->doSetMultiple($items);
     }
     catch (\Exception $e) {
       // If there was an exception, try to create the bins.
@@ -169,90 +178,65 @@ class DatabaseBackend implements CacheBackendInterface {
     }
     // Now that the bin has been created, try again if necessary.
     if ($try_again) {
-      $this->doSet($cid, $data, $expire, $tags);
+      $this->doSetMultiple($items);
     }
   }
 
   /**
-   * Actually set the cache.
+   * Stores multiple items in the persistent cache.
+   *
+   * @param array $items
+   *   An array of cache items, keyed by cid.
+   *
+   * @see \Drupal\Core\Cache\CacheBackendInterface::setMultiple()
    */
-  protected function doSet($cid, $data, $expire, $tags) {
-    $fields = array(
-      'created' => round(microtime(TRUE), 3),
-      'expire' => $expire,
-      'tags' => implode(' ', $tags),
-      'checksum' => $this->checksumProvider->getCurrentChecksum($tags),
-    );
-    if (!is_string($data)) {
-      $fields['data'] = serialize($data);
-      $fields['serialized'] = 1;
-    }
-    else {
-      $fields['data'] = $data;
-      $fields['serialized'] = 0;
-    }
+  protected function doSetMultiple(array $items) {
+    $values = array();
 
-    $this->connection->merge($this->bin)
-      ->key('cid', $this->normalizeCid($cid))
-      ->fields($fields)
-      ->execute();
-  }
+    foreach ($items as $cid => $item) {
+      $item += array(
+        'expire' => CacheBackendInterface::CACHE_PERMANENT,
+        'tags' => array(),
+      );
 
-  /**
-   * {@inheritdoc}
-   */
-  public function setMultiple(array $items) {
-    // Use a transaction so that the database can write the changes in a single
-    // commit.
-    $transaction = $this->connection->startTransaction();
+      assert('\Drupal\Component\Assertion\Inspector::assertAllStrings($item[\'tags\'])', 'Cache Tags must be strings.');
+      $item['tags'] = array_unique($item['tags']);
+      // Sort the cache tags so that they are stored consistently in the DB.
+      sort($item['tags']);
 
-    try {
-      // Delete all items first so we can do one insert. Rather than multiple
-      // merge queries.
-      $this->deleteMultiple(array_keys($items));
+      $fields = array(
+        'cid' => $this->normalizeCid($cid),
+        'expire' => $item['expire'],
+        'created' => round(microtime(TRUE), 3),
+        'tags' => implode(' ', $item['tags']),
+        'checksum' => $this->checksumProvider->getCurrentChecksum($item['tags']),
+      );
 
-      $query = $this->connection
-        ->insert($this->bin)
-        ->fields(array('cid', 'data', 'expire', 'created', 'serialized', 'tags', 'checksum'));
-
-      foreach ($items as $cid => $item) {
-        $item += array(
-          'expire' => CacheBackendInterface::CACHE_PERMANENT,
-          'tags' => array(),
-        );
-
-        Cache::validateTags($item['tags']);
-        $item['tags'] = array_unique($item['tags']);
-        // Sort the cache tags so that they are stored consistently in the DB.
-        sort($item['tags']);
-
-        $fields = array(
-          'cid' => $cid,
-          'expire' => $item['expire'],
-          'created' => round(microtime(TRUE), 3),
-          'tags' => implode(' ', $item['tags']),
-          'checksum' => $this->checksumProvider->getCurrentChecksum($item['tags']),
-        );
-
-        if (!is_string($item['data'])) {
-          $fields['data'] = serialize($item['data']);
-          $fields['serialized'] = 1;
-        }
-        else {
-          $fields['data'] = $item['data'];
-          $fields['serialized'] = 0;
-        }
-
-        $query->values($fields);
+      if (!is_string($item['data'])) {
+        $fields['data'] = serialize($item['data']);
+        $fields['serialized'] = 1;
       }
+      else {
+        $fields['data'] = $item['data'];
+        $fields['serialized'] = 0;
+      }
+      $values[] = $fields;
+    }
 
-      $query->execute();
+    // Use an upsert query which is atomic and optimized for multiple-row
+    // merges.
+    $query = $this->connection
+      ->upsert($this->bin)
+      ->key('cid')
+      ->fields(array('cid', 'expire', 'created', 'tags', 'checksum', 'data', 'serialized'));
+    foreach ($values as $fields) {
+      // Only pass the values since the order of $fields matches the order of
+      // the insert fields. This is a performance optimization to avoid
+      // unnecessary loops within the method.
+      $query->values(array_values($fields));
     }
-    catch (\Exception $e) {
-      $transaction->rollback();
-      // @todo Log something here or just re throw?
-      throw $e;
-    }
+
+    $query->execute();
   }
 
   /**
@@ -413,22 +397,26 @@ class DatabaseBackend implements CacheBackendInterface {
   }
 
   /**
-   * Ensures that cache IDs have a maximum length of 255 characters.
+   * Normalizes a cache ID in order to comply with database limitations.
    *
    * @param string $cid
    *   The passed in cache ID.
    *
    * @return string
-   *   A cache ID that is at most 255 characters long.
+   *   An ASCII-encoded cache ID that is at most 255 characters long.
    */
   protected function normalizeCid($cid) {
-    // Nothing to do if the ID length is 255 characters or less.
-    if (strlen($cid) <= 255) {
+    // Nothing to do if the ID is a US ASCII string of 255 characters or less.
+    $cid_is_ascii = mb_check_encoding($cid, 'ASCII');
+    if (strlen($cid) <= 255 && $cid_is_ascii) {
       return $cid;
     }
     // Return a string that uses as much as possible of the original cache ID
     // with the hash appended.
     $hash = Crypt::hashBase64($cid);
+    if (!$cid_is_ascii) {
+      return $hash;
+    }
     return substr($cid, 0, 255 - strlen($hash)) . $hash;
   }
 
@@ -441,7 +429,7 @@ class DatabaseBackend implements CacheBackendInterface {
       'fields' => array(
         'cid' => array(
           'description' => 'Primary Key: Unique cache ID.',
-          'type' => 'varchar',
+          'type' => 'varchar_ascii',
           'length' => 255,
           'not null' => TRUE,
           'default' => '',
@@ -482,7 +470,7 @@ class DatabaseBackend implements CacheBackendInterface {
         ),
         'checksum' => array(
           'description' => 'The tag invalidation checksum when this entry was saved.',
-          'type' => 'varchar',
+          'type' => 'varchar_ascii',
           'length' => 255,
           'not null' => TRUE,
         ),

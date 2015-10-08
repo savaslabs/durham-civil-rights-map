@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views_test_data\Plugin\views\display\DisplayTest.
+ * Contains \Drupal\views_test_data\Plugin\views\display\DisplayTest.
  */
 
 namespace Drupal\views_test_data\Plugin\views\display;
@@ -35,7 +35,7 @@ class DisplayTest extends DisplayPluginBase {
   /**
    * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::getType().
    */
-  protected function getType() {
+  public function getType() {
     return 'test';
   }
 

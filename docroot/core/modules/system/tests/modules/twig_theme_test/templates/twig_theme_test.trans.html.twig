@@ -49,11 +49,6 @@
 </div>
 <div>
   {% trans %}
-    Pass-through: {{ string|passthrough }}
-  {% endtrans %}
-</div>
-<div>
-  {% trans %}
     Placeholder: {{ string|placeholder }}
   {% endtrans %}
 </div>
@@ -63,7 +58,7 @@
 {% set count = token|length %}
 <div>
   {% trans %}
-    This {{ token.name }} has a length of: {{ count }}. It contains: {{ token.numbers|placeholder }} and {{ token.bad_text }}. Lets pass the bad text through: {{ token.bad_text|passthrough }}.
+    This {{ token.name }} has a length of: {{ count }}. It contains: {{ token.numbers|placeholder }} and {{ token.bad_text }}.
   {% endtrans %}
 </div>
 
@@ -92,5 +87,12 @@
 <div>
   {% trans with {'context': 'Lolspeak', 'langcode': 'zz'} %}
     Hello new text.
+  {% endtrans %}
+</div>
+
+{# Tests that https://www.drupal.org/node/2489024 doesn't happen without twig debug. #}
+<div>
+  {% trans %}
+    Number I never remember: ' . print(pi()) . '
   {% endtrans %}
 </div>

@@ -37,7 +37,6 @@ class ConfigInstallProfileOverrideTest extends WebTestBase {
     // The expected configuration from the system module.
     $expected_original_data = array(
       'threshold' => array(
-        'autorun' => 0,
         'requirements_warning' => 172800,
         'requirements_error' => 1209600,
       ),
@@ -45,7 +44,6 @@ class ConfigInstallProfileOverrideTest extends WebTestBase {
     // The expected active configuration altered by the install profile.
     $expected_profile_data = array(
       'threshold' => array(
-        'autorun' => 0,
         'requirements_warning' => 259200,
         'requirements_error' => 1209600,
       ),
@@ -105,11 +103,13 @@ class ConfigInstallProfileOverrideTest extends WebTestBase {
     // Test that override of optional configuration which introduces an unmet
     // dependency does not get created.
     $this->assertNull($config_test_storage->load('override_unmet'), 'The optional config_test entity with unmet dependencies is not created.');
+    $this->assertNull($config_test_storage->load('completely_new'), 'The completely new optional config_test entity with unmet dependencies is not created.');
 
     // Installing dblog creates the optional configuration.
     $this->container->get('module_installer')->install(['dblog']);
     $this->rebuildContainer();
     $this->assertEqual($config_test_storage->load('override_unmet')->label(), 'Override', 'The optional config_test entity is overridden by the profile optional configuration and is installed when its dependencies are met.');
+    $this->assertEqual($config_test_storage->load('completely_new')->label(), 'Completely new optional configuration', 'The optional config_test entity is provided by the profile optional configuration and is installed when its dependencies are met.');
   }
 
 }

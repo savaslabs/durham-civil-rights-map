@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Cache\BackendChain.
+ * Contains \Drupal\Core\Cache\BackendChain.
  */
 
 namespace Drupal\Core\Cache;
@@ -19,6 +19,8 @@ namespace Drupal\Core\Cache;
  * volatile backend but found in the persistent one will be propagated back up
  * to ensure fast retrieval on the next request. On cache sets and deletes, both
  * backends will be invoked to ensure consistency.
+ *
+ * @see \Drupal\Core\Cache\ChainedFastBackend
  *
  * @ingroup cache
  */

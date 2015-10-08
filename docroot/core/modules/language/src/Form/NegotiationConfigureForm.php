@@ -2,13 +2,12 @@
 
 /**
  * @file
- * Contains \Drupal\Language\Form\NegotiationConfigureForm.
+ * Contains \Drupal\language\Form\NegotiationConfigureForm.
  */
 
 namespace Drupal\language\Form;
 
 use Drupal\Core\Block\BlockManagerInterface;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -114,7 +113,7 @@ class NegotiationConfigureForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'language_negotiation_configure_form';
   }
 
@@ -236,7 +235,7 @@ class NegotiationConfigureForm extends ConfigFormBase {
       $configurable = $this->languageTypes->get('configurable');
       $table_form['configurable'] = array(
         '#type' => 'checkbox',
-        '#title' => $this->t('Customize %language_name language detection to differ from User interface text language detection settings', array('%language_name' => $info['name'])),
+        '#title' => $this->t('Customize %language_name language detection to differ from Interface text language detection settings', array('%language_name' => $info['name'])),
         '#default_value' => in_array($type, $configurable),
         '#attributes' => array('class' => array('language-customization-checkbox')),
         '#attached' => array(
@@ -277,22 +276,22 @@ class NegotiationConfigureForm extends ConfigFormBase {
 
       if (isset($types[$type])) {
         $table_form['#language_negotiation_info'][$method_id] = $method;
-        $method_name = SafeMarkup::checkPlain($method['name']);
+        $method_name = $method['name'];
 
         $table_form['weight'][$method_id] = array(
           '#type' => 'weight',
-          '#title' => $this->t('Weight for !title language detection method', array('!title' => Unicode::strtolower($method_name))),
+          '#title' => $this->t('Weight for @title language detection method', array('@title' => Unicode::strtolower($method_name))),
           '#title_display' => 'invisible',
           '#default_value' => $weight,
           '#attributes' => array('class' => array("language-method-weight-$type")),
           '#delta' => 20,
         );
 
-        $table_form['title'][$method_id] = array('#markup' => $method_name);
+        $table_form['title'][$method_id] = array('#plain_text' => $method_name);
 
         $table_form['enabled'][$method_id] = array(
           '#type' => 'checkbox',
-          '#title' => $this->t('Enable !title language detection method', array('!title' => Unicode::strtolower($method_name))),
+          '#title' => $this->t('Enable @title language detection method', array('@title' => Unicode::strtolower($method_name))),
           '#title_display' => 'invisible',
           '#default_value' => $enabled,
         );
@@ -301,7 +300,7 @@ class NegotiationConfigureForm extends ConfigFormBase {
           $table_form['enabled'][$method_id]['#attributes'] = array('disabled' => 'disabled');
         }
 
-        $table_form['description'][$method_id] = array('#markup' => Xss::filterAdmin($method['description']));
+        $table_form['description'][$method_id] = array('#markup' => $method['description']);
 
         $config_op = array();
         if (isset($method['config_route_name'])) {

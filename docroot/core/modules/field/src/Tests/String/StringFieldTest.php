@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of \Drupal\field\Tests\String\StringFieldTest.
+ * Contains \Drupal\field\Tests\String\StringFieldTest.
  */
 
 namespace Drupal\field\Tests\String;
@@ -22,7 +22,7 @@ class StringFieldTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('entity_test');
+  public static $modules = array('entity_test', 'file');
 
   /**
    * A user without any special permissions.
@@ -81,7 +81,7 @@ class StringFieldTest extends WebTestBase {
     $this->drupalGet('entity_test/add');
     $this->assertFieldByName("{$field_name}[0][value]", '', 'Widget is displayed');
     $this->assertNoFieldByName("{$field_name}[0][format]", '1', 'Format selector is not displayed');
-    $this->assertRaw(format_string('placeholder="A placeholder on !widget_type"', array('!widget_type' => $widget_type)));
+    $this->assertRaw(format_string('placeholder="A placeholder on @widget_type"', array('@widget_type' => $widget_type)));
 
     // Submit with some value.
     $value = $this->randomMachineName();
@@ -97,7 +97,7 @@ class StringFieldTest extends WebTestBase {
     $entity = entity_load('entity_test', $id);
     $display = entity_get_display($entity->getEntityTypeId(), $entity->bundle(), 'full');
     $content = $display->build($entity);
-    $this->setRawContent(drupal_render($content));
+    $this->setRawContent(\Drupal::service('renderer')->renderRoot($content));
     $this->assertText($value, 'Filtered tags are not displayed');
   }
 }

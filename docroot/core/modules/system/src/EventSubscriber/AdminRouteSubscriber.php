@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\system\EventSubscriber\AdminRouteSubscriber
+ * Contains \Drupal\system\EventSubscriber\AdminRouteSubscriber.
  */
 
 namespace Drupal\system\EventSubscriber;
@@ -36,7 +36,7 @@ class AdminRouteSubscriber extends RouteSubscriberBase {
     // Use a higher priority than \Drupal\field_ui\Routing\RouteSubscriber or
     // \Drupal\views\EventSubscriber\RouteSubscriber to ensure we add the
     // option to their routes.
-    // @todo https://drupal.org/node/2158571
+    // @todo https://www.drupal.org/node/2158571
     $events[RoutingEvents::ALTER] = array('onAlterRoutes', -200);
 
     return $events;

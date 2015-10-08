@@ -106,8 +106,8 @@ EOF;
 <IfModule !mod_authz_core.c>
   Deny from all
 </IfModule>
-EOF
-      . $lines;
+$lines
+EOF;
     }
 
     return $lines;
@@ -224,7 +224,7 @@ EOF
    * @param string $path
    *   A string containing either a file or directory path.
    *
-   * @return boolean
+   * @return bool
    *   TRUE for success or if path does not exist, FALSE in the event of an
    *   error.
    */
@@ -264,6 +264,12 @@ EOF
       }
     }
     return $names;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function garbageCollection() {
   }
 
 }

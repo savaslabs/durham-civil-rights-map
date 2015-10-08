@@ -8,6 +8,7 @@
 namespace Drupal\Tests\Core\Menu;
 
 use Drupal\Core\Menu\LocalActionDefault;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -74,7 +75,6 @@ class LocalActionDefaultTest extends UnitTestCase {
    */
   protected function setupLocalActionDefault() {
     $this->localActionDefault = new LocalActionDefault($this->config, $this->pluginId, $this->pluginDefinition, $this->routeProvider);
-    $this->localActionDefault->setStringTranslation($this->stringTranslation);
   }
 
   /**
@@ -83,10 +83,10 @@ class LocalActionDefaultTest extends UnitTestCase {
    * @see \Drupal\Core\Menu\LocalTaskDefault::getTitle()
    */
   public function testGetTitle() {
-    $this->pluginDefinition['title'] = 'Example';
+    $this->pluginDefinition['title'] = (new TranslatableMarkup('Example', [], [], $this->stringTranslation));
     $this->stringTranslation->expects($this->once())
-      ->method('translate')
-      ->with($this->pluginDefinition['title'], array(), array())
+      ->method('translateString')
+      ->with($this->pluginDefinition['title'])
       ->will($this->returnValue('Example translated'));
 
     $this->setupLocalActionDefault();
@@ -99,11 +99,10 @@ class LocalActionDefaultTest extends UnitTestCase {
    * @see \Drupal\Core\Menu\LocalTaskDefault::getTitle()
    */
   public function testGetTitleWithContext() {
-    $this->pluginDefinition['title'] = 'Example';
-    $this->pluginDefinition['title_context'] = 'context';
+    $this->pluginDefinition['title'] = (new TranslatableMarkup('Example', array(), array('context' => 'context'), $this->stringTranslation));
     $this->stringTranslation->expects($this->once())
-      ->method('translate')
-      ->with($this->pluginDefinition['title'], array(), array('context' => 'context'))
+      ->method('translateString')
+      ->with($this->pluginDefinition['title'])
       ->will($this->returnValue('Example translated with context'));
 
     $this->setupLocalActionDefault();
@@ -114,11 +113,10 @@ class LocalActionDefaultTest extends UnitTestCase {
    * Tests the getTitle method with title arguments.
    */
   public function testGetTitleWithTitleArguments() {
-    $this->pluginDefinition['title'] = 'Example @test';
-    $this->pluginDefinition['title_arguments'] = array('@test' => 'value');
+    $this->pluginDefinition['title'] = (new TranslatableMarkup('Example @test', array('@test' => 'value'), [], $this->stringTranslation));
     $this->stringTranslation->expects($this->once())
-      ->method('translate')
-      ->with($this->pluginDefinition['title'], $this->arrayHasKey('@test'), array())
+      ->method('translateString')
+      ->with($this->pluginDefinition['title'])
       ->will($this->returnValue('Example value'));
 
     $this->setupLocalActionDefault();

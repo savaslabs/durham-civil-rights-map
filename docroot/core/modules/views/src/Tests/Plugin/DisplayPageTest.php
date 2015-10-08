@@ -10,7 +10,7 @@ namespace Drupal\views\Tests\Plugin;
 use Drupal\Core\Menu\MenuTreeParameters;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\views\Views;
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -21,7 +21,7 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
  * @group views
  * @see \Drupal\views\Plugin\display\Page
  */
-class DisplayPageTest extends ViewUnitTestBase {
+class DisplayPageTest extends ViewKernelTestBase {
 
   /**
    * Views used by this test.
@@ -94,11 +94,10 @@ class DisplayPageTest extends ViewUnitTestBase {
 
     // Check the controller defaults.
     foreach ($collection as $id => $route) {
-      if (strpos($id, 'test_page_display_route') === 0) {
-        $this->assertEqual($route->getDefault('_controller'), 'Drupal\views\Routing\ViewPageController::handle');
-        $this->assertEqual($route->getDefault('view_id'), 'test_page_display_route');
-        $this->assertEqual($route->getDefault('display_id'), str_replace('test_page_display_route.', '', $id));
-      }
+      $this->assertEqual($route->getDefault('_controller'), 'Drupal\views\Routing\ViewPageController::handle');
+      $id_parts = explode('.', $id);
+      $this->assertEqual($route->getDefault('view_id'), $id_parts[1]);
+      $this->assertEqual($route->getDefault('display_id'), $id_parts[2]);
     }
 
     // Check the generated patterns and default values.
@@ -145,14 +144,14 @@ class DisplayPageTest extends ViewUnitTestBase {
    */
   public function testDependencies() {
     $view = Views::getView('test_page_display');
-    $this->assertIdentical([], $view->calculateDependencies());
+    $this->assertIdentical([], $view->getDependencies());
 
     $view = Views::getView('test_page_display_route');
     $expected = [
       'content' => ['StaticTest'],
       'module' => ['views_test_data'],
     ];
-    $this->assertIdentical($expected, $view->calculateDependencies());
+    $this->assertIdentical($expected, $view->getDependencies());
 
     $view = Views::getView('test_page_display_menu');
     $expected = [
@@ -161,7 +160,7 @@ class DisplayPageTest extends ViewUnitTestBase {
         'system.menu.tools',
       ],
     ];
-    $this->assertIdentical($expected, $view->calculateDependencies());
+    $this->assertIdentical($expected, $view->getDependencies());
   }
 
 }

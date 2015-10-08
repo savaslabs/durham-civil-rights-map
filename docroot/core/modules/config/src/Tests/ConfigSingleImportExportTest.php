@@ -22,7 +22,17 @@ class ConfigSingleImportExportTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('config', 'config_test');
+  public static $modules = [
+    'block',
+    'config',
+    'config_test'
+  ];
+
+  protected function setUp() {
+    parent::setUp();
+
+    $this->drupalPlaceBlock('page_title_block');
+  }
 
   /**
    * Tests importing a single configuration file.
@@ -126,6 +136,10 @@ EOD;
   public function testImportSimpleConfiguration() {
     $this->drupalLogin($this->drupalCreateUser(array('import configuration')));
     $config = $this->config('system.site')->set('name', 'Test simple import');
+
+    // Place branding block with site name into header region.
+    $this->drupalPlaceBlock('system_branding_block', ['region' => 'header']);
+
     $edit = array(
       'config_type' => 'system.simple',
       'config_name' => $config->getName(),
@@ -134,7 +148,7 @@ EOD;
     $this->drupalPostForm('admin/config/development/configuration/single/import', $edit, t('Import'));
     $this->assertRaw(t('Are you sure you want to update the %name @type?', array('%name' => $config->getName(), '@type' => 'simple configuration')));
     $this->drupalPostForm(NULL, array(), t('Confirm'));
-    $this->drupalGet('/');
+    $this->drupalGet('');
     $this->assertText('Test simple import');
   }
 

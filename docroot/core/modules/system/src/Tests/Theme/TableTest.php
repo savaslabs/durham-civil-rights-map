@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Theme\TableTest.
+ * Contains \Drupal\system\Tests\Theme\TableTest.
  */
 
 namespace Drupal\system\Tests\Theme;
@@ -21,7 +21,7 @@ class TableTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = array('system');
+  public static $modules = ['system', 'form_test'];
 
   /**
    * {@inheritdoc}
@@ -46,7 +46,9 @@ class TableTest extends KernelTestBase {
       '#sticky' => TRUE,
     );
     $this->render($table);
-    $this->assertTrue(in_array('core/drupal.tableheader', $table['#attached']['library']), 'tableheader asset library found.');
+    // Make sure tableheader.js was attached.
+    $tableheader = $this->xpath("//script[contains(@src, 'tableheader.js')]");
+    $this->assertEqual(count($tableheader), 1);
     $this->assertRaw('sticky-enabled');
   }
 
@@ -69,7 +71,9 @@ class TableTest extends KernelTestBase {
       '#sticky' => FALSE,
     );
     $this->render($table);
-    $this->assertFalse(in_array('core/drupal.tableheader', $table['#attached']['library']), 'tableheader asset library not found.');
+    // Make sure tableheader.js was not attached.
+    $tableheader = $this->xpath("//script[contains(@src, 'tableheader.js')]");
+    $this->assertEqual(count($tableheader), 0);
     $this->assertNoRaw('sticky-enabled');
   }
 
@@ -235,6 +239,88 @@ class TableTest extends KernelTestBase {
     $this->assertRaw('<td class="priority-medium">4</td>', 'Cell 1: the priority-medium class was applied correctly.');
     $this->assertRaw('<td class="priority-low">5</td>', 'Cell 2: the priority-low class was applied correctly.');
     $this->assertRaw('<td>6</td>', 'Cell 3: no priority classes were applied.');
+  }
+
+  /**
+   * Tests header elements with a mix of string and render array values.
+   */
+  public function testThemeTableHeaderRenderArray() {
+    $header = array(
+      array (
+        'data' => array(
+          '#markup' => 'one',
+        ),
+      ),
+      'two',
+      array (
+        'data' => array(
+          '#type' => 'html_tag',
+          '#tag' => 'b',
+          '#value' => 'three',
+        ),
+      ),
+    );
+    $rows = array(array(1,2,3), array(4,5,6), array(7,8,9));
+    $table = array(
+      '#type' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#responsive' => FALSE,
+    );
+    $this->render($table);
+    $this->removeWhiteSpace();
+    $this->assertRaw('<thead><tr><th>one</th><th>two</th><th><b>three</b></th></tr>', 'Table header found.');
+  }
+
+  /**
+   * Tests row elements with a mix of string and render array values.
+   */
+  public function testThemeTableRowRenderArray() {
+    $header = array('one', 'two', 'three');
+    $rows = array(
+      array(
+        '1-one',
+        array(
+          'data' => '1-two'
+        ),
+        '1-three',
+      ),
+      array(
+        array (
+          'data' => array(
+            '#markup' => '2-one',
+          ),
+        ),
+        '2-two',
+        array (
+          'data' => array(
+            '#type' => 'html_tag',
+            '#tag' => 'b',
+            '#value' => '2-three',
+          ),
+        ),
+      ),
+    );
+    $table = array(
+      '#type' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#responsive' => FALSE,
+    );
+    $this->render($table);
+    $this->removeWhiteSpace();
+    $this->assertRaw('<tbody><tr><td>1-one</td><td>1-two</td><td>1-three</td></tr>', 'Table row 1 found.');
+    $this->assertRaw('<tr><td>2-one</td><td>2-two</td><td><b>2-three</b></td></tr></tbody>', 'Table row 2 found.');
+  }
+
+  /**
+   * Tests that the select/checkbox label is being generated and escaped.
+   */
+  public function testThemeTableTitle() {
+    $form = \Drupal::formBuilder()->getForm('\Drupal\form_test\Form\FormTestTableForm');
+    $this->render($form);
+    $this->assertEscaped('Update <em>kitten</em>');
+    $this->assertRaw('Update my favourite fruit is <strong>bananas</strong>');
   }
 
 }

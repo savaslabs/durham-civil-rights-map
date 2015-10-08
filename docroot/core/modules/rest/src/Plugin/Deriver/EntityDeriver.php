@@ -2,17 +2,14 @@
 
 /**
  * @file
- * Definition of Drupal\rest\Plugin\Deriver\EntityDerivative.
+ * Contains \Drupal\rest\Plugin\Deriver\EntityDeriver.
  */
 
 namespace Drupal\rest\Plugin\Deriver;
 
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
-use Drupal\Core\Routing\RouteBuilderInterface;
-use Drupal\Core\Routing\RouteProviderInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 /**
  * Provides a resource plugin definition for every entity type.
@@ -82,7 +79,7 @@ class EntityDeriver implements ContainerDeriverInterface {
 
         $default_uris = array(
           'canonical' => "/entity/$entity_type_id/" . '{' . $entity_type_id . '}',
-          'http://drupal.org/link-relations/create' => "/entity/$entity_type_id",
+          'https://www.drupal.org/link-relations/create' => "/entity/$entity_type_id",
         );
 
         foreach ($default_uris as $link_relation => $default_uri) {

@@ -30,13 +30,14 @@ class AggregatorXSSFormatter extends FormatterBase {
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $elements = [];
 
     foreach ($items as $delta => $item) {
       $elements[$delta] = [
         '#type' => 'markup',
-        '#markup' => aggregator_filter_xss($item->value),
+        '#markup' => $item->value,
+        '#allowed_tags' => _aggregator_allowed_tags(),
       ];
     }
     return $elements;

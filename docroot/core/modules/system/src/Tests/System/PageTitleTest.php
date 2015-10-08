@@ -7,7 +7,7 @@
 
 namespace Drupal\system\Tests\System;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Xss;
 use Drupal\simpletest\WebTestBase;
 
@@ -23,7 +23,7 @@ class PageTitleTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('node', 'test_page_test', 'form_test');
+  public static $modules = ['node', 'test_page_test', 'form_test', 'block'];
 
   protected $contentUser;
   protected $savedTitle;
@@ -35,6 +35,8 @@ class PageTitleTest extends WebTestBase {
     parent::setUp();
 
     $this->drupalCreateContentType(array('type' => 'page', 'name' => 'Basic page'));
+
+    $this->drupalPlaceBlock('page_title_block');
 
     $this->contentUser = $this->drupalCreateUser(array('create page content', 'access content', 'administer themes', 'administer site configuration', 'link to any page'));
     $this->drupalLogin($this->contentUser);
@@ -55,8 +57,9 @@ class PageTitleTest extends WebTestBase {
 
     $node = $this->drupalGetNodeByTitle($edit['title[0][value]']);
     $this->assertNotNull($node, 'Node created and found in database');
+    $this->assertText(Html::escape($edit['title[0][value]']), 'Check to make sure tags in the node title are converted.');
     $this->drupalGet("node/" . $node->id());
-    $this->assertText(SafeMarkup::checkPlain($edit['title[0][value]']), 'Check to make sure tags in the node title are converted.');
+    $this->assertText(Html::escape($edit['title[0][value]']), 'Check to make sure tags in the node title are converted.');
   }
 
   /**
@@ -65,17 +68,10 @@ class PageTitleTest extends WebTestBase {
   function testTitleXSS() {
     // Set some title with JavaScript and HTML chars to escape.
     $title = '</title><script type="text/javascript">alert("Title XSS!");</script> & < > " \' ';
-    $title_filtered = SafeMarkup::checkPlain($title);
+    $title_filtered = Html::escape($title);
 
     $slogan = '<script type="text/javascript">alert("Slogan XSS!");</script>';
     $slogan_filtered = Xss::filterAdmin($slogan);
-
-    // Activate needed appearance settings.
-    $edit = array(
-      'toggle_name'           => TRUE,
-      'toggle_slogan'         => TRUE,
-    );
-    $this->drupalPostForm('admin/appearance/settings', $edit, t('Save configuration'));
 
     // Set title and slogan.
     $edit = array(
@@ -83,6 +79,9 @@ class PageTitleTest extends WebTestBase {
       'site_slogan'  => $slogan,
     );
     $this->drupalPostForm('admin/config/system/site-information', $edit, t('Save configuration'));
+
+    // Place branding block with site name and slogan into header region.
+    $this->drupalPlaceBlock('system_branding_block', ['region' => 'header']);
 
     // Load frontpage.
     $this->drupalGet('');
@@ -108,14 +107,14 @@ class PageTitleTest extends WebTestBase {
     $this->drupalGet('test-render-title');
 
     $this->assertTitle('Foo | Drupal');
-    $result = $this->xpath('//h1');
+    $result = $this->xpath('//h1[@class="page-title"]');
     $this->assertEqual('Foo', (string) $result[0]);
 
     // Test forms
     $this->drupalGet('form-test/object-builder');
 
     $this->assertTitle('Test dynamic title | Drupal');
-    $result = $this->xpath('//h1');
+    $result = $this->xpath('//h1[@class="page-title"]');
     $this->assertEqual('Test dynamic title', (string) $result[0]);
 
     // Set some custom translated strings.
@@ -128,15 +127,24 @@ class PageTitleTest extends WebTestBase {
     $this->drupalGet('test-page-static-title');
 
     $this->assertTitle('Static title translated | Drupal');
-    $result = $this->xpath('//h1');
+    $result = $this->xpath('//h1[@class="page-title"]');
     $this->assertEqual('Static title translated', (string) $result[0]);
 
     // Test the dynamic '_title_callback' route option.
     $this->drupalGet('test-page-dynamic-title');
 
     $this->assertTitle('Dynamic title | Drupal');
-    $result = $this->xpath('//h1');
+    $result = $this->xpath('//h1[@class="page-title"]');
     $this->assertEqual('Dynamic title', (string) $result[0]);
+
+    // Ensure that titles are cacheable and are escaped normally if the
+    // controller does not escape them.
+    $this->drupalGet('test-page-cached-controller');
+    $this->assertTitle('Cached title | Drupal');
+    $this->assertRaw(Html::escape('<span>Cached title</span>') . '</h1>');
+    $this->drupalGet('test-page-cached-controller');
+    $this->assertTitle('Cached title | Drupal');
+    $this->assertRaw(Html::escape('<span>Cached title</span>') . '</h1>');
   }
 
 }

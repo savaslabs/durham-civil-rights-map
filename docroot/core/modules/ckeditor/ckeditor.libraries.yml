@@ -11,6 +11,8 @@ drupal.ckeditor:
     - core/drupal.debounce
     - core/ckeditor
     - editor/drupal.editor
+    # Ensure to run after core/matchmedia.
+    - core/matchmedia
 
 drupal.ckeditor.plugins.drupalimagecaption:
   version: VERSION
@@ -73,3 +75,5 @@ drupal.ckeditor.stylescombo.admin:
     - core/jquery.once
     - core/drupal.vertical-tabs
     - core/drupalSettings
+    # Ensure to run after ckeditor/drupal.ckeditor.admin.
+    - ckeditor/drupal.ckeditor.admin

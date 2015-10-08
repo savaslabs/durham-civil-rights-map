@@ -50,10 +50,10 @@ use Drupal\Core\Access\AccessResult;
  *   block placement condition plugin.
  * - \Drupal\book\Plugin\Block\BookNavigationBlock is an example of a block with
  *   a custom configuration form.
- * - For a more in-depth discussion of the Block API see
- *   https://drupal.org/developing/api/8/block_api
+ * - For a more in-depth discussion of the Block API, see
+ *   https://www.drupal.org/developing/api/8/block_api.
  * - The Examples for Developers project also provides a Block example in
- *   https://drupal.org/project/examples.
+ *   https://www.drupal.org/project/examples.
  * @}
  */
 
@@ -72,8 +72,8 @@ use Drupal\Core\Access\AccessResult;
  * If the module wishes to act on the rendered HTML of the block rather than
  * the structured content array, it may use this hook to add a #post_render
  * callback. Alternatively, it could also implement hook_preprocess_HOOK() for
- * block.html.twig. See drupal_render() and _theme() documentation respectively
- * for details.
+ * block.html.twig. See drupal_render() documentation or the
+ * @link themeable Default theme implementations topic @endlink for details.
  *
  * In addition to hook_block_view_alter(), which is called for all blocks, there
  * is hook_block_view_BASE_BLOCK_ID_alter(), which can be used to target a
@@ -127,6 +127,61 @@ function hook_block_view_BASE_BLOCK_ID_alter(array &$build, \Drupal\Core\Block\B
 }
 
 /**
+ * Alter the result of \Drupal\Core\Block\BlockBase::build().
+ *
+ * Unlike hook_block_view_alter(), this hook is called very early, before the
+ * block is being assembled. Therefore, it is early enough to alter the
+ * cacheability metadata (change #cache), or to explicitly placeholder the block
+ * (set #create_placeholder).
+ *
+ * In addition to hook_block_build_alter(), which is called for all blocks,
+ * there is hook_block_build_BASE_BLOCK_ID_alter(), which can be used to target
+ * a specific block or set of similar blocks.
+ *
+ * @param array &$build
+ *   A renderable array of data, only containing #cache.
+ * @param \Drupal\Core\Block\BlockPluginInterface $block
+ *   The block plugin instance.
+ *
+ * @see hook_block_build_BASE_BLOCK_ID_alter()
+ * @see entity_crud
+ *
+ * @ingroup block_api
+ */
+function hook_block_build_alter(array &$build, \Drupal\Core\Block\BlockPluginInterface $block) {
+  // Add the 'user' cache context to some blocks.
+  if ($some_condition) {
+    $build['#contexts'][] = 'user';
+  }
+}
+
+/**
+ * Provide a block plugin specific block_build alteration.
+ *
+ * In this hook name, BASE_BLOCK_ID refers to the block implementation's plugin
+ * id, regardless of whether the plugin supports derivatives. For example, for
+ * the \Drupal\system\Plugin\Block\SystemPoweredByBlock block, this would be
+ * 'system_powered_by_block' as per that class's annotation. And for the
+ * \Drupal\system\Plugin\Block\SystemMenuBlock block, it would be
+ * 'system_menu_block' as per that class's annotation, regardless of which menu
+ * the derived block is for.
+ *
+ * @param array $build
+ *   A renderable array of data, only containing #cache.
+ * @param \Drupal\Core\Block\BlockPluginInterface $block
+ *   The block plugin instance.
+ *
+ * @see hook_block_build_alter()
+ * @see entity_crud
+ *
+ * @ingroup block_api
+ */
+function hook_block_build_BASE_BLOCK_ID_alter(array &$build, \Drupal\Core\Block\BlockPluginInterface $block) {
+  // Explicitly enable placeholdering of the specific block.
+  $build['#create_placeholder'] = TRUE;
+}
+
+/**
  * Control access to a block instance.
  *
  * Modules may implement this hook if they want to have a say in whether or not
@@ -136,10 +191,8 @@ function hook_block_view_BASE_BLOCK_ID_alter(array &$build, \Drupal\Core\Block\B
  *   The block instance.
  * @param string $operation
  *   The operation to be performed, e.g., 'view', 'create', 'delete', 'update'.
- * @param \Drupal\user\Entity\User $account
+ * @param \Drupal\Core\Session\AccountInterface $account
  *   The user object to perform the access check operation on.
- * @param string $langcode
- *   The language code to perform the access check operation on.
  *
  * @return \Drupal\Core\Access\AccessResultInterface
  *   The access result. If all implementations of this hook return
@@ -151,7 +204,7 @@ function hook_block_view_BASE_BLOCK_ID_alter(array &$build, \Drupal\Core\Block\B
  * @see \Drupal\block\BlockAccessControlHandler::checkAccess()
  * @ingroup block_api
  */
-function hook_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupal\user\Entity\User $account, $langcode) {
+function hook_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupal\Core\Session\AccountInterface $account) {
   // Example code that would prevent displaying the 'Powered by Drupal' block in
   // a region different than the footer.
   if ($operation == 'view' && $block->getPluginId() == 'system_powered_by_block') {

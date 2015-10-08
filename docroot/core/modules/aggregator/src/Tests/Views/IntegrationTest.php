@@ -7,17 +7,19 @@
 
 namespace Drupal\aggregator\Tests\Views;
 
+use Drupal\Component\Utility\Xss;
+use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Url;
 use Drupal\views\Views;
 use Drupal\views\Tests\ViewTestData;
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 
 /**
  * Tests basic integration of views data from the aggregator module.
  *
  * @group aggregator
  */
-class IntegrationTest extends ViewUnitTestBase {
+class IntegrationTest extends ViewKernelTestBase {
 
   /**
    * Modules to install.
@@ -66,9 +68,12 @@ class IntegrationTest extends ViewUnitTestBase {
    * Tests basic aggregator_item view.
    */
   public function testAggregatorItemView() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = \Drupal::service('renderer');
+
     $feed = $this->feedStorage->create(array(
       'title' => $this->randomMachineName(),
-      'url' => 'http://drupal.org/',
+      'url' => 'https://www.drupal.org/',
       'refresh' => 900,
       'checked' => 123543535,
       'description' => $this->randomMachineName(),
@@ -85,7 +90,7 @@ class IntegrationTest extends ViewUnitTestBase {
       $values['description'] = $this->randomMachineName();
       // Add a image to ensure that the sanitizing can be tested below.
       $values['author'] = $this->randomMachineName() . '<img src="http://example.com/example.png" \>"';
-      $values['link'] = 'http://drupal.org/node/' . mt_rand(1000, 10000);
+      $values['link'] = 'https://www.drupal.org/node/' . mt_rand(1000, 10000);
       $values['guid'] = $this->randomString();
 
       $aggregator_item = $this->itemStorage->create($values);
@@ -101,9 +106,9 @@ class IntegrationTest extends ViewUnitTestBase {
 
     $column_map = array(
       'iid' => 'iid',
-      'aggregator_item_title' => 'title',
+      'title' => 'title',
       'aggregator_item_timestamp' => 'timestamp',
-      'aggregator_item_description' => 'description',
+      'description' => 'description',
       'aggregator_item_author' => 'author',
     );
     $this->assertIdenticalResultset($view, $expected, $column_map);
@@ -112,13 +117,22 @@ class IntegrationTest extends ViewUnitTestBase {
     foreach ($view->result as $row) {
       $iid = $view->field['iid']->getValue($row);
       $expected_link = \Drupal::l($items[$iid]->getTitle(), Url::fromUri($items[$iid]->getLink(), ['absolute' => TRUE]));
-      $this->assertEqual($view->field['title']->advancedRender($row), $expected_link, 'Ensure the right link is generated');
+      $output = $renderer->executeInRenderContext(new RenderContext(), function () use ($view, $row) {
+        return $view->field['title']->advancedRender($row);
+      });
+      $this->assertEqual($output, $expected_link, 'Ensure the right link is generated');
 
-      $expected_author = aggregator_filter_xss($items[$iid]->getAuthor());
-      $this->assertEqual($view->field['author']->advancedRender($row), $expected_author, 'Ensure the author got filtered');
+      $expected_author = Xss::filter($items[$iid]->getAuthor(), _aggregator_allowed_tags());
+      $output = $renderer->executeInRenderContext(new RenderContext(), function () use ($view, $row) {
+        return $view->field['author']->advancedRender($row);
+      });
+      $this->assertEqual($output, $expected_author, 'Ensure the author got filtered');
 
-      $expected_description = aggregator_filter_xss($items[$iid]->getDescription());
-      $this->assertEqual($view->field['description']->advancedRender($row), $expected_description, 'Ensure the author got filtered');
+      $expected_description = Xss::filter($items[$iid]->getDescription(), _aggregator_allowed_tags());
+      $output = $renderer->executeInRenderContext(new RenderContext(), function () use ($view, $row) {
+        return $view->field['description']->advancedRender($row);
+      });
+      $this->assertEqual($output, $expected_description, 'Ensure the author got filtered');
     }
   }
 

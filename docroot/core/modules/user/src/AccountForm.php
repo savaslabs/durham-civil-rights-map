@@ -9,6 +9,7 @@ namespace Drupal\user;
 
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\ContentEntityForm;
+use Drupal\Core\Entity\EntityConstraintViolationListInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
@@ -46,7 +47,7 @@ abstract class AccountForm extends ContentEntityForm {
    *   The entity manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
-   * @param \Drupal\Core\Entity\Query\QueryFactory
+   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
    *   The entity query factory.
    */
   public function __construct(EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager, QueryFactory $entity_query) {
@@ -103,7 +104,7 @@ abstract class AccountForm extends ContentEntityForm {
       '#type' => 'textfield',
       '#title' => $this->t('Username'),
       '#maxlength' => USERNAME_MAX_LENGTH,
-      '#description' => $this->t('Spaces are allowed; punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.'),
+      '#description' => $this->t("Several special characters are allowed, including space, period (.), hyphen (-), apostrophe ('), underscore (_), and the @ sign."),
       '#required' => TRUE,
       '#attributes' => array(
         'class' => array('username'),
@@ -132,42 +133,30 @@ abstract class AccountForm extends ContentEntityForm {
         $form_state->set('user_pass_reset', $user_pass_reset);
       }
 
-      $protected_values = array();
-      $current_pass_description = '';
-
-      // The user may only change their own password without their current
-      // password if they logged in via a one-time login link.
-      if (!$form_state->get('user_pass_reset')) {
-        $protected_values['mail'] = $form['account']['mail']['#title'];
-        $protected_values['pass'] = $this->t('Password');
-        $request_new = $this->l($this->t('Reset your password'), new Url('user.pass',
-          array(), array('attributes' => array('title' => $this->t('Send password reset instructions via e-mail.'))))
-        );
-        $current_pass_description = $this->t('Required if you want to change the %mail or %pass below. !request_new.',
-          array(
-            '%mail' => $protected_values['mail'],
-            '%pass' => $protected_values['pass'],
-            '!request_new' => $request_new,
-          )
-        );
-      }
-
       // The user must enter their current password to change to a new one.
       if ($user->id() == $account->id()) {
         $form['account']['current_pass'] = array(
           '#type' => 'password',
           '#title' => $this->t('Current password'),
           '#size' => 25,
-          '#access' => !empty($protected_values),
-          '#description' => $current_pass_description,
+          '#access' => !$form_state->get('user_pass_reset'),
           '#weight' => -5,
           // Do not let web browsers remember this password, since we are
           // trying to confirm that the person submitting the form actually
           // knows the current one.
           '#attributes' => array('autocomplete' => 'off'),
         );
-
         $form_state->set('user', $account);
+
+        // The user may only change their own password without their current
+        // password if they logged in via a one-time login link.
+        if (!$form_state->get('user_pass_reset')) {
+          $form['account']['current_pass']['#description'] = $this->t('Required if you want to change the %mail or %pass below. <a href=":request_new_url" title="Send password reset instructions via email.">Reset your password</a>.', array(
+            '%mail' => $form['account']['mail']['#title'],
+            '%pass' => $this->t('Password'),
+            ':request_new_url' => $this->url('user.pass'),
+          ));
+        }
       }
     }
     elseif (!$config->get('verify_mail') || $admin) {
@@ -189,11 +178,11 @@ abstract class AccountForm extends ContentEntityForm {
       }
     }
 
-    if ($admin) {
-      $status = $account->isActive();
+    if ($admin || !$register) {
+      $status = $account->get('status')->value;
     }
     else {
-      $status = $register ? $config->get('register') == USER_REGISTER_VISITORS : $account->isActive();
+      $status = $config->get('register') == USER_REGISTER_VISITORS ? 1 : 0;
     }
 
     $form['account']['status'] = array(
@@ -204,7 +193,7 @@ abstract class AccountForm extends ContentEntityForm {
       '#access' => $admin,
     );
 
-    $roles = array_map(array('\Drupal\Component\Utility\SafeMarkup', 'checkPlain'), user_role_names(TRUE));
+    $roles = array_map(array('\Drupal\Component\Utility\Html', 'escape'), user_role_names(TRUE));
 
     $form['account']['roles'] = array(
       '#type' => 'checkboxes',
@@ -344,9 +333,14 @@ abstract class AccountForm extends ContentEntityForm {
     }
 
     // Set existing password if set in the form state.
-    if ($current_pass = $form_state->getValue('current_pass')) {
+    $current_pass = trim($form_state->getValue('current_pass'));
+    if (strlen($current_pass) > 0) {
       $account->setExistingPassword($current_pass);
     }
+
+    // Skip the protected user field constraint if the user came from the
+    // password recovery page.
+    $account->_skipProtectedUserFieldConstraint = $form_state->get('user_pass_reset');
 
     return $account;
   }
@@ -354,17 +348,25 @@ abstract class AccountForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function validate(array $form, FormStateInterface $form_state) {
-    /** @var \Drupal\user\UserInterface $account */
-    $account = parent::validate($form, $form_state);
+  protected function getEditedFieldNames(FormStateInterface $form_state) {
+    return array_merge(array(
+      'name',
+      'pass',
+      'mail',
+      'timezone',
+      'langcode',
+      'preferred_langcode',
+      'preferred_admin_langcode'
+    ), parent::getEditedFieldNames($form_state));
+  }
 
-    // Skip the protected user field constraint if the user came from the
-    // password recovery page.
-    $account->_skipProtectedUserFieldConstraint = $form_state->get('user_pass_reset');
-
-    // Customly trigger validation of manually added fields and add in
-    // violations. This is necessary as entity form displays only invoke entity
-    // validation for fields contained in the display.
+  /**
+   * {@inheritdoc}
+   */
+  protected function flagViolations(EntityConstraintViolationListInterface $violations, array $form, FormStateInterface $form_state) {
+    // Manually flag violations of fields not handled by the form display. This
+    // is necessary as entity form displays only flag violations for fields
+    // contained in the display.
     $field_names = array(
       'name',
       'pass',
@@ -374,14 +376,11 @@ abstract class AccountForm extends ContentEntityForm {
       'preferred_langcode',
       'preferred_admin_langcode'
     );
-    foreach ($field_names as $field_name) {
-      $violations = $account->$field_name->validate();
-      foreach ($violations as $violation) {
-        $form_state->setErrorByName($field_name, $violation->getMessage());
-      }
+    foreach ($violations->getByFields($field_names) as $violation) {
+      list($field_name) = explode('.', $violation->getPropertyPath(), 2);
+      $form_state->setErrorByName($field_name, $violation->getMessage());
     }
-
-    return $account;
+    parent::flagViolations($violations, $form, $form_state);
   }
 
   /**

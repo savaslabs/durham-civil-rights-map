@@ -8,6 +8,7 @@
 namespace Drupal\user\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -61,6 +62,8 @@ use Drupal\user\UserInterface;
  * )
  */
 class User extends ContentEntityBase implements UserInterface {
+
+  use EntityChangedTrait;
 
   /**
    * Stores a reference for a reusable anonymous user entity.
@@ -359,7 +362,21 @@ class User extends ContentEntityBase implements UserInterface {
    * {@inheritdoc}
    */
   public function getUsername() {
-    $name = $this->get('name')->value ?: \Drupal::config('user.settings')->get('anonymous');
+    return $this->getAccountName();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getAccountName() {
+    return $this->get('name')->value ?: '';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDisplayName() {
+    $name = $this->getAccountName() ?: \Drupal::config('user.settings')->get('anonymous');
     \Drupal::moduleHandler()->alter('user_format_name', $name, $this);
     return $name;
   }
@@ -375,13 +392,6 @@ class User extends ContentEntityBase implements UserInterface {
   /**
    * {@inheritdoc}
    */
-  public function getChangedTime() {
-    return $this->get('changed')->value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function setExistingPassword($password) {
     $this->get('pass')->existing = $password;
   }
@@ -390,7 +400,7 @@ class User extends ContentEntityBase implements UserInterface {
    * {@inheritdoc}
    */
   public function checkExistingPassword(UserInterface $account_unchanged) {
-    return !empty($this->get('pass')->existing) && \Drupal::service('password')->check(trim($this->get('pass')->existing), $account_unchanged);
+    return strlen($this->get('pass')->existing) > 0 && \Drupal::service('password')->check(trim($this->get('pass')->existing), $account_unchanged->getPassword());
   }
 
   /**
@@ -408,7 +418,10 @@ class User extends ContentEntityBase implements UserInterface {
       $entity_type = $entity_manager->getDefinition('user');
       $class = $entity_type->getClass();
 
-      static::$anonymousUser = new $class(['uid' => [LanguageInterface::LANGCODE_DEFAULT => 0]], $entity_type->id());
+      static::$anonymousUser = new $class([
+        'uid' => [LanguageInterface::LANGCODE_DEFAULT => 0],
+        'name' => [LanguageInterface::LANGCODE_DEFAULT => ''],
+      ], $entity_type->id());
     }
     return clone static::$anonymousUser;
   }
@@ -460,13 +473,14 @@ class User extends ContentEntityBase implements UserInterface {
     $fields['name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Name'))
       ->setDescription(t('The name of this user.'))
-      ->setDefaultValue('')
+      ->setRequired(TRUE)
       ->setConstraints(array(
         // No Length constraint here because the UserName constraint also covers
         // that.
         'UserName' => array(),
         'UserNameUnique' => array(),
       ));
+    $fields['name']->getItemDefinition()->setClass('\Drupal\user\UserNameItem');
 
     $fields['pass'] = BaseFieldDefinition::create('password')
       ->setLabel(t('Password'))
@@ -502,7 +516,8 @@ class User extends ContentEntityBase implements UserInterface {
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the user was last edited.'));
+      ->setDescription(t('The time that the user was last edited.'))
+      ->setTranslatable(TRUE);
 
     $fields['access'] = BaseFieldDefinition::create('timestamp')
       ->setLabel(t('Last access'))

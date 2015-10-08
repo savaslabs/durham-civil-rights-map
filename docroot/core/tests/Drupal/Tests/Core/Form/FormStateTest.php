@@ -62,15 +62,10 @@ class FormStateTest extends UnitTestCase {
    * @covers ::setError
    */
   public function testSetError() {
-    $form_state = $this->getMockBuilder('Drupal\Core\Form\FormState')
-      ->setMethods(array('drupalSetMessage'))
-      ->getMock();
-    $form_state->expects($this->once())
-      ->method('drupalSetMessage')
-      ->willReturn('Fail');
-
+    $form_state = new FormState();
     $element['#parents'] = array('foo', 'bar');
     $form_state->setError($element, 'Fail');
+    $this->assertSame(['foo][bar' => 'Fail'], $form_state->getErrors());
   }
 
   /**
@@ -108,14 +103,10 @@ class FormStateTest extends UnitTestCase {
    *
    * @dataProvider providerTestSetErrorByName
    */
-  public function testSetErrorByName($limit_validation_errors, $expected_errors, $set_message = FALSE) {
-    $form_state = $this->getMockBuilder('Drupal\Core\Form\FormState')
-      ->setMethods(array('drupalSetMessage'))
-      ->getMock();
+  public function testSetErrorByName($limit_validation_errors, $expected_errors) {
+    $form_state = new FormState();
     $form_state->setLimitValidationErrors($limit_validation_errors);
     $form_state->clearErrors();
-    $form_state->expects($set_message ? $this->once() : $this->never())
-      ->method('drupalSetMessage');
 
     $form_state->setErrorByName('test', 'Fail 1');
     $form_state->setErrorByName('test', 'Fail 2');
@@ -131,7 +122,7 @@ class FormStateTest extends UnitTestCase {
       array(array(array('options')), array('options' => '')),
       // Do not limit an validation, and, ensuring the first error is returned
       // for the 'test' element.
-      array(NULL, array('test' => 'Fail 1', 'options' => ''), TRUE),
+      [NULL, ['test' => 'Fail 1', 'options' => '']],
       // Limit all validation.
       array(array(), array()),
     );
@@ -146,9 +137,7 @@ class FormStateTest extends UnitTestCase {
    * @expectedExceptionMessage Form errors cannot be set after form validation has finished.
    */
   public function testFormErrorsDuringSubmission() {
-    $form_state = $this->getMockBuilder('Drupal\Core\Form\FormState')
-      ->setMethods(array('drupalSetMessage'))
-      ->getMock();
+    $form_state = new FormState();
     $form_state->setValidationComplete();
     $form_state->setErrorByName('test', 'message');
   }
@@ -433,6 +422,11 @@ class FormStateTest extends UnitTestCase {
       'cache' => $cache_key,
       'no_cache' => $no_cache_key,
     ]);
+
+    $form_state->setMethod('POST');
+    $this->assertSame($expected, $form_state->isCached());
+
+    $form_state->setMethod('GET');
     $this->assertSame($expected, $form_state->isCached());
   }
 
@@ -472,6 +466,28 @@ class FormStateTest extends UnitTestCase {
       FALSE,
     ];
     return $data;
+  }
+
+  /**
+   * @covers ::setCached
+   */
+  public function testSetCachedPost() {
+    $form_state = new FormState();
+    $form_state->setRequestMethod('POST');
+    $form_state->setCached();
+    $this->assertTrue($form_state->isCached());
+  }
+
+  /**
+   * @covers ::setCached
+   *
+   * @expectedException \LogicException
+   * @expectedExceptionMessage Form state caching on GET requests is not allowed.
+   */
+  public function testSetCachedGet() {
+    $form_state = new FormState();
+    $form_state->setRequestMethod('GET');
+    $form_state->setCached();
   }
 
   /**

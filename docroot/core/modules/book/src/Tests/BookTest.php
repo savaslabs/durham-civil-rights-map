@@ -2,12 +2,13 @@
 
 /**
  * @file
- * Definition of Drupal\book\Tests\BookTest.
+ * Contains \Drupal\book\Tests\BookTest.
  */
 
 namespace Drupal\book\Tests;
 
 use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\simpletest\WebTestBase;
 use Drupal\user\RoleInterface;
@@ -24,7 +25,7 @@ class BookTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('book', 'block', 'node_access_test');
+  public static $modules = array('book', 'block', 'node_access_test', 'book_test');
 
   /**
    * A book node.
@@ -67,6 +68,7 @@ class BookTest extends WebTestBase {
   protected function setUp() {
     parent::setUp();
     $this->drupalPlaceBlock('system_breadcrumb_block');
+    $this->drupalPlaceBlock('page_title_block');
 
     // node_access_test requires a node_access_rebuild().
     node_access_rebuild();
@@ -107,6 +109,46 @@ class BookTest extends WebTestBase {
     $this->drupalLogout();
 
     return $nodes;
+  }
+
+  /**
+   * Tests the book navigation cache context.
+   *
+   * @see \Drupal\book\Cache\BookNavigationCacheContext
+   */
+  public function testBookNavigationCacheContext() {
+    // Create a page node.
+    $this->drupalCreateContentType(['type' => 'page']);
+    $page = $this->drupalCreateNode();
+
+    // Create a book, consisting of book nodes.
+    $book_nodes = $this->createBook();
+
+    // Enable the debug output.
+    \Drupal::state()->set('book_test.debug_book_navigation_cache_context', TRUE);
+    Cache::invalidateTags(['book_test.debug_book_navigation_cache_context']);
+
+    $this->drupalLogin($this->bookAuthor);
+
+    // On non-node route.
+    $this->drupalGet($this->adminUser->urlInfo());
+    $this->assertRaw('[route.book_navigation]=book.none');
+
+    // On non-book node route.
+    $this->drupalGet($page->urlInfo());
+    $this->assertRaw('[route.book_navigation]=book.none');
+
+    // On book node route.
+    $this->drupalGet($book_nodes[0]->urlInfo());
+    $this->assertRaw('[route.book_navigation]=0|2|3');
+    $this->drupalGet($book_nodes[1]->urlInfo());
+    $this->assertRaw('[route.book_navigation]=0|2|3|4');
+    $this->drupalGet($book_nodes[2]->urlInfo());
+    $this->assertRaw('[route.book_navigation]=0|2|3|5');
+    $this->drupalGet($book_nodes[3]->urlInfo());
+    $this->assertRaw('[route.book_navigation]=0|2|6');
+    $this->drupalGet($book_nodes[4]->urlInfo());
+    $this->assertRaw('[route.book_navigation]=0|2|7');
   }
 
   /**
@@ -303,7 +345,7 @@ class BookTest extends WebTestBase {
     static $number = 0; // Used to ensure that when sorted nodes stay in same order.
 
     $edit = array();
-    $edit['title[0][value]'] = $number . ' - SimpleTest test node ' . $this->randomMachineName(10);
+    $edit['title[0][value]'] = str_pad($number, 2, '0', STR_PAD_LEFT) . ' - SimpleTest test node ' . $this->randomMachineName(10);
     $edit['body[0][value]'] = 'SimpleTest test body ' . $this->randomMachineName(32) . ' ' . $this->randomMachineName(32);
     $edit['book[bid]'] = $book_nid;
 
@@ -454,99 +496,6 @@ class BookTest extends WebTestBase {
      $node = $node_storage->load($this->book->id());
      $this->assertTrue(empty($node->book), 'Deleting childless top-level book node properly allowed.');
    }
-
-  /*
-   * Tests node type changing machine name when type is a book allowed type.
-   */
-  function testBookNodeTypeChange() {
-    $this->drupalLogin($this->adminUser);
-    // Change the name, machine name and description.
-    $edit = array(
-      'name' => 'Bar',
-      'type' => 'bar',
-    );
-    $this->drupalPostForm('admin/structure/types/manage/book', $edit, t('Save content type'));
-
-    // Ensure that the config book.settings:allowed_types has been updated with
-    // the new machine and the old one has been removed.
-    $this->assertTrue(book_type_is_allowed('bar'), 'Config book.settings:allowed_types contains the updated node type machine name "bar".');
-    $this->assertFalse(book_type_is_allowed('book'), 'Config book.settings:allowed_types does not contain the old node type machine name "book".');
-
-    $edit = array(
-      'name' => 'Basic page',
-      'title_label' => 'Title for basic page',
-      'type' => 'page',
-    );
-    $this->drupalPostForm('admin/structure/types/add', $edit, t('Save content type'));
-
-    // Add page to the allowed node types.
-    $edit = array(
-      'book_allowed_types[page]' => 'page',
-      'book_allowed_types[bar]' => 'bar',
-    );
-
-    $this->drupalPostForm('admin/structure/book/settings', $edit, t('Save configuration'));
-    $this->assertTrue(book_type_is_allowed('bar'), 'Config book.settings:allowed_types contains the bar node type.');
-    $this->assertTrue(book_type_is_allowed('page'), 'Config book.settings:allowed_types contains the page node type.');
-
-    // Test the order of the book.settings::allowed_types configuration is as
-    // expected. The point of this test is to prove that after changing a node
-    // type going to admin/structure/book/settings and pressing save without
-    // changing anything should not alter the book.settings configuration. The
-    // order will be:
-    // @code
-    // array(
-    //   'bar',
-    //   'page',
-    // );
-    // @endcode
-    $current_config = $this->config('book.settings')->get();
-    $this->drupalPostForm('admin/structure/book/settings', array(), t('Save configuration'));
-    $this->assertIdentical($current_config, $this->config('book.settings')->get());
-
-    // Change the name, machine name and description.
-    $edit = array(
-      'name' => 'Zebra book',
-      'type' => 'zebra',
-    );
-    $this->drupalPostForm('admin/structure/types/manage/bar', $edit, t('Save content type'));
-    $this->assertTrue(book_type_is_allowed('zebra'), 'Config book.settings:allowed_types contains the zebra node type.');
-    $this->assertTrue(book_type_is_allowed('page'), 'Config book.settings:allowed_types contains the page node type.');
-
-    // Test the order of the book.settings::allowed_types configuration is as
-    // expected. The order should be:
-    // @code
-    // array(
-    //   'page',
-    //   'zebra',
-    // );
-    // @endcode
-    $current_config = $this->config('book.settings')->get();
-    $this->drupalPostForm('admin/structure/book/settings', array(), t('Save configuration'));
-    $this->assertIdentical($current_config, $this->config('book.settings')->get());
-
-    $edit = array(
-      'name' => 'Animal book',
-      'type' => 'zebra',
-    );
-    $this->drupalPostForm('admin/structure/types/manage/zebra', $edit, t('Save content type'));
-
-    // Test the order of the book.settings::allowed_types configuration is as
-    // expected. The order should be:
-    // @code
-    // array(
-    //   'page',
-    //   'zebra',
-    // );
-    // @endcode
-    $current_config = $this->config('book.settings')->get();
-    $this->drupalPostForm('admin/structure/book/settings', array(), t('Save configuration'));
-    $this->assertIdentical($current_config, $this->config('book.settings')->get());
-
-    // Ensure that after all the node type changes book.settings:child_type has
-    // the expected value.
-    $this->assertEqual($this->config('book.settings')->get('child_type'), 'zebra');
-  }
 
   /**
    * Tests re-ordering of books.

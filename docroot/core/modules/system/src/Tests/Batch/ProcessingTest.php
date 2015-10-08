@@ -2,11 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Batch\ProcessingTest.
+ * Contains \Drupal\system\Tests\Batch\ProcessingTest.
  */
 
 namespace Drupal\system\Tests\Batch;
 
+use Drupal\Core\Url;
 use Drupal\simpletest\WebTestBase;
 
 /**
@@ -21,7 +22,7 @@ class ProcessingTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('batch_test');
+  public static $modules = array('batch_test', 'test_page_test');
 
   /**
    * Tests batches triggered outside of form submission.
@@ -35,18 +36,32 @@ class ProcessingTest extends WebTestBase {
   }
 
   /**
+   * Tests batches that redirect in the batch finished callback.
+   */
+  function testBatchRedirectFinishedCallback() {
+    // Displaying the page triggers batch 1.
+    $this->drupalGet('batch-test/finish-redirect');
+    $this->assertBatchMessages($this->_resultMessages('batch_1'), 'Batch for step 2 performed successfully.');
+    $this->assertEqual(batch_test_stack(), $this->_resultStack('batch_1'), 'Execution order was correct.');
+    $this->assertText('Test page text.', 'Custom redirection after batch execution displays the correct page.');
+    $this->assertUrl(Url::fromRoute('test_page_test.test_page'));
+  }
+
+  /**
    * Tests batches defined in a form submit handler.
    */
   function testBatchForm() {
     // Batch 0: no operation.
     $edit = array('batch' => 'batch_0');
     $this->drupalPostForm('batch-test', $edit, 'Submit');
+    $this->assertNoEscaped('<', 'No escaped markup is present.');
     $this->assertBatchMessages($this->_resultMessages('batch_0'), 'Batch with no operation performed successfully.');
     $this->assertText('Redirection successful.', 'Redirection after batch execution is correct.');
 
     // Batch 1: several simple operations.
     $edit = array('batch' => 'batch_1');
     $this->drupalPostForm('batch-test', $edit, 'Submit');
+    $this->assertNoEscaped('<', 'No escaped markup is present.');
     $this->assertBatchMessages($this->_resultMessages('batch_1'), 'Batch with simple operations performed successfully.');
     $this->assertEqual(batch_test_stack(), $this->_resultStack('batch_1'), 'Execution order was correct.');
     $this->assertText('Redirection successful.', 'Redirection after batch execution is correct.');
@@ -54,6 +69,7 @@ class ProcessingTest extends WebTestBase {
     // Batch 2: one multistep operation.
     $edit = array('batch' => 'batch_2');
     $this->drupalPostForm('batch-test', $edit, 'Submit');
+    $this->assertNoEscaped('<', 'No escaped markup is present.');
     $this->assertBatchMessages($this->_resultMessages('batch_2'), 'Batch with multistep operation performed successfully.');
     $this->assertEqual(batch_test_stack(), $this->_resultStack('batch_2'), 'Execution order was correct.');
     $this->assertText('Redirection successful.', 'Redirection after batch execution is correct.');
@@ -61,6 +77,7 @@ class ProcessingTest extends WebTestBase {
     // Batch 3: simple + multistep combined.
     $edit = array('batch' => 'batch_3');
     $this->drupalPostForm('batch-test', $edit, 'Submit');
+    $this->assertNoEscaped('<', 'No escaped markup is present.');
     $this->assertBatchMessages($this->_resultMessages('batch_3'), 'Batch with simple and multistep operations performed successfully.');
     $this->assertEqual(batch_test_stack(), $this->_resultStack('batch_3'), 'Execution order was correct.');
     $this->assertText('Redirection successful.', 'Redirection after batch execution is correct.');
@@ -68,6 +85,7 @@ class ProcessingTest extends WebTestBase {
     // Batch 4: nested batch.
     $edit = array('batch' => 'batch_4');
     $this->drupalPostForm('batch-test', $edit, 'Submit');
+    $this->assertNoEscaped('<', 'No escaped markup is present.');
     $this->assertBatchMessages($this->_resultMessages('batch_4'), 'Nested batch performed successfully.');
     $this->assertEqual(batch_test_stack(), $this->_resultStack('batch_4'), 'Execution order was correct.');
     $this->assertText('Redirection successful.', 'Redirection after batch execution is correct.');
@@ -78,6 +96,7 @@ class ProcessingTest extends WebTestBase {
    */
   function testBatchFormMultistep() {
     $this->drupalGet('batch-test/multistep');
+    $this->assertNoEscaped('<', 'No escaped markup is present.');
     $this->assertText('step 1', 'Form is displayed in step 1.');
 
     // First step triggers batch 1.
@@ -85,12 +104,14 @@ class ProcessingTest extends WebTestBase {
     $this->assertBatchMessages($this->_resultMessages('batch_1'), 'Batch for step 1 performed successfully.');
     $this->assertEqual(batch_test_stack(), $this->_resultStack('batch_1'), 'Execution order was correct.');
     $this->assertText('step 2', 'Form is displayed in step 2.');
+    $this->assertNoEscaped('<', 'No escaped markup is present.');
 
     // Second step triggers batch 2.
     $this->drupalPostForm(NULL, array(), 'Submit');
     $this->assertBatchMessages($this->_resultMessages('batch_2'), 'Batch for step 2 performed successfully.');
     $this->assertEqual(batch_test_stack(), $this->_resultStack('batch_2'), 'Execution order was correct.');
     $this->assertText('Redirection successful.', 'Redirection after batch execution is correct.');
+    $this->assertNoEscaped('<', 'No escaped markup is present.');
   }
 
   /**
@@ -142,7 +163,7 @@ class ProcessingTest extends WebTestBase {
   /**
    * Tests batches that return $context['finished'] > 1 do in fact complete.
    *
-   * @see http://drupal.org/node/600836
+   * @see https://www.drupal.org/node/600836
    */
   function testBatchLargePercentage() {
     // Displaying the page triggers batch 5.
@@ -244,28 +265,28 @@ class ProcessingTest extends WebTestBase {
 
     switch ($id) {
       case 'batch_0':
-        $messages[] = 'results for batch 0<br>none';
+        $messages[] = 'results for batch 0<div class="item-list"><ul><li>none</li></ul></div>';
         break;
 
       case 'batch_1':
-        $messages[] = 'results for batch 1<br>op 1: processed 10 elements';
+        $messages[] = 'results for batch 1<div class="item-list"><ul><li>op 1: processed 10 elements</li></ul></div>';
         break;
 
       case 'batch_2':
-        $messages[] = 'results for batch 2<br>op 2: processed 10 elements';
+        $messages[] = 'results for batch 2<div class="item-list"><ul><li>op 2: processed 10 elements</li></ul></div>';
         break;
 
       case 'batch_3':
-        $messages[] = 'results for batch 3<br>op 1: processed 10 elements<br>op 2: processed 10 elements';
+        $messages[] = 'results for batch 3<div class="item-list"><ul><li>op 1: processed 10 elements</li><li>op 2: processed 10 elements</li></ul></div>';
         break;
 
       case 'batch_4':
-        $messages[] = 'results for batch 4<br>op 1: processed 10 elements';
+        $messages[] = 'results for batch 4<div class="item-list"><ul><li>op 1: processed 10 elements</li></ul></div>';
         $messages = array_merge($messages, $this->_resultMessages('batch_2'));
         break;
 
       case 'batch_5':
-        $messages[] = 'results for batch 5<br>op 5: processed 10 elements';
+        $messages[] = 'results for batch 5<div class="item-list"><ul><li>op 5: processed 10 elements</li></ul></div>';
         break;
 
       case 'chained':

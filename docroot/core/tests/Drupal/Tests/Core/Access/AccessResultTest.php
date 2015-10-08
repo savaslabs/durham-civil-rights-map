@@ -12,6 +12,7 @@ use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Access\AccessResultNeutral;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableDependencyInterface;
+use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -19,6 +20,29 @@ use Drupal\Tests\UnitTestCase;
  * @group Access
  */
 class AccessResultTest extends UnitTestCase {
+
+  /**
+   * The cache contexts manager.
+   *
+   * @var \Drupal\Core\Cache\Context\CacheContextsManager|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $cacheContextsManager;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    parent::setUp();
+
+    $this->cacheContextsManager = $this->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
+      ->disableOriginalConstructor()
+      ->getMock();
+
+    $this->cacheContextsManager->method('assertValidTokens')->willReturn(TRUE);
+    $container = new ContainerBuilder();
+    $container->set('cache_contexts_manager', $this->cacheContextsManager);
+    \Drupal::setContainer($container);
+  }
 
   protected function assertDefaultCacheability(AccessResult $access) {
     $this->assertSame([], $access->getCacheContexts());
@@ -29,7 +53,6 @@ class AccessResultTest extends UnitTestCase {
   /**
    * Tests the construction of an AccessResult object.
    *
-   * @covers ::__construct
    * @covers ::neutral
    */
   public function testConstruction() {
@@ -382,18 +405,17 @@ class AccessResultTest extends UnitTestCase {
 
   /**
    * @covers ::addCacheTags
-   * @covers ::resetCacheTags
+   * @covers ::addCacheableDependency
    * @covers ::getCacheTags
-   * @covers ::cacheUntilEntityChanges
-   * @covers ::cacheUntilConfigurationChanges
+   * @covers ::resetCacheTags
    */
   public function testCacheTags() {
-    $verify = function (AccessResult $access, array $tags) {
+    $verify = function (AccessResult $access, array $tags, array $contexts = [], $max_age = Cache::PERMANENT) {
       $this->assertFalse($access->isAllowed());
       $this->assertFalse($access->isForbidden());
       $this->assertTrue($access->isNeutral());
-      $this->assertSame(Cache::PERMANENT, $access->getCacheMaxAge());
-      $this->assertSame([], $access->getCacheContexts());
+      $this->assertSame($max_age, $access->getCacheMaxAge());
+      $this->assertSame($contexts, $access->getCacheContexts());
       $this->assertSame($tags, $access->getCacheTags());
     };
 
@@ -420,29 +442,26 @@ class AccessResultTest extends UnitTestCase {
       ->addCacheTags(['bar:baz']);
     $verify($access, ['bar:baz', 'bar:qux', 'foo:bar', 'foo:baz']);
 
-    // ::cacheUntilEntityChanges() convenience method.
+    // ::addCacheableDependency() convenience method.
     $node = $this->getMock('\Drupal\node\NodeInterface');
     $node->expects($this->any())
       ->method('getCacheTags')
       ->will($this->returnValue(array('node:20011988')));
+    $node->expects($this->any())
+      ->method('getCacheMaxAge')
+      ->willReturn(600);
+    $node->expects($this->any())
+      ->method('getCacheContexts')
+      ->willReturn(['user']);
     $tags = array('node:20011988');
     $a = AccessResult::neutral()->addCacheTags($tags);
     $verify($a, $tags);
-    $b = AccessResult::neutral()->cacheUntilEntityChanges($node);
-    $verify($b, $tags);
-    $this->assertEquals($a, $b);
+    $b = AccessResult::neutral()->addCacheableDependency($node);
+    $verify($b, $tags, ['user'], 600);
 
-    // ::cacheUntilConfigurationChanges() convenience method.
-    $configuration = $this->getMock('\Drupal\Core\Config\ConfigBase');
-    $configuration->expects($this->any())
-      ->method('getCacheTags')
-      ->will($this->returnValue(array('config:foo.bar.baz')));
-    $tags = array('config:foo.bar.baz');
-    $a = AccessResult::neutral()->addCacheTags($tags);
-    $verify($a, $tags);
-    $b = AccessResult::neutral()->cacheUntilConfigurationChanges($configuration);
-    $verify($b, $tags);
-    $this->assertEquals($a, $b);
+    $non_cacheable_dependency = new \stdClass();
+    $non_cacheable = AccessResult::neutral()->addCacheableDependency($non_cacheable_dependency);
+    $verify($non_cacheable, [], [], 0);
   }
 
   /**
@@ -833,8 +852,15 @@ class AccessResultTest extends UnitTestCase {
    * @covers ::allowedIfHasPermissions
    *
    * @dataProvider providerTestAllowedIfHasPermissions
+   *
+   * @param string[] $permissions
+   *   The permissions to check for.
+   * @param string $conjunction
+   *   The conjunction to use when checking for permission. 'AND' or 'OR'.
+   * @param \Drupal\Core\Access\AccessResult $expected_access
+   *   The expected access check result.
    */
-  public function testAllowedIfHasPermissions($permissions, $conjunction, $expected_access) {
+  public function testAllowedIfHasPermissions($permissions, $conjunction, AccessResult $expected_access) {
     $account = $this->getMock('\Drupal\Core\Session\AccountInterface');
     $account->expects($this->any())
       ->method('hasPermission')
@@ -842,6 +868,10 @@ class AccessResultTest extends UnitTestCase {
         ['allowed', TRUE],
         ['denied', FALSE],
       ]);
+
+    if ($permissions) {
+      $expected_access->cachePerPermissions();
+    }
 
     $access_result = AccessResult::allowedIfHasPermissions($account, $permissions, $conjunction);
     $this->assertEquals($expected_access, $access_result);
@@ -856,14 +886,14 @@ class AccessResultTest extends UnitTestCase {
     return [
       [[], 'AND', AccessResult::allowedIf(FALSE)],
       [[], 'OR', AccessResult::allowedIf(FALSE)],
-      [['allowed'], 'OR', AccessResult::allowedIf(TRUE)->addCacheContexts(['user.permissions'])],
-      [['allowed'], 'AND', AccessResult::allowedIf(TRUE)->addCacheContexts(['user.permissions'])],
-      [['denied'], 'OR', AccessResult::allowedIf(FALSE)->addCacheContexts(['user.permissions'])],
-      [['denied'], 'AND', AccessResult::allowedIf(FALSE)->addCacheContexts(['user.permissions'])],
-      [['allowed', 'denied'], 'OR', AccessResult::allowedIf(TRUE)->addCacheContexts(['user.permissions'])],
-      [['denied', 'allowed'], 'OR', AccessResult::allowedIf(TRUE)->addCacheContexts(['user.permissions'])],
-      [['allowed', 'denied', 'other'], 'OR', AccessResult::allowedIf(TRUE)->addCacheContexts(['user.permissions'])],
-      [['allowed', 'denied'], 'AND', AccessResult::allowedIf(FALSE)->addCacheContexts(['user.permissions'])],
+      [['allowed'], 'OR', AccessResult::allowedIf(TRUE)],
+      [['allowed'], 'AND', AccessResult::allowedIf(TRUE)],
+      [['denied'], 'OR', AccessResult::allowedIf(FALSE)],
+      [['denied'], 'AND', AccessResult::allowedIf(FALSE)],
+      [['allowed', 'denied'], 'OR', AccessResult::allowedIf(TRUE)],
+      [['denied', 'allowed'], 'OR', AccessResult::allowedIf(TRUE)],
+      [['allowed', 'denied', 'other'], 'OR', AccessResult::allowedIf(TRUE)],
+      [['allowed', 'denied'], 'AND', AccessResult::allowedIf(FALSE)],
     ];
   }
 

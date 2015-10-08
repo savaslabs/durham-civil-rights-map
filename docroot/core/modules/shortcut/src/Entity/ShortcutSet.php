@@ -7,7 +7,7 @@
 
 namespace Drupal\shortcut\Entity;
 
-use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\shortcut\ShortcutSetInterface;
 
@@ -40,10 +40,14 @@ use Drupal\shortcut\ShortcutSetInterface;
  *     "delete-form" = "/admin/config/user-interface/shortcut/manage/{shortcut_set}/delete",
  *     "edit-form" = "/admin/config/user-interface/shortcut/manage/{shortcut_set}",
  *     "collection" = "/admin/config/user-interface/shortcut",
+ *   },
+ *   config_export = {
+ *     "id",
+ *     "label",
  *   }
  * )
  */
-class ShortcutSet extends ConfigEntityBase implements ShortcutSetInterface {
+class ShortcutSet extends ConfigEntityBundleBase implements ShortcutSetInterface {
 
   /**
    * The machine name for the configuration entity.

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Database\TaggingTest.
+ * Contains \Drupal\system\Tests\Database\TaggingTest.
  */
 
 namespace Drupal\system\Tests\Database;
@@ -124,7 +124,7 @@ class TaggingTest extends DatabaseTestBase {
     $query->addMetaData('test', $data);
 
     $return = $query->getMetaData('test');
-    $this->assertEqual($data, $return, 'Corect metadata returned.');
+    $this->assertEqual($data, $return, 'Correct metadata returned.');
 
     $return = $query->getMetaData('nothere');
     $this->assertNull($return, 'Non-existent key returned NULL.');

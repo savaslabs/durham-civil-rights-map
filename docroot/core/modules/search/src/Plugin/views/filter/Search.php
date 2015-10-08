@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\search\Plugin\views\filter\Search.
+ * Contains \Drupal\search\Plugin\views\filter\Search.
  */
 
 namespace Drupal\search\Plugin\views\filter;
@@ -108,7 +108,7 @@ class Search extends FilterPluginBase {
     if (!$form_state->isValueEmpty($key)) {
       $this->queryParseSearchExpression($form_state->getValue($key));
       if (count($this->searchQuery->words()) == 0) {
-        $form_state->setErrorByName($key, $this->formatPlural(\Drupal::config('search.settings')->get('index.minimum_word_size'), 'You must include at least one positive keyword with 1 character or more.', 'You must include at least one positive keyword with @count characters or more.'));
+        $form_state->setErrorByName($key, $this->formatPlural(\Drupal::config('search.settings')->get('index.minimum_word_size'), 'You must include at least one keyword to match in the content, and punctuation is ignored.', 'You must include at least one keyword to match in the content. Keywords must be at least @count characters, and punctuation is ignored.'));
       }
     }
   }
@@ -166,11 +166,12 @@ class Search extends FilterPluginBase {
         'left_field' => 'word',
       );
       $join = Views::pluginManager('join')->createInstance('standard', $definition);
-
       $search_total = $this->query->addRelationship('search_total', $join, $search_index);
 
+      // Add the search score field to the query.
       $this->search_score = $this->query->addField('', "$search_index.score * $search_total.count", 'score', array('function' => 'sum'));
 
+      // Add the conditions set up by the search query to the views query.
       $search_condition->condition("$search_index.type", $this->searchType);
       $search_dataset = $this->query->addTable('node_search_dataset');
       $conditions = $this->searchQuery->conditions();
@@ -185,7 +186,18 @@ class Search extends FilterPluginBase {
       $search_conditions =& $search_condition->conditions();
       $search_conditions = array_merge($search_conditions, $condition_conditions);
 
+      // Add the keyword conditions, as is done in
+      // SearchQuery::prepareAndNormalize(), but simplified because we are
+      // only concerned with relevance ranking so we do not need to normalize.
+      $or = db_or();
+      foreach ($words as $word) {
+        $or->condition("$search_index.word", $word);
+      }
+      $search_condition->condition($or);
+
       $this->query->addWhere($this->options['group'], $search_condition);
+
+      // Add the GROUP BY and HAVING expressions to the query.
       $this->query->addGroupBy("$search_index.sid");
       $matches = $this->searchQuery->matches();
       $placeholder = $this->placeholder();

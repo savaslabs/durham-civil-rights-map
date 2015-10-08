@@ -5,7 +5,7 @@
  * Everything happens asynchronously, to allow for:
  *   - dynamically rendered contextual links
  *   - asynchronously retrieved (and cached) per-field in-place editing metadata
- *   - asynchronous setup of in-place editable field and "Quick edit" link
+ *   - asynchronous setup of in-place editable field and "Quick edit" link.
  *
  * To achieve this, there are several queues:
  *   - fieldsMetadataQueue: fields whose metadata still needs to be fetched.
@@ -63,6 +63,10 @@
    */
   var entityInstancesTracker = {};
 
+  /**
+   *
+   * @type {Drupal~behavior}
+   */
   Drupal.behaviors.quickedit = {
     attach: function (context) {
       // Initialize the Quick Edit app once per page load.
@@ -82,23 +86,24 @@
 
       // Process each field element: queue to be used or to fetch metadata.
       // When a field is being rerendered after editing, it will be processed
-      // immediately. New fields will be unable to be processed immediately, but
-      // will instead be queued to have their metadata fetched, which occurs below
-      // in fetchMissingMetaData().
+      // immediately. New fields will be unable to be processed immediately,
+      // but will instead be queued to have their metadata fetched, which occurs
+      // below in fetchMissingMetaData().
       $fields.each(function (index, fieldElement) {
         processField(fieldElement);
       });
 
       // Entities and fields on the page have been detected, try to set up the
-      // contextual links for those entities that already have the necessary meta-
-      // data in the client-side cache.
+      // contextual links for those entities that already have the necessary
+      // meta- data in the client-side cache.
       contextualLinksQueue = _.filter(contextualLinksQueue, function (contextualLink) {
         return !initializeEntityContextualLink(contextualLink);
       });
 
       // Fetch metadata for any fields that are queued to retrieve it.
       fetchMissingMetadata(function (fieldElementsWithFreshMetadata) {
-        // Metadata has been fetched, reprocess fields whose metadata was missing.
+        // Metadata has been fetched, reprocess fields whose metadata was
+        // missing.
         _.each(fieldElementsWithFreshMetadata, processField);
 
         // Metadata has been fetched, try to set up more contextual links now.
@@ -114,10 +119,23 @@
     }
   };
 
+  /**
+   *
+   * @namespace
+   */
   Drupal.quickedit = {
-    // A Drupal.quickedit.AppView instance.
+
+    /**
+     * A {@link Drupal.quickedit.AppView} instance.
+     */
     app: null,
 
+    /**
+     * @type {object}
+     *
+     * @prop {Array.<Drupal.quickedit.EntityModel>} entities
+     * @prop {Array.<Drupal.quickedit.FieldModel>} fields
+     */
     collections: {
       // All in-place editable entities (Drupal.quickedit.EntityModel) on the
       // page.
@@ -126,29 +144,100 @@
       fields: null
     },
 
-    // In-place editors will register themselves in this object.
+    /**
+     * In-place editors will register themselves in this object.
+     *
+     * @namespace
+     */
     editors: {},
 
-    // Per-field metadata that indicates whether in-place editing is allowed,
-    // which in-place editor should be used, etc.
+    /**
+     * Per-field metadata that indicates whether in-place editing is allowed,
+     * which in-place editor should be used, etc.
+     *
+     * @namespace
+     */
     metadata: {
+
+      /**
+       * Check if a field exists in storage.
+       *
+       * @param {string} fieldID
+       *   The field id to check.
+       *
+       * @return {bool}
+       *   Whether it was found or not.
+       */
       has: function (fieldID) {
         return storage.getItem(this._prefixFieldID(fieldID)) !== null;
       },
+
+      /**
+       * Add metadata to a field id.
+       *
+       * @param {string} fieldID
+       *   The field ID to add data to.
+       * @param {object} metadata
+       *   Metadata to add.
+       */
       add: function (fieldID, metadata) {
         storage.setItem(this._prefixFieldID(fieldID), JSON.stringify(metadata));
       },
+
+      /**
+       * Get a key from a field id.
+       *
+       * @param {string} fieldID
+       *   The field ID to check.
+       * @param {string} [key]
+       *   The key to check. If empty, will return all metadata.
+       *
+       * @return {object|*}
+       *   The value for the key, if defined. Otherwise will return all metadata
+       *   for the specified field id.
+       *
+       */
       get: function (fieldID, key) {
         var metadata = JSON.parse(storage.getItem(this._prefixFieldID(fieldID)));
         return (typeof key === 'undefined') ? metadata : metadata[key];
       },
+
+      /**
+       * Prefix the field id.
+       *
+       * @param {string} fieldID
+       *   The field id to prefix.
+       *
+       * @return {string}
+       *   A prefixed field id.
+       */
       _prefixFieldID: function (fieldID) {
         return 'Drupal.quickedit.metadata.' + fieldID;
       },
+
+      /**
+       * Unprefix the field id.
+       *
+       * @param {string} fieldID
+       *   The field id to unprefix.
+       *
+       * @return {string}
+       *   An unprefixed field id.
+       */
       _unprefixFieldID: function (fieldID) {
         // Strip "Drupal.quickedit.metadata.", which is 26 characters long.
         return fieldID.substring(26);
       },
+
+      /**
+       * Intersection calculation.
+       *
+       * @param {Array} fieldIDs
+       *   An array of field ids to compare to prefix field id.
+       *
+       * @return {Array}
+       *   The intersection found.
+       */
       intersection: function (fieldIDs) {
         var prefixedFieldIDs = _.map(fieldIDs, this._prefixFieldID);
         var intersection = _.intersection(prefixedFieldIDs, _.keys(sessionStorage));
@@ -174,8 +263,16 @@
   }
 
   /**
-   * Detect contextual links on entities annotated by Quick Edit; queue these to
-   * be processed.
+   * Detect contextual links on entities annotated by quickedit.
+   *
+   * Queue contextual links to be processed.
+   *
+   * @param {jQuery.Event} event
+   *   The `drupalContextualLinkAdded` event.
+   * @param {object} data
+   *   An object containing the data relevant to the event.
+   *
+   * @listens event:drupalContextualLinkAdded
    */
   $(document).on('drupalContextualLinkAdded', function (event, data) {
     if (data.$region.is('[data-quickedit-entity-id]')) {
@@ -191,7 +288,8 @@
         el: data.$el[0],
         region: data.$region[0]
       };
-      // Set up contextual links for this, otherwise queue it to be set up later.
+      // Set up contextual links for this, otherwise queue it to be set up
+      // later.
       if (!initializeEntityContextualLink(contextualLink)) {
         contextualLinksQueue.push(contextualLink);
       }
@@ -201,10 +299,11 @@
   /**
    * Extracts the entity ID from a field ID.
    *
-   * @param String fieldID
+   * @param {string} fieldID
    *   A field ID: a string of the format
    *   `<entity type>/<id>/<field name>/<language>/<view mode>`.
-   * @return String
+   *
+   * @return {string}
    *   An entity ID: a string of the format `<entity type>/<id>`.
    */
   function extractEntityID(fieldID) {
@@ -214,7 +313,7 @@
   /**
    * Initialize the Quick Edit app.
    *
-   * @param DOM bodyElement
+   * @param {HTMLElement} bodyElement
    *   This document's body element.
    */
   function initQuickEdit(bodyElement) {
@@ -234,7 +333,7 @@
   /**
    * Assigns the entity an instance ID.
    *
-   * @param DOM entityElement.
+   * @param {HTMLElement} entityElement
    *   A Drupal Entity API entity's DOM element with a data-quickedit-entity-id
    *   attribute.
    */
@@ -255,7 +354,7 @@
   /**
    * Fetch the field's metadata; queue or initialize it (if EntityModel exists).
    *
-   * @param DOM fieldElement
+   * @param {HTMLElement} fieldElement
    *   A Drupal Field API field's DOM element with a data-quickedit-field-id
    *   attribute.
    */
@@ -270,9 +369,11 @@
     var entityElement = $(fieldElement).closest(entityElementSelector);
     // In the case of a full entity view page, the entity title is rendered
     // outside of "the entity DOM node": it's rendered as the page title. So in
-    // this case, we must find the entity in the mandatory "content" region.
+    // this case, we find the lowest common parent element (deepest in the tree)
+    // and consider that the entity element.
     if (entityElement.length === 0) {
-      entityElement = $('.region-content').find(entityElementSelector);
+      var $lowestCommonParent = $(entityElementSelector).parents().has(fieldElement).first();
+      entityElement = $lowestCommonParent.find(entityElementSelector);
     }
     var entityInstanceID = entityElement
       .get(0)
@@ -308,13 +409,13 @@
   /**
    * Initialize a field; create FieldModel.
    *
-   * @param DOM fieldElement
+   * @param {HTMLElement} fieldElement
    *   The field's DOM element.
-   * @param String fieldID
+   * @param {string} fieldID
    *   The field's ID.
-   * @param String entityID
+   * @param {string} entityID
    *   The field's entity's ID.
-   * @param String entityInstanceID
+   * @param {string} entityInstanceID
    *   The field's entity's instance ID.
    */
   function initializeField(fieldElement, fieldID, entityID, entityInstanceID) {
@@ -344,7 +445,7 @@
    *
    * Fields whose metadata is missing are tracked at fieldsMetadataQueue.
    *
-   * @param Function callback
+   * @param {function} callback
    *   A callback function that receives field elements whose metadata will just
    *   have been fetched.
    */
@@ -381,9 +482,9 @@
    * Loads missing in-place editor's attachments (JavaScript and CSS files).
    *
    * Missing in-place editors are those whose fields are actively being used on
-   * the page but don't have
+   * the page but don't have.
    *
-   * @param Function callback
+   * @param {function} callback
    *   Callback function to be called when the missing in-place editors (if any)
    *   have been inserted into the DOM. i.e. they may still be loading.
    */
@@ -408,18 +509,11 @@
       return;
     }
 
-    // @todo Simplify this once https://drupal.org/node/1533366 lands.
-    // @see https://drupal.org/node/2029999.
-    var id = 'quickedit-load-editors';
-    // Create a temporary element to be able to use Drupal.ajax.
-    var $el = $('<div id="' + id + '" class="hidden"></div>').appendTo('body');
-    // Create a Drupal.ajax instance to load the form.
-    var loadEditorsAjax = new Drupal.ajax(id, $el, {
+    // @see https://www.drupal.org/node/2029999.
+    // Create a Drupal.Ajax instance to load the form.
+    var loadEditorsAjax = Drupal.ajax({
       url: Drupal.url('quickedit/attachments'),
-      event: 'quickedit-internal.quickedit',
-      submit: {'editors[]': missingEditors},
-      // No progress indicator.
-      progress: {type: null}
+      submit: {'editors[]': missingEditors}
     });
     // Implement a scoped insert AJAX command: calls the callback after all AJAX
     // command functions have been executed (hence the deferred calling).
@@ -427,18 +521,16 @@
     loadEditorsAjax.commands.insert = function (ajax, response, status) {
       _.defer(callback);
       realInsert(ajax, response, status);
-      $el.off('quickedit-internal.quickedit');
-      $el.remove();
     };
-    // Trigger the AJAX request, which will should return AJAX commands to insert
-    // any missing attachments.
-    $el.trigger('quickedit-internal.quickedit');
+    // Trigger the AJAX request, which will should return AJAX commands to
+    // insert any missing attachments.
+    loadEditorsAjax.execute();
   }
 
   /**
    * Attempts to set up a "Quick edit" link and corresponding EntityModel.
    *
-   * @param Object contextualLink
+   * @param {object} contextualLink
    *   An object with the following properties:
    *     - String entityID: a Quick Edit entity identifier, e.g. "node/1" or
    *       "block_content/5".
@@ -447,13 +539,13 @@
    *       instance of this entity).
    *     - DOM el: element pointing to the contextual links placeholder for this
    *       entity.
-   *     - DOM region: element pointing to the contextual region for this entity.
-   * @return Boolean
+   *     - DOM region: element pointing to the contextual region of this entity.
+   *
+   * @return {bool}
    *   Returns true when a contextual the given contextual link metadata can be
-   *   removed from the queue (either because the contextual link has been set up
-   *   or because it is certain that in-place editing is not allowed for any of
-   *   its fields).
-   *   Returns false otherwise.
+   *   removed from the queue (either because the contextual link has been set
+   *   up or because it is certain that in-place editing is not allowed for any
+   *   of its fields). Returns false otherwise.
    */
   function initializeEntityContextualLink(contextualLink) {
     var metadata = Drupal.quickedit.metadata;
@@ -542,14 +634,15 @@
    * Deletes any contained EntityModels (plus their associated FieldModels and
    * ContextualLinkView) and FieldModels, as well as the corresponding queues.
    *
-   * After EntityModels, FieldModels must also be deleted, because it is possible
-   * in Drupal for a field DOM element to exist outside of the entity DOM element,
-   * e.g. when viewing the full node, the title of the node is not rendered within
-   * the node (the entity) but as the page title.
+   * After EntityModels, FieldModels must also be deleted, because it is
+   * possible in Drupal for a field DOM element to exist outside of the entity
+   * DOM element, e.g. when viewing the full node, the title of the node is not
+   * rendered within the node (the entity) but as the page title.
    *
-   * Note: this will not delete an entity that is actively being in-place edited.
+   * Note: this will not delete an entity that is actively being in-place
+   * edited.
    *
-   * @param jQuery $context
+   * @param {jQuery} $context
    *   The context within which to delete.
    */
   function deleteContainedModelsAndQueues($context) {

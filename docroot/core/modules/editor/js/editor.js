@@ -10,10 +10,10 @@
   /**
    * Finds the text area field associated with the given text format selector.
    *
-   * @param jQuery $formatSelector
+   * @param {jQuery} $formatSelector
    *   A text format selector DOM element.
    *
-   * @return DOM
+   * @return {HTMLElement}
    *   The text area DOM element, if it was found.
    */
   function findFieldForFormatSelector($formatSelector) {
@@ -26,9 +26,9 @@
   /**
    * Changes the text editor on a text area.
    *
-   * @param DOM field
+   * @param {HTMLElement} field
    *   The text area DOM element.
-   * @param String newFormatID
+   * @param {string} newFormatID
    *   The text format we're changing to; the text editor for the currently
    *   active text format will be detached, and the text editor for the new text
    *   format will be attached.
@@ -58,7 +58,8 @@
   /**
    * Handles changes in text format.
    *
-   * @param jQuery.Event event
+   * @param {jQuery.Event} event
+   *   The text format change event.
    */
   function onTextFormatChange(event) {
     var $select = $(event.target);
@@ -89,7 +90,7 @@
         buttons: [
           {
             text: Drupal.t('Continue'),
-            'class': 'button button--primary',
+            class: 'button button--primary',
             click: function () {
               changeTextEditor(field, newFormatID);
               confirmationDialog.close();
@@ -97,11 +98,12 @@
           },
           {
             text: Drupal.t('Cancel'),
-            'class': 'button',
+            class: 'button',
             click: function () {
-              // Restore the active format ID: cancel changing text format. We cannot
-              // simply call event.preventDefault() because jQuery's change event is
-              // only triggered after the change has already been accepted.
+              // Restore the active format ID: cancel changing text format. We
+              // cannot simply call event.preventDefault() because jQuery's
+              // change event is only triggered after the change has already
+              // been accepted.
               $select.val(activeFormatID);
               confirmationDialog.close();
             }
@@ -129,11 +131,20 @@
 
   /**
    * Initialize an empty object for editors to place their attachment code.
+   *
+   * @namespace
    */
   Drupal.editors = {};
 
   /**
    * Enables editors on text_format elements.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches an editor to an input element.
+   * @prop {Drupal~behaviorDetach} detach
+   *   Detaches an editor from an input element.
    */
   Drupal.behaviors.editor = {
     attach: function (context, settings) {
@@ -157,20 +168,18 @@
 
         // Directly attach this text editor, if the text format is enabled.
         if (settings.editor.formats[activeFormatID]) {
-          // XSS protection for the current text format/editor is performed on the
-          // server side, so we don't need to do anything special here.
+          // XSS protection for the current text format/editor is performed on
+          // the server side, so we don't need to do anything special here.
           Drupal.editorAttach(field, settings.editor.formats[activeFormatID]);
         }
-        // When there is no text editor for this text format, still track changes,
-        // because the user has the ability to switch to some text editor, other-
-        // wise this code would not be executed.
-        else {
-          $(field).on('change.editor keypress.editor', function () {
-            field.setAttribute('data-editor-value-is-changed', 'true');
-            // Just knowing that the value was changed is enough, stop tracking.
-            $(field).off('.editor');
-          });
-        }
+        // When there is no text editor for this text format, still track
+        // changes, because the user has the ability to switch to some text
+        // editor, otherwise this code would not be executed.
+        $(field).on('change.editor keypress.editor', function () {
+          field.setAttribute('data-editor-value-is-changed', 'true');
+          // Just knowing that the value was changed is enough, stop tracking.
+          $(field).off('.editor');
+        });
 
         // Attach onChange handler to text format selector element.
         if ($this.is('select')) {
@@ -214,17 +223,21 @@
     }
   };
 
+  /**
+   * Attaches editor behaviors to the field.
+   *
+   * @param {HTMLElement} field
+   *   The textarea DOM element.
+   * @param {object} format
+   *   The text format that's being activated, from
+   *   drupalSettings.editor.formats.
+   *
+   * @listens event:change
+   *
+   * @fires event:formUpdated
+   */
   Drupal.editorAttach = function (field, format) {
     if (format.editor) {
-      // HTML5 validation cannot ever work for WYSIWYG editors, because WYSIWYG
-      // editors always hide the underlying textarea element, which prevents
-      // browsers from putting the error message bubble in the right location.
-      // Hence: disable HTML5 validation for this element.
-      if ('required' in field.attributes) {
-        field.setAttribute('data-editor-required', true);
-        field.removeAttribute('required');
-      }
-
       // Attach the text editor.
       Drupal.editors[format.editor].attach(field, format);
 
@@ -240,15 +253,19 @@
     }
   };
 
+  /**
+   * Detaches editor behaviors from the field.
+   *
+   * @param {HTMLElement} field
+   *   The textarea DOM element.
+   * @param {object} format
+   *   The text format that's being activated, from
+   *   drupalSettings.editor.formats.
+   * @param {string} trigger
+   *   Trigger value from the detach behavior.
+   */
   Drupal.editorDetach = function (field, format, trigger) {
     if (format.editor) {
-      // Restore the HTML5 validation "required" attribute if it was removed in
-      // Drupal.editorAttach().
-      if ('data-editor-required' in field.attributes) {
-        field.setAttribute('required', 'required');
-        field.removeAttribute('data-editor-required');
-      }
-
       Drupal.editors[format.editor].detach(field, format, trigger);
 
       // Restore the original value if the user didn't make any changes yet.
@@ -261,13 +278,14 @@
   /**
    * Filter away XSS attack vectors when switching text formats.
    *
-   * @param DOM field
+   * @param {HTMLElement} field
    *   The textarea DOM element.
-   * @param Object format
-   *   The text format that's being activated, from drupalSettings.editor.formats.
-   * @param String originalFormatID
+   * @param {object} format
+   *   The text format that's being activated, from
+   *   drupalSettings.editor.formats.
+   * @param {string} originalFormatID
    *   The text format ID of the original text format.
-   * @param Function callback
+   * @param {function} callback
    *   A callback to be called (with no parameters) after the field's value has
    *   been XSS filtered.
    */
@@ -282,8 +300,8 @@
         url: Drupal.url('editor/filter_xss/' + format.format),
         type: 'POST',
         data: {
-          'value': field.value,
-          'original_format_id': originalFormatID
+          value: field.value,
+          original_format_id: originalFormatID
         },
         dataType: 'json',
         success: function (xssFilteredValue) {

@@ -2,13 +2,15 @@
 
 /**
  * @file
- * Definition of Drupal\filter\Tests\FilterUnitTest.
+ * Contains \Drupal\filter\Tests\FilterUnitTest.
  */
 
 namespace Drupal\filter\Tests;
 
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Language\Language;
+use Drupal\Core\Render\RenderContext;
 use Drupal\editor\EditorXssFilter\Standard;
 use Drupal\filter\Entity\FilterFormat;
 use Drupal\filter\FilterPluginCollection;
@@ -101,10 +103,14 @@ class FilterUnitTest extends KernelTestBase {
    * Tests the caption filter.
    */
   function testCaptionFilter() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = \Drupal::service('renderer');
     $filter = $this->filters['filter_caption'];
 
-    $test = function($input) use ($filter) {
-      return $filter->process($input, 'und');
+    $test = function($input) use ($filter, $renderer) {
+      return $renderer->executeInRenderContext(new RenderContext(), function () use ($input, $filter) {
+        return $filter->process($input, 'und');
+      });
     };
 
     $attached_library = array(
@@ -120,10 +126,10 @@ class FilterUnitTest extends KernelTestBase {
 
     // Data-caption attribute.
     $input = '<img src="llama.jpg" data-caption="Loquacious llama!" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
 
     // Empty data-caption attribute.
     $input = '<img src="llama.jpg" data-caption="" />';
@@ -132,52 +138,52 @@ class FilterUnitTest extends KernelTestBase {
 
     // HTML entities in the caption.
     $input = '<img src="llama.jpg" data-caption="&ldquo;Loquacious llama!&rdquo;" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>“Loquacious llama!”</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>“Loquacious llama!”</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
 
     // HTML encoded as HTML entities in data-caption attribute.
     $input = '<img src="llama.jpg" data-caption="&lt;em&gt;Loquacious llama!&lt;/em&gt;" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption><em>Loquacious llama!</em></figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption><em>Loquacious llama!</em></figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
 
     // HTML (not encoded as HTML entities) in data-caption attribute, which is
     // not allowed by the HTML spec, but may happen when people manually write
     // HTML, so we explicitly support it.
     $input = '<img src="llama.jpg" data-caption="<em>Loquacious llama!</em>" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption><em>Loquacious llama!</em></figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption><em>Loquacious llama!</em></figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
 
     // Security test: attempt an XSS.
     $input = '<img src="llama.jpg" data-caption="<script>alert(\'Loquacious llama!\')</script>" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>alert(\'Loquacious llama!\')</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>alert(\'Loquacious llama!\')</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
 
     // Ensure the filter also works with uncommon yet valid attribute quoting.
     $input = '<img src=llama.jpg data-caption=\'Loquacious llama!\' />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
 
     // Finally, ensure that this also works on any other tag.
     $input = '<video src="llama.jpg" data-caption="Loquacious llama!" />';
-    $expected = '<figure><video src="llama.jpg"></video><figcaption>Loquacious llama!</figcaption></figure>';
+    $expected = '<figure role="group"><video src="llama.jpg"></video><figcaption>Loquacious llama!</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
     $input = '<foobar data-caption="Loquacious llama!">baz</foobar>';
-    $expected = '<figure><foobar>baz</foobar><figcaption>Loquacious llama!</figcaption></figure>';
+    $expected = '<figure role="group"><foobar>baz</foobar><figcaption>Loquacious llama!</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
 
     // So far we've tested that the caption filter works correctly. But we also
     // want to make sure that it works well in tandem with the "Limit allowed
@@ -185,17 +191,19 @@ class FilterUnitTest extends KernelTestBase {
     $html_filter = $this->filters['filter_html'];
     $html_filter->setConfiguration(array(
       'settings' => array(
-        'allowed_html' => '<img>',
+        'allowed_html' => '<img src data-align data-caption>',
         'filter_html_help' => 1,
         'filter_html_nofollow' => 0,
       )
     ));
-    $test_with_html_filter = function ($input) use ($filter, $html_filter) {
-      // 1. Apply HTML filter's processing step.
-      $output = $html_filter->process($input, 'und');
-      // 2. Apply caption filter's processing step.
-      $output = $filter->process($output, 'und');
-      return $output->getProcessedText();
+    $test_with_html_filter = function ($input) use ($filter, $html_filter, $renderer) {
+      return $renderer->executeInRenderContext(new RenderContext(), function () use ($input, $filter, $html_filter) {
+        // 1. Apply HTML filter's processing step.
+        $output = $html_filter->process($input, 'und');
+        // 2. Apply caption filter's processing step.
+        $output = $filter->process($output, 'und');
+        return $output->getProcessedText();
+      });
     };
     // Editor XSS filter.
     $test_editor_xss_filter = function ($input) {
@@ -203,46 +211,46 @@ class FilterUnitTest extends KernelTestBase {
       return Standard::filterXss($input, $dummy_filter_format);
     };
 
-    // All the tricky cases encountered at https://drupal.org/node/2105841.
+    // All the tricky cases encountered at https://www.drupal.org/node/2105841.
     // A plain URL preceded by text.
-    $input = '<img data-caption="See http://drupal.org" src="llama.jpg" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>See http://drupal.org</figcaption></figure>';
+    $input = '<img data-caption="See https://www.drupal.org" src="llama.jpg" />';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>See https://www.drupal.org</figcaption></figure>';
     $this->assertIdentical($expected, $test_with_html_filter($input));
     $this->assertIdentical($input, $test_editor_xss_filter($input));
 
     // An anchor.
-    $input = '<img data-caption="This is a &lt;a href=&quot;http://drupal.org&quot;&gt;quick&lt;/a&gt; test…" src="llama.jpg" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>This is a <a href="http://drupal.org">quick</a> test…</figcaption></figure>';
+    $input = '<img data-caption="This is a &lt;a href=&quot;https://www.drupal.org&quot;&gt;quick&lt;/a&gt; test…" src="llama.jpg" />';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>This is a <a href="https://www.drupal.org">quick</a> test…</figcaption></figure>';
     $this->assertIdentical($expected, $test_with_html_filter($input));
     $this->assertIdentical($input, $test_editor_xss_filter($input));
 
     // A plain URL surrounded by parentheses.
-    $input = '<img data-caption="(http://drupal.org)" src="llama.jpg" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>(http://drupal.org)</figcaption></figure>';
+    $input = '<img data-caption="(https://www.drupal.org)" src="llama.jpg" />';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>(https://www.drupal.org)</figcaption></figure>';
     $this->assertIdentical($expected, $test_with_html_filter($input));
     $this->assertIdentical($input, $test_editor_xss_filter($input));
 
     // A source being credited.
     $input = '<img data-caption="Source: Wikipedia" src="llama.jpg" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>Source: Wikipedia</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>Source: Wikipedia</figcaption></figure>';
     $this->assertIdentical($expected, $test_with_html_filter($input));
     $this->assertIdentical($input, $test_editor_xss_filter($input));
 
     // A source being credited, without a space after the colon.
     $input = '<img data-caption="Source:Wikipedia" src="llama.jpg" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>Source:Wikipedia</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>Source:Wikipedia</figcaption></figure>';
     $this->assertIdentical($expected, $test_with_html_filter($input));
     $this->assertIdentical($input, $test_editor_xss_filter($input));
 
     // A pretty crazy edge case where we have two colons.
     $input = '<img data-caption="Interesting (Scope resolution operator ::)" src="llama.jpg" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>Interesting (Scope resolution operator ::)</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>Interesting (Scope resolution operator ::)</figcaption></figure>';
     $this->assertIdentical($expected, $test_with_html_filter($input));
     $this->assertIdentical($input, $test_editor_xss_filter($input));
 
     // An evil anchor (to ensure XSS filtering is applied to the caption also).
     $input = '<img data-caption="This is an &lt;a href=&quot;javascript:alert();&quot;&gt;evil&lt;/a&gt; test…" src="llama.jpg" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>This is an <a href="alert();">evil</a> test…</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>This is an <a href="alert();">evil</a> test…</figcaption></figure>';
     $this->assertIdentical($expected, $test_with_html_filter($input));
     $expected_xss_filtered = '<img data-caption="This is an &lt;a href=&quot;alert();&quot;&gt;evil&lt;/a&gt; test…" src="llama.jpg" />';
     $this->assertIdentical($expected_xss_filtered, $test_editor_xss_filter($input));
@@ -252,11 +260,15 @@ class FilterUnitTest extends KernelTestBase {
    * Tests the combination of the align and caption filters.
    */
   function testAlignAndCaptionFilters() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = \Drupal::service('renderer');
     $align_filter = $this->filters['filter_align'];
     $caption_filter = $this->filters['filter_caption'];
 
-    $test = function($input) use ($align_filter, $caption_filter) {
-      return $caption_filter->process($align_filter->process($input, 'und'), 'und');
+    $test = function($input) use ($align_filter, $caption_filter, $renderer) {
+      return $renderer->executeInRenderContext(new RenderContext(), function () use ($input, $align_filter, $caption_filter) {
+        return $caption_filter->process($align_filter->process($input, 'und'), 'und');
+      });
     };
 
     $attached_library = array(
@@ -268,28 +280,28 @@ class FilterUnitTest extends KernelTestBase {
     // Both data-caption and data-align attributes: all 3 allowed values for the
     // data-align attribute.
     $input = '<img src="llama.jpg" data-caption="Loquacious llama!" data-align="left" />';
-    $expected = '<figure class="align-left"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
+    $expected = '<figure role="group" class="align-left"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
     $input = '<img src="llama.jpg" data-caption="Loquacious llama!" data-align="center" />';
-    $expected = '<figure class="align-center"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
+    $expected = '<figure role="group" class="align-center"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
     $input = '<img src="llama.jpg" data-caption="Loquacious llama!" data-align="right" />';
-    $expected = '<figure class="align-right"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
+    $expected = '<figure role="group" class="align-right"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
 
     // Both data-caption and data-align attributes, but a disallowed data-align
     // attribute value.
     $input = '<img src="llama.jpg" data-caption="Loquacious llama!" data-align="left foobar" />';
-    $expected = '<figure><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
+    $expected = '<figure role="group"><img src="llama.jpg" /><figcaption>Loquacious llama!</figcaption></figure>';
     $output = $test($input);
     $this->assertIdentical($expected, $output->getProcessedText());
-    $this->assertIdentical($attached_library, $output->getAssets());
+    $this->assertIdentical($attached_library, $output->getAttachments());
   }
 
   /**
@@ -388,7 +400,7 @@ class FilterUnitTest extends KernelTestBase {
     $filter = $this->filters['filter_html'];
     $filter->setConfiguration(array(
       'settings' => array(
-        'allowed_html' => '<a> <em> <strong> <cite> <blockquote> <code> <ul> <ol> <li> <dl> <dt> <dd> <br>',
+        'allowed_html' => '<a> <p> <em> <strong> <cite> <blockquote> <code> <ul> <ol> <li> <dl> <dt> <dd> <br>',
         'filter_html_help' => 1,
         'filter_html_nofollow' => 0,
       )
@@ -396,41 +408,78 @@ class FilterUnitTest extends KernelTestBase {
 
     // HTML filter is not able to secure some tags, these should never be
     // allowed.
-    $f = _filter_html('<script />', $filter);
-    $this->assertNoNormalized($f, 'script', 'HTML filter should always remove script tags.');
+    $f = (string) $filter->process('<script />', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '', 'HTML filter should remove script tags.');
 
-    $f = _filter_html('<iframe />', $filter);
-    $this->assertNoNormalized($f, 'iframe', 'HTML filter should always remove iframe tags.');
+    $f = (string) $filter->process('<iframe />', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '', 'HTML filter should remove iframe tags.');
 
-    $f = _filter_html('<object />', $filter);
-    $this->assertNoNormalized($f, 'object', 'HTML filter should always remove object tags.');
+    $f = (string) $filter->process('<object />', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '', 'HTML filter should remove object tags.');
 
-    $f = _filter_html('<style />', $filter);
-    $this->assertNoNormalized($f, 'style', 'HTML filter should always remove style tags.');
+    $f = (string) $filter->process('<style />', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '', 'HTML filter should remove style tags.');
 
     // Some tags make CSRF attacks easier, let the user take the risk herself.
-    $f = _filter_html('<img />', $filter);
-    $this->assertNoNormalized($f, 'img', 'HTML filter should remove img tags on default.');
+    $f = (string) $filter->process('<img />', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '', 'HTML filter should remove img tags by default.');
 
-    $f = _filter_html('<input />', $filter);
-    $this->assertNoNormalized($f, 'img', 'HTML filter should remove input tags on default.');
+    $f = (string) $filter->process('<input />', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '', 'HTML filter should remove input tags by default.');
 
     // Filtering content of some attributes is infeasible, these shouldn't be
     // allowed too.
-    $f = _filter_html('<p style="display: none;" />', $filter);
-    $this->assertNoNormalized($f, 'style', 'HTML filter should remove style attribute on default.');
+    $f = (string) $filter->process('<p style="display: none;" />', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertNoNormalized($f, 'style', 'HTML filter should remove style attributes.');
+    $this->assertIdentical($f, '<p></p>');
 
-    $f = _filter_html('<p onerror="alert(0);" />', $filter);
-    $this->assertNoNormalized($f, 'onerror', 'HTML filter should remove on* attributes on default.');
+    $f = (string) $filter->process('<p onerror="alert(0);"></p>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertNoNormalized($f, 'onerror', 'HTML filter should remove on* attributes.');
+    $this->assertIdentical($f, '<p></p>');
 
-    $f = _filter_html('<code onerror>&nbsp;</code>', $filter);
-    $this->assertNoNormalized($f, 'onerror', 'HTML filter should remove empty on* attributes on default.');
+    $f = (string) $filter->process('<code onerror>&nbsp;</code>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertNoNormalized($f, 'onerror', 'HTML filter should remove empty on* attributes.');
+    // Note - this string has a decoded &nbsp; character.
+    $this->assertIdentical($f, '<code> </code>');
 
-    $f = _filter_html('<br>', $filter);
-    $this->assertNormalized($f, '<br>', 'HTML filter should allow line breaks.');
+    $f = (string) $filter->process('<br>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertNormalized($f, '<br />', 'HTML filter should allow line breaks.');
 
-    $f = _filter_html('<br />', $filter);
+    $f = (string) $filter->process('<br />', Language::LANGCODE_NOT_SPECIFIED);
     $this->assertNormalized($f, '<br />', 'HTML filter should allow self-closing line breaks.');
+
+    // All attributes of whitelisted tags are stripped by default.
+    $f = (string) $filter->process('<a kitten="cute" llama="awesome">link</a>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertNormalized($f, '<a>link</a>', 'HTML filter should remove attributes that are not explicitly allowed.');
+
+    // Now whitelist the "llama" attribute on <a>.
+    $filter->setConfiguration(array(
+      'settings' => array(
+        'allowed_html' => '<a href llama> <em> <strong> <cite> <blockquote> <code> <ul> <ol> <li> <dl> <dt> <dd> <br>',
+        'filter_html_help' => 1,
+        'filter_html_nofollow' => 0,
+      )
+    ));
+    $f = (string) $filter->process('<a kitten="cute" llama="awesome">link</a>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertNormalized($f, '<a llama="awesome">link</a>', 'HTML filter keeps explicitly allowed attributes, and removes attributes that are not explicitly allowed.');
+
+    // Restrict the whitelisted "llama" attribute on <a> to only allow the value
+    // "majestical", or "epic".
+    $filter->setConfiguration(array(
+      'settings' => array(
+        'allowed_html' => '<a href llama="majestical epic"> <em> <strong> <cite> <blockquote> <code> <ul> <ol> <li> <dl> <dt> <dd> <br>',
+        'filter_html_help' => 1,
+        'filter_html_nofollow' => 0,
+      )
+    ));
+    $f = (string) $filter->process('<a kitten="cute" llama="awesome">link</a>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '<a>link</a>', 'HTML filter removes allowed attributes that do not have an explicitly allowed value.');
+    $f = (string) $filter->process('<a kitten="cute" llama="majestical">link</a>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '<a llama="majestical">link</a>', 'HTML filter keeps explicitly allowed attributes with an attribute value that is also explicitly allowed.');
+    $f = (string) $filter->process('<a kitten="cute" llama="awesome">link</a>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertNormalized($f, '<a>link</a>', 'HTML filter removes allowed attributes that have a not explicitly allowed value.');
+    $f = (string) $filter->process('<a href="/beautiful-animals" kitten="cute" llama="epic majestical">link</a>', Language::LANGCODE_NOT_SPECIFIED);
+    $this->assertIdentical($f, '<a href="/beautiful-animals" llama="epic majestical">link</a>', 'HTML filter keeps explicitly allowed attributes with an attribute value that is also explicitly allowed.');
   }
 
   /**
@@ -441,7 +490,7 @@ class FilterUnitTest extends KernelTestBase {
     $filter = $this->filters['filter_html'];
     $filter->setConfiguration(array(
       'settings' => array(
-        'allowed_html' => '<a>',
+        'allowed_html' => '<a href>',
         'filter_html_help' => 1,
         'filter_html_nofollow' => 1,
       )
@@ -449,27 +498,25 @@ class FilterUnitTest extends KernelTestBase {
 
     // Test if the rel="nofollow" attribute is added, even if we try to prevent
     // it.
-    $f = _filter_html('<a href="http://www.example.com/">text</a>', $filter);
+    $f = (string) $filter->process('<a href="http://www.example.com/">text</a>', Language::LANGCODE_NOT_SPECIFIED);
     $this->assertNormalized($f, 'rel="nofollow"', 'Spam deterrent -- no evasion.');
 
-    $f = _filter_html('<A href="http://www.example.com/">text</a>', $filter);
+    $f = (string) $filter->process('<A href="http://www.example.com/">text</a>', Language::LANGCODE_NOT_SPECIFIED);
     $this->assertNormalized($f, 'rel="nofollow"', 'Spam deterrent evasion -- capital A.');
 
-    $f = _filter_html("<a/href=\"http://www.example.com/\">text</a>", $filter);
+    $f = (string) $filter->process("<a/href=\"http://www.example.com/\">text</a>", Language::LANGCODE_NOT_SPECIFIED);
     $this->assertNormalized($f, 'rel="nofollow"', 'Spam deterrent evasion -- non whitespace character after tag name.');
 
-    $f = _filter_html("<\0a\0 href=\"http://www.example.com/\">text</a>", $filter);
+    $f = (string) $filter->process("<\0a\0 href=\"http://www.example.com/\">text</a>", Language::LANGCODE_NOT_SPECIFIED);
     $this->assertNormalized($f, 'rel="nofollow"', 'Spam deterrent evasion -- some nulls.');
 
-    $f = _filter_html('<a href="http://www.example.com/" rel="follow">text</a>', $filter);
+    $f = (string) $filter->process('<a href="http://www.example.com/" rel="follow">text</a>', Language::LANGCODE_NOT_SPECIFIED);
     $this->assertNoNormalized($f, 'rel="follow"', 'Spam deterrent evasion -- with rel set - rel="follow" removed.');
     $this->assertNormalized($f, 'rel="nofollow"', 'Spam deterrent evasion -- with rel set - rel="nofollow" added.');
   }
 
   /**
    * Tests the HTML escaping filter.
-   *
-   * \Drupal\Component\Utility\SafeMarkup::checkPlain() is not tested here.
    */
   function testHtmlEscapeFilter() {
     // Get FilterHtmlEscape object.
@@ -504,7 +551,7 @@ class FilterUnitTest extends KernelTestBase {
     // Create a email that is too long.
     $long_email = str_repeat('a', 254) . '@example.com';
     $too_long_email = str_repeat('b', 255) . '@example.com';
-
+    $email_with_plus_sign = 'one+two@example.com';
 
     // Filter selection/pattern matching.
     $tests = array(
@@ -517,12 +564,13 @@ http://example.com or www.example.com
       ),
       // MAILTO URLs.
       '
-person@example.com or mailto:person2@example.com or ' . $long_email . ' but not ' . $too_long_email . '
+person@example.com or mailto:person2@example.com or ' . $email_with_plus_sign . ' or ' . $long_email . ' but not ' . $too_long_email . '
 ' => array(
         '<a href="mailto:person@example.com">person@example.com</a>' => TRUE,
         '<a href="mailto:person2@example.com">mailto:person2@example.com</a>' => TRUE,
         '<a href="mailto:' . $long_email . '">' . $long_email . '</a>' => TRUE,
         '<a href="mailto:' . $too_long_email . '">' . $too_long_email . '</a>' => FALSE,
+        '<a href="mailto:' . $email_with_plus_sign . '">' . $email_with_plus_sign . '</a>' => TRUE,
       ),
       // URI parts and special characters.
       '
@@ -582,7 +630,7 @@ me@me.tv
       ),
       // Absolute URL protocols.
       // The list to test is found in the beginning of _filter_url() at
-      // $protocols = $this->config('system.filter')->get('protocols')... (approx line 1555).
+      // $protocols = \Drupal::getContainer()->getParameter('filter_protocols').
       '
 https://example.com,
 ftp://ftp.example.com,
@@ -621,8 +669,8 @@ Partial URL with 3 trailing www.partial.periods...
 Email with 3 trailing exclamations@example.com!!!
 Absolute URL and query string with 2 different punctuation characters (http://www.example.com/q=abc).
 Partial URL with brackets in the URL as well as surrounded brackets (www.foo.com/more_(than)_one_(parens)).
-Absolute URL with square brackets in the URL as well as surrounded brackets [http://www.drupal.org/?class[]=1]
-Absolute URL with quotes "http://www.drupal.org/sample"
+Absolute URL with square brackets in the URL as well as surrounded brackets [https://www.drupal.org/?class[]=1]
+Absolute URL with quotes "https://www.drupal.org/sample"
 
 ' => array(
         'period <a href="http://www.partial.com">www.partial.com</a>.' => TRUE,
@@ -633,8 +681,8 @@ Absolute URL with quotes "http://www.drupal.org/sample"
         'trailing <a href="mailto:exclamations@example.com">exclamations@example.com</a>!!!' => TRUE,
         'characters (<a href="http://www.example.com/q=abc">http://www.example.com/q=abc</a>).' => TRUE,
         'brackets (<a href="http://www.foo.com/more_(than)_one_(parens)">www.foo.com/more_(than)_one_(parens)</a>).' => TRUE,
-        'brackets [<a href="http://www.drupal.org/?class[]=1">http://www.drupal.org/?class[]=1</a>]' => TRUE,
-        'quotes "<a href="http://www.drupal.org/sample">http://www.drupal.org/sample</a>"' => TRUE,
+        'brackets [<a href="https://www.drupal.org/?class[]=1">https://www.drupal.org/?class[]=1</a>]' => TRUE,
+        'quotes "<a href="https://www.drupal.org/sample">https://www.drupal.org/sample</a>"' => TRUE,
       ),
       '
 (www.parenthesis.com/dir?a=1&b=2#a)
@@ -837,10 +885,10 @@ www.example.com with a newline in comments -->
           )));
         }
         if (!$success) {
-          $this->verbose('Source:<pre>' . SafeMarkup::checkPlain(var_export($source, TRUE)) . '</pre>'
-            . '<hr />' . 'Result:<pre>' . SafeMarkup::checkPlain(var_export($result, TRUE)) . '</pre>'
+          $this->verbose('Source:<pre>' . Html::escape(var_export($source, TRUE)) . '</pre>'
+            . '<hr />' . 'Result:<pre>' . Html::escape(var_export($result, TRUE)) . '</pre>'
             . '<hr />' . ($is_expected ? 'Expected:' : 'Not expected:')
-            . '<pre>' . SafeMarkup::checkPlain(var_export($value, TRUE)) . '</pre>'
+            . '<pre>' . Html::escape(var_export($value, TRUE)) . '</pre>'
           );
         }
       }

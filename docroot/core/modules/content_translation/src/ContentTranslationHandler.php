@@ -11,12 +11,14 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\EntityHandlerInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -57,6 +59,21 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
   protected $manager;
 
   /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountInterface
+   */
+  protected $currentUser;
+
+  /**
+   * The array of installed field storage definitions for the entity type, keyed
+   * by field name.
+   *
+   * @var \Drupal\Core\Field\FieldStorageDefinitionInterface[]
+   */
+  protected $fieldStorageDefinitions;
+
+  /**
    * Initializes an instance of the content translation controller.
    *
    * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
@@ -65,12 +82,18 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
    *   The language manager.
    * @param \Drupal\content_translation\ContentTranslationManagerInterface $manager
    *   The content translation manager service.
+   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   *   The entity manager.
+   * @param \Drupal\Core\Session\AccountInterface $current_user
+   *   The current user.
    */
-  public function __construct(EntityTypeInterface $entity_type, LanguageManagerInterface $language_manager, ContentTranslationManagerInterface $manager) {
+  public function __construct(EntityTypeInterface $entity_type, LanguageManagerInterface $language_manager, ContentTranslationManagerInterface $manager, EntityManagerInterface $entity_manager, AccountInterface $current_user) {
     $this->entityTypeId = $entity_type->id();
     $this->entityType = $entity_type;
     $this->languageManager = $language_manager;
     $this->manager = $manager;
+    $this->currentUser = $current_user;
+    $this->fieldStorageDefinitions = $entity_manager->getLastInstalledFieldStorageDefinitions($this->entityTypeId);
   }
 
   /**
@@ -80,7 +103,9 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
     return new static(
       $entity_type,
       $container->get('language_manager'),
-      $container->get('content_translation.manager')
+      $container->get('content_translation.manager'),
+      $container->get('entity.manager'),
+      $container->get('current_user')
     );
   }
 
@@ -111,6 +136,7 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
         ->setSetting('target_type', 'user')
         ->setSetting('handler', 'default')
         ->setRevisionable(TRUE)
+        ->setDefaultValueCallback(get_class($this) . '::getDefaultOwnerId')
         ->setTranslatable(TRUE);
     }
 
@@ -135,7 +161,6 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
       $definitions['content_translation_changed'] = BaseFieldDefinition::create('changed')
         ->setLabel(t('Translation changed time'))
         ->setDescription(t('The Unix timestamp when the translation was most recently saved.'))
-        ->setPropertyConstraints('value', array('EntityChanged' => array()))
         ->setRevisionable(TRUE)
         ->setTranslatable(TRUE);
     }
@@ -150,7 +175,11 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
    *   TRUE if metadata is natively supported, FALSE otherwise.
    */
   protected function hasAuthor() {
-    return is_subclass_of($this->entityType->getClass(), '\Drupal\user\EntityOwnerInterface');
+    // Check for field named uid, but only in case the entity implements the
+    // EntityOwnerInterface. This helps to exclude cases, where the uid is
+    // defined as field name, but is not meant to be an owner field e.g. the
+    // User entity.
+    return $this->entityType->isSubclassOf('\Drupal\user\EntityOwnerInterface') && $this->checkFieldStorageDefinitionTranslatability('uid');
   }
 
   /**
@@ -160,7 +189,7 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
    *   TRUE if metadata is natively supported, FALSE otherwise.
    */
   protected function hasPublishedStatus() {
-    return array_key_exists('status', \Drupal::entityManager()->getLastInstalledFieldStorageDefinitions($this->entityType->id()));
+    return $this->checkFieldStorageDefinitionTranslatability('status');
   }
 
   /**
@@ -170,7 +199,7 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
    *   TRUE if metadata is natively supported, FALSE otherwise.
    */
   protected function hasChangedTime() {
-    return is_subclass_of($this->entityType->getClass(), '\Drupal\Core\Entity\EntityChangedInterface');
+    return $this->entityType->isSubclassOf('Drupal\Core\Entity\EntityChangedInterface') && $this->checkFieldStorageDefinitionTranslatability('changed');
   }
 
   /**
@@ -180,7 +209,23 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
    *   TRUE if metadata is natively supported, FALSE otherwise.
    */
   protected function hasCreatedTime() {
-    return array_key_exists('created', \Drupal::entityManager()->getLastInstalledFieldStorageDefinitions($this->entityType->id()));
+    return $this->checkFieldStorageDefinitionTranslatability('created');
+  }
+
+  /**
+   * Checks the field storage definition for translatability support.
+   *
+   * Checks whether the given field is defined in the field storage definitions
+   * and if its definition specifies it as translatable.
+   *
+   * @param string $field_name
+   *   The name of the field.
+   *
+   * @return bool
+   *   TRUE if translatable field storage definition exists, FALSE otherwise.
+   */
+  protected function checkFieldStorageDefinitionTranslatability($field_name) {
+    return array_key_exists($field_name, $this->fieldStorageDefinitions) && $this->fieldStorageDefinitions[$field_name]->isTranslatable();
   }
 
   /**
@@ -204,11 +249,10 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
     $translate_permission = TRUE;
     // If no permission granularity is defined this entity type does not need an
     // explicit translate permission.
-    $current_user = \Drupal::currentUser();
-    if (!$current_user->hasPermission('translate any entity') && $permission_granularity = $entity_type->getPermissionGranularity()) {
-      $translate_permission = $current_user->hasPermission($permission_granularity == 'bundle' ? "translate {$entity->bundle()} {$entity->getEntityTypeId()}" : "translate {$entity->getEntityTypeId()}");
+    if (!$this->currentUser->hasPermission('translate any entity') && $permission_granularity = $entity_type->getPermissionGranularity()) {
+      $translate_permission = $this->currentUser->hasPermission($permission_granularity == 'bundle' ? "translate {$entity->bundle()} {$entity->getEntityTypeId()}" : "translate {$entity->getEntityTypeId()}");
     }
-    return AccessResult::allowedIf($translate_permission && $current_user->hasPermission("$op content translations"))->cachePerPermissions();
+    return AccessResult::allowedIf($translate_permission && $this->currentUser->hasPermission("$op content translations"))->cachePerPermissions();
   }
 
   /**
@@ -246,8 +290,8 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
       $title = $this->entityFormTitle($entity);
       // When editing the original values display just the entity label.
       if ($form_langcode != $entity_langcode) {
-        $t_args = array('%language' => $languages[$form_langcode]->getName(), '%title' => $entity->label(), '!title' => $title);
-        $title = empty($source_langcode) ? t('!title [%language translation]', $t_args) : t('Create %language translation of %title', $t_args);
+        $t_args = array('%language' => $languages[$form_langcode]->getName(), '%title' => $entity->label(), '@title' => $title);
+        $title = empty($source_langcode) ? t('@title [%language translation]', $t_args) : t('Create %language translation of %title', $t_args);
       }
       $form['#title'] = $title;
     }
@@ -319,12 +363,13 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
             break;
           }
         }
+        $access = $this->getTranslationAccess($entity, 'delete')->isAllowed() || ($entity->access('delete') && $this->entityType->hasLinkTemplate('delete-form'));
         $form['actions']['delete_translation'] = array(
           '#type' => 'submit',
           '#value' => t('Delete translation'),
           '#weight' => $weight,
           '#submit' => array(array($this, 'entityFormDeleteTranslation')),
-          '#access' => $this->getTranslationAccess($entity, 'delete')->isAllowed(),
+          '#access' => $access,
         );
       }
 
@@ -392,7 +437,7 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
       // Default to the anonymous user.
       $uid = 0;
       if ($new_translation) {
-        $uid = \Drupal::currentUser()->getAccount()->id();
+        $uid = $this->currentUser->id();
       }
       elseif (($account = $metadata->getAuthor()) && $account->id()) {
         $uid = $account->id();
@@ -428,13 +473,18 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
     $form['#entity_builders'][] = array($this, 'entityFormEntityBuild');
 
     // Handle entity validation.
-    if (isset($form['actions']['submit'])) {
-      $form['actions']['submit']['#validate'][] = array($this, 'entityFormValidate');
-    }
+    $form['#validate'][] = array($this, 'entityFormValidate');
 
     // Handle entity deletion.
     if (isset($form['actions']['delete'])) {
       $form['actions']['delete']['#submit'][] = array($this, 'entityFormDelete');
+    }
+
+    // Handle entity form submission before the entity has been saved.
+    foreach (Element::children($form['actions']) as $action) {
+      if (isset($form['actions'][$action]['#type']) && $form['actions'][$action]['#type'] == 'submit') {
+        array_unshift($form['actions'][$action]['#submit'], [$this, 'entityFormSubmit']);
+      }
     }
   }
 
@@ -536,7 +586,6 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
     $metadata->setAuthor(!empty($values['uid']) ? User::load($values['uid']) : User::load(0));
     $metadata->setPublished(!empty($values['status']));
     $metadata->setCreatedTime(!empty($values['created']) ? strtotime($values['created']) : REQUEST_TIME);
-    $metadata->setChangedTime(REQUEST_TIME);
 
     $source_langcode = $this->getSourceLangcode($form_state);
     if ($source_langcode) {
@@ -565,6 +614,30 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
       if (!empty($translation['created']) && strtotime($translation['created']) === FALSE) {
         $form_state->setErrorByName('content_translation][created', t('You have to specify a valid translation authoring date.'));
       }
+    }
+  }
+
+  /**
+   * Form submission handler for ContentTranslationHandler::entityFormAlter().
+   *
+   * Updates metadata fields, which should be updated only after the validation
+   * has run and before the entity is saved.
+   */
+  function entityFormSubmit($form, FormStateInterface $form_state) {
+    /** @var \Drupal\Core\Entity\ContentEntityFormInterface $form_object */
+    $form_object = $form_state->getFormObject();
+    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
+    $entity = $form_object->getEntity();
+
+    // ContentEntityForm::submit will update the changed timestamp on submit
+    // after the entity has been validated, so that it does not break the
+    // EntityChanged constraint validator. The content translation metadata
+    // field for the changed timestamp  does not have such a constraint defined
+    // at the moment, but it is correct to update it's value in a submission
+    // handler as well and have the same logic like in the Form API.
+    if ($entity->hasField('content_translation_changed')) {
+      $metadata = $this->manager->getTranslationMetadata($entity);
+      $metadata->setChangedTime(REQUEST_TIME);
     }
   }
 
@@ -607,13 +680,20 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
    * Takes care of content translation deletion.
    */
   function entityFormDeleteTranslation($form, FormStateInterface $form_state) {
+    /** @var \Drupal\Core\Entity\ContentEntityFormInterface $form_object */
     $form_object = $form_state->getFormObject();
+    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $entity = $form_object->getEntity();
     $entity_type_id = $entity->getEntityTypeId();
-    $form_state->setRedirect('content_translation.translation_delete_' . $entity_type_id, array(
-      $entity_type_id => $entity->id(),
-      'language' => $form_object->getFormLangcode($form_state),
-    ));
+    if ($entity->access('delete') && $this->entityType->hasLinkTemplate('delete-form')) {
+      $form_state->setRedirectUrl($entity->urlInfo('delete-form'));
+    }
+    else {
+      $form_state->setRedirect('content_translation.translation_delete_' . $entity_type_id, [
+        $entity_type_id => $entity->id(),
+        'language' => $form_object->getFormLangcode($form_state),
+      ]);
+    }
   }
 
   /**
@@ -626,4 +706,13 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
     return $entity->label();
   }
 
+  /**
+   * Default value callback for the owner base field definition.
+   *
+   * @return int
+   *   The user ID.
+   */
+  public static function getDefaultOwnerId() {
+    return \Drupal::currentUser()->id();
+  }
 }

@@ -14,6 +14,12 @@ namespace Drupal\views_ui\Tests;
  */
 class OverrideDisplaysTest extends UITestBase {
 
+  protected function setUp() {
+    parent::setUp();
+
+    $this->drupalPlaceBlock('page_title_block');
+  }
+
   /**
    * Tests that displays can be overridden via the UI.
    */
@@ -50,6 +56,7 @@ class OverrideDisplaysTest extends UITestBase {
 
     // Confirm that the view block is available in the block administration UI.
     $this->drupalGet('admin/structure/block/list/' . $this->config('system.theme')->get('default'));
+    $this->clickLinkPartialName('Place block');
     $this->assertText($view['label']);
 
     // Place the block.
@@ -109,6 +116,7 @@ class OverrideDisplaysTest extends UITestBase {
 
     // Confirm that the block is available in the block administration UI.
     $this->drupalGet('admin/structure/block/list/' . $this->config('system.theme')->get('default'));
+    $this->clickLinkPartialName('Place block');
     $this->assertText($view['label']);
 
     // Put the block into the first sidebar region, and make sure it will not
@@ -117,7 +125,7 @@ class OverrideDisplaysTest extends UITestBase {
     $this->drupalPlaceBlock("views_block:{$view['id']}-block_1", array(
       'visibility' => array(
         'request_path' => array(
-          'pages' => $view['page[path]'],
+          'pages' => '/' . $view['page[path]'],
           'negate' => TRUE,
         ),
       ),

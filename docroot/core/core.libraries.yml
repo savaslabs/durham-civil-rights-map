@@ -2,10 +2,10 @@
 
 backbone:
   remote: https://github.com/jashkenas/backbone
-  version: "1.1.2"
+  version: "1.2.3"
   license:
     name: MIT
-    url: https://github.com/jashkenas/backbone/blob/1.1.2/LICENSE
+    url: https://github.com/jashkenas/backbone/blob/1.2.3/LICENSE
     gpl-compatible: true
   js:
     assets/vendor/backbone/backbone-min.js: { weight: -19, minified: true }
@@ -24,20 +24,20 @@ classList:
 
 ckeditor:
   remote: https://github.com/ckeditor/ckeditor-dev
-  version: "4.4.7"
+  version: "4.5.3"
   license:
     name: GNU-GPL-2.0-or-later
-    url: https://github.com/ckeditor/ckeditor-dev/blob/4.4.7/LICENSE.md
+    url: https://github.com/ckeditor/ckeditor-dev/blob/4.5.3/LICENSE.md
     gpl-compatible: true
   js:
     assets/vendor/ckeditor/ckeditor.js: { preprocess: false, minified: true }
 
 domready:
   remote: https://github.com/ded/domready
-  version: "1.0.7"
+  version: "1.0.8"
   license:
     name: MIT
-    url: https://github.com/ded/domready/blob/v1.0.7/LICENSE
+    url: https://github.com/ded/domready/blob/v1.0.8/LICENSE
     gpl-compatible: true
   js:
     assets/vendor/domready/ready.min.js: { weight: -21, minified: true }
@@ -52,6 +52,10 @@ drupal:
 
 drupalSettings:
   version: VERSION
+  js:
+    # Need to specify a negative weight like drupal.js until
+    # https://www.drupal.org/node/1945262 is resolved.
+    misc/drupalSettingsLoader.js: { weight: -18 }
   drupalSettings:
     # These placeholder values will be set by system_js_settings_alter().
     path:
@@ -83,6 +87,7 @@ drupal.ajax:
       libraries: null
       theme: null
       theme_token: null
+    ajaxTrustedUrl: {}
   dependencies:
     - core/jquery
     - core/drupal
@@ -124,6 +129,7 @@ drupal.batch:
 drupal.collapse:
   version: VERSION
   js:
+    misc/details-aria.js: {}
     misc/collapse.js: {}
   dependencies:
     - core/jquery
@@ -131,6 +137,15 @@ drupal.collapse:
     - core/drupal
     - core/drupal.form
     - core/jquery.once
+
+drupal.date:
+  version: VERSION
+  js:
+    misc/date.js: {}
+  dependencies:
+    - core/drupal
+    - core/modernizr
+    - core/jquery.ui.datepicker
 
 drupal.debounce:
   version: VERSION
@@ -146,9 +161,6 @@ drupal.dialog:
     misc/dialog/dialog.js: {}
     misc/dialog/dialog.position.js: {}
     misc/dialog/dialog.jquery-ui.js: {}
-  css:
-    theme:
-      misc/dialog.theme.css: {}
   dependencies:
     - core/jquery
     - core/drupal
@@ -184,8 +196,6 @@ drupal.dropbutton:
   css:
     component:
       misc/dropbutton/dropbutton.css: {}
-    theme:
-      misc/dropbutton/dropbutton.theme.css: {}
   dependencies:
     - core/jquery
     - core/drupal
@@ -212,6 +222,7 @@ drupal.machine-name:
     - core/jquery.once
     - core/drupal
     - core/drupalSettings
+    - core/drupal.form
 
 drupal.progress:
   version: VERSION
@@ -306,25 +317,26 @@ drupal.vertical-tabs:
     - core/drupal
     - core/drupalSettings
     - core/drupal.form
+    - core/matchmedia
 
 html5shiv:
   # Block the page from being loaded until html5shiv is initialized.
   header: true
   remote: https://github.com/aFarkas/html5shiv
-  version: "3.7.2"
+  version: "3.7.3"
   license:
     name: GNU-GPL-2.0-or-later
     url: http://www.gnu.org/licenses/gpl-2.0.html
     gpl-compatible: true
   js:
-    assets/vendor/html5shiv/html5shiv.min.js: { every_page: true, weight: -22, browsers: { IE: 'lte IE 8', '!IE': false }, minified: true }
+    assets/vendor/html5shiv/html5shiv.min.js: { weight: -22, browsers: { IE: 'lte IE 8', '!IE': false }, minified: true }
 
 jquery:
   remote: https://github.com/jquery/jquery
-  version: "2.1.3"
+  version: "2.1.4"
   license:
     name: MIT
-    url: https://github.com/jquery/jquery/blob/2.1.3/MIT-LICENSE.txt
+    url: https://github.com/jquery/jquery/blob/2.1.4/MIT-LICENSE.txt
     gpl-compatible: true
   js:
     assets/vendor/jquery/jquery.min.js: { minified: true, weight: -20 }
@@ -384,10 +396,10 @@ jquery.joyride:
 
 jquery.once:
   remote: https://github.com/RobLoach/jquery-once
-  version: "2.0.0"
+  version: "2.1.1"
   license:
     name: GNU-GPL-2.0-or-later
-    url: https://github.com/RobLoach/jquery-once/blob/master/LICENSE.md
+    url: https://github.com/RobLoach/jquery-once/blob/2.1.1/LICENSE.md
     gpl-compatible: true
   js:
     assets/vendor/jquery-once/jquery.once.min.js: { weight: -19, minified: true }
@@ -811,25 +823,25 @@ modernizr:
     gpl-compatible: true
   version: "v2.8.3"
   js:
-    assets/vendor/modernizr/modernizr.min.js: { every_page: true, preprocess: 0, weight: -21, minified: true }
+    assets/vendor/modernizr/modernizr.min.js: { preprocess: 0, weight: -21, minified: true }
 
 normalize:
   remote: https://github.com/necolas/normalize.css
-  version: "3.0.2"
+  version: "3.0.3"
   license:
     name: MIT
     url: https://github.com/necolas/normalize.css/blob/master/LICENSE.md
     gpl-compatible: true
   css:
     base:
-      assets/vendor/normalize-css/normalize.css: { every_page: true, weight: -20 }
+      assets/vendor/normalize-css/normalize.css: { weight: -20 }
 
 picturefill:
   remote: https://github.com/scottjehl/picturefill
-  version: "2.3.0"
+  version: "3.0.1"
   license:
     name: MIT
-    url: https://github.com/scottjehl/picturefill/blob/2.3/LICENSE
+    url: https://github.com/scottjehl/picturefill/blob/3.0.1/LICENSE
     gpl-compatible: true
   js:
     assets/vendor/picturefill/picturefill.min.js: { weight: -10, minified: true }

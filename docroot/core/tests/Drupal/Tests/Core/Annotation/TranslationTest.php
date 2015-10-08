@@ -1,7 +1,8 @@
 <?php
 
 /**
- * @file Contains \Drupal\Tests\Core\Annotation\TranslationTest.
+ * @file
+ * Contains \Drupal\Tests\Core\Annotation\TranslationTest.
  */
 
 namespace Drupal\Tests\Core\Annotation;
@@ -44,9 +45,6 @@ class TranslationTest extends UnitTestCase {
     $options = isset($values['context']) ? array(
       'context' => $values['context'],
     ) : array();
-    $this->translationManager->expects($this->once())
-      ->method('translate')
-      ->with($values['value'], $arguments, $options);
 
     $annotation = new Translation($values);
 
@@ -68,9 +66,9 @@ class TranslationTest extends UnitTestCase {
     $random_html_entity = '&' . $random;
     $data[] = array(
       array(
-        'value' => 'Foo !bar @baz %qux',
+        'value' => 'Foo @bar @baz %qux',
         'arguments' => array(
-          '!bar' => $random,
+          '@bar' => $random,
           '@baz' => $random_html_entity,
           '%qux' => $random_html_entity,
         ),

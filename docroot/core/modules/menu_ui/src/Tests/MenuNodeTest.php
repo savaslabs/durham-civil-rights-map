@@ -35,6 +35,7 @@ class MenuNodeTest extends WebTestBase {
     parent::setUp();
 
     $this->drupalPlaceBlock('system_menu_block:main');
+    $this->drupalPlaceBlock('page_title_block');
 
     $this->drupalCreateContentType(array('type' => 'page', 'name' => 'Basic page'));
 
@@ -53,6 +54,13 @@ class MenuNodeTest extends WebTestBase {
    * Test creating, editing, deleting menu links via node form widget.
    */
   function testMenuNodeFormWidget() {
+    // Verify that cacheability metadata is bubbled from the menu link tree
+    // access checking that is performed when determining the "default parent
+    // item" options in menu_ui_form_node_type_form_alter(). The "log out" link
+    // adds the "user.roles:authenticated" cache context.
+    $this->drupalGet('admin/structure/types/manage/page');
+    $this->assertCacheContext('user.roles:authenticated');
+
     // Disable the default main menu, so that no menus are enabled.
     $edit = array(
       'menu_options[main]' => FALSE,
@@ -132,7 +140,7 @@ class MenuNodeTest extends WebTestBase {
       'edit any page content',
     ]);
     $this->drupalLogin($admin_user);
-    foreach ([t('Save and unpublish') => FALSE, t('Save and keep unpublished') => FALSE, t('Save and publish') => TRUE, t('Save and keep published') => TRUE] as $submit => $visible) {
+    foreach (['Save and unpublish' => FALSE, 'Save and keep unpublished' => FALSE, 'Save and publish' => TRUE, 'Save and keep published' => TRUE] as $submit => $visible) {
       $edit = [
         'menu[enabled]' => 1,
         'menu[title]' => $node_title,
@@ -163,6 +171,16 @@ class MenuNodeTest extends WebTestBase {
 
     $this->drupalGet('node/' . $node->id() . '/edit');
     $this->assertFieldById('edit-menu-weight', 17, 'Menu weight correct in edit form');
+
+    // Disable the menu link, then edit the node--the link should stay disabled.
+    $link_id = menu_ui_get_menu_link_defaults($node)['entity_id'];
+    /** @var \Drupal\menu_link_content\Entity\MenuLinkContent $link */
+    $link = MenuLinkContent::load($link_id);
+    $link->set('enabled', FALSE);
+    $link->save();
+    $this->drupalPostForm($node->urlInfo('edit-form'), $edit, t('Save'));
+    $link = MenuLinkContent::load($link_id);
+    $this->assertFalse($link->isEnabled(), 'Saving a node with a disabled menu link keeps the menu link disabled.');
 
     // Edit the node and remove the menu link.
     $edit = array(

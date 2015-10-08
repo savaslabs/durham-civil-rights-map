@@ -2,11 +2,13 @@
 
 /**
  * @file
- * Contains \Drupal\search\Plugin\SearchPluginBase
+ * Contains \Drupal\search\Plugin\SearchPluginBase.
  */
 
 namespace Drupal\search\Plugin;
 
+use Drupal\Core\Cache\RefinableCacheableDependencyInterface;
+use Drupal\Core\Cache\RefinableCacheableDependencyTrait;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -16,7 +18,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Defines a base class for plugins wishing to support search.
  */
-abstract class SearchPluginBase extends PluginBase implements ContainerFactoryPluginInterface, SearchInterface {
+abstract class SearchPluginBase extends PluginBase implements ContainerFactoryPluginInterface, SearchInterface, RefinableCacheableDependencyInterface {
+
+  use RefinableCacheableDependencyTrait;
 
   /**
    * The keywords to use in a search.

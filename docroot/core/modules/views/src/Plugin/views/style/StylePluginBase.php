@@ -8,10 +8,13 @@
 namespace Drupal\views\Plugin\views\style;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Component\Utility\Xss;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\views\Plugin\views\PluginBase;
+use Drupal\Core\Render\Element;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
+use Drupal\views\Plugin\views\PluginBase;
 use Drupal\views\Plugin\views\wizard\WizardInterface;
+use Drupal\views\Render\ViewsRenderPipelineMarkup;
 use Drupal\views\ViewExecutable;
 
 /**
@@ -191,7 +194,7 @@ abstract class StylePluginBase extends PluginBase {
   public function usesTokens() {
     if ($this->usesRowClass()) {
       $class = $this->options['row_class'];
-      if (strpos($class, '{{') !== FALSE || strpos($class, '!') !== FALSE || strpos($class, '%') !== FALSE) {
+      if (strpos($class, '{{') !== FALSE) {
         return TRUE;
       }
     }
@@ -228,7 +231,7 @@ abstract class StylePluginBase extends PluginBase {
    * Take a value and apply token replacement logic to it.
    */
   public function tokenizeValue($value, $row_index) {
-    if (strpos($value, '{{') !== FALSE || strpos($value, '!') !== FALSE || strpos($value, '%') !== FALSE) {
+    if (strpos($value, '{{') !== FALSE) {
       // Row tokens might be empty, for example for node row style.
       $tokens = isset($this->rowTokens[$row_index]) ? $this->rowTokens[$row_index] : array();
       if (!empty($this->view->build_info['substitutions'])) {
@@ -236,6 +239,11 @@ abstract class StylePluginBase extends PluginBase {
       }
 
       $value = $this->viewsTokenReplace($value, $tokens);
+    }
+    else {
+      // ::viewsTokenReplace() will run Xss::filterAdmin on the
+      // resulting string. We do the same here for consistency.
+      $value = Xss::filterAdmin($value);
     }
     return $value;
   }
@@ -575,7 +583,7 @@ abstract class StylePluginBase extends PluginBase {
               $group_content = $this->view->field[$field]->options['label'] . ': ' . $group_content;
             }
             if ($rendered) {
-              $grouping = $group_content;
+              $grouping = (string) $group_content;
               if ($rendered_strip) {
                 $group_content = $grouping = strip_tags(htmlspecialchars_decode($group_content));
               }
@@ -637,24 +645,106 @@ abstract class StylePluginBase extends PluginBase {
     }
 
     if (!isset($this->rendered_fields)) {
-      $this->rendered_fields = array();
+      $this->rendered_fields = [];
       $this->view->row_index = 0;
-      $keys = array_keys($this->view->field);
+      $field_ids = array_keys($this->view->field);
+
+      // Only tokens relating to field handlers preceding the one we invoke
+      // ::getRenderTokens() on are returned, so here we need to pick the last
+      // available field handler.
+      $render_tokens_field_id = end($field_ids);
 
       // If all fields have a field::access FALSE there might be no fields, so
       // there is no reason to execute this code.
-      if (!empty($keys)) {
-        foreach ($result as $count => $row) {
-          $this->view->row_index = $count;
-          foreach ($keys as $id) {
-            $this->rendered_fields[$count][$id] = $this->view->field[$id]->theme($row);
+      if (!empty($field_ids)) {
+        $renderer = $this->getRenderer();
+        /** @var \Drupal\views\Plugin\views\cache\CachePluginBase $cache_plugin */
+        $cache_plugin = $this->view->display_handler->getPlugin('cache');
+
+        /** @var \Drupal\views\ResultRow $row */
+        foreach ($result as $index => $row) {
+          $this->view->row_index = $index;
+
+          // Here we implement render caching for result rows. Since we never
+          // build a render array for single rows, given that style templates
+          // need individual field markup to support proper theming, we build
+          // a raw render array containing all field render arrays and cache it.
+          // This allows us to cache the markup of the various children, that is
+          // individual fields, which is then available for style template
+          // preprocess functions, later in the rendering workflow.
+          // @todo Fetch all the available cached row items in one single cache
+          //   get operation, once https://www.drupal.org/node/2453945 is fixed.
+          $data = [
+            '#pre_render' => [[$this, 'elementPreRenderRow']],
+            '#row' => $row,
+            '#cache' => [
+              'keys' => $cache_plugin->getRowCacheKeys($row),
+              'tags' => $cache_plugin->getRowCacheTags($row),
+            ],
+            '#cache_properties' => $field_ids,
+          ];
+          $renderer->addCacheableDependency($data, $this->view->storage);
+          // Views may be rendered both inside and outside a render context:
+          // - HTML views are rendered inside a render context: then we want to
+          //   use ::render(), so that attachments and cacheability are bubbled.
+          // - non-HTML views are rendered outside a render context: then we
+          //   want to use ::renderPlain(), so that no bubbling happens
+          if ($renderer->hasRenderContext()) {
+            $renderer->render($data);
+          }
+          else {
+            $renderer->renderPlain($data);
           }
 
-          $this->rowTokens[$count] = $this->view->field[$id]->getRenderTokens(array());
+          // Extract field output from the render array and post process it.
+          $fields = $this->view->field;
+          $rendered_fields = &$this->rendered_fields[$index];
+          $post_render_tokens = [];
+          foreach ($field_ids as $id)  {
+            $rendered_fields[$id] = $data[$id]['#markup'];
+            $tokens = $fields[$id]->postRender($row, $rendered_fields[$id]);
+            if ($tokens) {
+              $post_render_tokens += $tokens;
+            }
+          }
+
+          // Populate row tokens.
+          $this->rowTokens[$index] = $this->view->field[$render_tokens_field_id]->getRenderTokens([]);
+
+          // Replace post-render tokens.
+          if ($post_render_tokens) {
+            $placeholders = array_keys($post_render_tokens);
+            $values = array_values($post_render_tokens);
+            foreach ($this->rendered_fields[$index] as &$rendered_field) {
+              // Placeholders and rendered fields have been processed by the
+              // render system and are therefore safe.
+              $rendered_field = ViewsRenderPipelineMarkup::create(str_replace($placeholders, $values, $rendered_field));
+            }
+          }
         }
       }
+
       unset($this->view->row_index);
     }
+  }
+
+  /**
+   * #pre_render callback for view row field rendering.
+   *
+   * @see self::render()
+   *
+   * @param array $data
+   *   The element to #pre_render
+   *
+   * @return array
+   *   The processed element.
+   */
+  public function elementPreRenderRow(array $data) {
+    // Render row fields.
+    foreach ($this->view->field as $id => $field) {
+      $data[$id] = ['#markup' => $field->theme($data['#row'])];
+    }
+    return $data;
   }
 
   /**
@@ -665,7 +755,7 @@ abstract class StylePluginBase extends PluginBase {
    * @param string $field
    *   The ID of the field.
    *
-   * @return string|null
+   * @return \Drupal\Component\Render\MarkupInterface|null
    *   The output of the field, or NULL if it was empty.
    */
   public function getField($index, $field) {

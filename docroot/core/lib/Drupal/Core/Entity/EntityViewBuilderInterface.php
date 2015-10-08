@@ -29,14 +29,11 @@ interface EntityViewBuilderInterface {
    *   configured for the entity components, keyed by bundle name.
    * @param string $view_mode
    *   The view mode in which the entity is being viewed.
-   * @param string $langcode
-   *   (optional) For which language the entity should be build, defaults to
-   *   the current content language.
    */
-  public function buildComponents(array &$build, array $entities, array $displays, $view_mode, $langcode = NULL);
+  public function buildComponents(array &$build, array $entities, array $displays, $view_mode);
 
   /**
-   * Returns the render array for the provided entity.
+   * Builds the render array for the provided entity.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity to render.
@@ -58,7 +55,7 @@ interface EntityViewBuilderInterface {
   public function view(EntityInterface $entity, $view_mode = 'full', $langcode = NULL);
 
   /**
-   * Returns the render array for the provided entities.
+   * Builds the render array for the provided entities.
    *
    * @param array $entities
    *   An array of entities implementing EntityInterface to view.
@@ -89,7 +86,7 @@ interface EntityViewBuilderInterface {
   public function resetCache(array $entities = NULL);
 
   /**
-   * Returns a renderable array for the value of a single field in an entity.
+   * Builds a renderable array for the value of a single field in an entity.
    *
    * The resulting output is a fully themed field with label and multiple
    * values.
@@ -133,7 +130,7 @@ interface EntityViewBuilderInterface {
   public function viewField(FieldItemListInterface $items, $display_options = array());
 
   /**
-   * Returns a renderable array for a single field item.
+   * Builds a renderable array for a single field item.
    *
    * @param \Drupal\Core\Field\FieldItemInterface $item
    *   FieldItem to be displayed.

@@ -7,8 +7,6 @@
 
 namespace Drupal\system\Plugin\ImageToolkit\Operation\gd;
 
-use Drupal\Component\Utility\SafeMarkup;
-
 /**
  * Defines GD2 convert operation.
  *
@@ -38,7 +36,7 @@ class Convert extends GDImageToolkitOperationBase {
    */
   protected function validateArguments(array $arguments) {
     if (!in_array($arguments['extension'], $this->getToolkit()->getSupportedExtensions())) {
-      throw new \InvalidArgumentException(SafeMarkup::format("Invalid extension (@value) specified for the image 'convert' operation", array('@value' => $arguments['extension'])));
+      throw new \InvalidArgumentException("Invalid extension ({$arguments['extension']}) specified for the image 'convert' operation");
     }
     return $arguments;
   }
@@ -58,7 +56,8 @@ class Convert extends GDImageToolkitOperationBase {
       'width' => $width,
       'height' => $height,
       'extension' => $arguments['extension'],
-      'transparent_color' => $this->getToolkit()->getTransparentColor()
+      'transparent_color' => $this->getToolkit()->getTransparentColor(),
+      'is_temp' => TRUE,
     );
     if ($this->getToolkit()->apply('create_new', $data)) {
       if (imagecopyresampled($this->getToolkit()->getResource(), $original_resource, 0, 0, 0, 0, $width, $height, $width, $height)) {

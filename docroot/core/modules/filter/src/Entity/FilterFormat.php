@@ -41,6 +41,13 @@ use Drupal\filter\Plugin\FilterInterface;
  *   links = {
  *     "edit-form" = "/admin/config/content/formats/manage/{filter_format}",
  *     "disable" = "/admin/config/content/formats/manage/{filter_format}/disable"
+ *   },
+ *   config_export = {
+ *     "name",
+ *     "format",
+ *     "weight",
+ *     "roles",
+ *     "filters",
  *   }
  * )
  */
@@ -173,6 +180,10 @@ class FilterFormat extends ConfigEntityBase implements FilterFormatInterface, En
    * {@inheritdoc}
    */
   public function disable() {
+    if ($this->isFallbackFormat()) {
+      throw new \LogicException("The fallback text format '{$this->id()}' cannot be disabled.");
+    }
+
     parent::disable();
 
     // Allow modules to react on text format deletion.

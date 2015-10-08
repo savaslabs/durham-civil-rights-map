@@ -14,7 +14,7 @@ use Drupal\Core\Config\FileStorage;
  *
  * The methods will be used by both views test base classes.
  *
- * @see \Drupal\views\Tests\ViewUnitTestBase.
+ * @see \Drupal\views\Tests\ViewKernelTestBase.
  * @see \Drupal\views\Tests\ViewTestBase.
  */
 class ViewTestData {
@@ -75,7 +75,7 @@ class ViewTestData {
         ),
         'name' => array(
           'description' => "A person's name",
-          'type' => 'varchar',
+          'type' => 'varchar_ascii',
           'length' => 255,
           'not null' => TRUE,
           'default' => '',

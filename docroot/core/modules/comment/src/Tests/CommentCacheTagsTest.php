@@ -7,7 +7,9 @@
 
 namespace Drupal\comment\Tests;
 
+use Drupal\comment\CommentInterface;
 use Drupal\comment\CommentManagerInterface;
+use Drupal\comment\Entity\Comment;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\system\Tests\Entity\EntityWithUriCacheTagsTestBase;
@@ -27,6 +29,16 @@ class CommentCacheTagsTest extends EntityWithUriCacheTagsTestBase {
    * {@inheritdoc}
    */
   public static $modules = array('comment');
+
+  /**
+   * @var \Drupal\entity_test\Entity\EntityTest
+   */
+  protected $entityTestCamelid;
+
+  /**
+   * @var \Drupal\entity_test\Entity\EntityTest
+   */
+  protected $entityTestHippopotamidae;
 
   /**
    * {@inheritdoc}
@@ -54,15 +66,15 @@ class CommentCacheTagsTest extends EntityWithUriCacheTagsTestBase {
 
     // Display comments in a flat list; threaded comments are not render cached.
     $field = FieldConfig::loadByName('entity_test', 'bar', 'comment');
-    $field->settings['default_mode'] = CommentManagerInterface::COMMENT_MODE_FLAT;
+    $field->setSetting('default_mode', CommentManagerInterface::COMMENT_MODE_FLAT);
     $field->save();
 
-    // Create a "Camelids" test entity.
-    $entity_test = entity_create('entity_test', array(
+    // Create a "Camelids" test entity that the comment will be assigned to.
+    $this->entityTestCamelid = entity_create('entity_test', array(
       'name' => 'Camelids',
       'type' => 'bar',
     ));
-    $entity_test->save();
+    $this->entityTestCamelid->save();
 
     // Create a "Llama" comment.
     $comment = entity_create('comment', array(
@@ -71,7 +83,7 @@ class CommentCacheTagsTest extends EntityWithUriCacheTagsTestBase {
         'value' => 'The name "llama" was adopted by European settlers from native Peruvians.',
         'format' => 'plain_text',
       ),
-      'entity_id' => $entity_test->id(),
+      'entity_id' => $this->entityTestCamelid->id(),
       'entity_type' => 'entity_test',
       'field_name' => 'comment',
       'status' => \Drupal\comment\CommentInterface::PUBLISHED,
@@ -81,16 +93,53 @@ class CommentCacheTagsTest extends EntityWithUriCacheTagsTestBase {
     return $comment;
   }
 
+  /**
+   * Test that comments correctly invalidate the cache tag of their host entity.
+   */
+  public function testCommentEntity() {
+    $this->verifyPageCache($this->entityTestCamelid->urlInfo(), 'MISS');
+    $this->verifyPageCache($this->entityTestCamelid->urlInfo(), 'HIT');
+
+    // Create a "Hippopotamus" comment.
+    $this->entityTestHippopotamidae = entity_create('entity_test', array(
+      'name' => 'Hippopotamus',
+      'type' => 'bar',
+    ));
+    $this->entityTestHippopotamidae->save();
+
+    $this->verifyPageCache($this->entityTestHippopotamidae->urlInfo(), 'MISS');
+    $this->verifyPageCache($this->entityTestHippopotamidae->urlInfo(), 'HIT');
+
+    $hippo_comment = Comment::create(array(
+      'subject' => 'Hippopotamus',
+      'comment_body' => array(
+        'value' => 'The common hippopotamus (Hippopotamus amphibius), or hippo, is a large, mostly herbivorous mammal in sub-Saharan Africa',
+        'format' => 'plain_text',
+      ),
+      'entity_id' => $this->entityTestHippopotamidae->id(),
+      'entity_type' => 'entity_test',
+      'field_name' => 'comment',
+      'status' => CommentInterface::PUBLISHED,
+    ));
+    $hippo_comment->save();
+
+    // Ensure that a new comment only invalidates the commented entity.
+    $this->verifyPageCache($this->entityTestCamelid->urlInfo(), 'HIT');
+    $this->verifyPageCache($this->entityTestHippopotamidae->urlInfo(), 'MISS');
+    $this->assertText($hippo_comment->getSubject());
+
+    // Ensure that updating an existing comment only invalidates the commented
+    // entity.
+    $this->entity->save();
+    $this->verifyPageCache($this->entityTestCamelid->urlInfo(), 'MISS');
+    $this->verifyPageCache($this->entityTestHippopotamidae->urlInfo(), 'HIT');
+  }
 
   /**
    * {@inheritdoc}
    */
   protected function getAdditionalCacheContextsForEntity(EntityInterface $entity) {
-    return [
-      // Field access for the user picture rendered as part of the node that
-      // this comment is created on.
-      'user.permissions',
-    ];
+    return [];
   }
 
   /**

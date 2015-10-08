@@ -15,6 +15,17 @@ use Drupal\Core\Form\FormStateInterface;
  * Formats as a pair of password fields, which do not validate unless the two
  * entered passwords match.
  *
+ * Usage example:
+ * @code
+ * $form['pass'] = array(
+ *   '#type' => 'password_confirm',
+ *   '#title' => t('Password'),
+ *   '#size' => 25,
+ * );
+ * @endcode
+ *
+ * @see \Drupal\Core\Render\Element\Password
+ *
  * @FormElement("password_confirm")
  */
 class PasswordConfirm extends FormElement {
@@ -26,6 +37,7 @@ class PasswordConfirm extends FormElement {
     $class = get_class($this);
     return array(
       '#input' => TRUE,
+      '#markup' => '',
       '#process' => array(
         array($class, 'processPasswordConfirm'),
       ),
@@ -38,9 +50,20 @@ class PasswordConfirm extends FormElement {
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if ($input === FALSE) {
-      $element += array('#default_value' => array());
-      return $element['#default_value'] + array('pass1' => '', 'pass2' => '');
+      $element += ['#default_value' => []];
+      return $element['#default_value'] + ['pass1' => '', 'pass2' => ''];
     }
+    $value = ['pass1' => '', 'pass2' => ''];
+    // Throw out all invalid array keys; we only allow pass1 and pass2.
+    foreach ($value as $allowed_key => $default) {
+      // These should be strings, but allow other scalars since they might be
+      // valid input in programmatic form submissions. Any nested array values
+      // are ignored.
+      if (isset($input[$allowed_key]) && is_scalar($input[$allowed_key])) {
+        $value[$allowed_key] = (string) $input[$allowed_key];
+      }
+    }
+    return $value;
   }
 
   /**
@@ -52,14 +75,16 @@ class PasswordConfirm extends FormElement {
       '#title' => t('Password'),
       '#value' => empty($element['#value']) ? NULL : $element['#value']['pass1'],
       '#required' => $element['#required'],
-      '#attributes' => array('class' => array('password-field')),
+      '#attributes' => array('class' => array('password-field', 'js-password-field')),
+      '#error_no_message' => TRUE,
     );
     $element['pass2'] =  array(
       '#type' => 'password',
       '#title' => t('Confirm password'),
       '#value' => empty($element['#value']) ? NULL : $element['#value']['pass2'],
       '#required' => $element['#required'],
-      '#attributes' => array('class' => array('password-confirm')),
+      '#attributes' => array('class' => array('password-confirm', 'js-password-confirm')),
+      '#error_no_message' => TRUE,
     );
     $element['#element_validate'] = array(array(get_called_class(), 'validatePasswordConfirm'));
     $element['#tree'] = TRUE;
@@ -77,7 +102,7 @@ class PasswordConfirm extends FormElement {
   public static function validatePasswordConfirm(&$element, FormStateInterface $form_state, &$complete_form) {
     $pass1 = trim($element['pass1']['#value']);
     $pass2 = trim($element['pass2']['#value']);
-    if (!empty($pass1) || !empty($pass2)) {
+    if (strlen($pass1) > 0 || strlen($pass2) > 0) {
       if (strcmp($pass1, $pass2)) {
         $form_state->setError($element, t('The specified passwords do not match.'));
       }

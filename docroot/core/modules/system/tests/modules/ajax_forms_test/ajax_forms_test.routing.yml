@@ -29,3 +29,4 @@ ajax_forms_test.lazy_load_form:
     _form: '\Drupal\ajax_forms_test\Form\AjaxFormsTestLazyLoadForm'
   requirements:
     _access: 'TRUE'
+

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Common\AddFeedTest.
+ * Contains \Drupal\system\Tests\Common\AddFeedTest.
  */
 
 namespace Drupal\system\Tests\Common;
@@ -61,9 +61,14 @@ class AddFeedTest extends WebTestBase {
       $build['#attached']['feed'][] = [$feed_info['url'], $feed_info['title']];
     }
 
-    drupal_process_attached($build);
-
-    $this->setRawContent(drupal_get_html_head());
+    // Use the bare HTML page renderer to render our links.
+    $renderer = $this->container->get('bare_html_page_renderer');
+    $response = $renderer->renderBarePage(
+      $build, '', $this->container->get('theme.manager')->getActiveTheme()->getName()
+    );
+    // Glean the content from the response object.
+    $this->setRawContent($response->getContent());
+    // Assert that the content contains the RSS links we specified.
     foreach ($urls as $description => $feed_info) {
       $this->assertPattern($this->urlToRSSLinkPattern($feed_info['url'], $feed_info['title']), format_string('Found correct feed header for %description', array('%description' => $description)));
     }
@@ -82,7 +87,7 @@ class AddFeedTest extends WebTestBase {
   /**
    * Checks that special characters are correctly escaped.
    *
-   * @see http://drupal.org/node/1211668
+   * @see https://www.drupal.org/node/1211668
    */
   function testFeedIconEscaping() {
     $variables = array(
@@ -90,8 +95,7 @@ class AddFeedTest extends WebTestBase {
       '#url' => 'node',
       '#title' => '<>&"\'',
     );
-    $text = drupal_render($variables);
-    preg_match('/title="(.*?)"/', $text, $matches);
-    $this->assertEqual($matches[1], 'Subscribe to &amp;&quot;&#039;', 'feed_icon template escapes reserved HTML characters.');
+    $text = \Drupal::service('renderer')->renderRoot($variables);
+    $this->assertEqual(trim(strip_tags($text)), 'Subscribe to &lt;&gt;&amp;&quot;&#039;', 'feed_icon template escapes reserved HTML characters.');
   }
 }

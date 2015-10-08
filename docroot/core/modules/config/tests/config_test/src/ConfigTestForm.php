@@ -2,18 +2,47 @@
 
 /**
  * @file
- * Contains Drupal\config_test\ConfigTestForm.
+ * Contains \Drupal\config_test\ConfigTestForm.
  */
 
 namespace Drupal\config_test;
 
 use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Form controller for the test config edit forms.
  */
 class ConfigTestForm extends EntityForm {
+
+  /**
+   * The entity query.
+   *
+   * @var \Drupal\Core\Entity\Query\QueryFactory
+   */
+  protected $entityQuery;
+
+  /**
+   * Constructs a new ConfigTestForm.
+   *
+   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
+   *   The entity query.
+   */
+  public function __construct(QueryFactory $entity_query) {
+    $this->entityQuery = $entity_query;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity.query')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -33,7 +62,7 @@ class ConfigTestForm extends EntityForm {
       '#default_value' => $entity->id(),
       '#required' => TRUE,
       '#machine_name' => array(
-        'exists' => 'config_test_load',
+        'exists' => [$this, 'exists'],
         'replace_pattern' => '[^a-z0-9_.]+',
       ),
     );
@@ -98,6 +127,13 @@ class ConfigTestForm extends EntityForm {
       '#access' => !empty($size),
     );
 
+    $form['langcode'] = array(
+      '#type' => 'language_select',
+      '#title' => t('Language'),
+      '#languages' => LanguageInterface::STATE_ALL,
+      '#default_value' => $entity->language()->getId(),
+    );
+
     $form['actions'] = array('#type' => 'actions');
     $form['actions']['submit'] = array(
       '#type' => 'submit',
@@ -140,6 +176,27 @@ class ConfigTestForm extends EntityForm {
     }
 
     $form_state->setRedirectUrl($this->entity->urlInfo('collection'));
+  }
+
+  /**
+   * Determines if the entity already exists.
+   *
+   * @param string|int $entity_id
+   *   The entity ID.
+   * @param array $element
+   *   The form element.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return bool
+   *   TRUE if the entity exists, FALSE otherwise.
+   */
+  public function exists($entity_id, array $element, FormStateInterface $form_state) {
+    /** @var \Drupal\Core\Config\Entity\ConfigEntityInterface $entity */
+    $entity = $form_state->getFormObject()->getEntity();
+    return (bool) $this->entityQuery->get($entity->getEntityTypeId())
+      ->condition($entity->getEntityType()->getKey('id'), $entity_id)
+      ->execute();
   }
 
 }

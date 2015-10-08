@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\config\Tests\ConfigEntityUnitTest.
+ * Contains \Drupal\config\Tests\ConfigEntityUnitTest.
  */
 
 namespace Drupal\config\Tests;
@@ -16,6 +16,15 @@ use Drupal\simpletest\KernelTestBase;
  * @group config
  */
 class ConfigEntityUnitTest extends KernelTestBase {
+
+  /**
+   * Exempt from strict schema checking.
+   *
+   * @see \Drupal\Core\Config\Testing\ConfigSchemaChecker
+   *
+   * @var bool
+   */
+  protected $strictConfigSchema = FALSE;
 
   /**
    * Modules to enable.
@@ -89,6 +98,20 @@ class ConfigEntityUnitTest extends KernelTestBase {
     foreach ($entities as $entity) {
       $this->assertIdentical($entity->get('style'), $style, 'The loaded entity has the correct style value specified.');
     }
+
+    // Test that schema type enforcement can be overridden by trusting the data.
+    $entity = $this->storage->create(array(
+      'id' => $this->randomMachineName(),
+      'label' => $this->randomString(),
+      'style' => 999
+    ));
+    $entity->save();
+    $this->assertIdentical('999', $entity->style);
+    $entity->style = 999;
+    $entity->trustData()->save();
+    $this->assertIdentical(999, $entity->style);
+    $entity->save();
+    $this->assertIdentical('999', $entity->style);
   }
 
 }

@@ -9,7 +9,7 @@ namespace Drupal\views\Tests\Entity;
 
 use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\node\Entity\NodeType;
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 
 /**
@@ -18,14 +18,14 @@ use Drupal\views\Views;
  * @group views
  * @see \Drupal\views\Entity\Render\RendererBase
  */
-class RowEntityRenderersTest extends ViewUnitTestBase {
+class RowEntityRenderersTest extends ViewKernelTestBase {
 
   /**
    * Modules to enable.
    *
    * @var array
    */
-  public static $modules = array('field', 'filter', 'text', 'node', 'user', 'language', 'entity_reference', 'views_test_language');
+  public static $modules = ['field', 'filter', 'text', 'node', 'user', 'language', 'views_test_language'];
 
   /**
    * Views used by this test.
@@ -211,6 +211,7 @@ class RowEntityRenderersTest extends ViewUnitTestBase {
    */
   protected function assertTranslations($display, $renderer_id, array $expected, $message = '', $group = 'Other') {
     $view = Views::getView('test_entity_row_renderers');
+    $view->storage->invalidateCaches();
     $view->setDisplay($display);
     $view->getDisplay()->setOption('rendering_language', $renderer_id);
     $view->preview();
@@ -219,7 +220,7 @@ class RowEntityRenderersTest extends ViewUnitTestBase {
     foreach ($expected as $index => $expected_output) {
       if (!empty($view->result[$index])) {
         $build = $view->rowPlugin->render($view->result[$index]);
-        $output = drupal_render($build);
+        $output = \Drupal::service('renderer')->renderRoot($build);
         $result = strpos($output, $expected_output) !== FALSE;
         if (!$result) {
           break;

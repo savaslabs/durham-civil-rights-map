@@ -10,6 +10,8 @@ namespace Drupal\comment\Controller;
 use Drupal\comment\CommentInterface;
 use Drupal\comment\CommentManagerInterface;
 use Drupal\comment\Plugin\Field\FieldType\CommentItemInterface;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Cache\CacheableResponseInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
@@ -128,7 +130,8 @@ class CommentController extends ControllerBase {
       // Find the current display page for this comment.
       $page = $this->entityManager()->getStorage('comment')->getDisplayOrdinal($comment, $field_definition->getSetting('default_mode'), $field_definition->getSetting('per_page'));
       // @todo: Cleaner sub request handling.
-      $redirect_request = Request::create($entity->url(), 'GET', $request->query->all(), $request->cookies->all(), array(), $request->server->all());
+      $subrequest_url = $entity->urlInfo()->toString(TRUE);
+      $redirect_request = Request::create($subrequest_url->getGeneratedUrl(), 'GET', $request->query->all(), $request->cookies->all(), array(), $request->server->all());
       $redirect_request->query->set('page', $page);
       // Carry over the session to the subrequest.
       if ($session = $request->getSession()) {
@@ -136,7 +139,16 @@ class CommentController extends ControllerBase {
       }
       // @todo: Convert the pager to use the request object.
       $request->query->set('page', $page);
-      return $this->httpKernel->handle($redirect_request, HttpKernelInterface::SUB_REQUEST);
+      $response = $this->httpKernel->handle($redirect_request, HttpKernelInterface::SUB_REQUEST);
+      if ($response instanceof CacheableResponseInterface) {
+        // @todo Once path aliases have cache tags (see
+        //   https://www.drupal.org/node/2480077), add test coverage that
+        //   the cache tag for a commented entity's path alias is added to the
+        //   comment's permalink response, because there can be blocks or
+        //   other content whose renderings depend on the subrequest's URL.
+        $response->addCacheableDependency($subrequest_url);
+      }
+      return $response;
     }
     throw new NotFoundHttpException();
   }
@@ -185,9 +197,6 @@ class CommentController extends ControllerBase {
    * There are several cases that have to be handled, including:
    *   - replies to comments
    *   - replies to entities
-   *   - attempts to reply to entities that can no longer accept comments
-   *   - respecting access permissions ('access comments', 'post comments',
-   *     etc.)
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The current request object.
@@ -201,57 +210,24 @@ class CommentController extends ControllerBase {
    *
    * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
    * @return array|\Symfony\Component\HttpFoundation\RedirectResponse
-   *   One of the following:
    *   An associative array containing:
    *   - An array for rendering the entity or parent comment.
    *     - comment_entity: If the comment is a reply to the entity.
    *     - comment_parent: If the comment is a reply to another comment.
    *   - comment_form: The comment form as a renderable array.
-   *   - A redirect response to current node:
-   *     - If user is not authorized to post comments.
-   *     - If parent comment doesn't belong to current entity.
-   *     - If user is not authorized to view comments.
-   *     - If current entity comments are disable.
    */
   public function getReplyForm(Request $request, EntityInterface $entity, $field_name, $pid = NULL) {
-    // Check if entity and field exists.
-    $fields = $this->commentManager->getFields($entity->getEntityTypeId());
-    if (empty($fields[$field_name])) {
-      throw new NotFoundHttpException();
-    }
-
     $account = $this->currentUser();
     $uri = $entity->urlInfo()->setAbsolute();
     $build = array();
 
-    // Check if the user has the proper permissions.
-    if (!$account->hasPermission('post comments')) {
-      drupal_set_message($this->t('You are not authorized to post comments.'), 'error');
-      return new RedirectResponse($uri->toString());
-    }
-
     // The user is not just previewing a comment.
     if ($request->request->get('op') != $this->t('Preview')) {
-      $status = $entity->{$field_name}->status;
-      if ($status != CommentItemInterface::OPEN) {
-        drupal_set_message($this->t("This discussion is closed: you can't post new comments."), 'error');
-        return new RedirectResponse($uri->toString());
-      }
 
       // $pid indicates that this is a reply to a comment.
       if ($pid) {
-        // Check if the user has the proper permissions.
-        if (!$account->hasPermission('access comments')) {
-          drupal_set_message($this->t('You are not authorized to view comments.'), 'error');
-          return new RedirectResponse($uri->toString());
-        }
         // Load the parent comment.
         $comment = $this->entityManager()->getStorage('comment')->load($pid);
-        // Check if the parent comment is published and belongs to the entity.
-        if (!$comment->isPublished() || ($comment->getCommentedEntityId() != $entity->id())) {
-          drupal_set_message($this->t('The comment you are replying to does not exist.'), 'error');
-          return new RedirectResponse($uri->toString());
-        }
         // Display the parent comment.
         $build['comment_parent'] = $this->entityManager()->getViewBuilder('comment')->view($comment);
       }
@@ -281,6 +257,53 @@ class CommentController extends ControllerBase {
     $build['comment_form'] = $this->entityFormBuilder()->getForm($comment);
 
     return $build;
+  }
+
+  /**
+   * Access check for the reply form.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity this comment belongs to.
+   * @param string $field_name
+   *   The field_name to which the comment belongs.
+   * @param int $pid
+   *   (optional) Some comments are replies to other comments. In those cases,
+   *   $pid is the parent comment's comment ID. Defaults to NULL.
+   *
+   * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   An access result
+   */
+  public function replyFormAccess(EntityInterface $entity, $field_name, $pid = NULL) {
+    // Check if entity and field exists.
+    $fields = $this->commentManager->getFields($entity->getEntityTypeId());
+    if (empty($fields[$field_name])) {
+      throw new NotFoundHttpException();
+    }
+
+    $account = $this->currentUser();
+
+    // Check if the user has the proper permissions.
+    $access = AccessResult::allowedIfHasPermission($account, 'post comments');
+
+    $status = $entity->{$field_name}->status;
+    $access = $access->andIf(AccessResult::allowedIf($status == CommentItemInterface::OPEN)
+      ->cacheUntilEntityChanges($entity));
+
+    // $pid indicates that this is a reply to a comment.
+    if ($pid) {
+      // Check if the user has the proper permissions.
+      $access = $access->andIf(AccessResult::allowedIfHasPermission($account, 'access comments'));
+
+      /// Load the parent comment.
+      $comment = $this->entityManager()->getStorage('comment')->load($pid);
+      // Check if the parent comment is published and belongs to the entity.
+      $access = $access->andIf(AccessResult::allowedIf($comment && $comment->isPublished() && $comment->getCommentedEntityId() == $entity->id()));
+      if ($comment) {
+        $access->cacheUntilEntityChanges($comment);
+      }
+    }
+    return $access;
   }
 
   /**
@@ -316,7 +339,7 @@ class CommentController extends ControllerBase {
       $query = $page_number ? array('page' => $page_number) : NULL;
       $links[$nid] = array(
         'new_comment_count' => (int) $new,
-        'first_new_comment_link' => $this->getUrlGenerator()->generateFromPath('node/' . $node->id(), array('query' => $query, 'fragment' => 'new')),
+        'first_new_comment_link' => $this->getUrlGenerator()->generateFromRoute('entity.node.canonical', array('node' => $node->id()), array('query' => $query, 'fragment' => 'new')),
       );
     }
 

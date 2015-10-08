@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\taxonomy\Plugin\views\argument\IndexTid.
+ * Contains \Drupal\taxonomy\Plugin\views\argument\IndexTid.
  */
 
 namespace Drupal\taxonomy\Plugin\views\argument;
@@ -24,7 +24,7 @@ class IndexTid extends ManyToOne {
     $titles = array();
     $terms = Term::loadMultiple($this->value);
     foreach ($terms as $term) {
-      $titles[] = SafeMarkup::checkPlain(\Drupal::entityManager()->getTranslationFromContext($term)->label());
+      $titles[] = \Drupal::entityManager()->getTranslationFromContext($term)->label();
     }
     return $titles;
   }

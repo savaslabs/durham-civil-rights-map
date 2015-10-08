@@ -27,6 +27,13 @@ use Drupal\migrate\Plugin\RequirementsInterface;
 abstract class DestinationBase extends PluginBase implements MigrateDestinationInterface, RequirementsInterface {
 
   /**
+   * Indicates whether the destination can be rolled back.
+   *
+   * @var bool
+   */
+  protected $supportsRollback = FALSE;
+
+  /**
    * The migration.
    *
    * @var \Drupal\migrate\Entity\MigrationInterface
@@ -60,59 +67,16 @@ abstract class DestinationBase extends PluginBase implements MigrateDestinationI
   }
 
   /**
-   * Modify the Row before it is imported.
+   * {@inheritdoc}
    */
-  public function preImport() {
-    // By default we do nothing.
-  }
-
-  /**
-   * Modify the Row before it is rolled back.
-   */
-  public function preRollback() {
+  public function rollback(array $destination_identifier) {
     // By default we do nothing.
   }
 
   /**
    * {@inheritdoc}
    */
-  public function postImport() {
-    // By default we do nothing.
+  public function supportsRollback() {
+    return $this->supportsRollback;
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function postRollback() {
-    // By default we do nothing.
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function rollbackMultiple(array $destination_identifiers) {
-    // By default we do nothing.
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCreated() {
-    // TODO: Implement getCreated() method.
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getUpdated() {
-    // TODO: Implement getUpdated() method.
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function resetStats() {
-    // TODO: Implement resetStats() method.
-  }
-
 }

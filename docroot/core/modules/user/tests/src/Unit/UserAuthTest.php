@@ -52,7 +52,7 @@ class UserAuthTest extends UnitTestCase {
   protected $username = 'test_user';
 
   /**
-   * The test password
+   * The test password.
    *
    * @var string
    */
@@ -74,7 +74,7 @@ class UserAuthTest extends UnitTestCase {
 
     $this->testUser = $this->getMockBuilder('Drupal\user\Entity\User')
       ->disableOriginalConstructor()
-      ->setMethods(array('id', 'setPassword', 'save'))
+      ->setMethods(array('id', 'setPassword', 'save', 'getPassword'))
       ->getMock();
 
     $this->userAuth = new UserAuth($entity_manager, $this->passwordService);
@@ -135,7 +135,7 @@ class UserAuthTest extends UnitTestCase {
 
     $this->passwordService->expects($this->once())
       ->method('check')
-      ->with($this->password, $this->testUser)
+      ->with($this->password, $this->testUser->getPassword())
       ->will($this->returnValue(FALSE));
 
     $this->assertFalse($this->userAuth->authenticate($this->username, $this->password));
@@ -158,10 +158,37 @@ class UserAuthTest extends UnitTestCase {
 
     $this->passwordService->expects($this->once())
       ->method('check')
-      ->with($this->password, $this->testUser)
+      ->with($this->password, $this->testUser->getPassword())
       ->will($this->returnValue(TRUE));
 
     $this->assertsame(1, $this->userAuth->authenticate($this->username, $this->password));
+  }
+
+  /**
+   * Tests the authenticate method with a correct password.
+   *
+   * We discovered in https://www.drupal.org/node/2563751 that logging in with a
+   * password that is literally "0" was not possible. This test ensures that
+   * this regression can't happen again.
+   *
+   * @covers ::authenticate
+   */
+  public function testAuthenticateWithZeroPassword() {
+    $this->testUser->expects($this->once())
+      ->method('id')
+      ->will($this->returnValue(2));
+
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(array('name' => $this->username))
+      ->will($this->returnValue(array($this->testUser)));
+
+    $this->passwordService->expects($this->once())
+      ->method('check')
+      ->with(0, 0)
+      ->will($this->returnValue(TRUE));
+
+    $this->assertsame(2, $this->userAuth->authenticate($this->username, 0));
   }
 
   /**
@@ -186,11 +213,11 @@ class UserAuthTest extends UnitTestCase {
 
     $this->passwordService->expects($this->once())
       ->method('check')
-      ->with($this->password, $this->testUser)
+      ->with($this->password, $this->testUser->getPassword())
       ->will($this->returnValue(TRUE));
     $this->passwordService->expects($this->once())
-      ->method('userNeedsNewHash')
-      ->with($this->testUser)
+      ->method('needsRehash')
+      ->with($this->testUser->getPassword())
       ->will($this->returnValue(TRUE));
 
     $this->assertsame(1, $this->userAuth->authenticate($this->username, $this->password));

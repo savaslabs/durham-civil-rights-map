@@ -22,12 +22,13 @@
  * Help block (provided by the core Help module), if the block is displayed on
  * that page. The module overview help information is displayed by the Help
  * module. It can be accessed from the page at admin/help or from the Extend
- * Extend page.
+ * Extend page. If a module implements hook_help() the help system expects
+ * module overview help to be provided.
  *
  * For detailed usage examples of:
  * - Module overview help, see content_translation_help(). Module overview
  *   help should follow
- *   @link https://drupal.org/node/632280 the standard help template. @endlink
+ *   @link https://www.drupal.org/node/632280 the standard help template. @endlink
  * - Page-specific help using only routes, see book_help().
  * - Page-specific help using routes and $request, see block_help().
  *
@@ -46,7 +47,7 @@ function hook_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_
   switch ($route_name) {
     // Main module help for the block module.
     case 'help.page.block':
-      return '<p>' . t('Blocks are boxes of content rendered into an area, or region, of a web page. The default theme Bartik, for example, implements the regions "Sidebar first", "Sidebar second", "Featured", "Content", "Header", "Footer", etc., and a block may appear in any one of these areas. The <a href="!blocks">blocks administration page</a> provides a drag-and-drop interface for assigning a block to a region, and for controlling the order of blocks within regions.', array('!blocks' => \Drupal::url('block.admin_display'))) . '</p>';
+      return '<p>' . t('Blocks are boxes of content rendered into an area, or region, of a web page. The default theme Bartik, for example, implements the regions "Sidebar first", "Sidebar second", "Featured", "Content", "Header", "Footer", etc., and a block may appear in any one of these areas. The <a href=":blocks">blocks administration page</a> provides a drag-and-drop interface for assigning a block to a region, and for controlling the order of blocks within regions.', array(':blocks' => \Drupal::url('block.admin_display'))) . '</p>';
 
     // Help for another path in the block module.
     case 'block.admin_display':

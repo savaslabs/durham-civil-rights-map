@@ -117,7 +117,7 @@ class LocaleConfigTranslationTest extends WebTestBase {
 
     // Formatting the date 8 / 27 / 1985 @ 13:37 EST with pattern D should
     // display "Tue".
-    $formatted_date = format_date(494015820, $type = 'medium', NULL, NULL, $this->langcode);
+    $formatted_date = format_date(494015820, $type = 'medium', NULL, 'America/New_York', $this->langcode);
     $this->assertEqual($formatted_date, 'Tue', 'Got the right formatted date using the date format translation pattern.');
 
     // Assert strings from image module config are not available.
@@ -125,7 +125,7 @@ class LocaleConfigTranslationTest extends WebTestBase {
     $this->assertFalse($string, 'Configuration strings have been created upon installation.');
 
     // Enable the image module.
-    $this->drupalPostForm('admin/modules', array('modules[Field types][image][enable]' => "1"), t('Save configuration'));
+    $this->drupalPostForm('admin/modules', array('modules[Field types][image][enable]' => "1"), t('Install'));
     $this->rebuildContainer();
 
     $string = $this->storage->findString(array('source' => 'Medium (220×220)', 'context' => '', 'type' => 'configuration'));
@@ -204,12 +204,12 @@ class LocaleConfigTranslationTest extends WebTestBase {
   public function testOptionalConfiguration() {
     $this->assertNodeConfig(FALSE, FALSE);
     // Enable the node module.
-    $this->drupalPostForm('admin/modules', ['modules[Core][node][enable]' => "1"], t('Save configuration'));
+    $this->drupalPostForm('admin/modules', ['modules[Core][node][enable]' => "1"], t('Install'));
     $this->drupalPostForm(NULL, [], t('Continue'));
     $this->rebuildContainer();
     $this->assertNodeConfig(TRUE, FALSE);
     // Enable the views module (which node provides some optional config for).
-    $this->drupalPostForm('admin/modules', ['modules[Core][views][enable]' => "1"], t('Save configuration'));
+    $this->drupalPostForm('admin/modules', ['modules[Core][views][enable]' => "1"], t('Install'));
     $this->rebuildContainer();
     $this->assertNodeConfig(TRUE, TRUE);
   }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Plugin\views\relationship\GroupwiseMax.
+ * Contains \Drupal\views\Plugin\views\relationship\GroupwiseMax.
  */
 
 namespace Drupal\views\Plugin\views\relationship;
@@ -198,7 +198,7 @@ class GroupwiseMax extends RelationshipPluginBase {
 
       // Add the sort from the options to the default display.
       // This is broken, in that the sort order field also gets added as a
-      // select field. See http://drupal.org/node/844910.
+      // select field. See https://www.drupal.org/node/844910.
       // We work around this further down.
       $sort = $options['subquery_sort'];
       list($sort_table, $sort_field) = explode('.', $sort);
@@ -238,7 +238,7 @@ class GroupwiseMax extends RelationshipPluginBase {
     // somewhat so we can get the SQL query from it.
     $subquery = $temp_view->build_info['query'];
 
-    // Workaround until http://drupal.org/node/844910 is fixed:
+    // Workaround until https://www.drupal.org/node/844910 is fixed:
     // Remove all fields from the SELECT except the base id.
     $fields = &$subquery->getFields();
     foreach (array_keys($fields) as $field_name) {
@@ -269,7 +269,7 @@ class GroupwiseMax extends RelationshipPluginBase {
     // Not sure why, but our sort order clause doesn't have a table.
     // TODO: the call to addHandler() above to add the sort handler is probably
     // wrong -- needs attention from someone who understands it.
-    // In the meantime, this works, but with a leap of faith...
+    // In the meantime, this works, but with a leap of faith.
     $orders = &$subquery->getOrderBy();
     foreach ($orders as $order_key => $order) {
       // But if we're using a whole view, we don't know what we have!

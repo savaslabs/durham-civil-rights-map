@@ -7,10 +7,8 @@
 
 namespace Drupal\Core\Language;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Drupal\Core\StringTranslation\TranslationInterface;
-use Drupal\Core\StringTranslation\TranslationWrapper;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
 
 /**
@@ -18,13 +16,6 @@ use Drupal\Core\Url;
  */
 class LanguageManager implements LanguageManagerInterface {
   use DependencySerializationTrait;
-
-  /**
-   * The string translation service.
-   *
-   * @var \Drupal\Core\StringTranslation\TranslationInterface
-   */
-  protected $translation;
 
   /**
    * A static cache of translated language lists.
@@ -59,22 +50,6 @@ class LanguageManager implements LanguageManagerInterface {
   /**
    * {@inheritdoc}
    */
-  public function setTranslation(TranslationInterface $translation) {
-    $this->translation = $translation;
-  }
-
-  /**
-   * Translates a string to the current language or to a given language.
-   *
-   * @see \Drupal\Core\StringTranslation\TranslationInterface()
-   */
-  protected function t($string, array $args = array(), array $options = array()) {
-    return $this->translation ? $this->translation->translate($string, $args, $options) : SafeMarkup::format($string, $args);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function isMultilingual() {
     return FALSE;
   }
@@ -87,28 +62,43 @@ class LanguageManager implements LanguageManagerInterface {
   }
 
   /**
-   * {@inheritdoc}
+   * Returns information about all defined language types.
+   *
+   * Defines the three core language types:
+   * - Interface language is the only configurable language type in core. It is
+   *   used by t() as the default language if none is specified.
+   * - Content language is by default non-configurable and inherits the
+   *   interface language negotiated value. It is used by the Field API to
+   *   determine the display language for fields if no explicit value is
+   *   specified.
+   * - URL language is by default non-configurable and is determined through the
+   *   URL language negotiation method or the URL fallback language negotiation
+   *   method if no language can be detected. It is used by l() as the default
+   *   language if none is specified.
+   *
+   * @return array
+   *   An associative array of language type information arrays keyed by
+   *   language type machine name, in the format of
+   *   hook_language_types_info().
    */
   public function getDefinedLanguageTypesInfo() {
-    // This needs to have the same return value as
-    // language_language_type_info(), so that even if the Language module is
-    // not defined, users of this information, such as the Views module, can
-    // access names and descriptions of the default language types.
-    return array(
+    $this->definedLanguageTypesInfo = array(
       LanguageInterface::TYPE_INTERFACE => array(
-        'name' => $this->t('User interface text'),
-        'description' => $this->t('Order of language detection methods for user interface text. If a translation of user interface text is available in the detected language, it will be displayed.'),
+        'name' => new TranslatableMarkup('Interface text'),
+        'description' => new TranslatableMarkup('Order of language detection methods for interface text. If a translation of interface text is available in the detected language, it will be displayed.'),
         'locked' => TRUE,
       ),
       LanguageInterface::TYPE_CONTENT => array(
-        'name' => $this->t('Content'),
-        'description' => $this->t('Order of language detection methods for content. If a version of content is available in the detected language, it will be displayed.'),
+        'name' => new TranslatableMarkup('Content'),
+        'description' => new TranslatableMarkup('Order of language detection methods for content. If a version of content is available in the detected language, it will be displayed.'),
         'locked' => TRUE,
       ),
       LanguageInterface::TYPE_URL => array(
         'locked' => TRUE,
       ),
     );
+
+    return $this->definedLanguageTypesInfo;
   }
 
   /**
@@ -172,15 +162,15 @@ class LanguageManager implements LanguageManagerInterface {
    */
   public function getLanguageName($langcode) {
     if ($langcode == LanguageInterface::LANGCODE_NOT_SPECIFIED) {
-      return $this->t('None');
+      return new TranslatableMarkup('None');
     }
     if ($language = $this->getLanguage($langcode)) {
       return $language->getName();
     }
     if (empty($langcode)) {
-      return $this->t('Unknown');
+      return new TranslatableMarkup('Unknown');
     }
-    return $this->t('Unknown (@langcode)', array('@langcode' => $langcode));
+    return new TranslatableMarkup('Unknown (@langcode)', array('@langcode' => $langcode));
   }
 
   /**
@@ -192,18 +182,19 @@ class LanguageManager implements LanguageManagerInterface {
     $locked_language = array(
       'default' => FALSE,
       'locked' => TRUE,
+      'direction' => LanguageInterface::DIRECTION_LTR,
     );
     // This is called very early while initializing the language system. Prevent
-    // early t() calls by using the TranslationWrapper.
+    // early t() calls by using the TranslatableMarkup.
     $languages[LanguageInterface::LANGCODE_NOT_SPECIFIED] = new Language(array(
       'id' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
-      'name' => new TranslationWrapper('Not specified'),
+      'name' => new TranslatableMarkup('Not specified'),
       'weight' => ++$weight,
     ) + $locked_language);
 
     $languages[LanguageInterface::LANGCODE_NOT_APPLICABLE] = new Language(array(
       'id' => LanguageInterface::LANGCODE_NOT_APPLICABLE,
-      'name' => new TranslationWrapper('Not applicable'),
+      'name' => new TranslatableMarkup('Not applicable'),
       'weight' => ++$weight,
     ) + $locked_language);
 
@@ -242,7 +233,7 @@ class LanguageManager implements LanguageManagerInterface {
     //
     // The "Left-to-right marker" comments and the enclosed UTF-8 markers are to
     // make otherwise strange looking PHP syntax natural (to not be displayed in
-    // right to left). See http://drupal.org/node/128866#comment-528929.
+    // right to left). See https://www.drupal.org/node/128866#comment-528929.
     return array(
       'af' => array('Afrikaans', 'Afrikaans'),
       'am' => array('Amharic', 'አማርኛ'),
@@ -361,7 +352,6 @@ class LanguageManager implements LanguageManagerInterface {
     return $this->getCurrentLanguage();
   }
 
-
   /**
    * Filters the full list of languages based on the value of the flag.
    *
@@ -393,7 +383,7 @@ class LanguageManager implements LanguageManagerInterface {
       $default = new Language(
         array(
           'id' => $defaultLanguage->getId(),
-          'name' => $this->t("Site's default language (@lang_name)",
+          'name' => new TranslatableMarkup("Site's default language (@lang_name)",
             array('@lang_name' => $defaultLanguage->getName())),
           'direction' => $defaultLanguage->getDirection(),
           'weight' => $defaultLanguage->getWeight(),

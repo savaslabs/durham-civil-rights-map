@@ -90,7 +90,7 @@ class AddHandler extends ViewsFormBase {
       $form['override']['controls'] = array(
         '#theme_wrappers' => array('container'),
         '#id' => 'views-filterable-options-controls',
-        '#attributes' => ['class' => ['form--inline']],
+        '#attributes' => ['class' => ['form--inline', 'views-filterable-options-controls']],
       );
       $form['override']['controls']['options_search'] = array(
         '#type' => 'textfield',
@@ -107,11 +107,15 @@ class AddHandler extends ViewsFormBase {
       $form['options']['name'] = array(
         '#prefix' => '<div class="views-radio-box form-checkboxes views-filterable-options">',
         '#suffix' => '</div>',
-        '#tree' => TRUE,
-        '#default_value' => 'all',
+        '#type' => 'tableselect',
+        '#header' => array(
+          'title' => $this->t('Title'),
+          'group' => $this->t('Category'),
+          'help' => $this->t('Description'),
+        ),
+        '#js_select' => FALSE,
       );
 
-      // Group options first to simplify the usage of #states.
       $grouped_options = array();
       foreach ($options as $key => $option) {
         $group = preg_replace('/[^a-z0-9]/', '-', strtolower($option['group']));
@@ -137,23 +141,22 @@ class AddHandler extends ViewsFormBase {
 
       foreach ($grouped_options as $group => $group_options) {
         foreach ($group_options as $key => $option) {
-          $form['options']['name'][$key] = array(
-            '#type' => 'checkbox',
-            '#title' => $this->t('!group: !field', array('!group' => $option['group'], '!field' => $option['title'])),
-            '#description' => $option['help'],
-            '#return_value' => $key,
-            '#prefix' => "<div class='filterable-option'>",
-            '#suffix' => '</div>',
-            '#states' => array(
-              'visible' => array(
-                array(
-                  ':input[name="override[controls][group]"]' => array('value' => 'all'),
-                ),
-                array(
-                  ':input[name="override[controls][group]"]' => array('value' => $group),
-                ),
-              )
-            )
+          $form['options']['name']['#options'][$key] = array(
+            '#attributes' => array(
+              'class' => array('filterable-option', $group),
+            ),
+            'title' => array(
+              'data' => array(
+                '#title' => $option['title'],
+                '#plain_text' => $option['title'],
+              ),
+              'class' => array('title'),
+            ),
+            'group' => $option['group'],
+            'help' => array(
+              'data' => $option['help'],
+              'class' => array('description'),
+            ),
           );
         }
       }
@@ -162,7 +165,7 @@ class AddHandler extends ViewsFormBase {
     }
     else {
       $form['options']['markup'] = array(
-        '#markup' => '<div class="form-item">' . $this->t('There are no @types available to add.', array('@types' =>  $ltitle)) . '</div>',
+        '#markup' => '<div class="js-form-item form-item">' . $this->t('There are no @types available to add.', array('@types' =>  $ltitle)) . '</div>',
       );
     }
     // Add a div to show the selected items
@@ -171,7 +174,7 @@ class AddHandler extends ViewsFormBase {
       '#markup' => '<span class="views-ui-view-title">' . $this->t('Selected:') . '</span> ' . '<div class="views-selected-options"></div>',
       '#theme_wrappers' => array('form_element', 'views_ui_container'),
       '#attributes' => array(
-        'class' => array('container-inline', 'views-add-form-selected'),
+        'class' => array('container-inline', 'views-add-form-selected', 'views-offset-bottom'),
         'data-drupal-views-offset' => 'bottom',
       ),
     );

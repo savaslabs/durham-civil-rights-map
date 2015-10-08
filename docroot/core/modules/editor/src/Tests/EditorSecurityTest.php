@@ -2,14 +2,13 @@
 
 /**
  * @file
- * Definition of \Drupal\editor\Tests\EditorSecurityTest.
+ * Contains \Drupal\editor\Tests\EditorSecurityTest.
  */
 
 namespace Drupal\editor\Tests;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\simpletest\WebTestBase;
-use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Tests XSS protection for content creators when using text editors.
@@ -96,7 +95,7 @@ class EditorSecurityTest extends WebTestBase {
         'filter_html' => array(
           'status' => 1,
           'settings' => array(
-            'allowed_html' => '<h4> <h5> <h6> <p> <br> <strong> <a>',
+            'allowed_html' => '<h2> <h3> <h4> <h5> <h6> <p> <br> <strong> <a>',
           )
         ),
       ),
@@ -111,7 +110,7 @@ class EditorSecurityTest extends WebTestBase {
         'filter_html' => array(
           'status' => 1,
           'settings' => array(
-            'allowed_html' => '<h4> <h5> <h6> <p> <br> <strong> <a>',
+            'allowed_html' => '<h2> <h3> <h4> <h5> <h6> <p> <br> <strong> <a>',
           )
         ),
       ),
@@ -131,7 +130,7 @@ class EditorSecurityTest extends WebTestBase {
         'filter_html' => array(
           'status' => 1,
           'settings' => array(
-            'allowed_html' => '<h4> <h5> <h6> <p> <br> <strong> <a> <embed>',
+            'allowed_html' => '<h2> <h3> <h4> <h5> <h6> <p> <br> <strong> <a> <embed>',
           )
         ),
       ),
@@ -388,7 +387,6 @@ class EditorSecurityTest extends WebTestBase {
     // Log in as the privileged user, and for every sample, do the following:
     //  - switch to every other text format/editor
     //  - assert the XSS-filtered values that we get from the server
-    $value_original_attribute = SafeMarkup::checkPlain(self::$sampleContent);
     $this->drupalLogin($this->privilegedUser);
     foreach ($expected as $case) {
       $this->drupalGet('node/' . $case['node_id'] . '/edit');
@@ -409,7 +407,7 @@ class EditorSecurityTest extends WebTestBase {
           'value' => self::$sampleContent,
           'original_format_id' => $case['format'],
         );
-        $response = $this->drupalPost('editor/filter_xss/' . $format, 'application/json', $post);
+        $response = $this->drupalPostWithFormat('editor/filter_xss/' . $format, 'json', $post);
         $this->assertResponse(200);
         $json = Json::decode($response);
         $this->assertIdentical($json, $expected_filtered_value, 'The value was correctly filtered for XSS attack vectors.');

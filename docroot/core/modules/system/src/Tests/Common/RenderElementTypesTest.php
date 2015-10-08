@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Contains Drupal\system\Tests\Common\RenderElementTypesTest.
+ * Contains \Drupal\system\Tests\Common\RenderElementTypesTest.
  */
 
 namespace Drupal\system\Tests\Common;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Url;
 use Drupal\simpletest\KernelTestBase;
 
@@ -43,15 +43,15 @@ class RenderElementTypesTest extends KernelTestBase {
    *   Assertion message.
    */
   protected function assertElements(array $elements, $expected_html, $message) {
-    $actual_html = drupal_render($elements);
+    $actual_html = (string) \Drupal::service('renderer')->renderRoot($elements);
 
     $out = '<table><tr>';
-    $out .= '<td valign="top"><pre>' . SafeMarkup::checkPlain($expected_html) . '</pre></td>';
-    $out .= '<td valign="top"><pre>' . SafeMarkup::checkPlain($actual_html) . '</pre></td>';
+    $out .= '<td valign="top"><pre>' . Html::escape($expected_html) . '</pre></td>';
+    $out .= '<td valign="top"><pre>' . Html::escape($actual_html) . '</pre></td>';
     $out .= '</tr></table>';
     $this->verbose($out);
 
-    $this->assertIdentical($actual_html, $expected_html, SafeMarkup::checkPlain($message));
+    $this->assertIdentical($actual_html, $expected_html, Html::escape($message));
   }
 
   /**
@@ -91,8 +91,6 @@ class RenderElementTypesTest extends KernelTestBase {
       '#type' => 'html_tag',
       '#tag' => 'meta',
       '#value' => 'ignored',
-      '#value_prefix' => 'ignored',
-      '#value_suffix' => 'ignored',
       '#attributes' => array(
         'name' => 'description',
         'content' => 'Drupal test',
@@ -104,12 +102,10 @@ class RenderElementTypesTest extends KernelTestBase {
       '#type' => 'html_tag',
       '#tag' => 'section',
       '#value' => 'value',
-      '#value_prefix' => 'value_prefix|',
-      '#value_suffix' => '|value_suffix',
       '#attributes' => array(
         'class' => array('unicorns'),
       ),
-    ), '<section class="unicorns">value_prefix|value|value_suffix</section>' . "\n", "#type 'html_tag', non-void element renders properly");
+    ), '<section class="unicorns">value</section>' . "\n", "#type 'html_tag', non-void element renders properly");
 
     // Test empty void element tag.
     $this->assertElements(array(
@@ -133,24 +129,24 @@ class RenderElementTypesTest extends KernelTestBase {
         'name' => "#type 'more_link' anchor tag generation without extra classes",
         'value' => array(
           '#type' => 'more_link',
-          '#url' => Url::fromUri('http://drupal.org'),
+          '#url' => Url::fromUri('https://www.drupal.org'),
         ),
-        'expected' => '//div[@class="more-link"]/a[@href="http://drupal.org" and text()="More"]',
+        'expected' => '//div[@class="more-link"]/a[@href="https://www.drupal.org" and text()="More"]',
       ),
       array(
         'name' => "#type 'more_link' anchor tag generation with different link text",
         'value' => array(
           '#type' => 'more_link',
-          '#url' => Url::fromUri('http://drupal.org'),
+          '#url' => Url::fromUri('https://www.drupal.org'),
           '#title' => 'More Titles',
         ),
-        'expected' => '//div[@class="more-link"]/a[@href="http://drupal.org" and text()="More Titles"]',
+        'expected' => '//div[@class="more-link"]/a[@href="https://www.drupal.org" and text()="More Titles"]',
       ),
       array(
         'name' => "#type 'more_link' anchor tag generation with attributes on wrapper",
         'value' => array(
           '#type' => 'more_link',
-          '#url' => Url::fromUri('http://drupal.org'),
+          '#url' => Url::fromUri('https://www.drupal.org'),
           '#theme_wrappers' => array(
             'container' => array(
               '#attributes' => array(
@@ -160,7 +156,7 @@ class RenderElementTypesTest extends KernelTestBase {
             ),
           ),
         ),
-        'expected' => '//div[@title="description" and contains(@class, "more-link") and contains(@class, "drupal") and contains(@class, "test")]/a[@href="http://drupal.org" and text()="More"]',
+        'expected' => '//div[@title="description" and contains(@class, "more-link") and contains(@class, "drupal") and contains(@class, "test")]/a[@href="https://www.drupal.org" and text()="More"]',
       ),
       array(
         'name' => "#type 'more_link' anchor tag with a relative path",
@@ -198,7 +194,7 @@ class RenderElementTypesTest extends KernelTestBase {
     );
 
     foreach($elements as $element) {
-      $xml = new \SimpleXMLElement(drupal_render($element['value']));
+      $xml = new \SimpleXMLElement(\Drupal::service('renderer')->renderRoot($element['value']));
       $result = $xml->xpath($element['expected']);
       $this->assertTrue($result, '"' . $element['name'] . '" input rendered correctly by drupal_render().');
     }
@@ -229,7 +225,7 @@ class RenderElementTypesTest extends KernelTestBase {
     );
 
     foreach ($elements as $element) {
-      $xml = new \SimpleXMLElement(drupal_render($element['value']));
+      $xml = new \SimpleXMLElement(\Drupal::service('renderer')->renderRoot($element['value']));
       $result = $xml->xpath($element['expected']);
       $this->assertTrue($result, '"' . $element['name'] . '" is rendered correctly by drupal_render().');
     }
@@ -245,7 +241,7 @@ class RenderElementTypesTest extends KernelTestBase {
       'expected' => '//div[@class="compact-link"]/a[contains(@href, "admin/compact?") and text()="Show descriptions"]',
     );
 
-    $xml = new \SimpleXMLElement(drupal_render($element['value']));
+    $xml = new \SimpleXMLElement(\Drupal::service('renderer')->renderRoot($element['value']));
     $result = $xml->xpath($element['expected']);
     $this->assertTrue($result, '"' . $element['name'] . '" is rendered correctly by drupal_render().');
   }

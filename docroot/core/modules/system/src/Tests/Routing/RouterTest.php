@@ -2,15 +2,18 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Routing\RouterTest.
+ * Contains \Drupal\system\Tests\Routing\RouterTest.
  */
 
 namespace Drupal\system\Tests\Routing;
 
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\simpletest\WebTestBase;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
+use Drupal\Core\Url;
 
 /**
  * Functional class for the full integrated routing system.
@@ -30,7 +33,8 @@ class RouterTest extends WebTestBase {
    * Confirms that our FinishResponseSubscriber logic works properly.
    */
   public function testFinishResponseSubscriber() {
-    $renderer_required_cache_contexts = ['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme'];
+    $renderer_required_cache_contexts = ['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme', 'user.permissions'];
+    $expected_cache_contexts = Cache::mergeContexts($renderer_required_cache_contexts, ['url.query_args:' . MainContentViewSubscriber::WRAPPER_FORMAT]);
 
     // Confirm that the router can get to a controller.
     $this->drupalGet('router_test/test1');
@@ -40,14 +44,14 @@ class RouterTest extends WebTestBase {
     $this->assertEqual($headers['x-ua-compatible'], 'IE=edge');
     $this->assertEqual($headers['content-language'], 'en');
     $this->assertEqual($headers['x-content-type-options'], 'nosniff');
-
+    $this->assertEqual($headers['x-frame-options'], 'SAMEORIGIN');
 
     $this->drupalGet('router_test/test2');
     $this->assertRaw('test2', 'The correct string was returned because the route was successful.');
     // Check expected headers from FinishResponseSubscriber.
     $headers = $this->drupalGetHeaders();
-    $this->assertEqual($headers['x-drupal-cache-contexts'], implode(' ', $renderer_required_cache_contexts));
-    $this->assertEqual($headers['x-drupal-cache-tags'], 'rendered');
+    $this->assertEqual($headers['x-drupal-cache-contexts'], implode(' ', $expected_cache_contexts));
+    $this->assertEqual($headers['x-drupal-cache-tags'], 'config:user.role.anonymous rendered');
     // Confirm that the page wrapping is being added, so we're not getting a
     // raw body returned.
     $this->assertRaw('</html>', 'Page markup was found.');
@@ -62,12 +66,12 @@ class RouterTest extends WebTestBase {
     $this->drupalGet('router_test/test18');
     $headers = $this->drupalGetHeaders();
     $this->assertEqual($headers['x-drupal-cache-contexts'], implode(' ', Cache::mergeContexts($renderer_required_cache_contexts, ['url'])));
-    $this->assertEqual($headers['x-drupal-cache-tags'], 'foo rendered');
+    $this->assertEqual($headers['x-drupal-cache-tags'], 'config:user.role.anonymous foo rendered');
     // 2. controller result: render array, per-role cacheable route access.
     $this->drupalGet('router_test/test19');
     $headers = $this->drupalGetHeaders();
     $this->assertEqual($headers['x-drupal-cache-contexts'], implode(' ', Cache::mergeContexts($renderer_required_cache_contexts, ['url', 'user.roles'])));
-    $this->assertEqual($headers['x-drupal-cache-tags'], 'foo rendered');
+    $this->assertEqual($headers['x-drupal-cache-tags'], 'config:user.role.anonymous foo rendered');
     // 3. controller result: Response object, globally cacheable route access.
     $this->drupalGet('router_test/test1');
     $headers = $this->drupalGetHeaders();
@@ -178,10 +182,10 @@ class RouterTest extends WebTestBase {
    * Checks the generate method on the url generator using the front router.
    */
   public function testUrlGeneratorFront() {
-    global $base_path;
-
-    $this->assertEqual($this->container->get('url_generator')->generate('<front>'), $base_path);
-    $this->assertEqual($this->container->get('url_generator')->generateFromPath('<front>'), $base_path);
+    $front_url = Url::fromRoute('<front>', [], ['absolute' => TRUE]);
+    // Compare to the site base URL.
+    $base_url = Url::fromUri('base:/', ['absolute' => TRUE]);
+    $this->assertIdentical($base_url->toString(), $front_url->toString());
   }
 
   /**
@@ -196,6 +200,24 @@ class RouterTest extends WebTestBase {
     $this->drupalGet('router_test/test14/2');
     $this->assertResponse(200);
     $this->assertText('Route not matched.');
+
+    // Check that very long paths don't cause an error.
+    $path = 'router_test/test1';
+    $suffix = '/d/r/u/p/a/l';
+    for ($i = 0; $i < 10; $i++) {
+      $path .= $suffix;
+      $this->drupalGet($path);
+      $this->assertResponse(404);
+    }
+  }
+
+  /**
+   * Tests that a PSR-7 response works.
+   */
+  public function testRouterResponsePsr7() {
+    $this->drupalGet('/router_test/test23');
+    $this->assertResponse(200);
+    $this->assertText('test23');
   }
 
   /**
@@ -248,4 +270,23 @@ class RouterTest extends WebTestBase {
     $route = \Drupal::service('router.route_provider')->getRouteByName('router_test.1');
     $this->assertNotNull($route, 'Route exists after module installation');
   }
+
+  /**
+   * Ensure that multiple leading slashes are redirected.
+   */
+  public function testLeadingSlashes() {
+    $request = $this->container->get('request_stack')->getCurrentRequest();
+    $url = $request->getUriForPath('//router_test/test1');
+    $this->drupalGet($url);
+    $this->assertEqual(1, $this->redirectCount, $url . " redirected to " . $this->url);
+    $this->assertUrl($request->getUriForPath('/router_test/test1'));
+
+    // It should not matter how many leading slashes are used and query strings
+    // should be preserved.
+    $url = $request->getUriForPath('/////////////////////////////////////////////////router_test/test1') . '?qs=test';
+    $this->drupalGet($url);
+    $this->assertEqual(1, $this->redirectCount, $url . " redirected to " . $this->url);
+    $this->assertUrl($request->getUriForPath('/router_test/test1') . '?qs=test');
+  }
+
 }

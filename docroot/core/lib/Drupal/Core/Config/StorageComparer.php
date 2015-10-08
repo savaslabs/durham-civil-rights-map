@@ -7,7 +7,7 @@
 
 namespace Drupal\Core\Config;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Cache\MemoryBackend;
 use Drupal\Core\Config\Entity\ConfigDependencyManager;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 
@@ -80,22 +80,18 @@ class StorageComparer implements StorageComparerInterface {
   protected $targetNames = array();
 
   /**
-   * The source configuration data keyed by name.
+   * A memory cache backend to statically cache source configuration data.
    *
-   * The data is keyed by storage collection name.
-   *
-   * @var array
+   * @var \Drupal\Core\Cache\MemoryBackend
    */
-  protected $sourceData = array();
+  protected $sourceCacheStorage;
 
   /**
-   * The target configuration data keyed by name.
+   * A memory cache backend to statically cache target configuration data.
    *
-   * The data is keyed by storage collection name.
-   *
-   * @var array
+   * @var \Drupal\Core\Cache\MemoryBackend
    */
-  protected $targetData = array();
+  protected $targetCacheStorage;
 
   /**
    * Constructs the Configuration storage comparer.
@@ -108,8 +104,18 @@ class StorageComparer implements StorageComparerInterface {
    *   The configuration manager.
    */
   public function __construct(StorageInterface $source_storage, StorageInterface $target_storage, ConfigManagerInterface $config_manager) {
-    $this->sourceStorage = $source_storage;
-    $this->targetStorage = $target_storage;
+    // Wrap the storages in a static cache so that multiple reads of the same
+    // raw configuration object are not costly.
+    $this->sourceCacheStorage = new MemoryBackend(__CLASS__ . '::source');
+    $this->sourceStorage = new CachedStorage(
+      $source_storage,
+      $this->sourceCacheStorage
+    );
+    $this->targetCacheStorage = new MemoryBackend(__CLASS__ . '::target');
+    $this->targetStorage = new CachedStorage(
+      $target_storage,
+      $this->targetCacheStorage
+    );
     $this->configManager = $config_manager;
     $this->changelist[StorageInterface::DEFAULT_COLLECTION] = $this->getEmptyChangelist();
   }
@@ -189,7 +195,7 @@ class StorageComparer implements StorageComparerInterface {
       // ensure the array is keyed from 0.
       $this->changelist[$collection][$op] = array_values(array_intersect($sort_order, $this->changelist[$collection][$op]));
       if ($count != count($this->changelist[$collection][$op])) {
-        throw new \InvalidArgumentException(SafeMarkup::format('Sorting the @op changelist should not change its length.', array('@op' => $op)));
+        throw new \InvalidArgumentException("Sorting the $op changelist should not change its length.");
       }
     }
   }
@@ -205,12 +211,9 @@ class StorageComparer implements StorageComparerInterface {
       $this->addChangelistUpdate($collection);
       $this->addChangelistDelete($collection);
       // Only collections that support configuration entities can have renames.
-      if ($this->configManager->supportsConfigurationEntities($collection)) {
+      if ($collection == StorageInterface::DEFAULT_COLLECTION) {
         $this->addChangelistRename($collection);
       }
-      // Only need data whilst calculating changelists. Free up the memory.
-      $this->sourceData = NULL;
-      $this->targetData = NULL;
     }
     return $this;
   }
@@ -258,8 +261,10 @@ class StorageComparer implements StorageComparerInterface {
   protected function addChangelistUpdate($collection) {
     $recreates = array();
     foreach (array_intersect($this->sourceNames[$collection], $this->targetNames[$collection]) as $name) {
-      if ($this->sourceData[$collection][$name] !== $this->targetData[$collection][$name]) {
-        if (isset($this->sourceData[$collection][$name]['uuid']) && $this->sourceData[$collection][$name]['uuid'] != $this->targetData[$collection][$name]['uuid']) {
+      $source_data = $this->getSourceStorage($collection)->read($name);
+      $target_data = $this->getTargetStorage($collection)->read($name);
+      if ($source_data !== $target_data) {
+        if (isset($source_data['uuid']) && $source_data['uuid'] !== $target_data['uuid']) {
           // The entity has the same file as an existing entity but the UUIDs do
           // not match. This means that the entity has been recreated so config
           // synchronization should do the same.
@@ -299,9 +304,10 @@ class StorageComparer implements StorageComparerInterface {
     }
 
     $create_uuids = array();
-    foreach ($this->sourceData[$collection] as $id => $data) {
-      if (isset($data['uuid']) && in_array($id, $create_list)) {
-        $create_uuids[$data['uuid']] = $id;
+    foreach ($this->sourceNames[$collection] as $name) {
+      $data = $this->getSourceStorage($collection)->read($name);
+      if (isset($data['uuid']) && in_array($name, $create_list)) {
+        $create_uuids[$data['uuid']] = $name;
       }
     }
     if (empty($create_uuids)) {
@@ -319,7 +325,7 @@ class StorageComparer implements StorageComparerInterface {
     // configuration when it is renamed.
     // @see \Drupal\node\Entity\NodeType::postSave()
     foreach ($this->targetNames[$collection] as $name) {
-      $data = $this->targetData[$collection][$name];
+      $data = $this->getTargetStorage($collection)->read($name);
       if (isset($data['uuid']) && isset($create_uuids[$data['uuid']])) {
         // Remove the item from the create list.
         $this->removeFromChangelist($collection, 'create', $create_uuids[$data['uuid']]);
@@ -365,6 +371,9 @@ class StorageComparer implements StorageComparerInterface {
   public function reset() {
     $this->changelist = array(StorageInterface::DEFAULT_COLLECTION => $this->getEmptyChangelist());
     $this->sourceNames = $this->targetNames = array();
+    // Reset the static configuration data caches.
+    $this->sourceCacheStorage->deleteAll();
+    $this->targetCacheStorage->deleteAll();
     return $this->createChangelist();
   }
 
@@ -399,14 +408,16 @@ class StorageComparer implements StorageComparerInterface {
     $target_storage = $this->getTargetStorage($collection);
     $target_names = $target_storage->listAll();
     $source_names = $source_storage->listAll();
-    $this->targetData[$collection] = $target_storage->readMultiple($target_names);
-    $this->sourceData[$collection] = $source_storage->readMultiple($source_names);
+    // Prime the static caches by reading all the configuration in the source
+    // and target storages.
+    $target_data = $target_storage->readMultiple($target_names);
+    $source_data = $source_storage->readMultiple($source_names);
     // If the collection only supports simple configuration do not use
     // configuration dependencies.
-    if ($this->configManager->supportsConfigurationEntities($collection)) {
+    if ($collection == StorageInterface::DEFAULT_COLLECTION) {
       $dependency_manager = new ConfigDependencyManager();
-      $this->targetNames[$collection] = $dependency_manager->setData($this->targetData[$collection])->sortAll();
-      $this->sourceNames[$collection] = $dependency_manager->setData($this->sourceData[$collection])->sortAll();
+      $this->targetNames[$collection] = $dependency_manager->setData($target_data)->sortAll();
+      $this->sourceNames[$collection] = $dependency_manager->setData($source_data)->sortAll();
     }
     else {
       $this->targetNames[$collection] = $target_names;

@@ -7,6 +7,8 @@
 
 namespace Drupal\search\Tests;
 
+use Drupal\Component\Utility\Html;
+
 /**
  * Verify the search without keywords set and extra conditions.
  *
@@ -44,7 +46,7 @@ class SearchKeywordsConditionsTest extends SearchTestBase {
   /**
    * Verify the keywords are captured and conditions respected.
    */
-  function testSearchKeyswordsConditions() {
+  function testSearchKeywordsConditions() {
     // No keys, not conditions - no results.
     $this->drupalGet('search/dummy_path');
     $this->assertNoText('Dummy search snippet to display');
@@ -59,6 +61,6 @@ class SearchKeywordsConditionsTest extends SearchTestBase {
     $keys = 'moving drop ' . $this->randomMachineName();
     $this->drupalGet("search/dummy_path", array('query' => array('keys' => 'bike', 'search_conditions' => $keys)));
     $this->assertText("Dummy search snippet to display.");
-    $this->assertRaw(print_r(array('keys' => 'bike', 'search_conditions' => $keys), TRUE));
+    $this->assertRaw(Html::escape(print_r(array('keys' => 'bike', 'search_conditions' => $keys), TRUE)));
   }
 }

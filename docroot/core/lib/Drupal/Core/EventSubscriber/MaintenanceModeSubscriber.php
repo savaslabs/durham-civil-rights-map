@@ -18,7 +18,6 @@ use Drupal\Core\Site\MaintenanceModeInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -107,8 +106,8 @@ class MaintenanceModeSubscriber implements EventSubscriberInterface {
         $content = Xss::filterAdmin(SafeMarkup::format($this->config->get('system.maintenance')->get('message'), array(
           '@site' => $this->config->get('system.site')->get('name'),
         )));
-        $output = $this->bareHtmlPageRenderer->renderBarePage(['#markup' => $content], $this->t('Site under maintenance'), 'maintenance_page');
-        $response = new Response($output, 503);
+        $response = $this->bareHtmlPageRenderer->renderBarePage(['#markup' => $content], $this->t('Site under maintenance'), 'maintenance_page');
+        $response->setStatusCode(503);
         $event->setResponse($response);
       }
       else {
@@ -117,7 +116,7 @@ class MaintenanceModeSubscriber implements EventSubscriberInterface {
         // settings page.
         if ($route_match->getRouteName() != 'system.site_maintenance_mode') {
           if ($this->account->hasPermission('administer site configuration')) {
-            $this->drupalSetMessage($this->t('Operating in maintenance mode. <a href="@url">Go online.</a>', array('@url' => $this->urlGenerator->generate('system.site_maintenance_mode'))), 'status', FALSE);
+            $this->drupalSetMessage($this->t('Operating in maintenance mode. <a href=":url">Go online.</a>', array(':url' => $this->urlGenerator->generate('system.site_maintenance_mode'))), 'status', FALSE);
           }
           else {
             $this->drupalSetMessage($this->t('Operating in maintenance mode.'), 'status', FALSE);

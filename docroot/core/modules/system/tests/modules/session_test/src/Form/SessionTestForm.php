@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\session_test\Form\SessionTestForm
+ * Contains \Drupal\session_test\Form\SessionTestForm.
  */
 
 namespace Drupal\session_test\Form;
@@ -19,7 +19,7 @@ class SessionTestForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'session_test_form';
   }
 

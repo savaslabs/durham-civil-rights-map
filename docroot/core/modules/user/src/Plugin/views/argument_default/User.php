@@ -2,14 +2,15 @@
 
 /**
  * @file
- * Definition of Drupal\user\Plugin\views\argument_default\User.
+ * Contains \Drupal\user\Plugin\views\argument_default\User.
  */
 
 namespace Drupal\user\Plugin\views\argument_default;
 
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\views\Plugin\CacheablePluginInterface;
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +25,7 @@ use Drupal\node\NodeInterface;
  *   title = @Translation("User ID from route context")
  * )
  */
-class User extends ArgumentDefaultPluginBase implements CacheablePluginInterface {
+class User extends ArgumentDefaultPluginBase implements CacheableDependencyInterface {
 
   /**
    * The route match.
@@ -103,20 +104,13 @@ class User extends ArgumentDefaultPluginBase implements CacheablePluginInterface
         return $node->getOwnerId();
       }
     }
-
-    // If the current page is a view that takes uid as an argument.
-    $view = views_get_page_view();
-
-    if ($view && isset($view->argument['uid'])) {
-      return $view->argument['uid']->argument;
-    }
   }
 
   /**
    * {@inheritdoc}
    */
-  public function isCacheable() {
-    return TRUE;
+  public function getCacheMaxAge() {
+    return Cache::PERMANENT;
   }
 
   /**

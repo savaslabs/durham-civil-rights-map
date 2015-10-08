@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\comment\Tests\CommentInterfaceTest.
+ * Contains \Drupal\comment\Tests\CommentInterfaceTest.
  */
 
 namespace Drupal\comment\Tests;
@@ -26,6 +26,12 @@ class CommentInterfaceTest extends CommentTestBase {
   public function setUp() {
     parent::setUp();
     $this->drupalLogin($this->adminUser);
+    // Make sure that comment field title is not displayed when there's no
+    // comments posted.
+    $this->drupalGet($this->node->urlInfo());
+    $this->assertNoPattern('@<h2[^>]*>Comments</h2>@', 'Comments title is not displayed.');
+
+    // Set comments to have subject and preview disabled.
     $this->setCommentPreview(DRUPAL_DISABLED);
     $this->setCommentForm(TRUE);
     $this->setCommentSubject(FALSE);
@@ -43,6 +49,10 @@ class CommentInterfaceTest extends CommentTestBase {
     $comment_text = $this->randomMachineName();
     $comment = $this->postComment($this->node, $comment_text);
     $this->assertTrue($this->commentExists($comment), 'Comment found.');
+
+    // Test the comment field title is displayed when there's comments.
+    $this->drupalGet($this->node->urlInfo());
+    $this->assertPattern('@<h2[^>]*>Comments</h2>@', 'Comments title is displayed.');
 
     // Set comments to have subject and preview to required.
     $this->drupalLogout();
@@ -83,7 +93,7 @@ class CommentInterfaceTest extends CommentTestBase {
     )));
 
     // Test changing the comment author to "Anonymous".
-    $comment = $this->postComment(NULL, $comment->comment_body->value, $comment->getSubject(), array('name' => ''));
+    $comment = $this->postComment(NULL, $comment->comment_body->value, $comment->getSubject(), array('uid' => ''));
     $this->assertTrue($comment->getAuthorName() == t('Anonymous') && $comment->getOwnerId() == 0, 'Comment author successfully changed to anonymous.');
 
     // Test changing the comment author to an unverified user.
@@ -95,7 +105,7 @@ class CommentInterfaceTest extends CommentTestBase {
 
     // Test changing the comment author to a verified user.
     $this->drupalGet('comment/' . $comment->id() . '/edit');
-    $comment = $this->postComment(NULL, $comment->comment_body->value, $comment->getSubject(), array('name' => $this->webUser->getUsername()));
+    $comment = $this->postComment(NULL, $comment->comment_body->value, $comment->getSubject(), array('uid' => $this->webUser->getUsername() . ' (' . $this->webUser->id() . ')'));
     $this->assertTrue($comment->getAuthorName() == $this->webUser->getUsername() && $comment->getOwnerId() == $this->webUser->id(), 'Comment author successfully changed to a registered user.');
 
     $this->drupalLogout();
@@ -155,20 +165,20 @@ class CommentInterfaceTest extends CommentTestBase {
     $reply_loaded->setPublished(FALSE);
     $reply_loaded->save();
     $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment/' . $reply_loaded->id());
-    $this->assertText(t('The comment you are replying to does not exist.'), 'Replying to an unpublished comment');
+    $this->assertResponse(403);
 
     // Attempt to post to node with comments disabled.
     $this->node = $this->drupalCreateNode(array('type' => 'article', 'promote' => 1, 'comment' => array(array('status' => CommentItemInterface::HIDDEN))));
     $this->assertTrue($this->node, 'Article node created.');
     $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment');
-    $this->assertText('This discussion is closed', 'Posting to node with comments disabled');
+    $this->assertResponse(403);
     $this->assertNoField('edit-comment', 'Comment body field found.');
 
     // Attempt to post to node with read-only comments.
     $this->node = $this->drupalCreateNode(array('type' => 'article', 'promote' => 1, 'comment' => array(array('status' => CommentItemInterface::CLOSED))));
     $this->assertTrue($this->node, 'Article node created.');
     $this->drupalGet('comment/reply/node/' . $this->node->id() . '/comment');
-    $this->assertText('This discussion is closed', 'Posting to node with comments read-only');
+    $this->assertResponse(403);
     $this->assertNoField('edit-comment', 'Comment body field found.');
 
     // Attempt to post to node with comments enabled (check field names etc).

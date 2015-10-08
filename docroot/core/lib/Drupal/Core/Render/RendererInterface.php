@@ -7,8 +7,6 @@
 
 namespace Drupal\Core\Render;
 
-use Drupal\Core\Cache\CacheableDependencyInterface;
-
 /**
  * Defines an interface for turning a render array into a string.
  */
@@ -17,31 +15,34 @@ interface RendererInterface {
   /**
    * Renders final HTML given a structured array tree.
    *
-   * Calls ::render() in such a way that #post_render_cache callbacks are
-   * applied.
+   * Calls ::render() in such a way that placeholders are replaced.
    *
    * Should therefore only be used in occasions where the final rendering is
    * happening, just before sending a Response:
    * - system internals that are responsible for rendering the final HTML
    * - render arrays for non-HTML responses, such as feeds
    *
+   * (Cannot be executed within another render context.)
+   *
    * @param array $elements
    *   The structured array describing the data to be rendered.
    *
-   * @return string
+   * @return \Drupal\Component\Render\MarkupInterface
    *   The rendered HTML.
    *
    * @see ::render()
+   *
+   * @throws \LogicException
+   *   When called from inside another renderRoot() call.
    */
   public function renderRoot(&$elements);
 
   /**
    * Renders final HTML in situations where no assets are needed.
    *
-   * Calls ::render() in such a way that #post_render_cache callbacks are
-   * applied.
+   * Calls ::render() in such a way that placeholders are replaced.
    *
-   * Useful for e.g. rendering the values of tokens or e-mails, which need a
+   * Useful for e.g. rendering the values of tokens or emails, which need a
    * render array being turned into a string, but don't need any of the
    * bubbleable metadata (the attached assets the cache tags).
    *
@@ -49,13 +50,15 @@ interface RendererInterface {
    * ::renderRoot() call, but that is generally highly problematic (and hence an
    * exception is thrown when a ::renderRoot() call happens within another
    * ::renderRoot() call). However, in this case, we only care about the output,
-   * not about the bubbling. Hence this uses a separate render stack, to not
+   * not about the bubbling. Hence this uses a separate render context, to not
    * affect the parent ::renderRoot() call.
+   *
+   * (Can be executed within another render context: it runs in isolation.)
    *
    * @param array $elements
    *   The structured array describing the data to be rendered.
    *
-   * @return string
+   * @return \Drupal\Component\Render\MarkupInterface
    *   The rendered HTML.
    *
    * @see ::renderRoot()
@@ -90,10 +93,10 @@ interface RendererInterface {
    *   retrieval.
    * - Cache tags, so that cached renderings are invalidated when site content
    *   or configuration that can affect that rendering changes.
-   * - #post_render_cache callbacks, for executing code to handle dynamic
-   *   requirements that cannot be cached.
-   * A stack of \Drupal\Core\Render\BubbleableMetadata objects can be used to
-   * perform this bubbling.
+   * - Placeholders, with associated self-contained placeholder render arrays,
+   *   for executing code to handle dynamic requirements that cannot be cached.
+   * A render context (\Drupal\Core\Render\RenderContext) can be used to perform
+   * bubbling; it is a stack of \Drupal\Core\Render\BubbleableMetadata objects.
    *
    * Additionally, whether retrieving from cache or not, it is important to
    * know all of the assets (CSS and JavaScript) required by the rendered HTML,
@@ -107,9 +110,9 @@ interface RendererInterface {
    *   - If this element has already been printed (#printed = TRUE) or the user
    *     does not have access to it (#access = FALSE), then an empty string is
    *     returned.
-   *   - If no stack data structure has been created yet, it is done now. Next,
+   *   - If no render context is set yet, an exception is thrown. Otherwise,
    *     an empty \Drupal\Core\Render\BubbleableMetadata is pushed onto the
-   *     stack.
+   *     render context.
    *   - If this element has #cache defined then the cached markup for this
    *     element will be returned if it exists in Renderer::render()'s cache. To
    *     use Renderer::render() caching, set the element's #cache property to an
@@ -145,20 +148,36 @@ interface RendererInterface {
    *     $pre_bubbling_cid.
    *   - If this element has #type defined and the default attributes for this
    *     element have not already been merged in (#defaults_loaded = TRUE) then
-   *     the defaults for this type of element, defined in hook_element_info(),
+   *     the defaults for this type of element, defined by an element plugin,
    *     are merged into the array. #defaults_loaded is set by functions that
    *     process render arrays and call the element info service before passing
    *     the array to Renderer::render(), such as form_builder() in the Form
    *     API.
-   *   - If this element has an array of #pre_render functions defined, they are
-   *     called sequentially to modify the element before rendering. After all
-   *     the #pre_render functions have been called, #printed is checked a
-   *     second time in case a #pre_render function flags the element as
-   *     printed. If #printed is set, we return early and hence no rendering
-   *     work is left to be done, similarly to a render cache hit. Once again,
-   *     the empty (and topmost) frame that was just pushed onto the stack is
-   *     updated with all bubbleable rendering metadata from the element whose
-   *     #printed = TRUE.
+   *   - If this element has #create_placeholder set to TRUE, and it has a
+   *     #lazy_builder callback, then the element is replaced with another
+   *     element that has only two properties: #markup and #attached. #markup
+   *     will contain placeholder markup, and #attached contains the placeholder
+   *     metadata, that will be used for replacing this placeholder. That
+   *     metadata contains a very compact render array (containing only
+   *     #lazy_builder and #cache) that will be rendered to replace the
+   *     placeholder with its final markup. This means that when the
+   *     #lazy_builder callback is called, it received a render array to add to
+   *     that only contains #cache.
+   *   - If this element has a #lazy_builder or an array of #pre_render
+   *     functions defined, they are called sequentially to modify the element
+   *     before rendering. #lazy_builder is preferred, since it allows for
+   *     placeholdering (see previous step), but #pre_render is still supported.
+   *     Both have their use case: #lazy_builder is for building a render array,
+   *     #pre_render is for decorating an existing render array.
+   *     After the #lazy_builder function is called, #lazy_builder is removed,
+   *     and #built is set to TRUE.
+   *     After the #lazy_builder and all #pre_render functions have been called,
+   *     #printed is checked a second time in case a #lazy_builder or
+   *     #pre_render function flags the element as printed. If #printed is set,
+   *     we return early and hence no rendering work is left to be done,
+   *     similarly to a render cache hit. Once again, the empty (and topmost)
+   *     frame that was just pushed onto the stack is updated with all
+   *     bubbleable rendering metadata from the element whose #printed = TRUE.
    *     Then, this stack frame is bubbled: the two topmost frames are popped
    *     from the stack, they are merged, and the result is pushed back onto the
    *     stack.
@@ -190,7 +209,7 @@ interface RendererInterface {
    *     drupal_process_states().
    *   - If this element has #attached defined then any required libraries,
    *     JavaScript, CSS, or other custom data are added to the current page by
-   *     drupal_process_attached().
+   *     \Drupal\Core\Render\AttachmentsResponseProcessorInterface::processAttachments().
    *   - If this element has an array of #theme_wrappers defined and
    *     #render_children is not set, #children is then re-rendered by passing
    *     the element in its current state to ThemeManagerInterface::render()
@@ -249,25 +268,20 @@ interface RendererInterface {
    *     and written to cache using the value of $pre_bubbling_cid as the cache
    *     ID. This ensures the pre-bubbling ("wrong") cache ID redirects to the
    *     post-bubbling ("right") cache ID.
-   *   - If this element has an array of #post_render_cache functions defined,
+   *   - If this element also has #cache_properties defined, all the array items
+   *     matching the specified property names will be cached along with the
+   *     element markup. If properties include children names, the system
+   *     assumes only children's individual markup is relevant and ignores the
+   *     parent markup. This approach is normally not needed and should be
+   *     adopted only when dealing with very advanced use cases.
+   *   - If this element has attached placeholders ([#attached][placeholders]),
    *     or any of its children has (which we would know thanks to the stack
-   *     having been updated just before the render caching step), they are
-   *     called sequentially to replace placeholders in the final #markup and
-   *     extend #attached. Placeholders must contain a unique token, to
-   *     guarantee that e.g. samples of placeholders are not replaced also. But,
-   *     since #post_render_cache callbacks add attach additional assets, the
-   *     correct bubbling of those must once again be taken into account. This
-   *     final stage of rendering should be considered as if it were the parent
-   *     of the current element, because it takes that as its input, and then
-   *     alters its #markup. Hence, just before calling the #post_render_cache
-   *     callbacks, a new empty frame is pushed onto the stack, where all assets
-   *     #attached during the execution of those callbacks will end up in. Then,
-   *     after the execution of those callbacks, we merge that back into the
-   *     element. Note that these callbacks run always: when hitting the render
-   *     cache, when missing, or when render caching is not used at all. This is
-   *     done to allow any Drupal module to customize other render arrays
-   *     without breaking the render cache if it is enabled, and to not require
-   *     it to use other logic when render caching is disabled.
+   *     having been updated just before the render caching step), its
+   *     placeholder element containing a #lazy_builder function is rendered in
+   *     isolation. The resulting markup is used to replace the placeholder, and
+   *     any bubbleable metadata is merged.
+   *     Placeholders must be unique, to guarantee that e.g. samples of
+   *     placeholders are not replaced as well.
    *   - Just before finishing the rendering of this element, this element's
    *     stack frame (the topmost one) is bubbled: the two topmost frames are
    *     popped from the stack, they are merged and the result is pushed back
@@ -288,25 +302,67 @@ interface RendererInterface {
    *   (Internal use only.) Whether this is a recursive call or not. See
    *   ::renderRoot().
    *
-   * @return string
+   * @return \Drupal\Component\Render\MarkupInterface
    *   The rendered HTML.
    *
    * @throws \LogicException
-   *   If a root call to ::render() does not result in an empty stack, this
-   *   indicates an erroneous ::render() root call (a root call within a
-   *   root call, which makes no sense). Therefore, a logic exception is thrown.
+   *   When called outside of a render context. (i.e. outside of a renderRoot(),
+   *   renderPlain() or executeInRenderContext() call.)
    * @throws \Exception
-   *   If a #pre_render callback throws an exception, it is caught to reset the
-   *   stack used for bubbling rendering metadata, and then the exception is re-
-   *   thrown.
+   *   If a #pre_render callback throws an exception, it is caught to mark the
+   *   renderer as no longer being in a root render call, if any. Then the
+   *   exception is rethrown.
    *
    * @see \Drupal\Core\Render\ElementInfoManagerInterface::getInfo()
    * @see \Drupal\Core\Theme\ThemeManagerInterface::render()
    * @see drupal_process_states()
-   * @see drupal_process_attached()
+   * @see \Drupal\Core\Render\AttachmentsResponseProcessorInterface::processAttachments()
    * @see ::renderRoot()
    */
   public function render(&$elements, $is_root_call = FALSE);
+
+  /**
+   * Checks whether a render context is active.
+   *
+   * This is useful only in very specific situations to determine whether the
+   * system is already capable of collecting bubbleable metadata. Normally it
+   * should not be necessary to be concerned about this.
+   *
+   * @return bool
+   *   TRUE if the renderer has a render context active, FALSE otherwise.
+   */
+  public function hasRenderContext();
+
+  /**
+   * Executes a callable within a render context.
+   *
+   * Only for very advanced use cases. Prefer using ::renderRoot() and
+   * ::renderPlain() instead.
+   *
+   * All rendering must happen within a render context. Within a render context,
+   * all bubbleable metadata is bubbled and hence tracked. Outside of a render
+   * context, it would be lost. This could lead to missing assets, incorrect
+   * cache variations (and thus security issues), insufficient cache
+   * invalidations, and so on.
+   *
+   * Any and all rendering must therefore happen within a render context, and it
+   * is this method that provides that.
+   *
+   * @see \Drupal\Core\Render\BubbleableMetadata
+   *
+   * @param \Drupal\Core\Render\RenderContext $context
+   *   The render context to execute the callable within.
+   * @param callable $callable
+   *   The callable to execute.
+   * @return mixed
+   *   The callable's return value.
+   *
+   * @see \Drupal\Core\Render\RenderContext
+   *
+   * @throws \LogicException
+   *   In case bubbling has failed, can only happen in case of broken code.
+   */
+  public function executeInRenderContext(RenderContext $context, callable $callable);
 
   /**
    * Merges the bubbleable rendering metadata o/t 2nd render array with the 1st.
@@ -341,72 +397,5 @@ interface RendererInterface {
    * @see \Drupal\Core\Cache\CacheableMetadata::createFromObject()
    */
   public function addCacheableDependency(array &$elements, $dependency);
-
-  /**
-   * Merges two attachments arrays (which live under the '#attached' key).
-   *
-   * The values under the 'drupalSettings' key are merged in a special way, to
-   * match the behavior of:
-   *
-   * @code
-   *   jQuery.extend(true, {}, $settings_items[0], $settings_items[1], ...)
-   * @endcode
-   *
-   * This means integer indices are preserved just like string indices are,
-   * rather than re-indexed as is common in PHP array merging.
-   *
-   * Example:
-   * @code
-   * function module1_page_attachments(&$page) {
-   *   $page['a']['#attached']['drupalSettings']['foo'] = ['a', 'b', 'c'];
-   * }
-   * function module2_page_attachments(&$page) {
-   *   $page['#attached']['drupalSettings']['foo'] = ['d'];
-   * }
-   * // When the page is rendered after the above code, and the browser runs the
-   * // resulting <SCRIPT> tags, the value of drupalSettings.foo is
-   * // ['d', 'b', 'c'], not ['a', 'b', 'c', 'd'].
-   * @endcode
-   *
-   * By following jQuery.extend() merge logic rather than common PHP array merge
-   * logic, the following are ensured:
-   * - Attaching JavaScript settings is idempotent: attaching the same settings
-   *   twice does not change the output sent to the browser.
-   * - If pieces of the page are rendered in separate PHP requests and the
-   *   returned settings are merged by JavaScript, the resulting settings are
-   *   the same as if rendered in one PHP request and merged by PHP.
-   *
-   * @param array $a
-   *   An attachments array.
-   * @param array $b
-   *   Another attachments array.
-   *
-   * @return array
-   *   The merged attachments array.
-   */
-  public function mergeAttachments(array $a, array $b);
-
-  /**
-   * Generates a render cache placeholder.
-   *
-   * This can be used to generate placeholders, and hence should also be used by
-   * #post_render_cache callbacks that want to replace the placeholder with the
-   * final markup.
-   *
-   * @param string $callback
-   *   The #post_render_cache callback that will replace the placeholder with its
-   *   eventual markup.
-   * @param array $context
-   *   An array providing context for the #post_render_cache callback. This array
-   *   will be altered to provide a 'token' key/value pair, if not already
-   *   provided, to uniquely identify the generated placeholder.
-   *
-   * @return string
-   *   The generated placeholder HTML.
-   *
-   * @throws \InvalidArgumentException
-   *   Thrown when no valid callable got passed in.
-   */
-  public function generateCachePlaceholder($callback, array &$context);
 
 }

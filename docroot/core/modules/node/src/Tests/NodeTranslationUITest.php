@@ -2,23 +2,37 @@
 
 /**
  * @file
- * Definition of Drupal\node\Tests\NodeTranslationUITest.
+ * Contains \Drupal\node\Tests\NodeTranslationUITest.
  */
 
 namespace Drupal\node\Tests;
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\content_translation\Tests\ContentTranslationUITest;
+use Drupal\content_translation\Tests\ContentTranslationUITestBase;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
+use Drupal\language\Entity\ConfigurableLanguage;
 
 /**
  * Tests the Node Translation UI.
  *
  * @group node
  */
-class NodeTranslationUITest extends ContentTranslationUITest {
+class NodeTranslationUITest extends ContentTranslationUITestBase {
+
+  /**
+   * {inheritdoc}
+   */
+  protected $defaultCacheContexts = [
+    'languages:language_interface',
+    'session',
+    'theme',
+    'route',
+    'timezone',
+    'url',
+    'user'
+  ];
 
   /**
    * Modules to enable.
@@ -58,7 +72,43 @@ class NodeTranslationUITest extends ContentTranslationUITest {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getTranslatorPermission().
+   * Tests changing the published status on a node without fields.
+   */
+  function testPublishedStatusNoFields() {
+    // Test changing the published status of an article without fields.
+    $this->drupalLogin($this->administrator);
+    // Delete all fields.
+    $this->drupalGet('admin/structure/types/manage/article/fields');
+    $this->drupalPostForm('admin/structure/types/manage/article/fields/node.article.' . $this->fieldName . '/delete', array(), t('Delete'));
+    $this->drupalPostForm('admin/structure/types/manage/article/fields/node.article.field_tags/delete', array(), t('Delete'));
+    $this->drupalPostForm('admin/structure/types/manage/article/fields/node.article.field_image/delete', array(), t('Delete'));
+
+    // Add a node.
+    $default_langcode = $this->langcodes[0];
+    $values[$default_langcode] = array('title' => array(array('value' => $this->randomMachineName())));
+    $entity_id = $this->createEntity($values[$default_langcode], $default_langcode);
+    $entity = entity_load($this->entityTypeId, $entity_id, TRUE);
+
+    // Add a content translation.
+    $langcode = 'fr';
+    $language = ConfigurableLanguage::load($langcode);
+    $values[$langcode] = array('title' => array(array('value' => $this->randomMachineName())));
+
+    $add_url = Url::fromRoute('content_translation.translation_add_' . $entity->getEntityTypeId(), [
+      $entity->getEntityTypeId() => $entity->id(),
+      'source' => $default_langcode,
+      'target' => $langcode
+    ], array('language' => $language));
+    $this->drupalPostForm($add_url, $this->getEditValues($values, $langcode), t('Save and unpublish (this translation)'));
+
+    $entity = entity_load($this->entityTypeId, $this->entityId, TRUE);
+    $translation = $entity->getTranslation($langcode);
+    // Make sure we unpublished the node correctly.
+    $this->assertFalse($this->manager->getTranslationMetadata($translation)->isPublished(), 'The translation has been correctly unpublished.');
+  }
+
+  /**
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getTranslatorPermission().
    */
   protected function getTranslatorPermissions() {
     return array_merge(parent::getTranslatorPermissions(), array('administer nodes', "edit any $this->bundle content"));
@@ -79,7 +129,7 @@ class NodeTranslationUITest extends ContentTranslationUITest {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getNewEntityValues().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getNewEntityValues().
    */
   protected function getNewEntityValues($langcode) {
     return array('title' => array(array('value' => $this->randomMachineName()))) + parent::getNewEntityValues($langcode);
@@ -98,7 +148,7 @@ class NodeTranslationUITest extends ContentTranslationUITest {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::assertPublishedStatus().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::assertPublishedStatus().
    */
   protected function doTestPublishedStatus() {
     $entity = entity_load($this->entityTypeId, $this->entityId, TRUE);
@@ -129,7 +179,7 @@ class NodeTranslationUITest extends ContentTranslationUITest {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::assertAuthoringInfo().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::assertAuthoringInfo().
    */
   protected function doTestAuthoringInfo() {
     $entity = entity_load($this->entityTypeId, $this->entityId, TRUE);

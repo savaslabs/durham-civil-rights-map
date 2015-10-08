@@ -2,15 +2,17 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Form\FormTest.
+ * Contains \Drupal\system\Tests\Form\FormTest.
  */
 
 namespace Drupal\system\Tests\Form;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
 use Drupal\form_test\Form\FormTestDisabledElementsForm;
 use Drupal\simpletest\WebTestBase;
 use Drupal\user\RoleInterface;
@@ -51,7 +53,7 @@ class FormTest extends WebTestBase {
    * If the form field is found in $form_state->getErrors() then the test pass.
    */
   function testRequiredFields() {
-    // Originates from http://drupal.org/node/117748
+    // Originates from https://www.drupal.org/node/117748.
     // Sets of empty strings and arrays.
     $empty_strings = array('""' => "", '"\n"' => "\n", '" "' => " ", '"\t"' => "\t", '" \n\t "' => " \n\t ", '"\n\n\n\n\n"' => "\n\n\n\n\n");
     $empty_arrays = array('array()' => array());
@@ -97,7 +99,7 @@ class FormTest extends WebTestBase {
     $elements['file']['empty_values'] = $empty_strings;
 
     // Regular expression to find the expected marker on required elements.
-    $required_marker_preg = '@<.*?class=".*?form-required.*?">@';
+    $required_marker_preg = '@<.*?class=".*?js-form-required.*form-required.*?">@';
     // Go through all the elements and all the empty values for them.
     foreach ($elements as $type => $data) {
       foreach ($data['empty_values'] as $key => $empty) {
@@ -123,8 +125,8 @@ class FormTest extends WebTestBase {
           // Form elements of type 'radios' throw all sorts of PHP notices
           // when you try to render them like this, so we ignore those for
           // testing the required marker.
-          // @todo Fix this work-around (http://drupal.org/node/588438).
-          $form_output = ($type == 'radios') ? '' : drupal_render($form);
+          // @todo Fix this work-around (https://www.drupal.org/node/588438).
+          $form_output = ($type == 'radios') ? '' : \Drupal::service('renderer')->renderRoot($form);
           if ($required) {
             // Make sure we have a form error for this element.
             $this->assertTrue(isset($errors[$element]), "Check empty($key) '$type' field '$element'");
@@ -142,7 +144,7 @@ class FormTest extends WebTestBase {
               // Select elements are going to have validation errors with empty
               // input, since those are illegal choices. Just make sure the
               // error is not "field is required".
-              $this->assertTrue((empty($errors[$element]) || strpos('field is required', $errors[$element]) === FALSE), "Optional '$type' field '$element' is not treated as a required element");
+              $this->assertTrue((empty($errors[$element]) || strpos('field is required', (string) $errors[$element]) === FALSE), "Optional '$type' field '$element' is not treated as a required element");
             }
             else {
               // Make sure there is *no* form error for this element.
@@ -183,7 +185,7 @@ class FormTest extends WebTestBase {
         $expected[] = $form[$key]['#form_test_required_error'];
       }
       else {
-        $expected[] = t('!name field is required.', array('!name' => $form[$key]['#title']));
+        $expected[] = t('@name field is required.', array('@name' => $form[$key]['#title']));
       }
     }
 
@@ -232,6 +234,79 @@ class FormTest extends WebTestBase {
   }
 
   /**
+   * Tests that input is retained for safe elements even with an invalid token.
+   *
+   * Submits a test form containing several types of form elements.
+   */
+  public function testInputWithInvalidToken() {
+    // We need to be logged in to have CSRF tokens.
+    $account = $this->createUser();
+    $this->drupalLogin($account);
+    // Submit again with required fields set but an invalid form token and
+    // verify that all the values are retained.
+    $edit = array(
+      'textfield' => $this->randomString(),
+      'checkboxes[bar]' => TRUE,
+      'select' => 'bar',
+      'radios' => 'foo',
+      'form_token' => 'invalid token',
+    );
+    $this->drupalPostForm(Url::fromRoute('form_test.validate_required'), $edit, 'Submit');
+    $this->assertFieldByXpath('//div[contains(@class, "error")]', NULL, 'Error message is displayed with invalid token even when required fields are filled.');
+    $this->assertText('The form has become outdated. Copy any unsaved work in the form below');
+    // Verify that input elements retained the posted values.
+    $this->assertFieldByName('textfield', $edit['textfield']);
+    $this->assertNoFieldChecked('edit-checkboxes-foo');
+    $this->assertFieldChecked('edit-checkboxes-bar');
+    $this->assertOptionSelected('edit-select', 'bar');
+    $this->assertFieldChecked('edit-radios-foo');
+
+    // Check another form that has a textarea input.
+    $edit = array(
+      'textfield' => $this->randomString(),
+      'textarea' => $this->randomString() . "\n",
+      'form_token' => 'invalid token',
+    );
+    $this->drupalPostForm(Url::fromRoute('form_test.required'), $edit, 'Submit');
+    $this->assertFieldByXpath('//div[contains(@class, "error")]', NULL, 'Error message is displayed with invalid token even when required fields are filled.');
+    $this->assertText('The form has become outdated. Copy any unsaved work in the form below');
+    $this->assertFieldByName('textfield', $edit['textfield']);
+    $this->assertFieldByName('textarea', $edit['textarea']);
+
+    // Check another form that has a number input.
+    $edit = array(
+      'integer_step' => mt_rand(1, 100),
+      'form_token' => 'invalid token',
+    );
+    $this->drupalPostForm(Url::fromRoute('form_test.number'), $edit, 'Submit');
+    $this->assertFieldByXpath('//div[contains(@class, "error")]', NULL, 'Error message is displayed with invalid token even when required fields are filled.');
+    $this->assertText('The form has become outdated. Copy any unsaved work in the form below');
+    $this->assertFieldByName('integer_step', $edit['integer_step']);
+
+    // Check a form with a Url field
+    $edit = array(
+      'url' => $this->randomString(),
+      'form_token' => 'invalid token',
+    );
+    $this->drupalPostForm(Url::fromRoute('form_test.url'), $edit, 'Submit');
+    $this->assertFieldByXpath('//div[contains(@class, "error")]', NULL, 'Error message is displayed with invalid token even when required fields are filled.');
+    $this->assertText('The form has become outdated. Copy any unsaved work in the form below');
+    $this->assertFieldByName('url', $edit['url']);
+  }
+
+  /**
+   * CSRF tokens for GET forms should not be added by default.
+   */
+  public function testGetFormsCsrfToken() {
+    // We need to be logged in to have CSRF tokens.
+    $account = $this->createUser();
+    $this->drupalLogin($account);
+
+    $this->drupalGet(Url::fromRoute('form_test.get_form'));
+    $this->assertNoRaw('form_token');
+  }
+
+  /**
    * Tests validation for required textfield element without title.
    *
    * Submits a test form containing a textfield form element without title.
@@ -272,7 +347,7 @@ class FormTest extends WebTestBase {
     // First, try to submit without the required checkbox.
     $edit = array();
     $this->drupalPostForm('form-test/checkbox', $edit, t('Submit'));
-    $this->assertRaw(t('!name field is required.', array('!name' => 'required_checkbox')), 'A required checkbox is actually mandatory');
+    $this->assertRaw(t('@name field is required.', array('@name' => 'required_checkbox')), 'A required checkbox is actually mandatory');
 
     // Now try to submit the form correctly.
     $values = Json::decode($this->drupalPostForm(NULL, array('required_checkbox' => 1), t('Submit')));
@@ -298,8 +373,11 @@ class FormTest extends WebTestBase {
    */
   function testSelect() {
     $form = \Drupal::formBuilder()->getForm('Drupal\form_test\Form\FormTestSelectForm');
-    $error = '!name field is required.';
     $this->drupalGet('form-test/select');
+
+    // Verify that the options are escaped as expected.
+    $this->assertEscaped('<strong>four</strong>');
+    $this->assertNoRaw('<strong>four</strong>');
 
     // Posting without any values should throw validation errors.
     $this->drupalPostForm(NULL, array(), 'Submit');
@@ -316,7 +394,7 @@ class FormTest extends WebTestBase {
         'multiple_no_default',
     );
     foreach ($no_errors as $key) {
-      $this->assertNoText(t('!name field is required.', array('!name' => $form[$key]['#title'])));
+      $this->assertNoText(t('@name field is required.', array('@name' => $form[$key]['#title'])));
     }
 
     $expected_errors = array(
@@ -327,7 +405,7 @@ class FormTest extends WebTestBase {
         'multiple_no_default_required',
     );
     foreach ($expected_errors as $key) {
-      $this->assertText(t('!name field is required.', array('!name' => $form[$key]['#title'])));
+      $this->assertText(t('@name field is required.', array('@name' => $form[$key]['#title'])));
     }
 
     // Post values for required fields.
@@ -533,7 +611,7 @@ class FormTest extends WebTestBase {
     // All the elements should be marked as disabled, including the ones below
     // the disabled container.
     $actual_count = count($disabled_elements);
-    $expected_count = 41;
+    $expected_count = 42;
     $this->assertEqual($actual_count, $expected_count, SafeMarkup::format('Found @actual elements with disabled property (expected @expected).', array(
       '@actual' => count($disabled_elements),
       '@expected' => $expected_count,
@@ -616,7 +694,7 @@ class FormTest extends WebTestBase {
       $path = strtr($path, array('!type' => $type));
       // Verify that the element exists.
       $element = $this->xpath($path, array(
-        ':name' => SafeMarkup::checkPlain($name),
+        ':name' => Html::escape($name),
         ':div-class' => $class,
         ':value' => isset($item['#value']) ? $item['#value'] : '',
       ));

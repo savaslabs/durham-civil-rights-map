@@ -22,11 +22,29 @@ namespace Drupal\Core\Entity;
 interface EntityChangedInterface {
 
   /**
-   * Returns the timestamp of the last entity change.
+   * Gets the timestamp of the last entity change for the current translation.
    *
    * @return int
    *   The timestamp of the last entity save operation.
    */
   public function getChangedTime();
 
+  /**
+   * Sets the timestamp of the last entity change for the current translation.
+   *
+   * @param int $timestamp
+   *   The timestamp of the last entity save operation.
+   *
+   * @return $this
+   */
+  public function setChangedTime($timestamp);
+
+  /**
+   * Gets the timestamp of the last entity change across all translations.
+   *
+   * @return int
+   *   The timestamp of the last entity save operation across all
+   *   translations.
+   */
+  public function getChangedTimeAcrossTranslations();
 }

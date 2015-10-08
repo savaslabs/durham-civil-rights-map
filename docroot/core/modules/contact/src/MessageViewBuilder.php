@@ -2,14 +2,13 @@
 
 /**
  * @file
- * Contains Drupal\contact\MessageViewBuilder.
+ * Contains \Drupal\contact\MessageViewBuilder.
  */
 
 namespace Drupal\contact;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\Core\Render\Element;
 
@@ -21,8 +20,8 @@ class MessageViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    */
-  protected function getBuildDefaults(EntityInterface $entity, $view_mode, $langcode) {
-    $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
+  protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
+    $build = parent::getBuildDefaults($entity, $view_mode);
     // The message fields are individually rendered into email templates, so
     // the entity has no template itself.
     unset($build['#theme']);
@@ -32,8 +31,8 @@ class MessageViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    */
-  public function buildComponents(array &$build, array $entities, array $displays, $view_mode, $langcode = NULL) {
-    parent::buildComponents($build, $entities, $displays, $view_mode, $langcode);
+  public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
+    parent::buildComponents($build, $entities, $displays, $view_mode);
 
     foreach ($entities as $id => $entity) {
       // Add the message extra field, if enabled.
@@ -42,7 +41,7 @@ class MessageViewBuilder extends EntityViewBuilder {
         $build[$id]['message'] = array(
           '#type' => 'item',
           '#title' => t('Message'),
-          '#markup' => SafeMarkup::checkPlain($entity->getMessage()),
+          '#plain_text' => $entity->getMessage(),
         );
       }
     }
@@ -65,9 +64,9 @@ class MessageViewBuilder extends EntityViewBuilder {
           $build[$key]['#label_display'] = 'hidden';
         }
       }
-      $build = array(
-        '#markup' => MailFormatHelper::htmlToText(drupal_render($build)),
-      );
+      $build['#post_render'][] = function ($html, array $elements) {
+        return MailFormatHelper::htmlToText($html);
+      };
     }
     return $build;
   }

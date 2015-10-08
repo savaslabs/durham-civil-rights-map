@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Handler\FilterStringTest.
+ * Contains \Drupal\views\Tests\Handler\FilterStringTest.
  */
 
 namespace Drupal\views\Tests\Handler;
 
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 
 /**
@@ -15,7 +15,7 @@ use Drupal\views\Views;
  *
  * @group views
  */
-class FilterStringTest extends ViewUnitTestBase {
+class FilterStringTest extends ViewKernelTestBase {
 
   public static $modules = array('system');
 

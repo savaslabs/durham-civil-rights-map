@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Entity\KeyValueStore;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Config\Entity\Exception\ConfigEntityIdLengthException;
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -99,7 +98,7 @@ class KeyValueEntityStorage extends EntityStorageBase {
 
     // @todo This is handled by ContentEntityStorageBase, which assumes
     //   FieldableEntityInterface. The current approach in
-    //   https://drupal.org/node/1867228 improves this but does not solve it
+    //   https://www.drupal.org/node/1867228 improves this but does not solve it
     //   completely.
     if ($entity instanceof FieldableEntityInterface) {
       foreach ($entity as $name => $field) {
@@ -147,10 +146,7 @@ class KeyValueEntityStorage extends EntityStorageBase {
    * {@inheritdoc}
    */
   public function doDelete($entities) {
-    $entity_ids = array();
-    foreach ($entities as $entity) {
-      $entity_ids[] = $entity->id();
-    }
+    $entity_ids = array_keys($entities);
     $this->keyValueStore->deleteMultiple($entity_ids);
   }
 
@@ -167,10 +163,7 @@ class KeyValueEntityStorage extends EntityStorageBase {
     // @todo This is not config-specific, but serial IDs will likely never hit
     //   this limit. Consider renaming the exception class.
     if (strlen($entity->id()) > static::MAX_ID_LENGTH) {
-      throw new ConfigEntityIdLengthException(SafeMarkup::format('Entity ID @id exceeds maximum allowed length of @length characters.', array(
-        '@id' => $entity->id(),
-        '@length' => static::MAX_ID_LENGTH,
-      )));
+      throw new ConfigEntityIdLengthException("Entity ID {$entity->id()} exceeds maximum allowed length of " . static::MAX_ID_LENGTH . ' characters.');
     }
     return parent::save($entity);
   }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\field_test\Plugin\field\formatter\TestFieldMultipleFormatter.
+ * Contains \Drupal\field_test\Plugin\Field\FieldFormatter\TestFieldMultipleFormatter.
  */
 
 namespace Drupal\field_test\Plugin\Field\FieldFormatter;
@@ -63,7 +63,7 @@ class TestFieldMultipleFormatter extends FormatterBase {
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $elements = array();
 
     if (!empty($items)) {

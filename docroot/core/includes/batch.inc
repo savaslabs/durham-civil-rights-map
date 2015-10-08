@@ -47,12 +47,7 @@ function _batch_page(Request $request) {
       return new RedirectResponse(\Drupal::url('<front>', [], ['absolute' => TRUE]));
     }
   }
-  // Restore safe strings from previous batches.
-  // @todo Ensure we are not storing an excessively large string list in:
-  //   https://www.drupal.org/node/2295823
-  if (!empty($batch['safe_strings'])) {
-    SafeMarkup::setMultiple($batch['safe_strings']);
-  }
+
   // Register database update for the end of processing.
   drupal_register_shutdown_function('_batch_shutdown');
 
@@ -135,9 +130,14 @@ function _batch_progress_page() {
     // additional HTML output by PHP shows up inside the page rather than below
     // it. While this causes invalid HTML, the same would be true if we didn't,
     // as content is not allowed to appear after </html> anyway.
-    $fallback = \Drupal::service('bare_html_page_renderer')->renderBarePage(['#markup' => $fallback], $current_set['title'], 'maintenance_page', array(
+    $bare_html_page_renderer = \Drupal::service('bare_html_page_renderer');
+    $response = $bare_html_page_renderer->renderBarePage(['#markup' => $fallback], $current_set['title'], 'maintenance_page', array(
       '#show_messages' => FALSE,
     ));
+
+    // Just use the content of the response.
+    $fallback = $response->getContent();
+
     list($fallback) = explode('<!--partial-->', $fallback);
     print $fallback;
 
@@ -158,12 +158,12 @@ function _batch_progress_page() {
   $query_options['op'] = $new_op;
   $batch['url']->setOption('query', $query_options);
 
-  $url = $batch['url']->toString();
+  $url = $batch['url']->toString(TRUE)->getGeneratedUrl();
 
   $build = array(
     '#theme' => 'progress_bar',
     '#percent' => $percentage,
-    '#message' => $message,
+    '#message' => array('#markup' => $message),
     '#label' => $label,
     '#attached' => array(
       'html_head' => array(
@@ -399,6 +399,7 @@ function _batch_next_set() {
  */
 function _batch_finished() {
   $batch = &batch_get();
+  $batch_finished_redirect = NULL;
 
   // Execute the 'finished' callbacks for each batch set, if defined.
   foreach ($batch['sets'] as $batch_set) {
@@ -410,7 +411,13 @@ function _batch_finished() {
       if (is_callable($batch_set['finished'])) {
         $queue = _batch_queue($batch_set);
         $operations = $queue->getAllItems();
-        call_user_func_array($batch_set['finished'], array($batch_set['success'], $batch_set['results'], $operations, \Drupal::service('date.formatter')->formatInterval($batch_set['elapsed'] / 1000)));
+        $batch_set_result = call_user_func_array($batch_set['finished'], array($batch_set['success'], $batch_set['results'], $operations, \Drupal::service('date.formatter')->formatInterval($batch_set['elapsed'] / 1000)));
+        // If a batch 'finished' callback requested a redirect after the batch
+        // is complete, save that for later use. If more than one batch set
+        // returned a redirect, the last one is used.
+        if ($batch_set_result instanceof RedirectResponse) {
+          $batch_finished_redirect = $batch_set_result;
+        }
       }
     }
   }
@@ -441,8 +448,13 @@ function _batch_finished() {
       \Drupal::request()->query->set('destination', $_batch['destination']);
     }
 
-    // Determine the target path to redirect to.
-    if (!isset($_batch['form_state'])) {
+    // Determine the target path to redirect to. If a batch 'finished' callback
+    // returned a redirect response object, use that. Otherwise, fall back on
+    // the form redirection.
+    if (isset($batch_finished_redirect)) {
+      return $batch_finished_redirect;
+    }
+    elseif (!isset($_batch['form_state'])) {
       $_batch['form_state'] = new FormState();
     }
     if ($_batch['form_state']->getRedirect() === NULL) {
@@ -502,10 +514,6 @@ function _batch_finished() {
  */
 function _batch_shutdown() {
   if ($batch = batch_get()) {
-    // Update safe strings.
-    // @todo Ensure we are not storing an excessively large string list in:
-    //   https://www.drupal.org/node/2295823
-    $batch['safe_strings'] = SafeMarkup::getAll();
     \Drupal::service('batch.storage')->update($batch);
   }
 }

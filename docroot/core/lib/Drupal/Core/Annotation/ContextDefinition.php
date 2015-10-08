@@ -8,7 +8,7 @@
 namespace Drupal\Core\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
-use Drupal\Core\StringTranslation\TranslationWrapper;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * @defgroup plugin_context Annotation for context definition
@@ -50,6 +50,16 @@ use Drupal\Core\StringTranslation\TranslationWrapper;
  *   }
  * @endcode
  *
+ * Specifying a default value for the context definition:
+ * @code
+ *   context = {
+ *     "message" = @ContextDefinition("string",
+ *       label = @Translation("Message"),
+ *       default_value = @Translation("Checkout complete! Thank you for your purchase.")
+ *     )
+ *   }
+ * @endcode
+ *
  * @see annotation
  *
  * @}
@@ -85,6 +95,8 @@ class ContextDefinition extends Plugin {
    *   - required: (optional) Whether the context definition is required.
    *   - multiple: (optional) Whether the context definition is multivalue.
    *   - description: (optional) The UI description of this context definition.
+   *   - default_value: (optional) The default value in case the underlying
+   *     value is not set.
    *   - class: (optional) A custom ContextDefinitionInterface class.
    *
    * @throws \Exception
@@ -95,12 +107,13 @@ class ContextDefinition extends Plugin {
     $values += array(
       'required' => TRUE,
       'multiple' => FALSE,
+      'default_value' => NULL,
     );
     // Annotation classes extract data from passed annotation classes directly
     // used in the classes they pass to.
     foreach (['label', 'description'] as $key) {
       // @todo Remove this workaround in https://www.drupal.org/node/2362727.
-      if (isset($values[$key]) && $values[$key] instanceof TranslationWrapper) {
+      if (isset($values[$key]) && $values[$key] instanceof TranslatableMarkup) {
         $values[$key] = (string) $values[$key]->get();
       }
       else {
@@ -111,7 +124,7 @@ class ContextDefinition extends Plugin {
       throw new \Exception('ContextDefinition class must implement \Drupal\Core\Plugin\Context\ContextDefinitionInterface.');
     }
     $class = isset($values['class']) ? $values['class'] : 'Drupal\Core\Plugin\Context\ContextDefinition';
-    $this->definition = new $class($values['value'], $values['label'], $values['required'], $values['multiple'], $values['description']);
+    $this->definition = new $class($values['value'], $values['label'], $values['required'], $values['multiple'], $values['description'], $values['default_value']);
   }
 
   /**

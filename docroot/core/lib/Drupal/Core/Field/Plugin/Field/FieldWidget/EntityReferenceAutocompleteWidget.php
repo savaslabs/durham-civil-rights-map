@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\Core\Field\Plugin\Field\FieldWidget\AutocompleteWidget.
+ * Contains \Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget.
  */
 
 namespace Drupal\Core\Field\Plugin\Field\FieldWidget;
@@ -46,10 +46,7 @@ class EntityReferenceAutocompleteWidget extends WidgetBase {
       '#type' => 'radios',
       '#title' => t('Autocomplete matching'),
       '#default_value' => $this->getSetting('match_operator'),
-      '#options' => array(
-        'STARTS_WITH' => t('Starts with'),
-        'CONTAINS' => t('Contains'),
-      ),
+      '#options' => $this->getMatchOperatorOptions(),
       '#description' => t('Select the method used to collect autocomplete suggestions. Note that <em>Contains</em> can cause performance issues on sites with thousands of entities.'),
     );
     $element['size'] = array(
@@ -74,8 +71,9 @@ class EntityReferenceAutocompleteWidget extends WidgetBase {
   public function settingsSummary() {
     $summary = array();
 
-    $summary[] = t('Autocomplete matching: @match_operator', array('@match_operator' => $this->getSetting('match_operator')));
-    $summary[] = t('Textfield size: !size', array('!size' => $this->getSetting('size')));
+    $operators = $this->getMatchOperatorOptions();
+    $summary[] = t('Autocomplete matching: @match_operator', array('@match_operator' => $operators[$this->getSetting('match_operator')]));
+    $summary[] = t('Textfield size: @size', array('@size' => $this->getSetting('size')));
     $placeholder = $this->getSetting('placeholder');
     if (!empty($placeholder)) {
       $summary[] = t('Placeholder: @placeholder', array('@placeholder' => $placeholder));
@@ -122,7 +120,7 @@ class EntityReferenceAutocompleteWidget extends WidgetBase {
    * {@inheritdoc}
    */
   public function errorElement(array $element, ConstraintViolationInterface $error, array $form, FormStateInterface $form_state) {
-    return $element['target_id'];
+    return isset($element['target_id']) ? $element['target_id'] : FALSE;
   }
 
   /**
@@ -179,6 +177,19 @@ class EntityReferenceAutocompleteWidget extends WidgetBase {
   protected function getSelectionHandlerSetting($setting_name) {
     $settings = $this->getFieldSetting('handler_settings');
     return isset($settings[$setting_name]) ? $settings[$setting_name] : NULL;
+  }
+
+  /**
+   * Returns the options for the match operator.
+   *
+   * @return array
+   *   List of options.
+   */
+  protected function getMatchOperatorOptions() {
+    return [
+      'STARTS_WITH' => t('Starts with'),
+      'CONTAINS' => t('Contains'),
+    ];
   }
 
 }

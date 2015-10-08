@@ -1,8 +1,8 @@
 /**
- * @file toolbar.js
- *
+ * @file
  * Defines the behavior of the Drupal administration toolbar.
  */
+
 (function ($, Drupal, drupalSettings) {
 
   "use strict";
@@ -33,9 +33,13 @@
    * point directly to a resource or toggle the visibility of a tray.
    *
    * Modules register tabs with hook_toolbar().
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches the toolbar rendering functionality to the toolbar element.
    */
   Drupal.behaviors.toolbar = {
-
     attach: function (context) {
       // Verify that the user agent understands media queries. Complex admin
       // toolbar layouts require media query support.
@@ -78,7 +82,8 @@
         // asynchronously.
         Drupal.toolbar.setSubtrees.done(function (subtrees) {
           menuModel.set('subtrees', subtrees);
-          localStorage.setItem('Drupal.toolbar.subtrees', JSON.stringify(subtrees));
+          var theme = drupalSettings.ajaxPageState.theme;
+          localStorage.setItem('Drupal.toolbar.subtrees.' + theme, JSON.stringify(subtrees));
           // Indicate on the toolbarModel that subtrees are now loaded.
           model.set('areSubtreesLoaded', true);
         });
@@ -129,7 +134,7 @@
         // not the first 'Home' toolbar tab).
         if (Drupal.toolbar.models.toolbarModel.get('orientation') === 'horizontal' && Drupal.toolbar.models.toolbarModel.get('activeTab') === null) {
           Drupal.toolbar.models.toolbarModel.set({
-            'activeTab': $('.toolbar-bar .toolbar-tab:not(.home-toolbar-tab) a').get(0)
+            activeTab: $('.toolbar-bar .toolbar-tab:not(.home-toolbar-tab) a').get(0)
           });
         }
       });
@@ -138,16 +143,30 @@
 
   /**
    * Toolbar methods of Backbone objects.
+   *
+   * @namespace
    */
   Drupal.toolbar = {
 
-    // A hash of View instances.
+    /**
+     * A hash of View instances.
+     *
+     * @type {object.<string, Backbone.View>}
+     */
     views: {},
 
-    // A hash of Model instances.
+    /**
+     * A hash of Model instances.
+     *
+     * @type {object.<string, Backbone.Model>}
+     */
     models: {},
 
-    // A hash of MediaQueryList objects tracked by the toolbar.
+    /**
+     * A hash of MediaQueryList objects tracked by the toolbar.
+     *
+     * @type {object.<string, object>}
+     */
     mql: {},
 
     /**
@@ -155,43 +174,54 @@
      *
      * A deferred object that is resolved by an inlined JavaScript callback.
      *
-     * JSONP callback.
+     * @type {jQuery.Deferred}
+     *
      * @see toolbar_subtrees_jsonp().
      */
     setSubtrees: new $.Deferred(),
 
     /**
      * Respond to configured narrow media query changes.
+     *
+     * @param {Drupal.toolbar.ToolbarModel} model
+     *   A toolbar model
+     * @param {string} label
+     *   Media query label.
+     * @param {object} mql
+     *   A MediaQueryList object.
      */
     mediaQueryChangeHandler: function (model, label, mql) {
       switch (label) {
         case 'toolbar.narrow':
           model.set({
-            'isOriented': mql.matches,
-            'isTrayToggleVisible': false
+            isOriented: mql.matches,
+            isTrayToggleVisible: false
           });
           // If the toolbar doesn't have an explicit orientation yet, or if the
           // narrow media query doesn't match then set the orientation to
           // vertical.
           if (!mql.matches || !model.get('orientation')) {
-            model.set({'orientation': 'vertical'}, {validate: true});
+            model.set({orientation: 'vertical'}, {validate: true});
           }
           break;
+
         case 'toolbar.standard':
           model.set({
-            'isFixed': mql.matches
+            isFixed: mql.matches
           });
           break;
+
         case 'toolbar.wide':
           model.set({
-            'orientation': ((mql.matches) ? 'horizontal' : 'vertical')
+            orientation: ((mql.matches) ? 'horizontal' : 'vertical')
           }, {validate: true});
           // The tray orientation toggle visibility does not need to be
           // validated.
           model.set({
-            'isTrayToggleVisible': mql.matches
+            isTrayToggleVisible: mql.matches
           });
           break;
+
         default:
           break;
       }
@@ -201,13 +231,27 @@
   /**
    * A toggle is an interactive element often bound to a click handler.
    *
-   * @return {String}
+   * @return {string}
    *   A string representing a DOM fragment.
    */
   Drupal.theme.toolbarOrientationToggle = function () {
     return '<div class="toolbar-toggle-orientation"><div class="toolbar-lining">' +
       '<button class="toolbar-icon" type="button"></button>' +
       '</div></div>';
+  };
+
+  /**
+   * Ajax command to set the toolbar subtrees.
+   *
+   * @param {Drupal.Ajax} ajax
+   *   {@link Drupal.Ajax} object created by {@link Drupal.ajax}.
+   * @param {object} response
+   *   JSON response from the Ajax request.
+   * @param {number} [status]
+   *   XMLHttpRequest status.
+   */
+  Drupal.AjaxCommands.prototype.setToolbarSubtrees = function (ajax, response, status) {
+    Drupal.toolbar.setSubtrees.resolve(response.subtrees);
   };
 
 }(jQuery, Drupal, drupalSettings));

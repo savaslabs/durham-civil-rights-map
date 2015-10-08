@@ -7,13 +7,14 @@
 
   "use strict";
 
-  /**
-   * Renders the visual view of the edit mode toggle. Listens to mouse & touch.
-   *
-   * Handles edit mode toggle interactions.
-   */
-  Drupal.contextualToolbar.VisualView = Backbone.View.extend({
+  Drupal.contextualToolbar.VisualView = Backbone.View.extend(/** @lends Drupal.contextualToolbar.VisualView# */{
 
+    /**
+     * Events for the Backbone view.
+     *
+     * @return {object}
+     *   A mapping of events to be used in the view.
+     */
     events: function () {
       // Prevents delay and simulated mouse events.
       var touchEndToClick = function (event) {
@@ -22,15 +23,21 @@
       };
 
       return {
-        'click': function () {
+        click: function () {
           this.model.set('isViewing', !this.model.get('isViewing'));
         },
-        'touchend': touchEndToClick
+        touchend: touchEndToClick
       };
     },
 
     /**
-     * {@inheritdoc}
+     * Renders the visual view of the edit mode toggle.
+     *
+     * Listens to mouse & touch and handles edit mode toggle interactions.
+     *
+     * @constructs
+     *
+     * @augments Backbone.View
      */
     initialize: function () {
       this.listenTo(this.model, 'change', this.render);
@@ -38,7 +45,10 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @return {Drupal.contextualToolbar.VisualView}
+     *   The current contextual toolbar visual view.
      */
     render: function () {
       // Render the visibility.
@@ -52,12 +62,12 @@
     /**
      * Model change handler; persists the isViewing value to localStorage.
      *
-     * isViewing === true is the default, so only stores in localStorage when
+     * `isViewing === true` is the default, so only stores in localStorage when
      * it's not the default value (i.e. false).
      *
-     * @param Drupal.contextualToolbar.StateModel model
-     *   A Drupal.contextualToolbar.StateModel model.
-     * @param bool isViewing
+     * @param {Drupal.contextualToolbar.StateModel} model
+     *   A {@link Drupal.contextualToolbar.StateModel} model.
+     * @param {bool} isViewing
      *   The value of the isViewing attribute in the model.
      */
     persist: function (model, isViewing) {

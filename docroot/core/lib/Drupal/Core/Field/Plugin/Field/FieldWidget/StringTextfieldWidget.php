@@ -60,7 +60,7 @@ class StringTextfieldWidget extends WidgetBase {
   public function settingsSummary() {
     $summary = array();
 
-    $summary[] = t('Textfield size: !size', array('!size' => $this->getSetting('size')));
+    $summary[] = t('Textfield size: @size', array('@size' => $this->getSetting('size')));
     $placeholder = $this->getSetting('placeholder');
     if (!empty($placeholder)) {
       $summary[] = t('Placeholder: @placeholder', array('@placeholder' => $placeholder));
@@ -79,7 +79,7 @@ class StringTextfieldWidget extends WidgetBase {
       '#size' => $this->getSetting('size'),
       '#placeholder' => $this->getSetting('placeholder'),
       '#maxlength' => $this->getFieldSetting('max_length'),
-      '#attributes' => array('class' => array('text-full')),
+      '#attributes' => array('class' => array('js-text-full', 'text-full')),
     );
 
     return $element;

@@ -2,12 +2,11 @@
 
 /**
  * @file
- * Definition of Drupal\node\Plugin\views\row\Rss.
+ * Contains \Drupal\node\Plugin\views\row\Rss.
  */
 
 namespace Drupal\node\Plugin\views\row;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\views\Plugin\views\row\RssPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -78,7 +77,7 @@ class Rss extends RssPluginBase {
 
   public function summaryTitle() {
     $options = $this->buildOptionsForm_summary_options();
-    return SafeMarkup::checkPlain($options[$this->options['view_mode']]);
+    return $options[$this->options['view_mode']];
   }
 
   public function preRender($values) {
@@ -111,7 +110,7 @@ class Rss extends RssPluginBase {
       return;
     }
 
-    $item_text = '';
+    $description_build = [];
 
     $node->link = $node->url('canonical', array('absolute' => TRUE));
     $node->rss_namespaces = array();
@@ -122,7 +121,7 @@ class Rss extends RssPluginBase {
       ),
       array(
         'key' => 'dc:creator',
-        'value' => $node->getOwner()->getUsername(),
+        'value' => $node->getOwner()->getDisplayName(),
       ),
       array(
         'key' => 'guid',
@@ -154,22 +153,25 @@ class Rss extends RssPluginBase {
 
     if ($display_mode != 'title') {
       // We render node contents.
-      $item_text .= drupal_render_root($build);
+      $description_build = $build;
     }
 
     $item = new \stdClass();
-    $item->description = SafeMarkup::set($item_text);
+    $item->description = $description_build;
     $item->title = $node->label();
     $item->link = $node->link;
-    $item->elements = $node->rss_elements;
+    // Provide a reference so that the render call in
+    // template_preprocess_views_view_row_rss() can still access it.
+    $item->elements = &$node->rss_elements;
     $item->nid = $node->id();
-    $theme_function = array(
+    $build = array(
       '#theme' => $this->themeFunctions(),
       '#view' => $this->view,
       '#options' => $this->options,
       '#row' => $item,
     );
-    return drupal_render_root($theme_function);
+
+    return $build;
   }
 
 }

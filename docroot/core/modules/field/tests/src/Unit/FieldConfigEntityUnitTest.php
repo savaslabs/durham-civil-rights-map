@@ -7,6 +7,7 @@
 
 namespace Drupal\Tests\field\Unit;
 
+use Drupal\Core\Entity\EntityType;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
@@ -22,7 +23,7 @@ class FieldConfigEntityUnitTest extends UnitTestCase {
   /**
    * The entity type used for testing.
    *
-   * @var \Drupal\Core\Entity\EntityTypeInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Config\Entity\ConfigEntityTypeInterface|\PHPUnit_Framework_MockObject_MockObject
    */
   protected $entityType;
 
@@ -73,7 +74,7 @@ class FieldConfigEntityUnitTest extends UnitTestCase {
    */
   protected function setUp() {
     $this->entityTypeId = $this->randomMachineName();
-    $this->entityType = $this->getMock('\Drupal\Core\Entity\EntityTypeInterface');
+    $this->entityType = $this->getMock('\Drupal\Core\Config\Entity\ConfigEntityTypeInterface');
 
     $this->entityManager = $this->getMock('\Drupal\Core\Entity\EntityManagerInterface');
 
@@ -115,26 +116,10 @@ class FieldConfigEntityUnitTest extends UnitTestCase {
    */
   public function testCalculateDependencies() {
     // Mock the interfaces necessary to create a dependency on a bundle entity.
-    $bundle_entity = $this->getMock('Drupal\Core\Config\Entity\ConfigEntityInterface');
-    $bundle_entity->expects($this->any())
-      ->method('getConfigDependencyName')
-      ->will($this->returnValue('test.test_entity_type.id'));
-
-    $storage = $this->getMock('\Drupal\Core\Config\Entity\ConfigEntityStorageInterface');
-    $storage->expects($this->any())
-      ->method('load')
-      ->with('test_bundle')
-      ->will($this->returnValue($bundle_entity));
-
-    $this->entityManager->expects($this->any())
-      ->method('getStorage')
-      ->with('bundle_entity_type')
-      ->will($this->returnValue($storage));
-
     $target_entity_type = $this->getMock('\Drupal\Core\Entity\EntityTypeInterface');
     $target_entity_type->expects($this->any())
-      ->method('getBundleEntityType')
-      ->will($this->returnValue('bundle_entity_type'));
+      ->method('getBundleConfigDependency')
+      ->will($this->returnValue(array('type' => 'config', 'name' => 'test.test_entity_type.id')));
 
     $this->entityManager->expects($this->at(0))
       ->method('getDefinition')
@@ -168,7 +153,7 @@ class FieldConfigEntityUnitTest extends UnitTestCase {
       'bundle' => 'test_bundle',
       'field_type' => 'test_field',
     ), $this->entityTypeId);
-    $dependencies = $field->calculateDependencies();
+    $dependencies = $field->calculateDependencies()->getDependencies();
     $this->assertContains('field.storage.test_entity_type.test_field', $dependencies['config']);
     $this->assertContains('test.test_entity_type.id', $dependencies['config']);
     $this->assertEquals(['test_module', 'test_module2', 'test_module3'], $dependencies['module']);
@@ -178,7 +163,7 @@ class FieldConfigEntityUnitTest extends UnitTestCase {
    * Test that invalid bundles are handled.
    *
    * @expectedException \LogicException
-   * @expectedExceptionMessage Missing bundle entity, entity type <em class="placeholder">bundle_entity_type</em>, entity id <em class="placeholder">test_bundle_not_exists</em>.
+   * @expectedExceptionMessage Missing bundle entity, entity type bundle_entity_type, entity id test_bundle_not_exists.
    */
   public function testCalculateDependenciesIncorrectBundle() {
     $storage = $this->getMock('\Drupal\Core\Config\Entity\ConfigEntityStorageInterface');
@@ -192,10 +177,10 @@ class FieldConfigEntityUnitTest extends UnitTestCase {
       ->with('bundle_entity_type')
       ->will($this->returnValue($storage));
 
-    $target_entity_type = $this->getMock('\Drupal\Core\Entity\EntityTypeInterface');
-    $target_entity_type->expects($this->any())
-      ->method('getBundleEntityType')
-      ->will($this->returnValue('bundle_entity_type'));
+    $target_entity_type = new EntityType(array(
+      'id' => 'test_entity_type',
+      'bundle_entity_type' => 'bundle_entity_type',
+    ));
 
     $this->entityManager->expects($this->at(0))
       ->method('getDefinition')

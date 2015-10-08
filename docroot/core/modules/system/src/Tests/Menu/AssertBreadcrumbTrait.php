@@ -7,7 +7,7 @@
 
 namespace Drupal\system\Tests\Menu;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Url;
 
 /**
@@ -70,8 +70,8 @@ trait AssertBreadcrumbTrait {
     while ($trail && !empty($parts)) {
       foreach ($trail as $path => $title) {
         // If the path is empty, generate the path from the <front> route.  If
-        // the path does not start with a leading, then run it through
-        // Url::fromUri('base:')->toString() to get correct the base
+        // the path does not start with a leading slash, then run it through
+        // Url::fromUri('base:')->toString() to get the correct base
         // prepended.
         if ($path == '') {
           $url = Url::fromRoute('<front>')->toString();
@@ -83,7 +83,7 @@ trait AssertBreadcrumbTrait {
           $url = $path;
         }
         $part = array_shift($parts);
-        $pass = ($pass && $part['href'] === $url && $part['text'] === SafeMarkup::checkPlain($title));
+        $pass = ($pass && $part['href'] === $url && $part['text'] === Html::escape($title));
       }
     }
     // No parts must be left, or an expected "Home" will always pass.

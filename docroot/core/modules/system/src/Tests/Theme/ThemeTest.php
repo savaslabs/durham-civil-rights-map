@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Theme\ThemeTest.
+ * Contains \Drupal\system\Tests\Theme\ThemeTest.
  */
 
 namespace Drupal\system\Tests\Theme;
@@ -13,6 +13,7 @@ use Drupal\test_theme\ThemeClass;
 use Symfony\Cmf\Component\Routing\RouteObjectInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Route;
+use Drupal\Component\Render\MarkupInterface;
 
 /**
  * Tests low-level theme functions.
@@ -59,12 +60,19 @@ class ThemeTest extends WebTestBase {
    * Test that _theme() returns expected data types.
    */
   function testThemeDataTypes() {
-    // theme_test_false is an implemented theme hook so \Drupal::theme() service should
-    // return a string, even though the theme function itself can return anything.
-    $foos = array('null' => NULL, 'false' => FALSE, 'integer' => 1, 'string' => 'foo');
+    // theme_test_false is an implemented theme hook so \Drupal::theme() service
+    // should return a string or an object that implements MarkupInterface,
+    // even though the theme function itself can return anything.
+    $foos = array('null' => NULL, 'false' => FALSE, 'integer' => 1, 'string' => 'foo', 'empty_string' => '');
     foreach ($foos as $type => $example) {
       $output = \Drupal::theme()->render('theme_test_foo', array('foo' => $example));
-      $this->assertTrue(is_string($output), format_string('\Drupal::theme() returns a string for data type !type.', array('!type' => $type)));
+      $this->assertTrue($output instanceof MarkupInterface || is_string($output), format_string('\Drupal::theme() returns an object that implements MarkupInterface or a string for data type @type.', array('@type' => $type)));
+      if ($output instanceof MarkupInterface) {
+        $this->assertIdentical((string) $example, $output->__toString());
+      }
+      elseif (is_string($output)) {
+        $this->assertIdentical($output, '', 'A string will be return when the theme returns an empty string.');
+      }
     }
 
     // suggestionnotimplemented is not an implemented theme hook so \Drupal::theme() service
@@ -79,7 +87,7 @@ class ThemeTest extends WebTestBase {
   function testThemeSuggestions() {
     // Set the front page as something random otherwise the CLI
     // test runner fails.
-    $this->config('system.site')->set('page.front', 'nobody-home')->save();
+    $this->config('system.site')->set('page.front', '/nobody-home')->save();
     $args = array('node', '1', 'edit');
     $suggestions = theme_get_suggestions($args, 'page');
     $this->assertEqual($suggestions, array('page__node', 'page__node__%', 'page__node__1', 'page__node__edit'), 'Found expected node edit page suggestions');
@@ -146,7 +154,7 @@ class ThemeTest extends WebTestBase {
     $request->attributes->set(RouteObjectInterface::ROUTE_NAME, 'user.login');
     $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, new Route('/user/login'));
     \Drupal::requestStack()->push($request);
-    $this->config('system.site')->set('page.front', 'user/login')->save();
+    $this->config('system.site')->set('page.front', '/user/login')->save();
     $suggestions = theme_get_suggestions(array('user', 'login'), 'page');
     // Set it back to not annoy the batch runner.
     \Drupal::requestStack()->pop();
@@ -167,7 +175,7 @@ class ThemeTest extends WebTestBase {
     $config->set('css.preprocess', 0);
     $config->save();
     $this->drupalGet('theme-test/suggestion');
-    $this->assertNoText('system.module.css', 'The theme\'s .info.yml file is able to override a module CSS file from being added to the page.');
+    $this->assertNoText('system.module.css', "The theme's .info.yml file is able to remove a module CSS file from being added to the page.");
 
     // Also test with aggregation enabled, simply ensuring no PHP errors are
     // triggered during drupal_build_css_cache() when a source file doesn't
@@ -277,7 +285,7 @@ class ThemeTest extends WebTestBase {
   /**
    * Tests that region attributes can be manipulated via preprocess functions.
    */
-  function testRegionClass() {
+  public function testRegionClass() {
     \Drupal::service('module_installer')->install(array('block', 'theme_region_test'));
 
     // Place a block.
@@ -285,6 +293,33 @@ class ThemeTest extends WebTestBase {
     $this->drupalGet('');
     $elements = $this->cssSelect(".region-sidebar-first.new_class");
     $this->assertEqual(count($elements), 1, 'New class found.');
+  }
+
+  /**
+   * Ensures suggestion preprocess functions run for default implementations.
+   *
+   * The theme hook used by this test has its base preprocess function in a
+   * separate file, so this test also ensures that that file is correctly loaded
+   * when needed.
+   */
+  public function testSuggestionPreprocessForDefaults() {
+    \Drupal::service('theme_handler')->setDefault('test_theme');
+    // Test with both an unprimed and primed theme registry.
+    drupal_theme_rebuild();
+    for ($i = 0; $i < 2; $i++) {
+      $this->drupalGet('theme-test/preprocess-suggestions');
+      $items = $this->cssSelect('.suggestion');
+      $expected_values = [
+        'Suggestion',
+        'Kitten',
+        'Monkey',
+        'Kitten',
+        'Flamingo',
+      ];
+      foreach ($expected_values as $key => $value) {
+        $this->assertEqual((string) $value, $items[$key]);
+      }
+    }
   }
 
 }

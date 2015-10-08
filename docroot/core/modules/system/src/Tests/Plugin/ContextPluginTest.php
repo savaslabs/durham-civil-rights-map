@@ -9,6 +9,7 @@ namespace Drupal\system\Tests\Plugin;
 
 use Drupal\Component\Plugin\Exception\ContextException;
 use Drupal\Core\Plugin\Context\ContextDefinition;
+use Drupal\node\Entity\NodeType;
 use Drupal\plugin_test\Plugin\MockBlockManager;
 use Drupal\simpletest\KernelTestBase;
 
@@ -26,6 +27,10 @@ class ContextPluginTest extends KernelTestBase {
    */
   function testContext() {
     $this->installEntitySchema('user');
+    $this->installEntitySchema('node');
+    $this->installEntitySchema('node_type');
+    $type = NodeType::create(['type' => 'page', 'name' => 'Page']);
+    $type->save();
 
     $name = $this->randomMachineName();
     $manager = new MockBlockManager();
@@ -57,7 +62,7 @@ class ContextPluginTest extends KernelTestBase {
       $plugin->getContextValue('user');
     }
     catch(ContextException $e) {
-      $this->assertIdentical("The entity:user context is required and not present.", $e->getMessage(), 'Requesting a non-set value of a required context should throw a context exception.');
+      $this->assertIdentical("The 'entity:user' context is required and not present.", $e->getMessage(), 'Requesting a non-set value of a required context should throw a context exception.');
     }
 
     // Try to pass the wrong class type as a context value.

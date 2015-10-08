@@ -15,6 +15,8 @@ use Drupal\Core\TypedData\Type\FloatInterface;
 use Drupal\Core\TypedData\Type\IntegerInterface;
 use Drupal\Core\TypedData\Type\StringInterface;
 use Drupal\Core\TypedData\Type\UriInterface;
+use Drupal\Core\TypedData\Validation\TypedDataAwareValidatorTrait;
+use Drupal\Component\Render\MarkupInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -22,6 +24,8 @@ use Symfony\Component\Validator\ConstraintValidator;
  * Validates the PrimitiveType constraint.
  */
 class PrimitiveTypeConstraintValidator extends ConstraintValidator {
+
+  use TypedDataAwareValidatorTrait;
 
   /**
    * Implements \Symfony\Component\Validator\ConstraintValidatorInterface::validate().
@@ -32,7 +36,7 @@ class PrimitiveTypeConstraintValidator extends ConstraintValidator {
       return;
     }
 
-    $typed_data = $this->context->getMetadata()->getTypedData();
+    $typed_data = $this->getTypedData();
     $valid = TRUE;
     if ($typed_data instanceof BinaryInterface && !is_resource($value)) {
       $valid = FALSE;
@@ -46,7 +50,7 @@ class PrimitiveTypeConstraintValidator extends ConstraintValidator {
     if ($typed_data instanceof IntegerInterface && filter_var($value, FILTER_VALIDATE_INT) === FALSE) {
       $valid = FALSE;
     }
-    if ($typed_data instanceof StringInterface && !is_scalar($value)) {
+    if ($typed_data instanceof StringInterface && !is_scalar($value) && !($value instanceof MarkupInterface)) {
       $valid = FALSE;
     }
     // Ensure that URIs comply with http://tools.ietf.org/html/rfc3986, which

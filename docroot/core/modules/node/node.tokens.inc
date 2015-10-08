@@ -5,8 +5,9 @@
  * Builds placeholder replacement tokens for node-related data.
  */
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Datetime\Entity\DateFormat;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\user\Entity\User;
 
 /**
@@ -83,7 +84,7 @@ function node_token_info() {
 /**
  * Implements hook_tokens().
  */
-function node_tokens($type, $tokens, array $data = array(), array $options = array()) {
+function node_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
   $token_service = \Drupal::token();
 
   $url_options = array('absolute' => TRUE);
@@ -94,8 +95,6 @@ function node_tokens($type, $tokens, array $data = array(), array $options = arr
   else {
     $langcode = LanguageInterface::LANGCODE_DEFAULT;
   }
-  $sanitize = !empty($options['sanitize']);
-
   $replacements = array();
 
   if ($type == 'node' && !empty($data['node'])) {
@@ -114,16 +113,16 @@ function node_tokens($type, $tokens, array $data = array(), array $options = arr
           break;
 
         case 'type':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($node->getType()) : $node->getType();
+          $replacements[$original] = $node->getType();
           break;
 
         case 'type-name':
           $type_name = node_get_type_label($node);
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($type_name) : $type_name;
+          $replacements[$original] = $type_name;
           break;
 
         case 'title':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($node->getTitle()) : $node->getTitle();
+          $replacements[$original] = $node->getTitle();
           break;
 
         case 'body':
@@ -131,14 +130,13 @@ function node_tokens($type, $tokens, array $data = array(), array $options = arr
           $translation = \Drupal::entityManager()->getTranslationFromContext($node, $langcode, array('operation' => 'node_tokens'));
           if ($translation->hasField('body') && ($items = $translation->get('body')) && !$items->isEmpty()) {
             $item = $items[0];
-            $field_definition = \Drupal::entityManager()->getFieldDefinitions('node', $node->bundle())['body'];
             // If the summary was requested and is not empty, use it.
             if ($name == 'summary' && !empty($item->summary)) {
-              $output = $sanitize ? $item->summary_processed : $item->summary;
+              $output = $item->summary_processed;
             }
             // Attempt to provide a suitable version of the 'body' field.
             else {
-              $output = $sanitize ? $item->processed : $item->value;
+              $output = $item->processed;
               // A summary was requested.
               if ($name == 'summary') {
                 // Generate an optionally trimmed summary of the body field.
@@ -157,12 +155,14 @@ function node_tokens($type, $tokens, array $data = array(), array $options = arr
                 $output = text_summary($output, $item->format, $length);
               }
             }
+            // "processed" returns a \Drupal\Component\Render\MarkupInterface
+            // via check_markup().
             $replacements[$original] = $output;
           }
           break;
 
         case 'langcode':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($node->language()->getId()) : $node->language()->getId();
+          $replacements[$original] = $node->language()->getId();
           break;
 
         case 'url':
@@ -176,29 +176,34 @@ function node_tokens($type, $tokens, array $data = array(), array $options = arr
         // Default values for the chained tokens handled below.
         case 'author':
           $account = $node->getOwner() ? $node->getOwner() : User::load(0);
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($account->label()) : $account->label();
+          $bubbleable_metadata->addCacheableDependency($account);
+          $replacements[$original] = $account->label();
           break;
 
         case 'created':
+          $date_format = DateFormat::load('medium');
+          $bubbleable_metadata->addCacheableDependency($date_format);
           $replacements[$original] = format_date($node->getCreatedTime(), 'medium', '', NULL, $langcode);
           break;
 
         case 'changed':
+          $date_format = DateFormat::load('medium');
+          $bubbleable_metadata->addCacheableDependency($date_format);
           $replacements[$original] = format_date($node->getChangedTime(), 'medium', '', NULL, $langcode);
           break;
       }
     }
 
     if ($author_tokens = $token_service->findWithPrefix($tokens, 'author')) {
-      $replacements += $token_service->generate('user', $author_tokens, array('user' => $node->getOwner()), $options);
+      $replacements += $token_service->generate('user', $author_tokens, array('user' => $node->getOwner()), $options, $bubbleable_metadata);
     }
 
     if ($created_tokens = $token_service->findWithPrefix($tokens, 'created')) {
-      $replacements += $token_service->generate('date', $created_tokens, array('date' => $node->getCreatedTime()), $options);
+      $replacements += $token_service->generate('date', $created_tokens, array('date' => $node->getCreatedTime()), $options, $bubbleable_metadata);
     }
 
     if ($changed_tokens = $token_service->findWithPrefix($tokens, 'changed')) {
-      $replacements += $token_service->generate('date', $changed_tokens, array('date' => $node->getChangedTime()), $options);
+      $replacements += $token_service->generate('date', $changed_tokens, array('date' => $node->getChangedTime()), $options, $bubbleable_metadata);
     }
   }
 

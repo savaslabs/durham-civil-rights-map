@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\GlossaryTest.
+ * Contains \Drupal\views\Tests\GlossaryTest.
  */
 
 namespace Drupal\views\Tests;
@@ -10,7 +10,6 @@ namespace Drupal\views\Tests;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
-use Drupal\system\Tests\Cache\AssertPageCacheContextsAndTagsTrait;
 use Drupal\views\Views;
 
 /**
@@ -20,7 +19,6 @@ use Drupal\views\Views;
  */
 class GlossaryTest extends ViewTestBase {
 
-  use AssertPageCacheContextsAndTagsTrait;
   use AssertViewsCacheTagsTrait;
 
   /**
@@ -73,17 +71,41 @@ class GlossaryTest extends ViewTestBase {
     $url = Url::fromRoute('view.glossary.page_1');
 
     // Verify cache tags.
-    $this->assertPageCacheContextsAndTags($url, ['languages:' . LanguageInterface::TYPE_CONTENT, 'languages:' . LanguageInterface::TYPE_INTERFACE, 'theme', 'url', 'user.node_grants:view', 'user.permissions'], [
-      'config:views.view.glossary',
-      'node:' . $nodes_by_char['a'][0]->id(), 'node:' . $nodes_by_char['a'][1]->id(), 'node:' . $nodes_by_char['a'][2]->id(),
-      'node_list',
-      'user:0',
-      'user_list',
-      'rendered',
-      // FinishResponseSubscriber adds this cache tag to responses that have the
-      // 'user.permissions' cache context for anonymous users.
-      'config:user.role.anonymous',
-    ]);
+    $this->assertPageCacheContextsAndTags(
+      $url,
+      [
+        'timezone',
+        'languages:' . LanguageInterface::TYPE_CONTENT,
+        'languages:' . LanguageInterface::TYPE_INTERFACE,
+        'theme',
+        'url',
+        'user.node_grants:view',
+        'user.permissions',
+        'route',
+      ],
+      [
+        'config:views.view.glossary',
+        // Listed for letter 'a'
+        'node:' . $nodes_by_char['a'][0]->id(), 'node:' . $nodes_by_char['a'][1]->id(), 'node:' . $nodes_by_char['a'][2]->id(),
+        // Link for letter 'd'.
+        'node:1',
+        // Link for letter 'p'.
+        'node:16',
+        // Link for letter 'r'.
+        'node:2',
+        // Link for letter 'l'.
+        'node:21',
+        // Link for letter 'u'.
+        'node:6',
+        'node_list',
+        'user:0',
+        'user_list',
+        'rendered',
+        // FinishResponseSubscriber adds this cache tag to responses that have the
+        // 'user.permissions' cache context for anonymous users.
+        'config:user.role.anonymous',
+      ]
+    );
 
     // Check the actual page response.
     $this->drupalGet($url);

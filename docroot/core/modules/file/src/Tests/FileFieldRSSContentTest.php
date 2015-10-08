@@ -2,12 +2,13 @@
 
 /**
  * @file
- * Definition of Drupal\file\Tests\FileFieldDisplayTest.
+ * Contains \Drupal\file\Tests\FileFieldRSSContentTest.
  */
 
 namespace Drupal\file\Tests;
 
 use Drupal\node\Entity\Node;
+use Drupal\file\Entity\File;
 
 /**
  * Ensure that files added to nodes appear correctly in RSS feeds.
@@ -63,20 +64,17 @@ class FileFieldRSSContentTest extends FileFieldTestBase {
     // Get the uploaded file from the node.
     $node_storage->resetCache(array($nid));
     $node = $node_storage->load($nid);
-    $node_file = file_load($node->{$field_name}->target_id);
+    $node_file = File::load($node->{$field_name}->target_id);
 
     // Check that the RSS enclosure appears in the RSS feed.
     $this->drupalGet('rss.xml');
     $uploaded_filename = str_replace('public://', '', $node_file->getFileUri());
-    $test_element = array(
-      'key' => 'enclosure',
-      'value' => "",
-      'attributes' => array(
-        'url' => file_create_url("public://$uploaded_filename", array('absolute' => TRUE)),
-        'length' => $node_file->getSize(),
-        'type' => $node_file->getMimeType()
-      ),
+    $test_element = sprintf(
+      '<enclosure url="%s" length="%s" type="%s" />',
+      file_create_url("public://$uploaded_filename", array('absolute' => TRUE)),
+      $node_file->getSize(),
+      $node_file->getMimeType()
     );
-    $this->assertRaw(format_xml_elements(array($test_element)), 'File field RSS enclosure is displayed when viewing the RSS feed.');
+    $this->assertRaw($test_element, 'File field RSS enclosure is displayed when viewing the RSS feed.');
   }
 }

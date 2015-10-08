@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views_test_data\Plugin\views\field\FieldTest.
+ * Contains \Drupal\views_test_data\Plugin\views\field\FieldTest.
  */
 
 namespace Drupal\views_test_data\Plugin\views\field;
@@ -46,7 +46,7 @@ class FieldTest extends FieldPluginBase {
    * Overrides Drupal\views\Plugin\views\field\FieldPluginBase::addSelfTokens().
    */
   protected function addSelfTokens(&$tokens, $item) {
-    $tokens['[test-token]'] = $this->getTestValue();
+    $tokens['{{ test_token }}'] = $this->getTestValue();
   }
 
   /**

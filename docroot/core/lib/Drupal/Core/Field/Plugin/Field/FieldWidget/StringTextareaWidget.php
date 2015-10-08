@@ -60,7 +60,7 @@ class StringTextareaWidget extends WidgetBase {
   public function settingsSummary() {
     $summary = array();
 
-    $summary[] = t('Number of rows: !rows', array('!rows' => $this->getSetting('rows')));
+    $summary[] = t('Number of rows: @rows', array('@rows' => $this->getSetting('rows')));
     $placeholder = $this->getSetting('placeholder');
     if (!empty($placeholder)) {
       $summary[] = t('Placeholder: @placeholder', array('@placeholder' => $placeholder));
@@ -78,7 +78,7 @@ class StringTextareaWidget extends WidgetBase {
       '#default_value' => $items[$delta]->value,
       '#rows' => $this->getSetting('rows'),
       '#placeholder' => $this->getSetting('placeholder'),
-      '#attributes' => array('class' => array('text-full')),
+      '#attributes' => array('class' => array('js-text-full', 'text-full')),
     );
 
     return $element;

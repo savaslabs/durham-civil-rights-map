@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\Component\Diff\Diff.
+ */
+
 namespace Drupal\Component\Diff;
 
 use Drupal\Component\Diff\Engine\DiffEngine;
@@ -9,9 +14,9 @@ use Drupal\Component\Diff\Engine\DiffEngine;
  * @todo document
  * @subpackage DifferenceEngine
  *
- * Copied from https://drupal.org/project/diff which was based PHP diff engine
- * for phpwiki. (Taken from phpwiki-1.3.3) The original code in phpwiki was
- * copyright (C) 2000, 2001 Geoffrey T. Dairiki <dairiki@dairiki.org> and
+ * Copied from https://www.drupal.org/project/diff which was based PHP diff
+ * engine for phpwiki. (Taken from phpwiki-1.3.3) The original code in phpwiki
+ * was copyright (C) 2000, 2001 Geoffrey T. Dairiki <dairiki@dairiki.org> and
  * licensed under GPL.
  */
 class Diff {
@@ -88,7 +93,7 @@ class Diff {
   }
 
   /**
-   * Get the original set of lines.
+   * Gets the original set of lines.
    *
    * This reconstructs the $from_lines parameter passed to the
    * constructor.
@@ -107,7 +112,7 @@ class Diff {
   }
 
   /**
-   * Get the closing set of lines.
+   * Gets the closing set of lines.
    *
    * This reconstructs the $to_lines parameter passed to the
    * constructor.

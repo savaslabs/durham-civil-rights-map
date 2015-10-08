@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Handler\FilterNumericTest.
+ * Contains \Drupal\views\Tests\Handler\FilterNumericTest.
  */
 
 namespace Drupal\views\Tests\Handler;
 
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 
 /**
@@ -15,7 +15,7 @@ use Drupal\views\Views;
  *
  * @group views
  */
-class FilterNumericTest extends ViewUnitTestBase {
+class FilterNumericTest extends ViewKernelTestBase {
 
   public static $modules = array('system');
 

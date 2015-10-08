@@ -7,6 +7,7 @@
 
 namespace Drupal\Core\Site;
 
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Database\Database;
 
 /**
@@ -111,12 +112,11 @@ final class Settings {
    */
   public static function initialize($app_root, $site_path, &$class_loader) {
     // Export these settings.php variables to the global namespace.
-    global $base_url, $config_directories, $config;
+    global $config_directories, $config;
     $settings = array();
     $config = array();
     $databases = array();
 
-    // Make conf_path() available as local variable in settings.php.
     if (is_readable($app_root . '/' . $site_path . '/settings.php')) {
       require $app_root . '/' . $site_path . '/settings.php';
     }
@@ -146,6 +146,33 @@ final class Settings {
     }
 
     return $hash_salt;
+  }
+
+  /**
+   * Generates a prefix for APC user cache keys.
+   *
+   * A standardized prefix is useful to allow visual inspection of an APC user
+   * cache. By default, this method will produce a unique prefix per site using
+   * the hash salt. If the setting 'apcu_ensure_unique_prefix' is set to FALSE
+   * then if the caller does not provide a $site_path only the Drupal root will
+   * be used. This allows WebTestBase to use the same prefix ensuring that the
+   * number of APC items created during a full test run is kept to a minimum.
+   * Additionally, if a multi site implementation does not use site specific
+   * module directories setting apcu_ensure_unique_prefix would allow the sites
+   * to share APC cache items.
+   *
+   * @param $identifier
+   *   An identifier for the prefix. For example, 'class_loader' or
+   *   'cache_backend'.
+   *
+   * @return string
+   *   The prefix for APC user cache keys.
+   */
+  public static function getApcuPrefix($identifier, $root, $site_path = '') {
+    if (static::get('apcu_ensure_unique_prefix', TRUE)) {
+      return 'drupal.' . $identifier . '.' . \Drupal::VERSION . '.' . static::get('deployment_identifier') . '.' . hash_hmac('sha256', $identifier, static::get('hash_salt') . '.' . $root . '/' . $site_path);
+    }
+    return 'drupal.' . $identifier . '.' . \Drupal::VERSION . '.' . static::get('deployment_identifier') . '.' . Crypt::hashBase64($root . '/' . $site_path);
   }
 
 }

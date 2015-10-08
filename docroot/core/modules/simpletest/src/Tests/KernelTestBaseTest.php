@@ -7,6 +7,7 @@
 
 namespace Drupal\simpletest\Tests;
 
+use Drupal\Core\Database\Database;
 use Drupal\simpletest\KernelTestBase;
 
 /**
@@ -67,6 +68,14 @@ EOS;
 
     // Verify that the settings.testing.php got taken into account.
     $this->assertTrue(function_exists('simpletest_test_stub_settings_function'));
+
+    // Ensure that the database tasks have been run during set up. Neither MySQL
+    // nor SQLite make changes that are testable.
+    $database = $this->container->get('database');
+    if ($database->driver() == 'pgsql') {
+      $this->assertEqual('on', $database->query("SHOW standard_conforming_strings")->fetchField());
+      $this->assertEqual('escape', $database->query("SHOW bytea_output")->fetchField());
+    }
   }
 
   /**
@@ -108,8 +117,6 @@ EOS;
     $this->assertFalse(in_array($module, $list), "{$module}_hook_info() in \Drupal::moduleHandler()->getImplementations() not found.");
 
     $this->assertFalse(db_table_exists($table), "'$table' database table not found.");
-    $schema = drupal_get_schema($table, TRUE);
-    $this->assertFalse($schema, "'$table' table schema not found.");
 
     // Install the module.
     \Drupal::service('module_installer')->install(array($module));
@@ -122,7 +129,7 @@ EOS;
     $this->assertTrue(in_array($module, $list), "{$module}_hook_info() in \Drupal::moduleHandler()->getImplementations() found.");
 
     $this->assertTrue(db_table_exists($table), "'$table' database table found.");
-    $schema = drupal_get_schema($table);
+    $schema = drupal_get_module_schema($module, $table);
     $this->assertTrue($schema, "'$table' table schema found.");
   }
 
@@ -154,9 +161,7 @@ EOS;
     $this->assertTrue(db_table_exists($table), "'$table' database table found.");
 
     // Verify that the schema is known to Schema API.
-    $schema = drupal_get_schema();
-    $this->assertTrue($schema[$table], "'$table' table found in schema.");
-    $schema = drupal_get_schema($table);
+    $schema = drupal_get_module_schema($module, $table);
     $this->assertTrue($schema, "'$table' table schema found.");
 
     // Verify that a unknown table from an enabled module throws an error.
@@ -169,7 +174,7 @@ EOS;
       $this->pass('Exception for non-retrievable schema found.');
     }
     $this->assertFalse(db_table_exists($table), "'$table' database table not found.");
-    $schema = drupal_get_schema($table);
+    $schema = drupal_get_module_schema($module, $table);
     $this->assertFalse($schema, "'$table' table schema not found.");
 
     // Verify that a table from a unknown module cannot be installed.
@@ -183,14 +188,14 @@ EOS;
       $this->pass('Exception for non-retrievable schema found.');
     }
     $this->assertFalse(db_table_exists($table), "'$table' database table not found.");
-    $schema = drupal_get_schema($table);
-    $this->assertFalse($schema, "'$table' table schema not found.");
+    $schema = drupal_get_module_schema($module, $table);
+    $this->assertTrue($schema, "'$table' table schema found.");
 
     // Verify that the same table can be installed after enabling the module.
     $this->enableModules(array($module));
     $this->installSchema($module, $table);
     $this->assertTrue(db_table_exists($table), "'$table' database table found.");
-    $schema = drupal_get_schema($table);
+    $schema = drupal_get_module_schema($module, $table);
     $this->assertTrue($schema, "'$table' table schema found.");
   }
 
@@ -288,6 +293,8 @@ EOS;
    * Tests that _theme() works right after loading a module.
    */
   function testEnableModulesTheme() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = $this->container->get('renderer');
     $original_element = $element = array(
       '#type' => 'container',
       '#markup' => 'Foo',
@@ -295,11 +302,11 @@ EOS;
     );
     $this->enableModules(array('system'));
     // _theme() throws an exception if modules are not loaded yet.
-    $this->assertTrue(drupal_render($element));
+    $this->assertTrue($renderer->renderRoot($element));
 
     $element = $original_element;
     $this->disableModules(array('entity_test'));
-    $this->assertTrue(drupal_render($element));
+    $this->assertTrue($renderer->renderRoot($element));
   }
 
   /**
@@ -324,6 +331,41 @@ EOS;
    */
   public function testDrupalGetProfile() {
     $this->assertNull(drupal_get_profile());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function run(array $methods = array()) {
+    parent::run($methods);
+
+    // Check that all tables of the test instance have been deleted. At this
+    // point the original database connection is restored so we need to prefix
+    // the tables.
+    $connection = Database::getConnection();
+    if ($connection->databaseType() != 'sqlite') {
+      $tables = $connection->schema()->findTables($this->databasePrefix . '%');
+      $this->assertTrue(empty($tables), 'All test tables have been removed.');
+    }
+    else {
+      // We don't have the test instance connection anymore so we have to
+      // re-attach its database and then use the same query as
+      // \Drupal\Core\Database\Driver\sqlite\Schema::findTables().
+      // @see \Drupal\Core\Database\Driver\sqlite\Connection::__construct()
+      $info = Database::getConnectionInfo();
+      $connection->query('ATTACH DATABASE :database AS :prefix', [
+        ':database' => $info['default']['database'] . '-' . $this->databasePrefix,
+        ':prefix' => $this->databasePrefix
+      ]);
+
+      $result = $connection->query("SELECT name FROM " . $this->databasePrefix . ".sqlite_master WHERE type = :type AND name LIKE :table_name AND name NOT LIKE :pattern", array(
+        ':type' => 'table',
+        ':table_name' => '%',
+        ':pattern' => 'sqlite_%',
+      ))->fetchAllKeyed(0, 0);
+
+      $this->assertTrue(empty($result), 'All test tables have been removed.');
+    }
   }
 
 }

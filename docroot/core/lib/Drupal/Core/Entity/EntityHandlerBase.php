@@ -14,7 +14,10 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
 /**
  * Provides a base class for entity handlers.
  *
- * @todo Deprecate this in https://www.drupal.org/node/2471663.
+ * @deprecated in Drupal 8.0.x, will be removed before Drupal 9.0.0.
+ *   Implement the container injection pattern of
+ *   \Drupal\Core\Entity\EntityHandlerInterface::createInstance() to obtain the
+ *   module handler service for your class.
  */
 abstract class EntityHandlerBase {
   use StringTranslationTrait;
@@ -28,7 +31,7 @@ abstract class EntityHandlerBase {
   protected $moduleHandler;
 
   /**
-   * Returns the module handler.
+   * Gets the module handler.
    *
    * @return \Drupal\Core\Extension\ModuleHandlerInterface
    *   The module handler.

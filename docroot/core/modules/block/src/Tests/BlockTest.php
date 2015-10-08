@@ -8,8 +8,8 @@
 namespace Drupal\block\Tests;
 
 use Drupal\Component\Utility\Html;
-use Drupal\simpletest\WebTestBase;
 use Drupal\block\Entity\Block;
+use Drupal\user\Entity\Role;
 use Drupal\user\RoleInterface;
 
 /**
@@ -35,7 +35,7 @@ class BlockTest extends BlockTestBase {
     );
     // Set the block to be hidden on any user path, and to be shown only to
     // authenticated users.
-    $edit['visibility[request_path][pages]'] = 'user*';
+    $edit['visibility[request_path][pages]'] = '/user*';
     $edit['visibility[request_path][negate]'] = TRUE;
     $edit['visibility[user_role][roles][' . RoleInterface::AUTHENTICATED_ID . ']'] = TRUE;
     $this->drupalGet('admin/structure/block/add/' . $block_name . '/' . $default_theme);
@@ -135,6 +135,9 @@ class BlockTest extends BlockTestBase {
    * Test configuring and moving a module-define block to specific regions.
    */
   function testBlock() {
+    // Place page title block to test error messages.
+    $this->drupalPlaceBlock('page_title_block');
+
     // Select the 'Powered by Drupal' block to be configured and moved.
     $block = array();
     $block['id'] = 'system_powered_by_block';
@@ -222,6 +225,7 @@ class BlockTest extends BlockTestBase {
   function testThemeName() {
     // Enable the help block.
     $this->drupalPlaceBlock('help_block', array('region' => 'help'));
+    $this->drupalPlaceBlock('local_tasks_block');
     // Explicitly set the default and admin themes.
     $theme = 'block_test_specialchars_theme';
     \Drupal::service('theme_handler')->install(array($theme));
@@ -334,11 +338,13 @@ class BlockTest extends BlockTestBase {
       'config:block_list',
       'block_view',
       'config:block.block.powered',
+      'config:user.role.anonymous',
       'rendered',
     );
     sort($expected_cache_tags);
+    $keys = \Drupal::service('cache_contexts_manager')->convertTokensToKeys(['languages:language_interface', 'theme', 'user.permissions'])->getKeys();
     $this->assertIdentical($cache_entry->tags, $expected_cache_tags);
-    $cache_entry = \Drupal::cache('render')->get('entity_view:block:powered:en:classy');
+    $cache_entry = \Drupal::cache('render')->get('entity_view:block:powered:' . implode(':', $keys));
     $expected_cache_tags = array(
       'block_view',
       'config:block.block.powered',
@@ -373,6 +379,7 @@ class BlockTest extends BlockTestBase {
       'block_view',
       'config:block.block.powered',
       'config:block.block.powered-2',
+      'config:user.role.anonymous',
       'rendered',
     );
     sort($expected_cache_tags);
@@ -383,7 +390,8 @@ class BlockTest extends BlockTestBase {
       'rendered',
     );
     sort($expected_cache_tags);
-    $cache_entry = \Drupal::cache('render')->get('entity_view:block:powered:en:classy');
+    $keys = \Drupal::service('cache_contexts_manager')->convertTokensToKeys(['languages:language_interface', 'theme', 'user.permissions'])->getKeys();
+    $cache_entry = \Drupal::cache('render')->get('entity_view:block:powered:' . implode(':', $keys));
     $this->assertIdentical($cache_entry->tags, $expected_cache_tags);
     $expected_cache_tags = array(
       'block_view',
@@ -391,7 +399,8 @@ class BlockTest extends BlockTestBase {
       'rendered',
     );
     sort($expected_cache_tags);
-    $cache_entry = \Drupal::cache('render')->get('entity_view:block:powered-2:en:classy');
+    $keys = \Drupal::service('cache_contexts_manager')->convertTokensToKeys(['languages:language_interface', 'theme', 'user.permissions'])->getKeys();
+    $cache_entry = \Drupal::cache('render')->get('entity_view:block:powered-2:' . implode(':', $keys));
     $this->assertIdentical($cache_entry->tags, $expected_cache_tags);
 
     // Now we should have a cache hit again.
@@ -402,6 +411,22 @@ class BlockTest extends BlockTestBase {
     entity_delete_multiple('block', array('powered', 'powered-2'));
     $this->drupalGet('<front>');
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'MISS');
+  }
+
+  /**
+   * Tests that a link exists to block layout from the appearance form.
+   */
+  public function testThemeAdminLink() {
+    $this->drupalPlaceBlock('help_block', ['region' => 'help']);
+    $theme_admin = $this->drupalCreateUser([
+      'administer blocks',
+      'administer themes',
+      'access administration pages',
+    ]);
+    $this->drupalLogin($theme_admin);
+    $this->drupalGet('admin/appearance');
+    $this->assertText('You can place blocks for each theme on the block layout page');
+    $this->assertLinkByHref('admin/structure/block');
   }
 
   /**
@@ -436,6 +461,43 @@ class BlockTest extends BlockTestBase {
     \Drupal::state()->set('test_block_access', TRUE);
     $this->drupalGet('<front>');
     $this->assertText('Hello test world');
+  }
+
+  /**
+   * Tests block_user_role_delete.
+   */
+  public function testBlockUserRoleDelete() {
+    $role1 = Role::create(['id' => 'test_role1', 'name' => $this->randomString()]);
+    $role1->save();
+
+    $role2 = Role::create(['id' => 'test_role2', 'name' => $this->randomString()]);
+    $role2->save();
+
+    $block = Block::create([
+      'id' => $this->randomMachineName(),
+      'plugin' => 'system_powered_by_block',
+    ]);
+
+    $block->setVisibilityConfig('user_role', [
+      'roles' => [
+        $role1->id() => $role1->id(),
+        $role2->id() => $role2->id(),
+      ],
+    ]);
+
+    $block->save();
+
+    $this->assertEqual($block->getVisibility()['user_role']['roles'], [
+      $role1->id() => $role1->id(),
+      $role2->id() => $role2->id()
+    ]);
+
+    $role1->delete();
+
+    $block = Block::load($block->id());
+    $this->assertEqual($block->getVisibility()['user_role']['roles'], [
+      $role2->id() => $role2->id()
+    ]);
   }
 
 }

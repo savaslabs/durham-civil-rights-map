@@ -7,16 +7,17 @@
 
 namespace Drupal\Core\Config;
 
-use Drupal\Component\Plugin\Discovery\CachedDiscoveryInterface;
-use Drupal\Component\Plugin\PluginManagerInterface;
-use Drupal\Core\TypedData\DataDefinitionInterface;
+use Drupal\Core\TypedData\TypedDataManagerInterface;
 
 /**
- * Defines an interface for typed configuration manager.
+ * Defines an interface for managing config schema type plugins.
  *
- * @package Drupal\Core\Config
+ * @see \Drupal\Core\Config\TypedConfigManager
+ * @see \Drupal\Core\Config\Schema\ConfigSchemaDiscovery
+ * @see hook_config_schema_info_alter()
+ * @see https://www.drupal.org/node/1905070
  */
-Interface TypedConfigManagerInterface extends PluginManagerInterface, CachedDiscoveryInterface {
+Interface TypedConfigManagerInterface extends TypedDataManagerInterface {
 
   /**
    * Gets typed configuration data.
@@ -28,48 +29,6 @@ Interface TypedConfigManagerInterface extends PluginManagerInterface, CachedDisc
    *   Typed configuration element.
    */
   public function get($name);
-
-  /**
-   * Instantiates a typed configuration object.
-   *
-   * @param string $data_type
-   *   The data type, for which a typed configuration object should be
-   *   instantiated.
-   * @param array $configuration
-   *   The plugin configuration array, i.e. an array with the following keys:
-   *   - data definition: The data definition object, i.e. an instance of
-   *     \Drupal\Core\TypedData\DataDefinitionInterface.
-   *   - name: (optional) If a property or list item is to be created, the name
-   *     of the property or the delta of the list item.
-   *   - parent: (optional) If a property or list item is to be created, the
-   *     parent typed data object implementing either the ListInterface or the
-   *     ComplexDataInterface.
-   *
-   * @return \Drupal\Core\Config\Schema\Element
-   *   The instantiated typed configuration object.
-   */
-  public function createInstance($data_type, array $configuration = array());
-
-  /**
-   * Creates a new typed configuration object instance.
-   *
-   * @param \Drupal\Core\TypedData\DataDefinitionInterface $definition
-   *   The data definition of the typed data object.
-   * @param mixed $value
-   *   The data value. If set, it has to match one of the supported
-   *   data type format as documented for the data type classes.
-   * @param string $name
-   *   (optional) If a property or list item is to be created, the name of the
-   *   property or the delta of the list item.
-   * @param mixed $parent
-   *   (optional) If a property or list item is to be created, the parent typed
-   *   data object implementing either the ListInterface or the
-   *   ComplexDataInterface.
-   *
-   * @return \Drupal\Core\Config\Schema\Element
-   *   The instantiated typed data object.
-   */
-  public function create(DataDefinitionInterface $definition, $value, $name = NULL, $parent = NULL);
 
   /**
    * Creates a new data definition object from a type definition array and
@@ -110,16 +69,12 @@ Interface TypedConfigManagerInterface extends PluginManagerInterface, CachedDisc
    * @param bool $exception_on_invalid
    *   Ignored with TypedConfigManagerInterface. Kept for compatibility with
    *   DiscoveryInterface.
-   * @param bool $is_config_name
-   *   (deprecated) Set to TRUE if $plugin_id is a configuration name (as
-   *   opposed to an internal configuration schema type).
    *
    * @return array
    *   A plugin definition array. If the given plugin id does not have typed
    *   configuration definition assigned, the definition of an undefined
-   *   element type is returned. If $is_config_name is set, a langcode key
-   *   is automatically added to the definition.
+   *   element type is returned.
    */
-  public function getDefinition($plugin_id, $exception_on_invalid = TRUE, $is_config_name = FALSE);
+  public function getDefinition($plugin_id, $exception_on_invalid = TRUE);
 
 }

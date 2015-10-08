@@ -1,3 +1,8 @@
+/**
+ * @file
+ * Block admin behaviors.
+ */
+
 (function ($, Drupal) {
 
   "use strict";
@@ -5,65 +10,62 @@
   /**
    * Filters the block list by a text input search string.
    *
-   * Text search input: input.block-filter-text
-   * Target element:    input.block-filter-text[data-element]
-   * Source text:       .block-filter-text-source
+   * The text input will have the selector `input.block-filter-text`.
+   *
+   * The target element to do searching in will be in the selector
+   * `input.block-filter-text[data-element]`
+   *
+   * The text source where the text should be found will have the selector
+   * `.block-filter-text-source`
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches the behavior for the block filtering.
    */
   Drupal.behaviors.blockFilterByText = {
     attach: function (context, settings) {
       var $input = $('input.block-filter-text').once('block-filter-text');
-      var $element = $($input.attr('data-element'));
-      var $blocks;
-      var $details;
-
-      /**
-       * Hides the <details> element for a category if it has no visible blocks.
-       */
-      function hideCategoryDetails(index, element) {
-        var $catDetails = $(element);
-        $catDetails.toggle($catDetails.find('li:visible').length > 0);
-      }
+      var $table = $($input.attr('data-element'));
+      var $filter_rows;
 
       /**
        * Filters the block list.
+       *
+       * @param {jQuery.Event} e
+       *   The jQuery event for the keyup event that triggered the filter.
        */
       function filterBlockList(e) {
         var query = $(e.target).val().toLowerCase();
 
         /**
          * Shows or hides the block entry based on the query.
+         *
+         * @param {number} index
+         *   The index in the loop, as provided by `jQuery.each`
+         * @param {HTMLElement} label
+         *   The label of the block.
          */
-        function showBlockEntry(index, block) {
-          var $block = $(block);
-          var $sources = $block.find('.block-filter-text-source');
-          var textMatch = $sources.text().toLowerCase().indexOf(query) !== -1;
-          $block.toggle(textMatch);
+        function toggleBlockEntry(index, label) {
+          var $label = $(label);
+          var $row = $label.parent().parent();
+          var textMatch = $label.text().toLowerCase().indexOf(query) !== -1;
+          $row.toggle(textMatch);
         }
 
         // Filter if the length of the query is at least 2 characters.
         if (query.length >= 2) {
-          $blocks.each(showBlockEntry);
-
-          // Note that we first open all <details> to be able to use ':visible'.
-          // Mark the <details> elements that were closed before filtering, so
-          // they can be reclosed when filtering is removed.
-          $details.not('[open]').attr('data-drupal-block-state', 'forced-open');
-          // Hide the category <details> if they don't have any visible rows.
-          $details.attr('open', 'open').each(hideCategoryDetails);
+          $filter_rows.each(toggleBlockEntry);
         }
         else {
-          $blocks.show();
-          $details.show();
-          // Return <details> elements that had been closed before filtering
-          // to a closed state.
-          $details.filter('[data-drupal-block-state="forced-open"]').removeAttr('open data-drupal-block-state');
+          $filter_rows.each(function (index) {
+            $(this).parent().parent().show();
+          });
         }
       }
 
-      if ($element.length) {
-        $details = $element.find('details');
-        $blocks = $details.find('li');
-
+      if ($table.length) {
+        $filter_rows = $table.find('div.block-filter-text-source');
         $input.on('keyup', filterBlockList);
       }
     }
@@ -71,16 +73,21 @@
 
   /**
    * Highlights the block that was just placed into the block listing.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches the behavior for the block placement highlighting.
    */
   Drupal.behaviors.blockHighlightPlacement = {
     attach: function (context, settings) {
       if (settings.blockPlacement) {
-        $('#blocks').once('block-highlight').each(function () {
+        $(context).find('[data-drupal-selector="edit-blocks"]').once('block-highlight').each(function () {
           var $container = $(this);
           // Just scrolling the document.body will not work in Firefox. The html
           // element is needed as well.
           $('html, body').animate({
-            scrollTop: $('#block-placed').offset().top - $container.offset().top + $container.scrollTop()
+            scrollTop: $('.js-block-placed').offset().top - $container.offset().top + $container.scrollTop()
           }, 500);
         });
       }

@@ -11,6 +11,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Provides the file transfer authorization form.
@@ -44,7 +45,7 @@ class FileTransferAuthorizeForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'authorize_filetransfer_form';
   }
 
@@ -62,7 +63,7 @@ class FileTransferAuthorizeForm extends FormBase {
     if (!$this->getRequest()->isSecure()) {
       $form['information']['https_warning'] = array(
         '#prefix' => '<div class="messages messages--error">',
-        '#markup' => $this->t('WARNING: You are not using an encrypted connection, so your password will be sent in plain text. <a href="@https-link">Learn more</a>.', array('@https-link' => 'http://drupal.org/https-information')),
+        '#markup' => $this->t('WARNING: You are not using an encrypted connection, so your password will be sent in plain text. <a href=":https-link">Learn more</a>.', array(':https-link' => 'https://www.drupal.org/https-information')),
         '#suffix' => '</div>',
       );
     }
@@ -178,9 +179,9 @@ class FileTransferAuthorizeForm extends FormBase {
       catch (\Exception $e) {
         // The format of this error message is similar to that used on the
         // database connection form in the installer.
-        $form_state->setErrorByName('connection_settings', $this->t('Failed to connect to the server. The server reports the following message: !message For more help installing or updating code on your server, see the <a href="@handbook_url">handbook</a>.', array(
-          '!message' => '<p class="error">' . $e->getMessage()  . '</p>',
-          '@handbook_url' => 'http://drupal.org/documentation/install/modules-themes',
+        $form_state->setErrorByName('connection_settings', $this->t('Failed to connect to the server. The server reports the following message: <p class="error">@message</p> For more help installing or updating code on your server, see the <a href=":handbook_url">handbook</a>.', array(
+          '@message' => $e->getMessage(),
+          ':handbook_url' => 'https://www.drupal.org/documentation/install/modules-themes',
         )));
       }
     }
@@ -226,7 +227,10 @@ class FileTransferAuthorizeForm extends FormBase {
           $filetransfer = $this->getFiletransfer($filetransfer_backend, $form_connection_settings[$filetransfer_backend]);
 
           // Now run the operation.
-          $this->runOperation($filetransfer);
+          $response = $this->runOperation($filetransfer);
+          if ($response instanceof Response) {
+            $form_state->setResponse($response);
+          }
         }
         catch (\Exception $e) {
           // If there is no database available, we don't care and just skip
@@ -333,13 +337,18 @@ class FileTransferAuthorizeForm extends FormBase {
    *
    * @param $filetransfer
    *   The FileTransfer object to use for running the operation.
+   *
+   * @return \Symfony\Component\HttpFoundation\Response|null
+   *   The result of running the operation. If this is an instance of
+   *   \Symfony\Component\HttpFoundation\Response the calling code should use
+   *   that response for the current page request.
    */
   protected function runOperation($filetransfer) {
     $operation = $_SESSION['authorize_operation'];
     unset($_SESSION['authorize_operation']);
 
     require_once $this->root . '/' . $operation['file'];
-    call_user_func_array($operation['callback'], array_merge(array($filetransfer), $operation['arguments']));
+    return call_user_func_array($operation['callback'], array_merge(array($filetransfer), $operation['arguments']));
   }
 
 }

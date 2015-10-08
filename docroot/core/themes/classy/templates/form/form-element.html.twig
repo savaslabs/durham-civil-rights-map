@@ -5,6 +5,7 @@
  *
  * Available variables:
  * - attributes: HTML attributes for the containing element.
+ * - errors: (optional) Any errors for this form element, may not be set.
  * - prefix: (optional) The form element prefix, may not be set.
  * - suffix: (optional) The form element suffix, may not be set.
  * - required: The required marker, or empty if the associated form element is
@@ -45,11 +46,15 @@
 #}
 {%
   set classes = [
+    'js-form-item',
     'form-item',
+    'js-form-type-' ~ type|clean_class,
     'form-type-' ~ type|clean_class,
+    'js-form-item-' ~ name|clean_class,
     'form-item-' ~ name|clean_class,
     title_display not in ['after', 'before'] ? 'form-no-label',
     disabled == 'disabled' ? 'form-disabled',
+    errors ? 'form-item--error',
   ]
 %}
 {%
@@ -76,6 +81,11 @@
   {% endif %}
   {% if label_display == 'after' %}
     {{ label }}
+  {% endif %}
+  {% if errors %}
+    <div class="form-item--error-message">
+      <strong>{{ errors }}</strong>
+    </div>
   {% endif %}
   {% if description_display in ['after', 'invisible'] and description.content %}
     <div{{ description.attributes.addClass(description_classes) }}>

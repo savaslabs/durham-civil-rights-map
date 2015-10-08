@@ -12,7 +12,6 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\TypedData\FieldItemDataDefinition;
-use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Base class for configurable field definitions.
@@ -28,14 +27,14 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var string
    */
-  public $id;
+  protected $id;
 
   /**
    * The field name.
    *
    * @var string
    */
-  public $field_name;
+  protected $field_name;
 
   /**
    * The field type.
@@ -48,21 +47,21 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var string
    */
-  public $field_type;
+  protected $field_type;
 
   /**
    * The name of the entity type the field is attached to.
    *
    * @var string
    */
-  public $entity_type;
+  protected $entity_type;
 
   /**
    * The name of the bundle the field is attached to.
    *
    * @var string
    */
-  public $bundle;
+  protected $bundle;
 
   /**
    * The human-readable label for the field.
@@ -75,7 +74,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var string
    */
-  public $label;
+  protected $label;
 
   /**
    * The field description.
@@ -86,7 +85,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var string
    */
-  public $description = '';
+  protected $description = '';
 
   /**
    * Field-type specific settings.
@@ -96,7 +95,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var array
    */
-  public $settings = array();
+  protected $settings = array();
 
   /**
    * Flag indicating whether the field is required.
@@ -107,7 +106,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var bool
    */
-  public $required = FALSE;
+  protected $required = FALSE;
 
   /**
    * Flag indicating whether the field is translatable.
@@ -116,7 +115,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var bool
    */
-  public $translatable = TRUE;
+  protected $translatable = TRUE;
 
   /**
    * Default field value.
@@ -146,7 +145,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var array
    */
-  public $default_value = array();
+  protected $default_value = array();
 
   /**
    * The name of a callback function that returns default values.
@@ -164,7 +163,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * @var string
    */
-  public $default_value_callback = '';
+  protected $default_value_callback = '';
 
   /**
    * The field storage object.
@@ -179,13 +178,6 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    * @var \Drupal\Core\Field\TypedData\FieldItemDataDefinition
    */
   protected $itemDefinition;
-
-  /**
-   * Flag indicating whether the bundle name can be renamed or not.
-   *
-   * @var bool
-   */
-  protected $bundleRenameAllowed = FALSE;
 
   /**
    * Array of constraint options keyed by constraint plugin ID.
@@ -249,16 +241,11 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
     // @see \Drupal\Core\Field\FieldItemInterface::calculateDependencies()
     $this->addDependencies($definition['class']::calculateDependencies($this));
 
-    // If the target entity type uses entities to manage its bundles then
-    // depend on the bundle entity.
-    $bundle_entity_type_id = $this->entityManager()->getDefinition($this->entity_type)->getBundleEntityType();
-    if ($bundle_entity_type_id != 'bundle') {
-      if (!$bundle_entity = $this->entityManager()->getStorage($bundle_entity_type_id)->load($this->bundle)) {
-        throw new \LogicException(SafeMarkup::format('Missing bundle entity, entity type %type, entity id %bundle.', array('%type' => $bundle_entity_type_id, '%bundle' => $this->bundle)));
-      }
-      $this->addDependency('config', $bundle_entity->getConfigDependencyName());
-    }
-    return $this->dependencies;
+    // Create dependency on the bundle.
+    $bundle_config_dependency = $this->entityManager()->getDefinition($this->entity_type)->getBundleConfigDependency($this->bundle);
+    $this->addDependency($bundle_config_dependency['type'], $bundle_config_dependency['name']);
+
+    return $this;
   }
 
   /**
@@ -302,20 +289,31 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
   /**
    * {@inheritdoc}
    */
-  public function getSettings() {
-    return $this->settings + $this->getFieldStorageDefinition()->getSettings();
+  public function getLabel() {
+    return $this->label();
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getSetting($setting_name) {
-    if (array_key_exists($setting_name, $this->settings)) {
-      return $this->settings[$setting_name];
-    }
-    else {
-      return $this->getFieldStorageDefinition()->getSetting($setting_name);
-    }
+  public function setLabel($label) {
+    $this->label = $label;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDescription() {
+    return $this->description;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setDescription($description) {
+    $this->description = $description;
+    return $this;
   }
 
   /**
@@ -337,23 +335,35 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
   /**
    * {@inheritdoc}
    */
-  public function setLabel($label) {
-    $this->label = $label;
+  public function getSettings() {
+    return $this->settings + $this->getFieldStorageDefinition()->getSettings();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setSettings(array $settings) {
+    $this->settings = $settings + $this->settings;
     return $this;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getLabel() {
-    return $this->label();
+  public function getSetting($setting_name) {
+    if (array_key_exists($setting_name, $this->settings)) {
+      return $this->settings[$setting_name];
+    }
+    else {
+      return $this->getFieldStorageDefinition()->getSetting($setting_name);
+    }
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getDescription() {
-    return $this->description;
+  public function setSetting($setting_name, $value) {
+    $this->settings[$setting_name] = $value;
   }
 
   /**
@@ -364,23 +374,23 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
   }
 
   /**
+   * [@inheritdoc}
+   */
+  public function setRequired($required) {
+    $this->required = $required;
+    return $this;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function getDefaultValue(FieldableEntityInterface $entity) {
     // Allow custom default values function.
-    if ($callback = $this->default_value_callback) {
+    if ($callback = $this->getDefaultValueCallback()) {
       $value = call_user_func($callback, $entity, $this);
     }
     else {
-      $value = $this->default_value;
-    }
-    // Normalize into the "array keyed by delta" format.
-    if (isset($value) && !is_array($value)) {
-      $properties = $this->getFieldStorageDefinition()->getPropertyNames();
-      $property = reset($properties);
-      $value = array(
-        array($property => $value),
-      );
+      $value = $this->getDefaultValueLiteral();
     }
     // Allow the field type to process default values.
     $field_item_list_class = $this->getClass();
@@ -388,17 +398,58 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function getDefaultValueLiteral() {
+    return $this->default_value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setDefaultValue($value) {
+    if (!is_array($value)) {
+      if ($value === NULL) {
+        $value = [];
+      }
+      $key = $this->getFieldStorageDefinition()->getPropertyNames()[0];
+      // Convert to the multi value format to support fields with a cardinality
+      // greater than 1.
+      $value = array(
+        array($key => $value),
+      );
+    }
+    $this->default_value = $value;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDefaultValueCallback() {
+    return $this->default_value_callback;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setDefaultValueCallback($callback) {
+    $this->default_value_callback = $callback;
+    return $this;
+  }
+
+  /**
    * Implements the magic __sleep() method.
    *
    * Using the Serialize interface and serialize() / unserialize() methods
    * breaks entity forms in PHP 5.4.
-   * @todo Investigate in https://drupal.org/node/2074253.
+   * @todo Investigate in https://www.drupal.org/node/2074253.
    */
   public function __sleep() {
     // Only serialize necessary properties, excluding those that can be
     // recalculated.
     $properties = get_object_vars($this);
-    unset($properties['fieldStorage'], $properties['itemDefinition'], $properties['bundleRenameAllowed'], $properties['original']);
+    unset($properties['fieldStorage'], $properties['itemDefinition'], $properties['original']);
     return array_keys($properties);
   }
 
@@ -420,6 +471,9 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
     return BaseFieldDefinition::createFromDataType($type);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getDataType() {
     return 'list';
   }
@@ -465,29 +519,6 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
         ->setSettings($this->getSettings());
     }
     return $this->itemDefinition;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setDefaultValue($value) {
-    if (!is_array($value)) {
-      $key = $this->getFieldStorageDefinition()->getPropertyNames()[0];
-      // Convert to the multi value format to support fields with a cardinality
-      // greater than 1.
-      $value = array(
-        array($key => $value),
-      );
-    }
-    $this->default_value = $value;
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function allowBundleRename() {
-    $this->bundleRenameAllowed = TRUE;
   }
 
   /**

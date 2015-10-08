@@ -1,17 +1,18 @@
 /**
  * @file
- * A Backbone View that provides the aural view of CKEditor toolbar configuration.
+ * A Backbone View that provides the aural view of CKEditor toolbar
+ * configuration.
  */
 
 (function (Drupal, Backbone, $) {
 
   "use strict";
 
-  /**
-   * Backbone View for CKEditor toolbar configuration; aural UX (output only).
-   */
-  Drupal.ckeditor.AuralView = Backbone.View.extend({
+  Drupal.ckeditor.AuralView = Backbone.View.extend(/** @lends Drupal.ckeditor.AuralView# */{
 
+    /**
+     * @type {object}
+     */
     events: {
       'click .ckeditor-buttons a': 'announceButtonHelp',
       'click .ckeditor-multiple-buttons a': 'announceSeparatorHelp',
@@ -21,7 +22,11 @@
     },
 
     /**
-     * {@inheritdoc}
+     * Backbone View for CKEditor toolbar configuration; aural UX (output only).
+     *
+     * @constructs
+     *
+     * @augments Backbone.View
      */
     initialize: function () {
       // Announce the button and group positions when the model is no longer
@@ -32,8 +37,9 @@
     /**
      * Calls announce on buttons and groups when their position is changed.
      *
-     * @param Drupal.ckeditor.ConfigurationModel model
-     * @param Boolean isDirty
+     * @param {Drupal.ckeditor.ConfigurationModel} model
+     *   The ckeditor configuration model.
+     * @param {bool} isDirty
      *   A model attribute that indicates if the changed toolbar configuration
      *   has been stored or not.
      */
@@ -57,7 +63,8 @@
     /**
      * Handles the focus event of elements in the active and available toolbars.
      *
-     * @param jQuery.Event event
+     * @param {jQuery.Event} event
+     *   The focus event that was triggered.
      */
     onFocus: function (event) {
       event.stopPropagation();
@@ -76,7 +83,7 @@
     /**
      * Announces the current position of a button group.
      *
-     * @param jQuery $group
+     * @param {jQuery} $group
      *   A jQuery set that contains an li element that wraps a group of buttons.
      */
     announceButtonGroupPosition: function ($group) {
@@ -106,7 +113,7 @@
     /**
      * Announces current button position.
      *
-     * @param jQuery $button
+     * @param {jQuery} $button
      *   A jQuery set that contains an li element that wraps a button.
      */
     announceButtonPosition: function ($button) {
@@ -166,7 +173,8 @@
     /**
      * Provides help information when a button is clicked.
      *
-     * @param jQuery.Event event
+     * @param {jQuery.Event} event
+     *   The click event for the button click.
      */
     announceButtonHelp: function (event) {
       var $link = $(event.currentTarget);
@@ -194,7 +202,8 @@
     /**
      * Provides help information when a separator is clicked.
      *
-     * @param jQuery.Event event
+     * @param {jQuery.Event} event
+     *   The click event for the separator click.
      */
     announceSeparatorHelp: function (event) {
       var $link = $(event.currentTarget);

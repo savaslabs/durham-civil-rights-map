@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\Tests\Core\Plugin\Context\ContextTypedDataTest.
+ * Contains \Drupal\Tests\Core\Plugin\Context\ContextTypedDataTest.
  */
 
 namespace Drupal\Tests\Core\Plugin\Context;
@@ -50,11 +50,10 @@ class ContextTypedDataTest extends UnitTestCase {
     \Drupal::setContainer($container);
 
     $definition = new ContextDefinition('any');
-    $context = new Context($definition);
     $data_definition = DataDefinition::create('string');
     $this->typedData = new StringData($data_definition);
     $this->typedData->setValue('example string');
-    $context->setContextData($this->typedData);
+    $context = new Context($definition, $this->typedData);
     $value = $context->getContextValue();
     $this->assertSame($value, $this->typedData->getValue());
   }

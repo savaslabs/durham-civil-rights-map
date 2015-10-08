@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\block\Entity\BlockInterface.
+ * Contains \Drupal\block\BlockInterface.
  */
 
 namespace Drupal\block;
@@ -94,24 +94,6 @@ interface BlockInterface extends ConfigEntityInterface {
    * @return $this
    */
   public function setVisibilityConfig($instance_id, array $configuration);
-
-  /**
-   * Get all available contexts.
-   *
-   * @return \Drupal\Component\Plugin\Context\ContextInterface[]
-   *   An array of set contexts, keyed by context name.
-   */
-  public function getContexts();
-
-  /**
-   * Set the contexts that are available for use within the block entity.
-   *
-   * @param \Drupal\Component\Plugin\Context\ContextInterface[] $contexts
-   *   An array of contexts to set on the block.
-   *
-   * @return $this
-   */
-  public function setContexts(array $contexts);
 
   /**
    * Returns the weight of this block (used for sorting).

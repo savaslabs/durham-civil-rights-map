@@ -241,7 +241,7 @@ class Datetime extends DateElementBase {
       // placeholders are invalid for HTML5 date and datetime, so an example
       // format is appended to the title to appear in tooltips.
       $extra_attributes = array(
-        'title' => t('Date (e.g. !format)', array('!format' => static::formatExample($date_format))),
+        'title' => t('Date (e.g. @format)', array('@format' => static::formatExample($date_format))),
         'type' => $element['#date_date_element'],
       );
 
@@ -267,6 +267,8 @@ class Datetime extends DateElementBase {
         '#attributes' => $element['#attributes'] + $extra_attributes,
         '#required' => $element['#required'],
         '#size' => max(12, strlen($element['#value']['date'])),
+        '#error_no_message' => TRUE,
+        '#date_date_format' => $element['#date_date_format'],
       );
 
       // Allows custom callbacks to alter the element.
@@ -286,7 +288,7 @@ class Datetime extends DateElementBase {
 
       // Adds the HTML5 attributes.
       $extra_attributes = array(
-        'title' => t('Time (e.g. !format)', array('!format' => static::formatExample($time_format))),
+        'title' => t('Time (e.g. @format)', array('@format' => static::formatExample($time_format))),
         'type' => $element['#date_time_element'],
         'step' => $element['#date_increment'],
       );
@@ -298,6 +300,7 @@ class Datetime extends DateElementBase {
         '#attributes' => $element['#attributes'] + $extra_attributes,
         '#required' => $element['#required'],
         '#size' => 12,
+        '#error_no_message' => TRUE,
       );
 
       // Allows custom callbacks to alter the element.

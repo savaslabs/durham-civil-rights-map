@@ -7,6 +7,9 @@
 
 namespace Drupal\Core\Condition;
 
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableDependencyInterface;
+use Drupal\Core\Executable\ExecutableManagerInterface;
 use Drupal\Core\Executable\ExecutablePluginBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
@@ -23,6 +26,13 @@ use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 abstract class ConditionPluginBase extends ExecutablePluginBase implements ConditionInterface {
 
   use ContextAwarePluginAssignmentTrait;
+
+  /**
+   * The condition manager to proxy execute calls through.
+   *
+   * @var \Drupal\Core\Executable\ExecutableInterface
+   */
+  protected $executableManager;
 
   /**
    * {@inheritdoc}
@@ -105,6 +115,14 @@ abstract class ConditionPluginBase extends ExecutablePluginBase implements Condi
    */
   public function calculateDependencies() {
     return array();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setExecutableManager(ExecutableManagerInterface $executableManager) {
+    $this->executableManager = $executableManager;
+    return $this;
   }
 
 }

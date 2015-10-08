@@ -32,7 +32,7 @@ abstract class EntityWithUriCacheTagsTestBase extends EntityCacheTagsTestBase {
     $view_mode = $this->selectViewMode($entity_type);
 
     // The default cache contexts for rendered entities.
-    $entity_cache_contexts = ['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme'];
+    $entity_cache_contexts = ['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme', 'user.permissions'];
 
     // Generate the standardized entity cache tags.
     $cache_tag = $this->entity->getCacheTags();
@@ -56,7 +56,9 @@ abstract class EntityWithUriCacheTagsTestBase extends EntityCacheTagsTestBase {
       if (count($additional_cache_contexts)) {
         $redirected_cid = $this->createCacheId($cache_keys, Cache::mergeContexts($entity_cache_contexts, $additional_cache_contexts));
       }
-      $expected_cache_tags = Cache::mergeTags($cache_tag, $view_cache_tag, $this->getAdditionalCacheTagsForEntity($this->entity), array($render_cache_tag));
+      $expected_cache_tags = Cache::mergeTags($cache_tag, $view_cache_tag);
+      $expected_cache_tags = Cache::mergeTags($expected_cache_tags, $this->getAdditionalCacheTagsForEntity($this->entity));
+      $expected_cache_tags = Cache::mergeTags($expected_cache_tags, array($render_cache_tag));
       $this->verifyRenderCache($cid, $expected_cache_tags, $redirected_cid);
     }
 
@@ -79,12 +81,11 @@ abstract class EntityWithUriCacheTagsTestBase extends EntityCacheTagsTestBase {
     $this->verifyPageCache($entity_url, 'HIT');
 
 
-    $bundle_entity_type = $this->entity->getEntityType()->getBundleEntityType();
-    if ($bundle_entity_type !== 'bundle') {
+    if ($bundle_entity_type_id = $this->entity->getEntityType()->getBundleEntityType()) {
       // Verify that after modifying the corresponding bundle entity, there is a
       // cache miss.
       $this->pass("Test modification of entity's bundle entity.", 'Debug');
-      $bundle_entity = entity_load($bundle_entity_type, $this->entity->bundle());
+      $bundle_entity = entity_load($bundle_entity_type_id, $this->entity->bundle());
       $bundle_entity->save();
       $this->verifyPageCache($entity_url, 'MISS');
 
@@ -121,7 +122,7 @@ abstract class EntityWithUriCacheTagsTestBase extends EntityCacheTagsTestBase {
     // Verify that after invalidating the entity's cache tag directly, there is
     // a cache miss.
     $this->pass("Test invalidation of entity's cache tag.", 'Debug');
-    Cache::invalidateTags($this->entity->getCacheTags());
+    Cache::invalidateTags($this->entity->getCacheTagsToInvalidate());
     $this->verifyPageCache($entity_url, 'MISS');
 
     // Verify a cache hit.

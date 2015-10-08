@@ -60,6 +60,7 @@ abstract class BlockContentTestBase extends WebTestBase {
     }
 
     $this->adminUser = $this->drupalCreateUser($this->permissions);
+    $this->drupalPlaceBlock('local_actions_block');
   }
 
   /**
@@ -70,17 +71,20 @@ abstract class BlockContentTestBase extends WebTestBase {
    *   Defaults to FALSE.
    * @param string $bundle
    *   (optional) Bundle name. Defaults to 'basic'.
+   * @param bool $save
+   *   (optional) Whether to save the block. Defaults to TRUE.
    *
    * @return \Drupal\block_content\Entity\BlockContent
    *   Created custom block.
    */
-  protected function createBlockContent($title = FALSE, $bundle = 'basic') {
+  protected function createBlockContent($title = FALSE, $bundle = 'basic', $save = TRUE) {
     $title = ($title ? : $this->randomMachineName());
-    if ($block_content = entity_create('block_content', array(
+    $block_content = entity_create('block_content', array(
       'info' => $title,
       'type' => $bundle,
       'langcode' => 'en'
-    ))) {
+    ));
+    if ($block_content && $save === TRUE) {
       $block_content->save();
     }
     return $block_content;

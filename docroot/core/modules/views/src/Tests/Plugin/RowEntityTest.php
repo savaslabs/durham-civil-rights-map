@@ -9,7 +9,7 @@ namespace Drupal\views\Tests\Plugin;
 
 use Drupal\Core\Form\FormState;
 use Drupal\views\Views;
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 
 /**
  * Tests the generic entity row plugin.
@@ -17,14 +17,14 @@ use Drupal\views\Tests\ViewUnitTestBase;
  * @group views
  * @see \Drupal\views\Plugin\views\row\EntityRow
  */
-class RowEntityTest extends ViewUnitTestBase {
+class RowEntityTest extends ViewKernelTestBase {
 
   /**
    * Modules to enable.
    *
    * @var array
    */
-  public static $modules = ['taxonomy', 'text', 'filter', 'field', 'entity', 'system', 'node', 'user'];
+  public static $modules = ['taxonomy', 'text', 'filter', 'field', 'system', 'node', 'user'];
 
   /**
    * Views used by this test.

@@ -32,6 +32,19 @@ interface FieldConfigInterface extends FieldDefinitionInterface, ConfigEntityInt
   public function setLabel($label);
 
   /**
+   * Sets a human readable description.
+   *
+   * Descriptions are usually used on user interfaces where the data is edited
+   * or displayed.
+   *
+   * @param string $description
+   *   The description for this field.
+   *
+   * @return $this
+   */
+  public function setDescription($description);
+
+  /**
    * Sets whether the field is translatable.
    *
    * @param bool $translatable
@@ -42,13 +55,65 @@ interface FieldConfigInterface extends FieldDefinitionInterface, ConfigEntityInt
   public function setTranslatable($translatable);
 
   /**
-   * Allows a bundle to be renamed.
+   * Sets field settings.
    *
-   * Renaming a bundle on the instance is allowed when an entity's bundle
-   * is renamed and when field_entity_bundle_rename() does internal
-   * housekeeping.
+   * Note that the method does not unset existing settings not specified in the
+   * incoming $settings array.
+   *
+   * For example:
+   * @code
+   *   // Given these are the default settings.
+   *   $field_definition->getSettings() === [
+   *     'fruit' => 'apple',
+   *     'season' => 'summer',
+   *   ];
+   *   // Change only the 'fruit' setting.
+   *   $field_definition->setSettings(['fruit' => 'banana']);
+   *   // The 'season' setting persists unchanged.
+   *   $field_definition->getSettings() === [
+   *     'fruit' => 'banana',
+   *     'season' => 'summer',
+   *   ];
+   * @endcode
+   *
+   * For clarity, it is preferred to use setSetting() if not all available
+   * settings are supplied.
+   *
+   * @param array $settings
+   *   The array of field settings.
+   *
+   * @return $this
    */
-  public function allowBundleRename();
+  public function setSettings(array $settings);
+
+  /**
+   * Sets the value for a field setting by name.
+   *
+   * @param string $setting_name
+   *   The name of the setting.
+   * @param mixed $value
+   *   The value of the setting.
+   *
+   * @return $this
+   */
+  public function setSetting($setting_name, $value);
+
+  /**
+   * Sets whether the field can be empty.
+   *
+   * If a field is required, an entity needs to have at least a valid,
+   * non-empty item in that field's FieldItemList in order to pass validation.
+   *
+   * An item is considered empty if its isEmpty() method returns TRUE.
+   * Typically, that is if at least one of its required properties is empty.
+   *
+   * @param bool $required
+   *   TRUE if the field is required. FALSE otherwise.
+   *
+   * @return $this
+   *   The current object, for a fluent interface.
+   */
+  public function setRequired($required);
 
   /**
    * Sets a default value.
@@ -57,12 +122,38 @@ interface FieldConfigInterface extends FieldDefinitionInterface, ConfigEntityInt
    * any value set here.
    *
    * @param mixed $value
-   *   The default value in the format as returned by
-   *   \Drupal\Core\Field\FieldDefinitionInterface::getDefaultValue().
+   *   The default value for the field. This can be either:
+   *   - a literal, in which case it will be assigned to the first property of
+   *     the first item.
+   *   - a numerically indexed array of items, each item being a property/value
+   *     array.
+   *   - a non-numerically indexed array, in which case the array is assumed to
+   *     be a property/value array and used as the first item
+   *   - NULL or array() for no default value.
    *
    * @return $this
    */
   public function setDefaultValue($value);
+
+  /**
+   * Sets a custom default value callback.
+   *
+   * If set, the callback overrides any set default value.
+   *
+   * @param string|null $callback
+   *   The callback to invoke for getting the default value (pass NULL to unset
+   *   a previously set callback). The callback will be invoked with the
+   *   following arguments:
+   *   - \Drupal\Core\Entity\FieldableEntityInterface $entity
+   *     The entity being created.
+   *   - \Drupal\Core\Field\FieldDefinitionInterface $definition
+   *     The field definition.
+   *   It should return the default value in the format accepted by the
+   *   setDefaultValue() method.
+   *
+   * @return $this
+   */
+  public function setDefaultValueCallback($callback);
 
   /**
    * Sets constraints for a given field item property.
@@ -135,7 +226,7 @@ interface FieldConfigInterface extends FieldDefinitionInterface, ConfigEntityInt
    * @code
    *   // Add a constraint to the 'field_username' FieldItemList.
    *   // e.g. $node->field_username
-   *   $fields['field_username']->addConstraint('UserNameUnique', []);
+   *   $fields['field_username']->addConstraint('UniqueField');
    * @endcode
    *
    * If you wish to apply a constraint to a \Drupal\Core\Field\FieldItem instead

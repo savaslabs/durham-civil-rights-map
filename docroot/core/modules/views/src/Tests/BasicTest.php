@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\BasicTest.
+ * Contains \Drupal\views\Tests\BasicTest.
  */
 
 namespace Drupal\views\Tests;
@@ -14,7 +14,7 @@ use Drupal\views\Views;
  *
  * @group views
  */
-class BasicTest extends ViewUnitTestBase {
+class BasicTest extends ViewKernelTestBase {
 
   /**
    * Views used by this test.

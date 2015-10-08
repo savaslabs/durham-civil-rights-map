@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\image\Tests\ImageAdminStylesTest.
+ * Contains \Drupal\image\Tests\ImageAdminStylesTest.
  */
 
 namespace Drupal\image\Tests;
@@ -11,6 +11,7 @@ use Drupal\Component\Utility\SafeMarkup;
 use Drupal\image\Entity\ImageStyle;
 use Drupal\image\ImageStyleInterface;
 use Drupal\node\Entity\Node;
+use Drupal\file\Entity\File;
 
 /**
  * Tests creation, deletion, and editing of image styles and effects.
@@ -302,7 +303,7 @@ class ImageAdminStylesTest extends ImageFieldTestBase {
 
     // Get node field original image URI.
     $fid = $node->get($field_name)->target_id;
-    $original_uri = file_load($fid)->getFileUri();
+    $original_uri = File::load($fid)->getFileUri();
 
     // Test that image is displayed using newly created style.
     $this->drupalGet('node/' . $nid);
@@ -436,17 +437,17 @@ class ImageAdminStylesTest extends ImageFieldTestBase {
 
     // Get node field original image URI.
     $fid = $node->get($field_name)->target_id;
-    $original_uri = file_load($fid)->getFileUri();
+    $original_uri = File::load($fid)->getFileUri();
 
     // Test that image is displayed using newly created style.
     $this->drupalGet('node/' . $nid);
     $this->assertRaw($style->buildUrl($original_uri), format_string('Image displayed using style @style.', array('@style' => $style_name)));
 
-    // Copy config to staging, and delete the image style.
-    $staging = $this->container->get('config.storage.staging');
+    // Copy config to sync, and delete the image style.
+    $sync = $this->container->get('config.storage.sync');
     $active = $this->container->get('config.storage');
-    $this->copyConfig($active, $staging);
-    $staging->delete('image.style.' . $style_name);
+    $this->copyConfig($active, $sync);
+    $sync->delete('image.style.' . $style_name);
     $this->configImporter()->import();
 
     $this->assertFalse(ImageStyle::load($style_name), 'Style deleted after config import.');

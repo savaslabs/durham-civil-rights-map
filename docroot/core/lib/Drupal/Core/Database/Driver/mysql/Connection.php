@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Database\Driver\mysql\Connection
+ * Contains \Drupal\Core\Database\Driver\mysql\Connection.
  */
 
 namespace Drupal\Core\Database\Driver\mysql;
@@ -14,6 +14,7 @@ use Drupal\Core\Database\DatabaseNotFoundException;
 use Drupal\Core\Database\TransactionCommitFailedException;
 use Drupal\Core\Database\DatabaseException;
 use Drupal\Core\Database\Connection as DatabaseConnection;
+use Drupal\Component\Utility\Unicode;
 
 /**
  * @addtogroup database
@@ -28,11 +29,26 @@ class Connection extends DatabaseConnection {
   const DATABASE_NOT_FOUND = 1049;
 
   /**
+   * Error code for "Can't initialize character set" error.
+   */
+  const UNSUPPORTED_CHARSET = 2019;
+
+  /**
    * Flag to indicate if the cleanup function in __destruct() should run.
    *
    * @var bool
    */
   protected $needsCleanup = FALSE;
+
+  /**
+   * The minimal possible value for the max_allowed_packet setting of MySQL.
+   *
+   * @link https://mariadb.com/kb/en/mariadb/server-system-variables/#max_allowed_packet
+   * @link https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_max_allowed_packet
+   *
+   * @var int
+   */
+  const MIN_MAX_ALLOWED_PACKET = 1024;
 
   /**
    * Constructs a Connection object.
@@ -52,7 +68,32 @@ class Connection extends DatabaseConnection {
   /**
    * {@inheritdoc}
    */
+  public function query($query, array $args = array(), $options = array()) {
+    try {
+      return parent::query($query, $args, $options);
+    } catch (DatabaseException $e) {
+      if ($e->getPrevious()->errorInfo[1] == 1153) {
+        // If a max_allowed_packet error occurs the message length is truncated.
+        // This should prevent the error from recurring if the exception is
+        // logged to the database using dblog or the like.
+        $message = Unicode::truncateBytes($e->getMessage(), self::MIN_MAX_ALLOWED_PACKET);
+        $e = new DatabaseExceptionWrapper($message, $e->getCode(), $e->getPrevious());
+      }
+      throw $e;
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public static function open(array &$connection_options = array()) {
+    if (isset($connection_options['_dsn_utf8_fallback']) && $connection_options['_dsn_utf8_fallback'] === TRUE) {
+      // Only used during the installer version check, as a fallback from utf8mb4.
+      $charset = 'utf8';
+    }
+    else {
+      $charset = 'utf8mb4';
+    }
     // The DSN should use either a socket or a host/port.
     if (isset($connection_options['unix_socket'])) {
       $dsn = 'mysql:unix_socket=' . $connection_options['unix_socket'];
@@ -64,7 +105,7 @@ class Connection extends DatabaseConnection {
     // Character set is added to dsn to ensure PDO uses the proper character
     // set when escaping. This has security implications. See
     // https://www.drupal.org/node/1201452 for further discussion.
-    $dsn .= ';charset=utf8';
+    $dsn .= ';charset=' . $charset;
     if (!empty($connection_options['database'])) {
       $dsn .= ';dbname=' . $connection_options['database'];
     }
@@ -92,13 +133,13 @@ class Connection extends DatabaseConnection {
     $pdo = new \PDO($dsn, $connection_options['username'], $connection_options['password'], $connection_options['pdo']);
 
     // Force MySQL to use the UTF-8 character set. Also set the collation, if a
-    // certain one has been set; otherwise, MySQL defaults to 'utf8_general_ci'
-    // for UTF-8.
+    // certain one has been set; otherwise, MySQL defaults to
+    // 'utf8mb4_general_ci' for utf8mb4.
     if (!empty($connection_options['collation'])) {
-      $pdo->exec('SET NAMES utf8 COLLATE ' . $connection_options['collation']);
+      $pdo->exec('SET NAMES ' . $charset . ' COLLATE ' . $connection_options['collation']);
     }
     else {
-      $pdo->exec('SET NAMES utf8');
+      $pdo->exec('SET NAMES ' . $charset);
     }
 
     // Set MySQL init_commands if not already defined.  Default Drupal's MySQL
@@ -106,9 +147,9 @@ class Connection extends DatabaseConnection {
     // to run almost seamlessly on many different kinds of database systems.
     // These settings force MySQL to behave the same as postgresql, or sqlite
     // in regards to syntax interpretation and invalid data handling.  See
-    // http://drupal.org/node/344575 for further discussion. Also, as MySQL 5.5
-    // changed the meaning of TRADITIONAL we need to spell out the modes one by
-    // one.
+    // https://www.drupal.org/node/344575 for further discussion. Also, as MySQL
+    // 5.5 changed the meaning of TRADITIONAL we need to spell out the modes one
+    // by one.
     $connection_options += array(
       'init_commands' => array(),
     );
@@ -211,7 +252,7 @@ class Connection extends DatabaseConnection {
   public function nextIdDelete() {
     // While we want to clean up the table to keep it up from occupying too
     // much storage and memory, we must keep the highest value in the table
-    // because InnoDB  uses an in-memory auto-increment counter as long as the
+    // because InnoDB uses an in-memory auto-increment counter as long as the
     // server runs. When the server is stopped and restarted, InnoDB
     // reinitializes the counter for each table for the first INSERT to the
     // table based solely on values from the table so deleting all values would
@@ -278,6 +319,7 @@ class Connection extends DatabaseConnection {
       }
     }
   }
+
 }
 
 

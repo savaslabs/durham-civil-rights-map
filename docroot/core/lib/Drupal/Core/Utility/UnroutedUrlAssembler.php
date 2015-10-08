@@ -2,14 +2,14 @@
 
 /**
  * @file
- * Contains Drupal\Core\Utility\UnroutedUrlAssembler.
+ * Contains \Drupal\Core\Utility\UnroutedUrlAssembler.
  */
 
 namespace Drupal\Core\Utility;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\GeneratedUrl;
 use Drupal\Core\PathProcessor\OutboundPathProcessorInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -39,14 +39,13 @@ class UnroutedUrlAssembler implements UnroutedUrlAssemblerInterface {
    *
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   A request stack object.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
-   *    The config factory.
    * @param \Drupal\Core\PathProcessor\OutboundPathProcessorInterface $path_processor
    *   The output path processor.
+   * @param string[] $filter_protocols
+   *   (optional) An array of protocols allowed for URL generation.
    */
-  public function __construct(RequestStack $request_stack, ConfigFactoryInterface $config, OutboundPathProcessorInterface $path_processor) {
-    $allowed_protocols = $config->get('system.filter')->get('protocols') ?: ['http', 'https'];
-    UrlHelper::setAllowedProtocols($allowed_protocols);
+  public function __construct(RequestStack $request_stack, OutboundPathProcessorInterface $path_processor, array $filter_protocols = ['http', 'https']) {
+    UrlHelper::setAllowedProtocols($filter_protocols);
     $this->requestStack = $request_stack;
     $this->pathProcessor = $path_processor;
   }
@@ -57,24 +56,24 @@ class UnroutedUrlAssembler implements UnroutedUrlAssemblerInterface {
    * This is a helper function that calls buildExternalUrl() or buildLocalUrl()
    * based on a check of whether the path is a valid external URL.
    */
-  public function assemble($uri, array $options = []) {
+  public function assemble($uri, array $options = [], $collect_bubbleable_metadata = FALSE) {
     // Note that UrlHelper::isExternal will return FALSE if the $uri has a
     // disallowed protocol.  This is later made safe since we always add at
     // least a leading slash.
     if (parse_url($uri, PHP_URL_SCHEME) === 'base') {
-      return $this->buildLocalUrl($uri, $options);
+      return $this->buildLocalUrl($uri, $options, $collect_bubbleable_metadata);
     }
     elseif (UrlHelper::isExternal($uri)) {
       // UrlHelper::isExternal() only returns true for safe protocols.
-      return $this->buildExternalUrl($uri, $options);
+      return $this->buildExternalUrl($uri, $options, $collect_bubbleable_metadata);
     }
-    throw new \InvalidArgumentException(SafeMarkup::format('The URI "@uri" is invalid. You must use a valid URI scheme. Use base: for a path, e.g., to a Drupal file that needs the base path. Do not use this for internal paths controlled by Drupal.', ['@uri' => $uri]));
+    throw new \InvalidArgumentException("The URI '$uri' is invalid. You must use a valid URI scheme. Use base: for a path, e.g., to a Drupal file that needs the base path. Do not use this for internal paths controlled by Drupal.");
   }
 
   /**
    * {@inheritdoc}
    */
-  protected function buildExternalUrl($uri, array $options = []) {
+  protected function buildExternalUrl($uri, array $options = [], $collect_bubbleable_metadata = FALSE) {
     $this->addOptionDefaults($options);
     // Split off the fragment.
     if (strpos($uri, '#') !== FALSE) {
@@ -98,13 +97,16 @@ class UnroutedUrlAssembler implements UnroutedUrlAssemblerInterface {
       $uri .= (strpos($uri, '?') !== FALSE ? '&' : '?') . UrlHelper::buildQuery($options['query']);
     }
     // Reassemble.
-    return $uri . $options['fragment'];
+    $url = $uri . $options['fragment'];
+    return $collect_bubbleable_metadata ? (new GeneratedUrl())->setGeneratedUrl($url) : $url;
   }
 
   /**
    * {@inheritdoc}
    */
-  protected function buildLocalUrl($uri, array $options = []) {
+  protected function buildLocalUrl($uri, array $options = [], $collect_bubbleable_metadata = FALSE) {
+    $generated_url = $collect_bubbleable_metadata ? new GeneratedUrl() : NULL;
+
     $this->addOptionDefaults($options);
     $request = $this->requestStack->getCurrentRequest();
 
@@ -113,17 +115,18 @@ class UnroutedUrlAssembler implements UnroutedUrlAssemblerInterface {
     //   https://www.drupal.org/node/2417459
     $uri = substr($uri, 5);
 
-    // Strip leading slashes from internal paths to prevent them becoming
-    // external URLs without protocol. /example.com should not be turned into
-    // //example.com.
-    $uri = ltrim($uri, '/');
-
     // Allow (outbound) path processing, if needed. A valid use case is the path
     // alias overview form:
     // @see \Drupal\path\Controller\PathController::adminOverview().
     if (!empty($options['path_processing'])) {
-      $uri = $this->pathProcessor->processOutbound($uri, $options);
+      // Do not pass the request, since this is a special case and we do not
+      // want to include e.g. the request language in the processing.
+      $uri = $this->pathProcessor->processOutbound($uri, $options, NULL, $generated_url);
     }
+    // Strip leading slashes from internal paths to prevent them becoming
+    // external URLs without protocol. /example.com should not be turned into
+    // //example.com.
+    $uri = ltrim($uri, '/');
 
     // Add any subdirectory where Drupal is installed.
     $current_base_path = $request->getBasePath() . '/';
@@ -143,6 +146,9 @@ class UnroutedUrlAssembler implements UnroutedUrlAssemblerInterface {
       else {
         $base = $current_base_url;
       }
+      if ($collect_bubbleable_metadata) {
+        $generated_url->addCacheContexts(['url.site']);
+      }
     }
     else {
       $base = $current_base_path;
@@ -152,7 +158,8 @@ class UnroutedUrlAssembler implements UnroutedUrlAssemblerInterface {
 
     $uri = str_replace('%2F', '/', rawurlencode($prefix . $uri));
     $query = $options['query'] ? ('?' . UrlHelper::buildQuery($options['query'])) : '';
-    return $base . $options['script'] . $uri . $query . $options['fragment'];
+    $url = $base . $options['script'] . $uri . $query . $options['fragment'];
+    return $collect_bubbleable_metadata ? $generated_url->setGeneratedUrl($url) : $url;
   }
 
   /**
@@ -169,8 +176,7 @@ class UnroutedUrlAssembler implements UnroutedUrlAssemblerInterface {
 
     // If the current request was made with the script name (eg, index.php) in
     // it, then extract it, making sure the leading / is gone, and a trailing /
-    // is added, to allow simple string concatenation with other parts.  This
-    // mirrors code from UrlGenerator::generateFromPath().
+    // is added, to allow simple string concatenation with other parts.
     if (!empty($base_path_with_script)) {
       $script_name = $request->getScriptName();
       if (strpos($base_path_with_script, $script_name) !== FALSE) {

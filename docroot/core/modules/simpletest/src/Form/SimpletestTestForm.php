@@ -8,14 +8,41 @@
 namespace Drupal\simpletest\Form;
 
 use Drupal\Component\Utility\SortArray;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\RendererInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * List tests arranged in groups that can be selected and run.
  */
 class SimpletestTestForm extends FormBase {
+
+  /**
+   * The renderer.
+   *
+   * @var \Drupal\Core\Render\RendererInterface
+   */
+  protected $renderer;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('renderer')
+    );
+  }
+
+  /**
+   * Constructs a new SimpletestTestForm.
+   *
+   * @param \Drupal\Core\Render\RendererInterface $renderer
+   *   The renderer.
+   */
+  public function __construct(RendererInterface $renderer) {
+    $this->renderer = $renderer;
+  }
 
   /**
    * {@inheritdoc}
@@ -34,6 +61,17 @@ class SimpletestTestForm extends FormBase {
       '#value' => $this->t('Run tests'),
       '#tableselect' => TRUE,
       '#button_type' => 'primary',
+    );
+    $form['clean'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Clean test environment'),
+      '#description' => $this->t('Remove tables with the prefix "simpletest" and temporary directories that are left over from tests that crashed. This is intended for developers when creating tests.'),
+      '#weight' => 200,
+    );
+    $form['clean']['op'] = array(
+      '#type' => 'submit',
+      '#value' => $this->t('Clean environment'),
+      '#submit' => array('simpletest_clean_environment'),
     );
 
     // Do not needlessly re-execute a full test discovery if the user input
@@ -99,8 +137,8 @@ class SimpletestTestForm extends FormBase {
       '#suffix' => '<a href="#" class="simpletest-collapse">(' . $this->t('Collapse') . ')</a>',
     );
     $form['tests']['#attached']['drupalSettings']['simpleTest']['images'] = [
-      drupal_render($image_collapsed),
-      drupal_render($image_extended),
+      (string) $this->renderer->renderPlain($image_collapsed),
+      (string) $this->renderer->renderPlain($image_extended),
     ];
 
     // Generate the list of tests arranged by group.
@@ -151,7 +189,7 @@ class SimpletestTestForm extends FormBase {
         );
         $form['tests'][$class]['description'] = array(
           '#prefix' => '<div class="description">',
-          '#markup' => SafeMarkup::checkPlain($info['description']),
+          '#plain_text' => $info['description'],
           '#suffix' => '</div>',
           '#wrapper_attributes' => array(
             'class' => array('simpletest-test-description', 'table-filter-text-source'),
@@ -159,18 +197,6 @@ class SimpletestTestForm extends FormBase {
         );
       }
     }
-
-    $form['clean'] = array(
-      '#type' => 'fieldset',
-      '#title' => $this->t('Clean test environment'),
-      '#description' => $this->t('Remove tables with the prefix "simpletest" and temporary directories that are left over from tests that crashed. This is intended for developers when creating tests.'),
-      '#weight' => 200,
-    );
-    $form['clean']['op'] = array(
-      '#type' => 'submit',
-      '#value' => $this->t('Clean environment'),
-      '#submit' => array('simpletest_clean_environment'),
-    );
 
     return $form;
   }

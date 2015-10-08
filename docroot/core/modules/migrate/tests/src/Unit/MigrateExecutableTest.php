@@ -7,6 +7,7 @@
 
 namespace Drupal\Tests\migrate\Unit;
 
+use Drupal\Component\Utility\Html;
 use Drupal\migrate\Entity\MigrationInterface;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\MigrateException;
@@ -50,11 +51,9 @@ class MigrateExecutableTest extends MigrateTestCase {
     parent::setUp();
     $this->migration = $this->getMigration();
     $this->message = $this->getMock('Drupal\migrate\MigrateMessageInterface');
-
-    $this->executable = new TestMigrateExecutable($this->migration, $this->message);
+    $event_dispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
+    $this->executable = new TestMigrateExecutable($this->migration, $this->message, $event_dispatcher);
     $this->executable->setStringTranslation($this->getStringTranslationStub());
-    $this->executable->setTimeThreshold(0.1);
-    $this->executable->limit = array('unit' => 'second', 'value' => 1);
   }
 
   /**
@@ -74,7 +73,7 @@ class MigrateExecutableTest extends MigrateTestCase {
     // Ensure that a message with the proper message was added.
     $this->message->expects($this->once())
       ->method('display')
-      ->with("Migration failed with source plugin exception: $exception_message");
+      ->with("Migration failed with source plugin exception: " . Html::escape($exception_message));
 
     $result = $this->executable->import();
     $this->assertEquals(MigrationInterface::RESULT_FAILED, $result);
@@ -120,11 +119,6 @@ class MigrateExecutableTest extends MigrateTestCase {
       ->will($this->returnValue($destination));
 
     $this->assertSame(MigrationInterface::RESULT_COMPLETED, $this->executable->import());
-
-    $this->assertSame(1, $this->executable->getSuccessesSinceFeedback());
-    $this->assertSame(1, $this->executable->getTotalSuccesses());
-    $this->assertSame(1, $this->executable->getTotalProcessed());
-    $this->assertSame(1, $this->executable->getProcessedSinceFeedback());
   }
 
   /**
@@ -170,11 +164,6 @@ class MigrateExecutableTest extends MigrateTestCase {
       ->method('saveIdMapping');
 
     $this->assertSame(MigrationInterface::RESULT_COMPLETED, $this->executable->import());
-
-    $this->assertSame(1, $this->executable->getSuccessesSinceFeedback());
-    $this->assertSame(1, $this->executable->getTotalSuccesses());
-    $this->assertSame(1, $this->executable->getTotalProcessed());
-    $this->assertSame(1, $this->executable->getProcessedSinceFeedback());
   }
 
   /**
@@ -212,10 +201,6 @@ class MigrateExecutableTest extends MigrateTestCase {
       ->will($this->returnValue($destination));
 
     $this->idMap->expects($this->once())
-      ->method('delete')
-      ->with(array('id' => 'test'), TRUE);
-
-    $this->idMap->expects($this->once())
       ->method('saveIdMapping')
       ->with($row, array(), MigrateIdMapInterface::STATUS_FAILED, NULL);
 
@@ -239,9 +224,10 @@ class MigrateExecutableTest extends MigrateTestCase {
   }
 
   /**
-   * Tests the import method with a MigrateException being thrown.
+   * Tests the import method with a MigrateException being thrown from the
+   * destination.
    */
-  public function testImportWithValidRowWithMigrateException() {
+  public function testImportWithValidRowWithDestinationMigrateException() {
     $exception_message = $this->getRandomGenerator()->string();
     $source = $this->getMockSource();
 
@@ -280,14 +266,57 @@ class MigrateExecutableTest extends MigrateTestCase {
     $this->idMap->expects($this->once())
       ->method('saveMessage');
 
-    $this->message->expects($this->once())
-      ->method('display')
-      ->with($exception_message);
-
     $this->idMap->expects($this->once())
       ->method('lookupDestinationId')
       ->with(array('id' => 'test'))
       ->will($this->returnValue(array('test')));
+
+    $this->assertSame(MigrationInterface::RESULT_COMPLETED, $this->executable->import());
+  }
+
+  /**
+   * Tests the import method with a MigrateException being thrown from a process
+   * plugin.
+   */
+  public function testImportWithValidRowWithProcesMigrateException() {
+    $exception_message = $this->getRandomGenerator()->string();
+    $source = $this->getMockSource();
+
+    $row = $this->getMockBuilder('Drupal\migrate\Row')
+      ->disableOriginalConstructor()
+      ->getMock();
+
+    $row->expects($this->once())
+      ->method('getSourceIdValues')
+      ->willReturn(array('id' => 'test'));
+
+    $source->expects($this->once())
+      ->method('current')
+      ->willReturn($row);
+
+    $this->executable->setSource($source);
+
+    $this->migration->expects($this->once())
+      ->method('getProcessPlugins')
+      ->willThrowException(new MigrateException($exception_message));
+
+    $destination = $this->getMock('Drupal\migrate\Plugin\MigrateDestinationInterface');
+    $destination->expects($this->never())
+      ->method('import');
+
+    $this->migration->expects($this->once())
+      ->method('getDestinationPlugin')
+      ->willReturn($destination);
+
+    $this->idMap->expects($this->once())
+      ->method('saveIdMapping')
+      ->with($row, array(), MigrateIdMapInterface::STATUS_FAILED, NULL);
+
+    $this->idMap->expects($this->once())
+      ->method('saveMessage');
+
+    $this->idMap->expects($this->never())
+      ->method('lookupDestinationId');
 
     $this->assertSame(MigrationInterface::RESULT_COMPLETED, $this->executable->import());
   }
@@ -347,111 +376,6 @@ class MigrateExecutableTest extends MigrateTestCase {
   }
 
   /**
-   * Tests time limit option method.
-   */
-  public function testTimeOptionExceeded() {
-    // Assert time limit of one second (test configuration default) is exceeded.
-    $this->executable->setTimeElapsed(1);
-    $this->assertTrue($this->executable->timeOptionExceeded());
-    // Assert time limit not exceeded.
-    $this->executable->limit = array('unit' => 'seconds', 'value' => (int) $_SERVER['REQUEST_TIME'] - 3600);
-    $this->assertFalse($this->executable->timeOptionExceeded());
-    // Assert no time limit.
-    $this->executable->limit = array();
-    $this->assertFalse($this->executable->timeOptionExceeded());
-  }
-
-  /**
-   * Tests get time limit method.
-   */
-  public function testGetTimeLimit() {
-    // Assert time limit has a unit of one second (test configuration default).
-    $limit = $this->executable->limit;
-    $this->assertArrayHasKey('unit', $limit);
-    $this->assertSame('second', $limit['unit']);
-    $this->assertSame($limit['value'], $this->executable->getTimeLimit());
-    // Assert time limit has a unit of multiple seconds.
-    $this->executable->limit = array('unit' => 'seconds', 'value' => 30);
-    $limit = $this->executable->limit;
-    $this->assertArrayHasKey('unit', $limit);
-    $this->assertSame('seconds', $limit['unit']);
-    $this->assertSame($limit['value'], $this->executable->getTimeLimit());
-    // Assert no time limit.
-    $this->executable->limit = array();
-    $limit = $this->executable->limit;
-    $this->assertArrayNotHasKey('unit', $limit);
-    $this->assertArrayNotHasKey('value', $limit);
-    $this->assertNull($this->executable->getTimeLimit());
-  }
-
-  /**
-   * Tests saving of queued messages.
-   */
-  public function testSaveQueuedMessages() {
-    // Assert no queued messages before save.
-    $this->assertAttributeEquals(array(), 'queuedMessages', $this->executable);
-    // Set required source_id_values for MigrateIdMapInterface::saveMessage().
-    $expected_messages[] = array('message' => 'message 1', 'level' => MigrationInterface::MESSAGE_ERROR);
-    $expected_messages[] = array('message' => 'message 2', 'level' => MigrationInterface::MESSAGE_WARNING);
-    $expected_messages[] = array('message' => 'message 3', 'level' => MigrationInterface::MESSAGE_INFORMATIONAL);
-    foreach ($expected_messages as $queued_message) {
-      $this->executable->queueMessage($queued_message['message'], $queued_message['level']);
-    }
-    $this->executable->setSourceIdValues(array());
-    $this->assertAttributeEquals($expected_messages, 'queuedMessages', $this->executable);
-    // No asserts of saved messages since coverage exists
-    // in MigrateSqlIdMapTest::saveMessage().
-    $this->executable->saveQueuedMessages();
-    // Assert no queued messages after save.
-    $this->assertAttributeEquals(array(), 'queuedMessages', $this->executable);
-  }
-
-  /**
-   * Tests the queuing of messages.
-   */
-  public function testQueueMessage() {
-    // Assert no queued messages.
-    $expected_messages = array();
-    $this->assertAttributeEquals(array(), 'queuedMessages', $this->executable);
-    // Assert a single (default level) queued message.
-    $expected_messages[] = array(
-      'message' => 'message 1',
-      'level' => MigrationInterface::MESSAGE_ERROR,
-    );
-    $this->executable->queueMessage('message 1');
-    $this->assertAttributeEquals($expected_messages, 'queuedMessages', $this->executable);
-    // Assert multiple queued messages.
-    $expected_messages[] = array(
-      'message' => 'message 2',
-      'level' => MigrationInterface::MESSAGE_WARNING,
-    );
-    $this->executable->queueMessage('message 2', MigrationInterface::MESSAGE_WARNING);
-    $this->assertAttributeEquals($expected_messages, 'queuedMessages', $this->executable);
-    $expected_messages[] = array(
-      'message' => 'message 3',
-      'level' => MigrationInterface::MESSAGE_INFORMATIONAL,
-    );
-    $this->executable->queueMessage('message 3', MigrationInterface::MESSAGE_INFORMATIONAL);
-    $this->assertAttributeEquals($expected_messages, 'queuedMessages', $this->executable);
-  }
-
-  /**
-   * Tests maximum execution time (max_execution_time) of an import.
-   */
-  public function testMaxExecTimeExceeded() {
-    // Assert no max_execution_time value.
-    $this->executable->setMaxExecTime(0);
-    $this->assertFalse($this->executable->maxExecTimeExceeded());
-    // Assert default max_execution_time value does not exceed.
-    $this->executable->setMaxExecTime(30);
-    $this->assertFalse($this->executable->maxExecTimeExceeded());
-    // Assert max_execution_time value is exceeded.
-    $this->executable->setMaxExecTime(1);
-    $this->executable->setTimeElapsed(2);
-    $this->assertTrue($this->executable->maxExecTimeExceeded());
-  }
-
-  /**
    * Tests the processRow method.
    */
   public function testProcessRow() {
@@ -506,9 +430,6 @@ class MigrateExecutableTest extends MigrateTestCase {
       ->disableOriginalConstructor()
       ->setMethods(get_class_methods($class))
       ->getMockForAbstractClass();
-    $source->expects($this->any())
-      ->method('getIterator')
-      ->will($this->returnValue($iterator));
     $source->expects($this->once())
       ->method('rewind')
       ->will($this->returnValue(TRUE));

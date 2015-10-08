@@ -11,8 +11,8 @@ namespace Drupal\options\Tests;
  * Tests the Options field type formatters.
  *
  * @group options
- * @see \Drupal\options\Plugin\field\formatter\OptionsDefaultFormatter
- * @see \Drupal\options\Plugin\field\formatter\OptionsKeyFormatter
+ * @see \Drupal\options\Plugin\Field\FieldFormatter\OptionsDefaultFormatter
+ * @see \Drupal\options\Plugin\Field\FieldFormatter\OptionsKeyFormatter
  */
 class OptionsFormattersTest extends OptionsFieldUnitTestBase {
 
@@ -38,7 +38,7 @@ class OptionsFormattersTest extends OptionsFieldUnitTestBase {
 
     $build = $items->view(array('type' => 'list_key'));
     $this->assertEqual($build['#formatter'], 'list_key', 'The chosen formatter is used.');
-    $this->assertEqual($build[0]['#markup'], 1);
+    $this->assertEqual((string) $build[0]['#markup'], 1);
   }
 
 }

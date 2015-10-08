@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\comment\Plugin\views\field\NodeNewComments.
+ * Contains \Drupal\comment\Plugin\views\field\NodeNewComments.
  */
 
 namespace Drupal\comment\Plugin\views\field;
@@ -141,7 +141,7 @@ class NodeNewComments extends NumericField {
         ':timestamp2' => HISTORY_READ_LIMIT,
       ));
       foreach ($result as $node) {
-        foreach ($ids[$node->id()] as $id) {
+        foreach ($ids[$node->nid] as $id) {
           $values[$id]->{$this->field_alias} = $node->num_comments;
         }
       }

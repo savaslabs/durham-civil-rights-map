@@ -73,7 +73,7 @@ class ConfigSchemaChecker implements EventSubscriberInterface {
 
     $name = $saved_config->getName();
     $data = $saved_config->get();
-    $checksum = crc32(serialize($data));
+    $checksum = hash('crc32b', serialize($data));
     $exceptions = array(
       // Following are used to test lack of or partial schema. Where partial
       // schema is provided, that is explicitly tested in specific tests.
@@ -88,14 +88,14 @@ class ConfigSchemaChecker implements EventSubscriberInterface {
       $this->checked[$name . ':' . $checksum] = TRUE;
       $errors = $this->checkConfigSchema($this->typedManager, $name, $data);
       if ($errors === FALSE) {
-        throw new SchemaIncompleteException(SafeMarkup::format('No schema for @config_name', array('@config_name' => $name)));
+        throw new SchemaIncompleteException("No schema for $name");
       }
       elseif (is_array($errors)) {
         $text_errors = [];
         foreach ($errors as $key => $error) {
           $text_errors[] = SafeMarkup::format('@key @error', array('@key' => $key, '@error' => $error));
         }
-        throw new SchemaIncompleteException(SafeMarkup::format('Schema errors for @config_name with the following errors: @errors', array('@config_name' => $name, '@errors' => implode(', ', $text_errors))));
+        throw new SchemaIncompleteException("Schema errors for $name with the following errors: " . implode(', ', $text_errors));
       }
     }
   }

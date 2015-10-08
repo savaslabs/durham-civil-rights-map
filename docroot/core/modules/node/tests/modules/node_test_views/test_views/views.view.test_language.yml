@@ -24,7 +24,7 @@ display:
         options:
           perm: 'access content'
       cache:
-        type: none
+        type: tag
         options: {  }
       query:
         type: views_query
@@ -196,6 +196,7 @@ display:
           value:
             fr: fr
             es: es
+            und: und
           group: 1
           exposed: false
           expose:

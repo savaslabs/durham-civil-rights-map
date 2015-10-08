@@ -8,6 +8,7 @@
 namespace Drupal\comment\Tests\Views;
 
 use Drupal\comment\Entity\Comment;
+use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\user\RoleInterface;
 use Drupal\views\Views;
@@ -58,6 +59,11 @@ class CommentFieldNameTest extends CommentTestBase {
    * Test comment field name.
    */
   public function testCommentFieldName() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = \Drupal::service('renderer');
+    // Grant permission to properly check view access on render.
+    user_role_grant_permissions(RoleInterface::ANONYMOUS_ID, ['access comments']);
+    $this->container->get('account_switcher')->switchTo(new AnonymousUserSession());
     $view = Views::getView('test_comment_field_name');
     $this->executeView($view);
 
@@ -76,17 +82,16 @@ class CommentFieldNameTest extends CommentTestBase {
       'comment_field_data_field_name' => 'field_name',
     ];
     $this->assertIdenticalResultset($view, $expected_result, $column_map);
-    // Test that no data can be rendered.
-    $this->assertIdentical(FALSE, isset($view->field['field_name']));
 
-    // Grant permission to properly check view access on render.
-    user_role_grant_permissions(RoleInterface::ANONYMOUS_ID, ['access comments']);
-    $this->container->get('account_switcher')->switchTo(new AnonymousUserSession());
-    $view = Views::getView('test_comment_field_name');
-    $this->executeView($view);
     // Test that data rendered.
-    $this->assertIdentical($this->comment->getFieldName(), $view->field['field_name']->advancedRender($view->result[0]));
-    $this->assertIdentical($this->customComment->getFieldName(), $view->field['field_name']->advancedRender($view->result[1]));
+    $output = $renderer->executeInRenderContext(new RenderContext(), function () use ($view) {
+      return $view->field['field_name']->advancedRender($view->result[0]);
+    });
+    $this->assertEqual($this->comment->getFieldName(), $output);
+    $output = $renderer->executeInRenderContext(new RenderContext(), function () use ($view) {
+      return $view->field['field_name']->advancedRender($view->result[1]);
+    });
+    $this->assertEqual($this->customComment->getFieldName(), $output);
   }
 
 }

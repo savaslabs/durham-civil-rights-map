@@ -14,7 +14,7 @@ use Symfony\Component\Validator\Constraint;
  *
  * Verifies that referenced entities are valid.
  *
- * @Plugin(
+ * @Constraint(
  *   id = "ValidReference",
  *   label = @Translation("Entity Reference valid reference", context = "Validation")
  * )
@@ -27,5 +27,12 @@ class ValidReferenceConstraint extends Constraint {
    * @var string
    */
   public $message = 'The referenced entity (%type: %id) does not exist.';
+
+  /**
+   * Validation message when the target_id is empty.
+   *
+   * @var string
+   */
+  public $nullMessage = 'This value should not be null.';
 
 }

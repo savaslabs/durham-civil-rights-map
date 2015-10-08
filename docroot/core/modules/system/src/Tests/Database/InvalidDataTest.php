@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Database\InvalidDataTest.
+ * Contains \Drupal\system\Tests\Database\InvalidDataTest.
  */
 
 namespace Drupal\system\Tests\Database;
@@ -38,7 +38,7 @@ class InvalidDataTest extends DatabaseTestBase {
           'job' => 'Singer',
         ))
         ->execute();
-      $this->fail('Insert succeedded when it should not have.');
+      $this->fail('Insert succeeded when it should not have.');
     }
     catch (IntegrityConstraintViolationException $e) {
       // Check if the first record was inserted.

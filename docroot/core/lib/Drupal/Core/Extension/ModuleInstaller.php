@@ -10,15 +10,14 @@ namespace Drupal\Core\Extension;
 use Drupal\Component\Serialization\Yaml;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\Core\Config\PreExistingConfigException;
-use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\DrupalKernelInterface;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Entity\FieldableEntityInterface;
 
 /**
  * Default implementation of the module installer.
  *
- * It registers the module in config, install its own configuration,
+ * It registers the module in config, installs its own configuration,
  * installs the schema, updates the Drupal kernel and more.
  */
 class ModuleInstaller implements ModuleInstallerInterface {
@@ -88,10 +87,7 @@ class ModuleInstaller implements ModuleInstallerInterface {
       $module_list = $module_list ? array_combine($module_list, $module_list) : array();
       if ($missing_modules = array_diff_key($module_list, $module_data)) {
         // One or more of the given modules doesn't exist.
-        throw new MissingDependencyException(SafeMarkup::format('Unable to install modules %modules due to missing modules %missing.', array(
-          '%modules' => implode(', ', $module_list),
-          '%missing' => implode(', ', $missing_modules),
-        )));
+        throw new MissingDependencyException(sprintf('Unable to install modules %s due to missing modules %s.', implode(', ', $module_list), implode(', ', $missing_modules)));
       }
 
       // Only process currently uninstalled modules.
@@ -107,10 +103,7 @@ class ModuleInstaller implements ModuleInstallerInterface {
         foreach (array_keys($module_data[$module]->requires) as $dependency) {
           if (!isset($module_data[$dependency])) {
             // The dependency does not exist.
-            throw new MissingDependencyException(SafeMarkup::format('Unable to install modules: module %module is missing its dependency module %dependency.', array(
-              '%module' => $module,
-              '%dependency' => $dependency,
-            )));
+            throw new MissingDependencyException("Unable to install modules: module '$module' is missing its dependency module $dependency.");
           }
 
           // Skip already installed modules.
@@ -145,20 +138,19 @@ class ModuleInstaller implements ModuleInstallerInterface {
       if (!$enabled) {
         // Throw an exception if the module name is too long.
         if (strlen($module) > DRUPAL_EXTENSION_NAME_MAX_LENGTH) {
-          throw new ExtensionNameLengthException(format_string('Module name %name is over the maximum allowed length of @max characters.', array(
-            '%name' => $module,
-            '@max' => DRUPAL_EXTENSION_NAME_MAX_LENGTH,
-          )));
+          throw new ExtensionNameLengthException("Module name '$module' is over the maximum allowed length of " . DRUPAL_EXTENSION_NAME_MAX_LENGTH . ' characters');
         }
 
         // Check the validity of the default configuration. This will throw
         // exceptions if the configuration is not valid.
         $config_installer->checkConfigurationToInstall('module', $module);
 
+        // Save this data without checking schema. This is a performance
+        // improvement for module installation.
         $extension_config
           ->set("module.$module", 0)
           ->set('module', module_config_sort($extension_config->get('module')))
-          ->save();
+          ->save(TRUE);
 
         // Prepare the new module list, sorted by weight, including filenames.
         // This list is used for both the ModuleHandler and DrupalKernel. It
@@ -203,9 +195,6 @@ class ModuleInstaller implements ModuleInstallerInterface {
         // Update the kernel to include it.
         $this->updateKernel($module_filenames);
 
-        // Refresh the schema to include it.
-        drupal_get_schema(NULL, TRUE);
-
         // Allow modules to react prior to the installation of a module.
         $this->moduleHandler->invokeAll('module_preinstall', array($module));
 
@@ -223,14 +212,34 @@ class ModuleInstaller implements ModuleInstallerInterface {
           $version = max(max($versions), $version);
         }
 
-        // Notify interested components that this module's entity types are new.
-        // For example, a SQL-based storage handler can use this as an
-        // opportunity to create the necessary database tables.
+        // Notify interested components that this module's entity types and
+        // field storage definitions are new. For example, a SQL-based storage
+        // handler can use this as an opportunity to create the necessary
+        // database tables.
         // @todo Clean this up in https://www.drupal.org/node/2350111.
         $entity_manager = \Drupal::entityManager();
+        $update_manager = \Drupal::entityDefinitionUpdateManager();
         foreach ($entity_manager->getDefinitions() as $entity_type) {
           if ($entity_type->getProvider() == $module) {
-            $entity_manager->onEntityTypeCreate($entity_type);
+            $update_manager->installEntityType($entity_type);
+          }
+          elseif ($entity_type->isSubclassOf(FieldableEntityInterface::CLASS)) {
+            // The module being installed may be adding new fields to existing
+            // entity types. Field definitions for any entity type defined by
+            // the module are handled in the if branch.
+            foreach ($entity_manager->getFieldStorageDefinitions($entity_type->id()) as $storage_definition) {
+              if ($storage_definition->getProvider() == $module) {
+                // If the module being installed is also defining a storage key
+                // for the entity type, the entity schema may not exist yet. It
+                // will be created later in that case.
+                try {
+                  $update_manager->installFieldStorageDefinition($storage_definition->getName(), $entity_type->id(), $module, $storage_definition);
+                }
+                catch (EntityStorageException $e) {
+                  watchdog_exception('system', $e, 'An error occurred while notifying the creation of the @name field storage definition: "!message" in %function (line %line of %file).', ['@name' => $storage_definition->getName()]);
+                }
+              }
+            }
           }
         }
 
@@ -251,15 +260,19 @@ class ModuleInstaller implements ModuleInstallerInterface {
         }
         drupal_set_installed_schema_version($module, $version);
 
+        // Ensure that all post_update functions are registered already.
+        /** @var \Drupal\Core\Update\UpdateRegistry $post_update_registry */
+        $post_update_registry = \Drupal::service('update.post_update_registry');
+        $post_update_registry->registerInvokedUpdates($post_update_registry->getModuleUpdateFunctions($module));
+
         // Record the fact that it was installed.
         $modules_installed[] = $module;
 
-        // file_get_stream_wrappers() needs to re-register Drupal's stream
-        // wrappers in case a module-provided stream wrapper is used later in
-        // the same request. In particular, this happens when installing Drupal
-        // via Drush, as the 'translations' stream wrapper is provided by
-        // Interface Translation module and is later used to import
-        // translations.
+        // Drupal's stream wrappers needs to be re-registered in case a
+        // module-provided stream wrapper is used later in the same request. In
+        // particular, this happens when installing Drupal via Drush, as the
+        // 'translations' stream wrapper is provided by Interface Translation
+        // module and is later used to import translations.
         \Drupal::service('stream_wrapper_manager')->register();
 
         // Update the theme registry to include it.
@@ -268,7 +281,7 @@ class ModuleInstaller implements ModuleInstallerInterface {
         // Modules can alter theme info, so refresh theme data.
         // @todo ThemeHandler cannot be injected into ModuleHandler, since that
         //   causes a circular service dependency.
-        // @see https://drupal.org/node/2208429
+        // @see https://www.drupal.org/node/2208429
         \Drupal::service('theme_handler')->refreshInfo();
 
         // Allow the module to perform install tasks.
@@ -331,9 +344,7 @@ class ModuleInstaller implements ModuleInstallerInterface {
       foreach ($reasons as $reason) {
         $reason_message[] = implode(', ', $reason);
       }
-      throw new ModuleUninstallValidatorException(format_string('The following reasons prevents the modules from being uninstalled: @reasons', array(
-        '@reasons' => implode(', ', $reason_message),
-      )));
+      throw new ModuleUninstallValidatorException('The following reasons prevents the modules from being uninstalled: ' . implode('; ', $reason_message));
     }
     // Set the actual module weights.
     $module_list = array_map(function ($module) use ($module_data) {
@@ -376,17 +387,34 @@ class ModuleInstaller implements ModuleInstallerInterface {
       // deleted. For example, a SQL-based storage handler can use this as an
       // opportunity to drop the corresponding database tables.
       // @todo Clean this up in https://www.drupal.org/node/2350111.
+      $update_manager = \Drupal::entityDefinitionUpdateManager();
       foreach ($entity_manager->getDefinitions() as $entity_type) {
         if ($entity_type->getProvider() == $module) {
-          $entity_manager->onEntityTypeDelete($entity_type);
+          $update_manager->uninstallEntityType($entity_type);
+        }
+        elseif ($entity_type->isSubclassOf(FieldableEntityInterface::CLASS)) {
+          // The module being installed may be adding new fields to existing
+          // entity types. Field definitions for any entity type defined by
+          // the module are handled in the if branch.
+          $entity_type_id = $entity_type->id();
+          /** @var \Drupal\Core\Entity\FieldableEntityStorageInterface $storage */
+          $storage = $entity_manager->getStorage($entity_type_id);
+          foreach ($entity_manager->getFieldStorageDefinitions($entity_type_id) as $storage_definition) {
+            // @todo We need to trigger field purging here.
+            //   See https://www.drupal.org/node/2282119.
+            if ($storage_definition->getProvider() == $module && !$storage->countFieldData($storage_definition, TRUE)) {
+              $update_manager->uninstallFieldStorageDefinition($storage_definition);
+            }
+          }
         }
       }
 
       // Remove the schema.
       drupal_uninstall_schema($module);
 
-      // Remove the module's entry from the config.
-      \Drupal::configFactory()->getEditable('core.extension')->clear("module.$module")->save();
+      // Remove the module's entry from the config. Don't check schema when
+      // uninstalling a module since we are only clearing a key.
+      \Drupal::configFactory()->getEditable('core.extension')->clear("module.$module")->save(TRUE);
 
       // Update the module handler to remove the module.
       // The current ModuleHandler instance is obsolete with the kernel rebuild
@@ -415,13 +443,17 @@ class ModuleInstaller implements ModuleInstallerInterface {
       // Modules can alter theme info, so refresh theme data.
       // @todo ThemeHandler cannot be injected into ModuleHandler, since that
       //   causes a circular service dependency.
-      // @see https://drupal.org/node/2208429
+      // @see https://www.drupal.org/node/2208429
       \Drupal::service('theme_handler')->refreshInfo();
 
       \Drupal::logger('system')->info('%module module uninstalled.', array('%module' => $module));
 
       $schema_store = \Drupal::keyValue('system.schema');
       $schema_store->delete($module);
+
+      /** @var \Drupal\Core\Update\UpdateRegistry $post_update_registry */
+      $post_update_registry = \Drupal::service('update.post_update_registry');
+      $post_update_registry->filterOutInvokedUpdatesByModule($module);
     }
     \Drupal::service('router.builder')->setRebuildNeeded();
     drupal_get_installed_schema_version(NULL, TRUE);

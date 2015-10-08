@@ -96,7 +96,7 @@ Drupal 8.0, xxxx-xx-xx (development version)
       * Added language selectors to most configuration options (views, menus,
         etc.)
       * Added a configuration translation user interface that works with any
-        configuration with translatable values (blocks, views, fields, etc).
+        configuration with translatable values (blocks, views, fields, etc.).
       * Added language options to block visibility.
     * Much improved language APIs for developers:
       * Added simple APIs and hooks to save/delete/update languages.
@@ -129,6 +129,7 @@ Drupal 8.0, xxxx-xx-xx (development version)
     * Added a serialization module using the Symfony serialization component.
     * Added a Hypertext Application Language (HAL) serialization module.
     * Added a HTTP Basic authentication provider module.
+- When using MySQL, the MyISAM engine is no longer supported.
 
 Drupal 7.0, 2011-01-05
 ----------------------
@@ -241,8 +242,9 @@ Drupal 7.0, 2011-01-05
       allowing Drupal to lazy-load classes and interfaces as needed.
 - Theme system:
     * Removed the Bluemarine, Chameleon and Pushbutton themes. These themes live
-      on as contributed themes (http://drupal.org/project/bluemarine,
-      http://drupal.org/project/chameleon and http://drupal.org/project/pushbutton).
+      on as contributed themes (https://www.drupal.org/project/bluemarine,
+      https://www.drupal.org/project/chameleon and
+      https://www.drupal.org/project/pushbutton).
     * Added Stark theme to make analyzing Drupal's default HTML and CSS easier.
     * Added Seven as the default administration theme.
     * Variable preprocessing of theme hooks prior to template rendering now goes
@@ -441,13 +443,13 @@ Drupal 6.0, 2008-02-13
 - Added support for triggering configurable actions.
 - Added the Update status module to automatically check for available updates
   and warn sites if they are missing security updates or newer versions.
-  Sites deploying from CVS should use http://drupal.org/project/cvs_deploy.
-  Advanced settings provided by http://drupal.org/project/update_advanced.
+  Sites deploying from CVS should use https://www.drupal.org/project/cvs_deploy.
+  Advanced settings provided by https://www.drupal.org/project/update_advanced.
 - Upgraded the core JavaScript library to jQuery version 1.2.3.
 - Added a new Schema API, which provides built-in support for core and
   contributed modules to work with databases other than MySQL.
 - Removed drupal.module. The functionality lives on as the Site network
-  contributed module (http://drupal.org/project/site_network).
+  contributed module (https://www.drupal.org/project/site_network).
 - Removed old system updates. Updates from Drupal versions prior to 5.x will
   require upgrading to 5.x before upgrading to 6.x.
 
@@ -586,7 +588,7 @@ Drupal 4.7.9, 2007-12-05
 - fixed a security issue (SQL injection), see SA-2007-031
 
 Drupal 4.7.8, 2007-10-17
-----------------------
+------------------------
 - fixed a security issue (HTTP response splitting), see SA-2007-024
 - fixed a security issue (Cross site scripting via uploads), see SA-2007-026
 - fixed a security issue (API handling of unpublished comment), see SA-2007-030
@@ -681,7 +683,7 @@ Drupal 4.7.0, 2006-05-01
 - Added support for PHP5's 'mysqli' extension.
 - Search module:
     * Made indexer smarter and more robust.
-    * Added advanced search operators (e.g. phrase, node type, ...).
+    * Added advanced search operators (e.g., phrase, node type, etc.).
     * Added customizable result ranking.
 - PostgreSQL support:
     * Removed dependency on PL/pgSQL procedural language.
@@ -699,7 +701,7 @@ Drupal 4.6.11, 2007-01-05
 - Fixed security issue (DoS), see SA-2007-002
 
 Drupal 4.6.10, 2006-10-18
-------------------------
+-------------------------
 - Fixed security issue (XSS), see SA-2006-024
 - Fixed security issue (CSRF), see SA-2006-025
 - Fixed security issue (Form action attribute injection), see SA-2006-026
@@ -1058,7 +1060,7 @@ Drupal 4.0.0, 2002-06-15
     * Made each cloud site have its own settings.
     * Modules and themes can now be enabled/disabled using the administration pages.
     * Added URL abstraction for links.
-    * Usability changes (renamed links, better UI, etc).
+    * Usability changes (renamed links, better UI, etc.).
 - Collaboratively revised and expanded the Drupal documentation.
 
 Drupal 3.0.1, 2001-10-15

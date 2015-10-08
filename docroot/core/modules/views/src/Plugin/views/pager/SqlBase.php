@@ -2,17 +2,19 @@
 
 /**
  * @file
- * Contains \Drupal\views\Plugin\views\pager\SqlBase
+ * Contains \Drupal\views\Plugin\views\pager\SqlBase.
  */
 
 namespace Drupal\views\Plugin\views\pager;
 
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
  * A common base class for sql based pager.
  */
-abstract class SqlBase extends PagerPluginBase {
+abstract class SqlBase extends PagerPluginBase implements CacheableDependencyInterface {
 
   protected function defineOptions() {
     $options = parent::defineOptions();
@@ -34,8 +36,8 @@ abstract class SqlBase extends PagerPluginBase {
     );
     $options['tags'] = array(
       'contains' => array(
-        'previous' => array('default' => $this->t('‹ previous')),
-        'next' => array('default' => $this->t('next ›')),
+        'previous' => array('default' => $this->t('‹ Previous')),
+        'next' => array('default' => $this->t('Next ›')),
       ),
     );
     return $options;
@@ -101,13 +103,12 @@ abstract class SqlBase extends PagerPluginBase {
       '#tree' => TRUE,
       '#title' => $this->t('Exposed options'),
       '#input' => TRUE,
-      '#description' => $this->t('Exposing this options allows users to define their values in a exposed form when view is displayed'),
+      '#description' => $this->t('Allow user to control selected display options for this view.'),
     );
 
     $form['expose']['items_per_page'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Expose items per page'),
-      '#description' => $this->t('When checked, users can determine how many items per page show in a view'),
+      '#title' => $this->t('Allow user to control the number of items displayed in this view'),
       '#default_value' => $this->options['expose']['items_per_page'],
     );
 
@@ -115,7 +116,6 @@ abstract class SqlBase extends PagerPluginBase {
       '#type' => 'textfield',
       '#title' => $this->t('Items per page label'),
       '#required' => TRUE,
-      '#description' => $this->t('Label to use in the exposed items per page form element.'),
       '#default_value' => $this->options['expose']['items_per_page_label'],
       '#states' => array(
         'invisible' => array(
@@ -140,15 +140,13 @@ abstract class SqlBase extends PagerPluginBase {
 
     $form['expose']['items_per_page_options_all'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Include all items option'),
-      '#description' => $this->t('If checked, an extra item will be included to items per page to display all items'),
+      '#title' => $this->t('Allow user to to display all items'),
       '#default_value' => $this->options['expose']['items_per_page_options_all'],
     );
 
     $form['expose']['items_per_page_options_all_label'] = array(
       '#type' => 'textfield',
       '#title' => $this->t('All items label'),
-      '#description' => $this->t('Which label will be used to display all items'),
       '#default_value' => $this->options['expose']['items_per_page_options_all_label'],
       '#states' => array(
         'invisible' => array(
@@ -159,8 +157,7 @@ abstract class SqlBase extends PagerPluginBase {
 
     $form['expose']['offset'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Expose Offset'),
-      '#description' => $this->t('When checked, users can determine how many items should be skipped at the beginning.'),
+      '#title' => $this->t('Allow user to specify number of items skipped from beginning of this view.'),
       '#default_value' => $this->options['expose']['offset'],
     );
 
@@ -168,7 +165,6 @@ abstract class SqlBase extends PagerPluginBase {
       '#type' => 'textfield',
       '#title' => $this->t('Offset label'),
       '#required' => TRUE,
-      '#description' => $this->t('Label to use in the exposed offset form element.'),
       '#default_value' => $this->options['expose']['offset_label'],
       '#states' => array(
         'invisible' => array(
@@ -371,9 +367,32 @@ abstract class SqlBase extends PagerPluginBase {
   public function exposedFormValidate(&$form, FormStateInterface $form_state) {
     if (!$form_state->isValueEmpty('offset') && trim($form_state->getValue('offset'))) {
       if (!is_numeric($form_state->getValue('offset')) || $form_state->getValue('offset') < 0) {
-        $form_state->setErrorByName('offset', $this->t('Offset must be an number greather or equal than 0.'));
+        $form_state->setErrorByName('offset', $this->t('Offset must be an number greater or equal than 0.'));
       }
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheMaxAge() {
+    return Cache::PERMANENT;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheContexts() {
+    // The rendered link needs to play well with any other query parameter used
+    // on the page, like other pagers and exposed filter.
+    return ['url.query_args'];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheTags() {
+    return [];
   }
 
 }

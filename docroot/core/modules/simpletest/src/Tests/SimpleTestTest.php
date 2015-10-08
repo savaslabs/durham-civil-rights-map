@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of \Drupal\simpletest\Tests\SimpleTestTest.
+ * Contains \Drupal\simpletest\Tests\SimpleTestTest.
  */
 
 namespace Drupal\simpletest\Tests;
@@ -24,7 +24,7 @@ class SimpleTestTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('simpletest', 'test_page_test');
+  public static $modules = ['simpletest'];
 
   /**
    * The results array that has been parsed by getTestResults().
@@ -157,13 +157,32 @@ EOD;
     // request. This allows the stub test to make requests. The event does not
     // fire here and drupal_generate_test_ua() can not generate a key for a
     // test in a test since the prefix has changed.
-    // @see \Drupal\Core\Test\EventSubscriber\HttpRequestSubscriber::onBeforeSendRequest()
+    // @see \Drupal\Core\Test\HttpClientMiddleware\TestHttpClientMiddleware::onBeforeSendRequest()
     // @see drupal_generate_test_ua();
     $key_file = DRUPAL_ROOT . '/sites/simpletest/' . substr($this->databasePrefix, 10) . '/.htkey';
     $private_key = Crypt::randomBytesBase64(55);
+    $site_path = $this->container->get('site.path');
     file_put_contents($key_file, $private_key);
 
-    // This causes the first of the fifteen passes asserted in
+    // Check to see if runtime assertions are indeed on, if successful this
+    // will be the first of sixteen passes asserted in confirmStubResults()
+    try {
+      // Test with minimum possible arguments to make sure no notice for
+      // missing argument is thrown.
+      assert(FALSE);
+      $this->fail('Runtime assertions are not working.');
+    }
+    catch (\AssertionError $e) {
+      try {
+        // Now test with an error message to ensure it is correctly passed
+        // along by the rethrow.
+        assert(FALSE, 'Lorem Ipsum');
+      }
+      catch ( \AssertionError $e ) {
+        $this->assertEqual($e->getMessage(), 'Lorem Ipsum', 'Runtime assertions Enabled and running.');
+      }
+    }
+    // This causes the second of the sixteen passes asserted in
     // confirmStubResults().
     $this->pass($this->passMessage);
 
@@ -174,7 +193,7 @@ EOD;
     // confirmStubResults().
     $this->fail($this->failMessage);
 
-    // This causes the second to fourth of the fifteen passes asserted in
+    // This causes the third to fifth of the sixteen passes asserted in
     // confirmStubResults().
     $user = $this->drupalCreateUser(array($this->validPermission), 'SimpleTestTest');
 
@@ -182,17 +201,17 @@ EOD;
     $this->drupalCreateUser(array($this->invalidPermission));
 
     // Test logging in as a user.
-    // This causes the fifth to ninth of the fifteen passes asserted in
+    // This causes the sixth to tenth of the sixteen passes asserted in
     // confirmStubResults().
     $this->drupalLogin($user);
 
-    // This causes the tenth of the fifteen passes asserted in
+    // This causes the eleventh of the sixteen passes asserted in
     // confirmStubResults().
     $this->pass(t('Test ID is @id.', array('@id' => $this->testId)));
 
-    // These cause the eleventh to fourteenth of the fifteen passes asserted in
+    // These cause the twelfth to fifteenth of the sixteen passes asserted in
     // confirmStubResults().
-    $this->assertTrue(file_exists(conf_path() . '/settings.testing.php'));
+    $this->assertTrue(file_exists($site_path . '/settings.testing.php'));
     // Check the settings.testing.php file got included.
     $this->assertTrue(function_exists('simpletest_test_stub_settings_function'));
     // Check that the test-specific service file got loaded.
@@ -205,7 +224,7 @@ EOD;
     // Generates a warning inside a PHP function.
     array_key_exists(NULL, NULL);
 
-    // This causes the fifteenth of the fifteen passes asserted in
+    // This causes the sixteenth of the sixteen passes asserted in
     // confirmStubResults().
     $this->assertNothing();
 
@@ -249,7 +268,7 @@ EOD;
 
     $this->assertAssertion("Debug: 'Foo'", 'Debug', 'Fail', 'SimpleTestTest.php', 'Drupal\simpletest\Tests\SimpleTestTest->stubTest()');
 
-    $this->assertEqual('15 passes, 3 fails, 2 exceptions, 3 debug messages', $this->childTestResults['summary']);
+    $this->assertEqual('16 passes, 3 fails, 2 exceptions, 3 debug messages', $this->childTestResults['summary']);
 
     $this->testIds[] = $test_id = $this->getTestIdFromResults();
     $this->assertTrue($test_id, 'Found test ID in results.');

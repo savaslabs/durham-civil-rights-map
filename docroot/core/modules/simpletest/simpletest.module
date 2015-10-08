@@ -22,11 +22,11 @@ function simpletest_help($route_name, RouteMatchInterface $route_match) {
     case 'help.page.simpletest':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Testing module provides a framework for running automated tests. It can be used to verify a working state of Drupal before and after any code changes, or as a means for developers to write and execute tests for their modules. For more information, see <a href="!simpletest">the online documentation for the Testing module</a>.', array('!simpletest' => 'https://drupal.org/documentation/modules/simpletest')) . '</p>';
+      $output .= '<p>' . t('The Testing module provides a framework for running automated tests. It can be used to verify a working state of Drupal before and after any code changes, or as a means for developers to write and execute tests for their modules. For more information, see the <a href=":simpletest">online documentation for the Testing module</a>.', array(':simpletest' => 'https://www.drupal.org/documentation/modules/simpletest')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Running tests') . '</dt>';
-      $output .= '<dd><p>' . t('Visit the <a href="!admin-simpletest">Testing page</a> to display a list of available tests. For comprehensive testing, select <em>all</em> tests, or individually select tests for more targeted testing. Note that it might take several minutes for all tests to complete.', array('!admin-simpletest' => \Drupal::url('simpletest.test_form'))) . '</p>';
+      $output .= '<dd><p>' . t('Visit the <a href=":admin-simpletest">Testing page</a> to display a list of available tests. For comprehensive testing, select <em>all</em> tests, or individually select tests for more targeted testing. Note that it might take several minutes for all tests to complete.', array(':admin-simpletest' => \Drupal::url('simpletest.test_form'))) . '</p>';
       $output .= '<p>' . t('After the tests run, a message will be displayed next to each test group indicating whether tests within it passed, failed, or had exceptions. A pass means that the test returned the expected results, while fail means that it did not. An exception normally indicates an error outside of the test, such as a PHP warning or notice. If there were failures or exceptions, the results will be expanded to show details, and the tests that had failures or exceptions will be indicated in red or pink rows. You can then use these results to refine your code and tests, until all tests pass.') . '</p></dd>';
       $output .= '</dl>';
       return $output;
@@ -178,8 +178,25 @@ function simpletest_run_tests($test_list) {
  */
 function simpletest_run_phpunit_tests($test_id, array $unescaped_test_classnames) {
   $phpunit_file = simpletest_phpunit_xml_filepath($test_id);
-  simpletest_phpunit_run_command($unescaped_test_classnames, $phpunit_file);
-  return simpletest_phpunit_xml_to_rows($test_id, $phpunit_file);
+  $ret = simpletest_phpunit_run_command($unescaped_test_classnames, $phpunit_file);
+  if ($ret) {
+    // Something broke during the execution of phpunit.
+    // Return an error record of all failed classes.
+    $rows[] = [
+      'test_id' => '1',
+      'test_class' => implode(",", $unescaped_test_classnames),
+      'status' => 'fail',
+      'message' => 'PHPunit Test failed to complete',
+      'message_group' => 'Other',
+      'function' => implode(",", $unescaped_test_classnames),
+      'line' => '0',
+      'file' => $phpunit_file,
+    ];
+  }
+  else {
+    $rows = simpletest_phpunit_xml_to_rows($test_id, $phpunit_file);
+  }
+  return $rows;
 }
 
 /**
@@ -212,7 +229,7 @@ function simpletest_process_phpunit_results($phpunit_results) {
  *   Path to the PHPUnit XML file to use for the current $test_id.
  */
 function simpletest_phpunit_xml_filepath($test_id) {
-  return drupal_realpath('public://simpletest') . '/phpunit-' . $test_id . '.xml';
+  return \Drupal::service('file_system')->realpath('public://simpletest') . '/phpunit-' . $test_id . '.xml';
 }
 
 /**
@@ -274,7 +291,7 @@ function simpletest_phpunit_run_command(array $unescaped_test_classnames, $phpun
 
   // exec in a subshell so that the environment is isolated when running tests
   // via the simpletest UI.
-  $ret = exec(join($command, " "));
+  exec(join($command, " "), $output, $ret);
   chdir($old_cwd);
   putenv('SIMPLETEST_DB=');
   return $ret;
@@ -287,15 +304,21 @@ function simpletest_phpunit_run_command(array $unescaped_test_classnames, $phpun
  *   The command that can be run through exec().
  */
 function simpletest_phpunit_command() {
+  // Load the actual autoloader being used and determine its filename using
+  // reflection. We can determine the vendor directory based on that filename.
+  $autoloader = require \Drupal::root() . '/autoload.php';
+  $reflector = new ReflectionClass($autoloader);
+  $vendor_dir = dirname(dirname($reflector->getFileName()));
+
   // Don't use the committed version in composer's bin dir if running on
   // windows.
   if (substr(PHP_OS, 0, 3) == 'WIN') {
     $php_executable_finder = new PhpExecutableFinder();
     $php = $php_executable_finder->find();
-    $phpunit_bin = escapeshellarg($php) . " -f " . escapeshellarg(\Drupal::root() . "/core/vendor/phpunit/phpunit/composer/bin/phpunit") . " --";
+    $phpunit_bin = escapeshellarg($php) . ' -f ' . escapeshellarg($vendor_dir . '/phpunit/phpunit/composer/bin/phpunit') . ' --';
   }
   else {
-    $phpunit_bin = \Drupal::root() . "/core/vendor/bin/phpunit";
+    $phpunit_bin = $vendor_dir . '/phpunit/phpunit/phpunit';
   }
   return $phpunit_bin;
 }
@@ -469,7 +492,7 @@ function simpletest_log_read($test_id, $database_prefix, $test_class) {
  *     $groups['Block'] => array(
  *       'BlockTestCase' => array(
  *         'name' => 'Block functionality',
- *         'description' => 'Add, edit and delete custom block...',
+ *         'description' => 'Add, edit and delete custom block.',
  *         'group' => 'Block',
  *       ),
  *     );
@@ -487,41 +510,47 @@ function simpletest_classloader_register() {
 }
 
 /**
- * Generates test file.
+ * Generates a test file.
  *
  * @param string $filename
- *   The name of the file, including the path.
+ *   The name of the file, including the path. The suffix '.txt' is appended to
+ *   the supplied file name and the file is put into the public:// files
+ *   directory.
  * @param int $width
  *   The number of characters on one line.
  * @param int $lines
  *   The number of lines in the file.
  * @param string $type
- *   (optional) The type, for example: "text", "binary", or "binary-text".
+ *   (optional) The type, one of:
+ *   - text: The generated file contains random ASCII characters.
+ *   - binary: The generated file contains random characters whose codes are in
+ *     the range of 0 to 31.
+ *   - binary-text: The generated file contains random sequence of '0' and '1'
+ *     values.
  *
  * @return string
  *   The name of the file, including the path.
  */
 function simpletest_generate_file($filename, $width, $lines, $type = 'binary-text') {
-  $size = $width * $lines - $lines;
-
-  // Generate random text
   $text = '';
-  for ($i = 0; $i < $size; $i++) {
-    switch ($type) {
-      case 'text':
-        $text .= chr(rand(32, 126));
-        break;
-      case 'binary':
-        $text .= chr(rand(0, 31));
-        break;
-      case 'binary-text':
-      default:
-        $text .= rand(0, 1);
-        break;
+    for ($i = 0; $i < $lines; $i++) {
+      // Generate $width - 1 characters to leave space for the "\n" character.
+      for ($j = 0; $j < $width - 1; $j++) {
+        switch ($type) {
+          case 'text':
+            $text .= chr(rand(32, 126));
+            break;
+          case 'binary':
+            $text .= chr(rand(0, 31));
+            break;
+          case 'binary-text':
+          default:
+            $text .= rand(0, 1);
+            break;
+        }
+      }
+      $text .= "\n";
     }
-  }
-  // Add \n for symmetrical file.
-  $text = wordwrap($text, $width - 1, "\n", TRUE) . "\n";
 
   // Create filename.
   file_put_contents('public://' . $filename . '.txt', $text);
@@ -552,7 +581,7 @@ function simpletest_clean_environment() {
  */
 function simpletest_clean_database() {
   $tables = db_find_tables(Database::getConnection()->prefixTables('{simpletest}') . '%');
-  $schema = drupal_get_schema_unprocessed('simpletest');
+  $schema = drupal_get_module_schema('simpletest');
   $count = 0;
   foreach (array_diff_key($tables, $schema) as $table) {
     // Strip the prefix and skip tables without digits following "simpletest",

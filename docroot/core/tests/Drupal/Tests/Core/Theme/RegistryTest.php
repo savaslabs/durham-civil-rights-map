@@ -93,7 +93,8 @@ class RegistryTest extends UnitTestCase {
       'engine' => 'twig',
       'owner' => 'twig',
       'stylesheets_remove' => [],
-      'stylesheets_override' => [],
+      'libraries_override' => [],
+      'libraries_extend' => [],
       'libraries' => [],
       'extension' => '.twig',
       'base_themes' => [],
@@ -105,6 +106,9 @@ class RegistryTest extends UnitTestCase {
       ->method('getImplementations')
       ->with('theme')
       ->will($this->returnValue(array('theme_test')));
+    $this->moduleHandler->expects($this->atLeastOnce())
+      ->method('getModuleList')
+      ->willReturn([]);
 
     $registry = $this->registry->get();
 

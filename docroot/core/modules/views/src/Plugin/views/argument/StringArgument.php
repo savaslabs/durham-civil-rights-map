@@ -7,6 +7,7 @@
 
 namespace Drupal\views\Plugin\views\argument;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\ViewExecutable;
@@ -64,7 +65,7 @@ class StringArgument extends ArgumentPluginBase {
       '#title' => $this->t('Glossary mode'),
       '#description' => $this->t('Glossary mode applies a limit to the number of characters used in the filter value, which allows the summary view to act as a glossary.'),
       '#default_value' => $this->options['glossary'],
-      '#fieldset' => 'more',
+      '#group' => 'options][more',
     );
 
     $form['limit'] = array(
@@ -77,7 +78,7 @@ class StringArgument extends ArgumentPluginBase {
           ':input[name="options[glossary]"]' => array('checked' => TRUE),
         ),
       ),
-      '#fieldset' => 'more',
+      '#group' => 'options][more',
     );
 
     $form['case'] = array(
@@ -92,7 +93,7 @@ class StringArgument extends ArgumentPluginBase {
         'ucwords' => $this->t('Capitalize each word'),
       ),
       '#default_value' => $this->options['case'],
-      '#fieldset' => 'more',
+      '#group' => 'options][more',
     );
 
     $form['path_case'] = array(
@@ -107,14 +108,14 @@ class StringArgument extends ArgumentPluginBase {
         'ucwords' => $this->t('Capitalize each word'),
       ),
       '#default_value' => $this->options['path_case'],
-      '#fieldset' => 'more',
+      '#group' => 'options][more',
     );
 
     $form['transform_dash'] = array(
       '#type' => 'checkbox',
       '#title' => $this->t('Transform spaces to dashes in URL'),
       '#default_value' => $this->options['transform_dash'],
-      '#fieldset' => 'more',
+      '#group' => 'options][more',
     );
 
     if (!empty($this->definition['many to one'])) {
@@ -123,14 +124,14 @@ class StringArgument extends ArgumentPluginBase {
         '#title' => $this->t('Allow multiple filter values to work together'),
         '#description' => $this->t('If selected, multiple instances of this filter can work together, as though multiple values were supplied to the same filter. This setting is not compatible with the "Reduce duplicates" setting.'),
         '#default_value' => !empty($this->options['add_table']),
-        '#fieldset' => 'more',
+        '#group' => 'options][more',
       );
 
       $form['require_value'] = array(
         '#type' => 'checkbox',
         '#title' => $this->t('Do not display items with no value in summary'),
         '#default_value' => !empty($this->options['require_value']),
-        '#fieldset' => 'more',
+        '#group' => 'options][more',
       );
     }
 
@@ -140,7 +141,7 @@ class StringArgument extends ArgumentPluginBase {
       '#title' => $this->t('Allow multiple values'),
       '#description' => $this->t('If selected, users can enter multiple values in the form of 1+2+3 (for OR) or 1,2,3 (for AND).'),
       '#default_value' => !empty($this->options['break_phrase']),
-      '#fieldset' => 'more',
+      '#group' => 'options][more',
     );
   }
 
@@ -179,11 +180,19 @@ class StringArgument extends ArgumentPluginBase {
   public function getFormula() {
     $formula = "SUBSTRING($this->tableAlias.$this->realField, 1, " . intval($this->options['limit']) . ")";
 
-    // Support case-insensitive substring comparisons for SQLite by using the
-    // 'NOCASE_UTF8' collation.
-    // @see Drupal\Core\Database\Driver\sqlite\Connection::open()
-    if (Database::getConnection()->databaseType() == 'sqlite' && $this->options['case'] != 'none') {
-      $formula .= ' COLLATE NOCASE_UTF8';
+    if ($this->options['case'] != 'none') {
+      // Support case-insensitive substring comparisons for SQLite by using the
+      // 'NOCASE_UTF8' collation.
+      // @see Drupal\Core\Database\Driver\sqlite\Connection::open()
+      if (Database::getConnection()->databaseType() == 'sqlite') {
+        $formula .= ' COLLATE NOCASE_UTF8';
+      }
+
+      // Support case-insensitive substring comparisons for PostgreSQL by
+      // converting the formula to lowercase.
+      if (Database::getConnection()->databaseType() == 'pgsql') {
+        $formula = 'LOWER(' . $formula . ')';
+      }
     }
     return $formula;
   }
@@ -203,6 +212,14 @@ class StringArgument extends ArgumentPluginBase {
     else {
       $this->value = array($argument);
       $this->operator = 'or';
+    }
+
+    // Support case-insensitive substring comparisons for PostgreSQL by
+    // converting the arguments to lowercase.
+    if ($this->options['case'] != 'none' && Database::getConnection()->databaseType() == 'pgsql') {
+      foreach ($this->value as $key => $value) {
+        $this->value[$key] = Unicode::strtolower($value);
+      }
     }
 
     if (!empty($this->definition['many to one'])) {
@@ -266,6 +283,12 @@ class StringArgument extends ArgumentPluginBase {
   }
 
   function title() {
+    // Support case-insensitive title comparisons for PostgreSQL by converting
+    // the title to lowercase.
+    if ($this->options['case'] != 'none' && Database::getConnection()->databaseType() == 'pgsql') {
+      $this->options['case'] = 'lower';
+    }
+
     $this->argument = $this->caseTransform($this->argument, $this->options['case']);
     if (!empty($this->options['transform_dash'])) {
       $this->argument = strtr($this->argument, '-', ' ');
@@ -294,7 +317,7 @@ class StringArgument extends ArgumentPluginBase {
    * Override for specific title lookups.
    */
   public function titleQuery() {
-    return array_map('\Drupal\Component\Utility\SafeMarkup::checkPlain', array_combine($this->value, $this->value));
+    return $this->value;
   }
 
   public function summaryName($data) {

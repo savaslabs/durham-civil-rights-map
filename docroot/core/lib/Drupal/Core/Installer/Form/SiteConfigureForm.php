@@ -21,6 +21,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class SiteConfigureForm extends ConfigFormBase {
 
   /**
+   * The site path.
+   *
+   * @var string
+   */
+  protected $sitePath;
+
+  /**
    * The user storage.
    *
    * @var \Drupal\user\UserStorageInterface
@@ -60,6 +67,8 @@ class SiteConfigureForm extends ConfigFormBase {
    *
    * @param string $root
    *   The app root.
+   * @param string $site_path
+   *   The site path.
    * @param \Drupal\user\UserStorageInterface $user_storage
    *   The user storage.
    * @param \Drupal\Core\State\StateInterface $state
@@ -69,8 +78,9 @@ class SiteConfigureForm extends ConfigFormBase {
    * @param \Drupal\Core\Locale\CountryManagerInterface $country_manager
    *   The country manager.
    */
-  public function __construct($root, UserStorageInterface $user_storage, StateInterface $state, ModuleInstallerInterface $module_installer, CountryManagerInterface $country_manager) {
+  public function __construct($root, $site_path, UserStorageInterface $user_storage, StateInterface $state, ModuleInstallerInterface $module_installer, CountryManagerInterface $country_manager) {
     $this->root = $root;
+    $this->sitePath = $site_path;
     $this->userStorage = $user_storage;
     $this->state = $state;
     $this->moduleInstaller = $module_installer;
@@ -83,6 +93,7 @@ class SiteConfigureForm extends ConfigFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('app.root'),
+      $container->get('site.path'),
       $container->get('entity.manager')->getStorage('user'),
       $container->get('state'),
       $container->get('module_installer'),
@@ -115,7 +126,7 @@ class SiteConfigureForm extends ConfigFormBase {
     $form['#title'] = $this->t('Configure site');
 
     // Warn about settings.php permissions risk
-    $settings_dir = conf_path();
+    $settings_dir = $this->sitePath;
     $settings_file = $settings_dir . '/settings.php';
     // Check that $_POST is empty so we only show this message when the form is
     // first displayed, not on the next page after it is submitted. (We do not
@@ -126,7 +137,7 @@ class SiteConfigureForm extends ConfigFormBase {
     // successfully.)
     $post_params = $this->getRequest()->request->all();
     if (empty($post_params) && (!drupal_verify_install_file($this->root . '/' . $settings_file, FILE_EXIST|FILE_READABLE|FILE_NOT_WRITABLE) || !drupal_verify_install_file($this->root . '/' . $settings_dir, FILE_NOT_WRITABLE, 'dir'))) {
-      drupal_set_message(t('All necessary changes to %dir and %file have been made, so you should remove write permissions to them now in order to avoid security risks. If you are unsure how to do so, consult the <a href="@handbook_url">online handbook</a>.', array('%dir' => $settings_dir, '%file' => $settings_file, '@handbook_url' => 'http://drupal.org/server-permissions')), 'warning');
+      drupal_set_message(t('All necessary changes to %dir and %file have been made, so you should remove write permissions to them now in order to avoid security risks. If you are unsure how to do so, consult the <a href=":handbook_url">online handbook</a>.', array('%dir' => $settings_dir, '%file' => $settings_file, ':handbook_url' => 'https://www.drupal.org/server-permissions')), 'warning');
     }
 
     $form['#attached']['library'][] = 'system/drupal.system';
@@ -135,15 +146,6 @@ class SiteConfigureForm extends ConfigFormBase {
     // We add these strings as settings because JavaScript translation does not
     // work during installation.
     $form['#attached']['drupalSettings']['copyFieldValue']['edit-site-mail'] = ['edit-account-mail'];
-
-    // Cache a fully-built schema. This is necessary for any invocation of
-    // index.php because: (1) setting cache table entries requires schema
-    // information, (2) that occurs during bootstrap before any module are
-    // loaded, so (3) if there is no cached schema, drupal_get_schema() will
-    // try to generate one but with no loaded modules will return nothing.
-    //
-    // @todo Move this to the 'install_finished' task?
-    drupal_get_schema(NULL, TRUE);
 
     $form['site_information'] = array(
       '#type' => 'fieldgroup',
@@ -172,7 +174,7 @@ class SiteConfigureForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Username'),
       '#maxlength' => USERNAME_MAX_LENGTH,
-      '#description' => $this->t('Spaces are allowed; punctuation is not allowed except for periods, hyphens, and underscores.'),
+      '#description' => $this->t("Several special characters are allowed, including space, period (.), hyphen (-), apostrophe ('), underscore (_), and the @ sign."),
       '#required' => TRUE,
       '#attributes' => array('class' => array('username')),
     );
@@ -205,7 +207,8 @@ class SiteConfigureForm extends ConfigFormBase {
     $form['regional_settings']['date_default_timezone'] = array(
       '#type' => 'select',
       '#title' => $this->t('Default time zone'),
-      '#default_value' => date_default_timezone_get(),
+      // Use system timezone if set, but avoid throwing a warning in PHP >=5.4
+      '#default_value' => @date_default_timezone_get(),
       '#options' => system_time_zones(),
       '#description' => $this->t('By default, dates in this site will be displayed in the chosen time zone.'),
       '#weight' => 5,
@@ -224,7 +227,7 @@ class SiteConfigureForm extends ConfigFormBase {
         2 => $this->t('Receive email notifications'),
       ),
       '#default_value' => array(1, 2),
-      '#description' => $this->t('The system will notify you when updates and important security releases are available for installed components. Anonymous information about your site is sent to <a href="@drupal">Drupal.org</a>.', array('@drupal' => 'http://drupal.org')),
+      '#description' => $this->t('The system will notify you when updates and important security releases are available for installed components. Anonymous information about your site is sent to <a href=":drupal">Drupal.org</a>.', array(':drupal' => 'https://www.drupal.org')),
       '#weight' => 15,
     );
     $form['update_notifications']['update_status_module'][2] = array(
@@ -260,14 +263,14 @@ class SiteConfigureForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->config('system.site')
-      ->set('name', $form_state->getValue('site_name'))
-      ->set('mail', $form_state->getValue('site_mail'))
-      ->save();
+      ->set('name', (string) $form_state->getValue('site_name'))
+      ->set('mail', (string) $form_state->getValue('site_mail'))
+      ->save(TRUE);
 
     $this->config('system.date')
-      ->set('timezone.default', $form_state->getValue('date_default_timezone'))
-      ->set('country.default', $form_state->getValue('site_default_country'))
-      ->save();
+      ->set('timezone.default', (string) $form_state->getValue('date_default_timezone'))
+      ->set('country.default', (string) $form_state->getValue('site_default_country'))
+      ->save(TRUE);
 
     $account_values = $form_state->getValue('account');
 
@@ -281,7 +284,7 @@ class SiteConfigureForm extends ConfigFormBase {
       if ($update_status_module[2]) {
         // Reset the configuration factory so it is updated with the new module.
         $this->resetConfigFactory();
-        $this->config('update.settings')->set('notification.emails', array($account_values['mail']))->save();
+        $this->config('update.settings')->set('notification.emails', array($account_values['mail']))->save(TRUE);
       }
     }
 

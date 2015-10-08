@@ -84,7 +84,7 @@ class ModulesUninstallForm extends FormBase {
     // Get a list of all available modules.
     $modules = system_rebuild_module_data();
     $uninstallable = array_filter($modules, function ($module) use ($modules) {
-      return empty($modules[$module->getName()]->info['required']) && drupal_get_installed_schema_version($module->getName()) > SCHEMA_UNINSTALLED;
+      return empty($modules[$module->getName()]->info['required']) && $module->status;
     });
 
     // Include system.admin.inc so we can use the sort callbacks.
@@ -99,14 +99,15 @@ class ModulesUninstallForm extends FormBase {
 
     $form['filters']['text'] = array(
       '#type' => 'search',
-      '#title' => $this->t('Search'),
+      '#title' => $this->t('Filter modules'),
+      '#title_display' => 'invisible',
       '#size' => 30,
-      '#placeholder' => $this->t('Enter module name'),
+      '#placeholder' => $this->t('Filter by name or description'),
+      '#description' => $this->t('Enter a part of the module name or description'),
       '#attributes' => array(
         'class' => array('table-filter-text'),
         'data-table' => '#system-modules-uninstall',
         'autocomplete' => 'off',
-        'title' => $this->t('Enter a part of the module name or description to filter by.'),
       ),
     );
 
@@ -171,7 +172,7 @@ class ModulesUninstallForm extends FormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // Form submitted, but no modules selected.
     if (!array_filter($form_state->getValue('uninstall'))) {
-      drupal_set_message($this->t('No modules selected.'), 'error');
+      $form_state->setErrorByName('uninstall', $this->t('No modules selected.'));
       $form_state->setRedirect('system.modules_uninstall');
     }
   }
@@ -184,7 +185,9 @@ class ModulesUninstallForm extends FormBase {
     $modules = $form_state->getValue('uninstall');
     $uninstall = array_keys(array_filter($modules));
     $account = $this->currentUser()->id();
-    $this->keyValueExpirable->setWithExpire($account, $uninstall, 60);
+    // Store the values for 6 hours. This expiration time is also used in
+    // the form cache.
+    $this->keyValueExpirable->setWithExpire($account, $uninstall, 6*60*60);
 
     // Redirect to the confirm form.
     $form_state->setRedirect('system.modules_uninstall_confirm');

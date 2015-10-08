@@ -85,8 +85,10 @@ drupal_maintenance_theme();
 $content = [];
 $show_messages = TRUE;
 
-$response = new Response();
-if (authorize_access_allowed($request)) {
+$is_allowed = authorize_access_allowed($request);
+
+// Build content.
+if ($is_allowed) {
   // Load both the Form API and Batch API.
   require_once __DIR__ . '/includes/form.inc';
   require_once __DIR__ . '/includes/batch.inc';
@@ -118,15 +120,31 @@ if (authorize_access_allowed($request)) {
       '#messages' => $results['messages'],
     );
 
-    $links = array();
     if (is_array($results['tasks'])) {
-      $links += $results['tasks'];
+      $links = $results['tasks'];
     }
     else {
-      $links = array_merge($links, array(
-        \Drupal::l(t('Administration pages'), new Url('system.admin')),
-        \Drupal::l(t('Front page'), new Url('<front>')),
-      ));
+      // Since this is being called outsite of the primary front controller,
+      // the base_url needs to be set explicitly to ensure that links are
+      // relative to the site root.
+      // @todo Simplify with https://www.drupal.org/node/2548095
+      $default_options = [
+        '#type' => 'link',
+        '#options' => [
+          'absolute' => TRUE,
+          'base_url' => $GLOBALS['base_url'],
+        ],
+      ];
+      $links = [
+        $default_options + [
+          '#url' => Url::fromRoute('system.admin'),
+          '#title' => t('Administration pages'),
+        ],
+        $default_options + [
+          '#url' => Url::fromRoute('<front>'),
+          '#title' => t('Front page'),
+        ],
+      ];
     }
 
     $content['next_steps'] = array(
@@ -137,7 +155,13 @@ if (authorize_access_allowed($request)) {
   }
   // If a batch is running, let it run.
   elseif ($request->query->has('batch')) {
-    $content = ['#markup' => _batch_page($request)];
+    $content = _batch_page($request);
+    // If _batch_page() returns a response object (likely a JsonResponse for
+    // JavaScript-based batch processing), send it immediately.
+    if ($content instanceof Response) {
+      $content->send();
+      exit;
+    }
   }
   else {
     if (empty($_SESSION['authorize_operation']) || empty($_SESSION['authorize_filetransfer_info'])) {
@@ -152,16 +176,16 @@ if (authorize_access_allowed($request)) {
   $show_messages = !(($batch = batch_get()) && isset($batch['running']));
 }
 else {
-  $response->setStatusCode(403);
   \Drupal::logger('access denied')->warning('authorize.php');
   $page_title = t('Access denied');
   $content = ['#markup' => t('You are not allowed to access this page.')];
 }
 
-if (!empty($content)) {
-  $response->headers->set('Content-Type', 'text/html; charset=utf-8');
-  $response->setContent(\Drupal::service('bare_html_page_renderer')->renderBarePage($content, $page_title, 'maintenance_page', array(
-    '#show_messages' => $show_messages,
-  )));
-  $response->send();
+$bare_html_page_renderer = \Drupal::service('bare_html_page_renderer');
+$response = $bare_html_page_renderer->renderBarePage($content, $page_title, 'maintenance_page', array(
+  '#show_messages' => $show_messages,
+));
+if (!$is_allowed) {
+  $response->setStatusCode(403);
 }
+$response->send();

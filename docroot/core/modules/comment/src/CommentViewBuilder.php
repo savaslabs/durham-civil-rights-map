@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contents Drupal\comment\CommentViewBuilder.
+ * Contains \Drupal\comment\CommentViewBuilder.
  */
 
 namespace Drupal\comment;
@@ -62,8 +62,8 @@ class CommentViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    */
-  protected function getBuildDefaults(EntityInterface $entity, $view_mode, $langcode) {
-    $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
+  protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
+    $build = parent::getBuildDefaults($entity, $view_mode);
 
     /** @var \Drupal\comment\CommentInterface $entity */
     // Store a threading field setting to use later in self::buildComponents().
@@ -71,11 +71,9 @@ class CommentViewBuilder extends EntityViewBuilder {
       ->getFieldDefinition($entity->getFieldName())
       ->getSetting('default_mode') === CommentManagerInterface::COMMENT_MODE_THREADED;
     // If threading is enabled, don't render cache individual comments, but do
-    // keep the cache tags, so they can bubble up.
+    // keep the cacheability metadata, so it can bubble up.
     if ($build['#comment_threaded']) {
-      $cache_tags = $build['#cache']['tags'];
-      $build['#cache'] = [];
-      $build['#cache']['tags'] = $cache_tags;
+      unset($build['#cache']['keys']);
     }
 
     return $build;
@@ -90,7 +88,7 @@ class CommentViewBuilder extends EntityViewBuilder {
    * @throws \InvalidArgumentException
    *   Thrown when a comment is attached to an entity that no longer exists.
    */
-  public function buildComponents(array &$build, array $entities, array $displays, $view_mode, $langcode = NULL) {
+  public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
     /** @var \Drupal\comment\CommentInterface[] $entities */
     if (empty($entities)) {
       return;
@@ -103,7 +101,7 @@ class CommentViewBuilder extends EntityViewBuilder {
     }
     $this->entityManager->getStorage('user')->loadMultiple(array_unique($uids));
 
-    parent::buildComponents($build, $entities, $displays, $view_mode, $langcode);
+    parent::buildComponents($build, $entities, $displays, $view_mode);
 
     // A counter to track the indentation level.
     $current_indent = 0;
@@ -134,23 +132,14 @@ class CommentViewBuilder extends EntityViewBuilder {
 
       $display = $displays[$entity->bundle()];
       if ($display->getComponent('links')) {
-        $callback = 'comment.post_render_cache:renderLinks';
-        $context = array(
-          'comment_entity_id' => $entity->id(),
-          'view_mode' => $view_mode,
-          'langcode' => $langcode,
-          'commented_entity_type' => $commented_entity->getEntityTypeId(),
-          'commented_entity_id' => $commented_entity->id(),
-          'in_preview' => !empty($entity->in_preview),
-        );
-        $placeholder = drupal_render_cache_generate_placeholder($callback, $context);
         $build[$id]['links'] = array(
-          '#post_render_cache' => array(
-            $callback => array(
-              $context,
-            ),
-          ),
-          '#markup' => $placeholder,
+          '#lazy_builder' => ['comment.lazy_builders:renderLinks', [
+            $entity->id(),
+            $view_mode,
+            $entity->language()->getId(),
+            !empty($entity->in_preview),
+          ]],
+          '#create_placeholder' => TRUE,
         );
       }
 
@@ -162,9 +151,10 @@ class CommentViewBuilder extends EntityViewBuilder {
         $build[$id]['#attached']['library'][] = 'comment/drupal.comment-new-indicator';
 
         // Embed the metadata for the comment "new" indicators on this node.
-        $build[$id]['#post_render_cache']['history_attach_timestamp'] = array(
-          array('node_id' => $commented_entity->id()),
-        );
+        $build[$id]['history'] = [
+          '#lazy_builder' => ['history_attach_timestamp', [$commented_entity->id()]],
+          '#create_placeholder' => TRUE,
+        ];
       }
     }
     if ($build[$id]['#comment_threaded']) {
@@ -176,14 +166,13 @@ class CommentViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    */
-  protected function alterBuild(array &$build, EntityInterface $comment, EntityViewDisplayInterface $display, $view_mode, $langcode = NULL) {
-    parent::alterBuild($build, $comment, $display, $view_mode, $langcode);
+  protected function alterBuild(array &$build, EntityInterface $comment, EntityViewDisplayInterface $display, $view_mode) {
+    parent::alterBuild($build, $comment, $display, $view_mode);
     if (empty($comment->in_preview)) {
       $prefix = '';
 
       // Add indentation div or close open divs as needed.
       if ($build['#comment_threaded']) {
-        $build['#attached']['library'][] = 'comment/drupal.comment.threaded';
         $prefix .= $build['#comment_indent'] <= 0 ? str_repeat('</div>', abs($build['#comment_indent'])) : "\n" . '<div class="indented">';
       }
 

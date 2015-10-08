@@ -39,7 +39,7 @@ class PageCacheTest extends WebTestBase {
 
     $this->config('system.site')
       ->set('name', 'Drupal')
-      ->set('page.front', 'test-page')
+      ->set('page.front', '/test-page')
       ->save();
   }
 
@@ -67,6 +67,7 @@ class PageCacheTest extends WebTestBase {
     $cache_entry = \Drupal::cache('render')->get($cid);
     sort($cache_entry->tags);
     $expected_tags = array(
+      'config:user.role.anonymous',
       'pre_render',
       'rendered',
       'system_test_cache_tags_page',
@@ -79,15 +80,16 @@ class PageCacheTest extends WebTestBase {
   }
 
   /**
-   * Tests support for different cache items with different Accept headers.
+   * Tests support for different cache items with different request formats
+   * specified via a query parameter.
    */
-  function testAcceptHeaderRequests() {
+  function testQueryParameterFormatRequests() {
     $config = $this->config('system.performance');
     $config->set('cache.page.max_age', 300);
     $config->save();
 
     $accept_header_cache_url = Url::fromRoute('system_test.page_cache_accept_header');
-    $json_accept_header = array('Accept: application/json');
+    $accept_header_cache_url_with_json = Url::fromRoute('system_test.page_cache_accept_header', ['_format' => 'json']);
 
     $this->drupalGet($accept_header_cache_url);
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'MISS', 'HTML page was not yet cached.');
@@ -95,9 +97,9 @@ class PageCacheTest extends WebTestBase {
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'HIT', 'HTML page was cached.');
     $this->assertRaw('<p>oh hai this is html.</p>', 'The correct HTML response was returned.');
 
-    $this->drupalGet($accept_header_cache_url, array(), $json_accept_header);
+    $this->drupalGet($accept_header_cache_url_with_json);
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'MISS', 'Json response was not yet cached.');
-    $this->drupalGet($accept_header_cache_url, array(), $json_accept_header);
+    $this->drupalGet($accept_header_cache_url_with_json);
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'HIT', 'Json response was cached.');
     $this->assertRaw('{"content":"oh hai this is json"}', 'The correct Json response was returned.');
 
@@ -105,8 +107,8 @@ class PageCacheTest extends WebTestBase {
     \Drupal::service('module_installer')->install(['node', 'rest', 'hal']);
     $this->drupalCreateContentType(['type' => 'article']);
     $node = $this->drupalCreateNode(['type' => 'article']);
-    $node_uri = 'node/' . $node->id();
-    $hal_json_accept_header = ['Accept: application/hal+json'];
+    $node_uri = $node->urlInfo();
+    $node_url_with_hal_json_format = $node->urlInfo('canonical')->setRouteParameter('_format', 'hal_json');
     /** @var \Drupal\user\RoleInterface $role */
     $role = Role::load('anonymous');
     $role->grantPermission('restful get entity:node');
@@ -121,20 +123,20 @@ class PageCacheTest extends WebTestBase {
 
     // Now request a HAL page, we expect that the first request is a cache miss
     // and it serves HTML.
-    $this->drupalGet($node_uri, [], $hal_json_accept_header);
+    $this->drupalGet($node_url_with_hal_json_format);
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'MISS');
     $this->assertEqual($this->drupalGetHeader('Content-Type'), 'application/hal+json');
-    $this->drupalGet($node_uri, [], $hal_json_accept_header);
+    $this->drupalGet($node_url_with_hal_json_format);
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'HIT');
     $this->assertEqual($this->drupalGetHeader('Content-Type'), 'application/hal+json');
 
     // Clear the page cache. After that request a HAL request, followed by an
     // ordinary HTML one.
     \Drupal::cache('render')->deleteAll();
-    $this->drupalGet($node_uri, [], $hal_json_accept_header);
+    $this->drupalGet($node_url_with_hal_json_format);
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'MISS');
     $this->assertEqual($this->drupalGetHeader('Content-Type'), 'application/hal+json');
-    $this->drupalGet($node_uri, [], $hal_json_accept_header);
+    $this->drupalGet($node_url_with_hal_json_format);
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'HIT');
     $this->assertEqual($this->drupalGetHeader('Content-Type'), 'application/hal+json');
 
@@ -187,7 +189,7 @@ class PageCacheTest extends WebTestBase {
     $this->drupalLogin($user);
     $this->drupalGet('', array(), array('If-Modified-Since: ' . $last_modified, 'If-None-Match: ' . $etag));
     $this->assertResponse(200, 'Conditional request returned 200 OK for authenticated user.');
-    $this->assertFalse($this->drupalGetHeader('X-Drupal-Cache'), 'Absense of Page was not cached.');
+    $this->assertFalse($this->drupalGetHeader('X-Drupal-Cache'), 'Absence of Page was not cached.');
   }
 
   /**
@@ -383,17 +385,71 @@ class PageCacheTest extends WebTestBase {
     // Install the module that provides the test form.
     $this->container->get('module_installer')
       ->install(['page_cache_form_test']);
+    // Uninstall the page_cache module to verify that form is immutable
+    // regardless of the internal page cache module.
+    $this->container->get('module_installer')->uninstall(['page_cache']);
     \Drupal::service('router.builder')->rebuild();
 
     $this->drupalGet('page_cache_form_test_immutability');
 
     $this->assertText("Immutable: TRUE", "Form is immutable.");
 
-    // Uninstall the page_cache module, verify the flag is not set.
-    $this->container->get('module_installer')->uninstall(['page_cache']);
+    // The immutable flag is set unconditionally by system_form_alter(), set
+    // a flag to tell page_cache_form_test_module_implements_alter() to disable
+    // that implementation.
+    \Drupal::state()->set('page_cache_bypass_form_immutability', TRUE);
+    \Drupal::moduleHandler()->resetImplementations();
+    Cache::invalidateTags(['rendered']);
 
     $this->drupalGet('page_cache_form_test_immutability');
 
     $this->assertText("Immutable: FALSE", "Form is not immutable,");
   }
+
+  /**
+   * Tests cacheability of a CacheableResponse.
+   *
+   * Tests the difference between having a controller return a plain Symfony
+   * Response object versus returning a Response object that implements the
+   * CacheableResponseInterface.
+   */
+  public function testCacheableResponseResponses() {
+    $config = $this->config('system.performance');
+    $config->set('cache.page.max_age', 300);
+    $config->save();
+
+    // Try to fill the cache.
+    $this->drupalGet('/system-test/respond-reponse');
+    $this->assertFalse(in_array('X-Drupal-Cache', $this->drupalGetHeaders()), 'Drupal page cache header not found');
+    $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'must-revalidate, no-cache, post-check=0, pre-check=0, private', 'Cache-Control header was sent');
+
+    // Still not cached, uncacheable response.
+    $this->drupalGet('/system-test/respond-reponse');
+    $this->assertFalse(in_array('X-Drupal-Cache', $this->drupalGetHeaders()), 'Drupal page cache header not found');
+    $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'must-revalidate, no-cache, post-check=0, pre-check=0, private', 'Cache-Control header was sent');
+
+    // Try to fill the cache.
+    $this->drupalGet('/system-test/respond-cacheable-reponse');
+    $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'MISS', 'Page was not cached.');
+    $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'max-age=300, public', 'Cache-Control header was sent.');
+
+    // Should be cached now.
+    $this->drupalGet('/system-test/respond-cacheable-reponse');
+    $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'HIT', 'Page was cached.');
+    $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'max-age=300, public', 'Cache-Control header was sent.');
+
+    // Uninstall page cache. This should flush all caches so the next call to a
+    // previously cached page should be a miss now.
+    $this->container->get('module_installer')
+      ->uninstall(['page_cache']);
+
+    // Try to fill the cache.
+    $this->drupalGet('/system-test/respond-reponse');
+    $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'must-revalidate, no-cache, post-check=0, pre-check=0, private', 'Cache-Control header was sent');
+
+    // Still not cached, uncacheable response.
+    $this->drupalGet('/system-test/respond-reponse');
+    $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'must-revalidate, no-cache, post-check=0, pre-check=0, private', 'Cache-Control header was sent');
+  }
+
 }

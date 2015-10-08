@@ -68,7 +68,7 @@ class VocabularyListBuilder extends DraggableListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    $row['label'] = $this->getLabel($entity);
+    $row['label'] = $entity->label();
     return $row + parent::buildRow($entity);
   }
 
@@ -83,7 +83,7 @@ class VocabularyListBuilder extends DraggableListBuilder {
       unset($this->weightKey);
     }
     $build = parent::render();
-    $build['table']['#empty'] = t('No vocabularies available. <a href="@link">Add vocabulary</a>.', array('@link' => \Drupal::url('entity.taxonomy_vocabulary.add_form')));
+    $build['table']['#empty'] = t('No vocabularies available. <a href=":link">Add vocabulary</a>.', array(':link' => \Drupal::url('entity.taxonomy_vocabulary.add_form')));
     return $build;
   }
 

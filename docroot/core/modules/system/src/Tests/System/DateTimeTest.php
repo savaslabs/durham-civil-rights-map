@@ -7,6 +7,7 @@
 
 namespace Drupal\system\Tests\System;
 
+use Drupal\Core\Url;
 use Drupal\simpletest\WebTestBase;
 
 /**
@@ -22,13 +23,14 @@ class DateTimeTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('node', 'language');
+  public static $modules = ['block', 'node', 'language'];
 
   protected function setUp() {
     parent::setUp();
 
     // Create admin user and log in admin user.
     $this->drupalLogin ($this->drupalCreateUser(array('administer site configuration')));
+    $this->drupalPlaceBlock('local_actions_block');
   }
 
   /**
@@ -88,7 +90,7 @@ class DateTimeTest extends WebTestBase {
     $this->drupalPostForm('admin/config/regional/date-time/formats/add', $edit, t('Add format'));
     $this->assertUrl(\Drupal::url('entity.date_format.collection', [], ['absolute' => TRUE]), [], 'Correct page redirection.');
     $this->assertText(t('Custom date format added.'), 'Date format added confirmation message appears.');
-    $this->assertText($date_format_id, 'Custom date format appears in the date format list.');
+    $this->assertText($name, 'Custom date format appears in the date format list.');
     $this->assertText(t('Delete'), 'Delete link for custom date format appears.');
 
     // Edit the custom date format and re-save without editing the format.
@@ -117,20 +119,46 @@ class DateTimeTest extends WebTestBase {
     // Make sure the date does not exist in config.
     $date_format = entity_load('date_format', $date_format_id);
     $this->assertFalse($date_format);
-  }
 
-  /**
-   * Test that date formats are sanitized.
-   */
-  function testDateFormatXSS() {
+    // Add a new date format with an existing format.
+    $date_format_id = strtolower($this->randomMachineName(8));
+    $name = ucwords($date_format_id);
+    $date_format = 'Y';
+    $edit = array(
+      'id' => $date_format_id,
+      'label' => $name,
+      'date_format_pattern' => $date_format,
+    );
+    $this->drupalPostForm('admin/config/regional/date-time/formats/add', $edit, t('Add format'));
+    $this->assertUrl(\Drupal::url('entity.date_format.collection', [], ['absolute' => TRUE]), [], 'Correct page redirection.');
+    $this->assertText(t('Custom date format added.'), 'Date format added confirmation message appears.');
+    $this->assertText($name, 'Custom date format appears in the date format list.');
+    $this->assertText(t('Delete'), 'Delete link for custom date format appears.');
+
     $date_format = entity_create('date_format', array(
       'id' => 'xss_short',
       'label' => 'XSS format',
       'pattern' => '\<\s\c\r\i\p\t\>\a\l\e\r\t\(\'\X\S\S\'\)\;\<\/\s\c\r\i\p\t\>',
-    ));
+      ));
     $date_format->save();
 
-    $this->drupalGet('admin/config/regional/date-time');
-    $this->assertNoRaw("<script>alert('XSS');</script>", 'The date format was properly sanitized');
+    $this->drupalGet(Url::fromRoute('entity.date_format.collection'));
+    $this->assertEscaped("<script>alert('XSS');</script>", 'The date format was properly escaped');
+
+    // Add a new date format with HTML in it.
+    $date_format_id = strtolower($this->randomMachineName(8));
+    $name = ucwords($date_format_id);
+    $date_format = '& \<\e\m\>Y\<\/\e\m\>';
+    $edit = array(
+      'id' => $date_format_id,
+      'label' => $name,
+      'date_format_pattern' => $date_format,
+    );
+    $this->drupalPostForm('admin/config/regional/date-time/formats/add', $edit, t('Add format'));
+    $this->assertUrl(\Drupal::url('entity.date_format.collection', [], ['absolute' => TRUE]), [], 'Correct page redirection.');
+    $this->assertText(t('Custom date format added.'), 'Date format added confirmation message appears.');
+    $this->assertText($name, 'Custom date format appears in the date format list.');
+    $this->assertEscaped('<em>' . date("Y") . '</em>');
   }
+
 }

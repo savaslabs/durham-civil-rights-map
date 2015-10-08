@@ -53,7 +53,7 @@ class ConfigInstallTest extends KernelTestBase {
 
     // Ensure that schema provided by modules that are not installed is not
     // available.
-    $this->assertFalse(\Drupal::service('config.typed')->hasConfigSchema('config_schema_test.schema_in_install'), 'Configuration schema for config_schema_test.schema_in_install does not exist.');
+    $this->assertFalse(\Drupal::service('config.typed')->hasConfigSchema('config_schema_test.someschema'), 'Configuration schema for config_schema_test.someschema does not exist.');
 
     // Install the test module.
     $this->installModules(array('config_test'));
@@ -80,16 +80,12 @@ class ConfigInstallTest extends KernelTestBase {
     $this->installConfig(array('config_schema_test'));
 
     // After module installation the new schema should exist.
-    $this->assertTrue(\Drupal::service('config.typed')->hasConfigSchema('config_schema_test.schema_in_install'), 'Configuration schema for config_schema_test.schema_in_install exists.');
-
-    // Ensure that data type casting is applied during config installation.
-    $config = $this->config('config_schema_test.schema_in_install');
-    $this->assertIdentical($config->get('integer'), 1);
+    $this->assertTrue(\Drupal::service('config.typed')->hasConfigSchema('config_schema_test.someschema'), 'Configuration schema for config_schema_test.someschema exists.');
 
     // Test that uninstalling configuration removes configuration schema.
     $this->config('core.extension')->set('module', array())->save();
     \Drupal::service('config.manager')->uninstall('module', 'config_test');
-    $this->assertFalse(\Drupal::service('config.typed')->hasConfigSchema('config_schema_test.schema_in_install'), 'Configuration schema for config_schema_test.schema_in_install does not exist.');
+    $this->assertFalse(\Drupal::service('config.typed')->hasConfigSchema('config_schema_test.someschema'), 'Configuration schema for config_schema_test.someschema does not exist.');
   }
 
   /**
@@ -215,7 +211,11 @@ class ConfigInstallTest extends KernelTestBase {
     }
     $this->installModules(['config_other_module_config_test']);
     $this->installModules(['config_install_dependency_test']);
-    $this->assertTrue(entity_load('config_test', 'other_module_test_with_dependency'), 'The config_test.dynamic.other_module_test_with_dependency configuration has been created during install.');
+    $entity = \Drupal::entityManager()->getStorage('config_test')->load('other_module_test_with_dependency');
+    $this->assertTrue($entity, 'The config_test.dynamic.other_module_test_with_dependency configuration has been created during install.');
+    // Ensure that dependencies can be added during module installation by
+    // hooks.
+    $this->assertIdentical('config_install_dependency_test', $entity->getDependencies()['module'][0]);
   }
 
   /**

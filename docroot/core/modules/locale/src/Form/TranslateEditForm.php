@@ -7,7 +7,6 @@
 
 namespace Drupal\locale\Form;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\locale\SourceString;
@@ -73,7 +72,9 @@ class TranslateEditForm extends TranslateFormBase {
             '#type' => 'item',
             '#title' => $this->t('Source string (@language)', array('@language' => $this->t('Built-in English'))),
             '#title_display' => 'invisible',
-            '#markup' => '<span lang="en">' . SafeMarkup::checkPlain($source_array[0]) . '</span>',
+            '#plain_text' => $source_array[0],
+            '#preffix' => '<span lang="en">',
+            '#suffix' => '</span>',
           );
         }
         else {
@@ -82,13 +83,16 @@ class TranslateEditForm extends TranslateFormBase {
           $original_singular = [
             '#type' => 'item',
             '#title' => $this->t('Singular form'),
-            '#markup' => '<span lang="en">' . SafeMarkup::checkPlain($source_array[0]) . '</span>',
-            '#prefix' => '<span class="visually-hidden">' . $this->t('Source string (@language)', array('@language' => $this->t('Built-in English'))) . '</span>',
+            '#plain_text' => $source_array[0],
+            '#prefix' => '<span class="visually-hidden">' . $this->t('Source string (@language)', array('@language' => $this->t('Built-in English'))) . '</span><span lang="en">',
+            '#suffix' => '</span>',
           ];
           $original_plural = [
             '#type' => 'item',
             '#title' => $this->t('Plural form'),
-            '#markup' => '<span lang="en">' . SafeMarkup::checkPlain($source_array[1]) . '</span>',
+            '#plain_text' => $source_array[1],
+            '#preffix' => '<span lang="en">',
+            '#suffix' => '</span>',
           ];
           $form['strings'][$string->lid]['original'] = [
             $original_singular,
@@ -123,6 +127,7 @@ class TranslateEditForm extends TranslateFormBase {
           for ($i = 0; $i < $plurals; $i++) {
             $form['strings'][$string->lid]['translations'][$i] = array(
               '#type' => 'textarea',
+              // @todo Should use better labels https://www.drupal.org/node/2499639
               '#title' => ($i == 0 ? $this->t('Singular form') : $this->formatPlural($i, 'First plural form', '@count. plural form')),
               '#rows' => $rows,
               '#default_value' => isset($translation_array[$i]) ? $translation_array[$i] : '',
@@ -131,7 +136,7 @@ class TranslateEditForm extends TranslateFormBase {
             );
           }
           if ($plurals == 2) {
-            // Simplify user interface text for the most common case.
+            // Simplify interface text for the most common case.
             $form['strings'][$string->lid]['translations'][1]['#title'] = $this->t('Plural form');
           }
         }

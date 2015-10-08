@@ -73,7 +73,7 @@ class LanguageItem extends FieldItemBase {
     return array(
       'columns' => array(
         'value' => array(
-          'type' => 'varchar',
+          'type' => 'varchar_ascii',
           'length' => 12,
         ),
       ),

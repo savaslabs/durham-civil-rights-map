@@ -6,8 +6,8 @@
  */
 
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldFilteredMarkup;
 use Drupal\Core\Render\Element;
 
 /**
@@ -27,8 +27,8 @@ function template_preprocess_file_widget(&$variables) {
     $element['file_' . $file->id()]['filename']['#suffix'] = ' <span class="file-size">(' . format_size($file->getSize()) . ')</span> ';
   }
   $variables['element'] = $element;
-  // The "form-managed-file" class is required for proper Ajax functionality.
-  $variables['attributes'] = array('class' => array('file-widget', 'form-managed-file', 'clearfix'));
+  // The "js-form-managed-file" class is required for proper Ajax functionality.
+  $variables['attributes'] = array('class' => array('file-widget', 'js-form-managed-file', 'form-managed-file', 'clearfix'));
 }
 
 /**
@@ -72,7 +72,7 @@ function template_preprocess_file_widget_multiple(&$variables) {
     // Save the uploading row for last.
     if (empty($widget['#files'])) {
       $widget['#title'] = $element['#file_upload_title'];
-      $widget['#description'] = drupal_render($element['#file_upload_description']);
+      $widget['#description'] = \Drupal::service('renderer')->renderPlain($element['#file_upload_description']);
       continue;
     }
 
@@ -96,13 +96,6 @@ function template_preprocess_file_widget_multiple(&$variables) {
     // Render everything else together in a column, without the normal wrappers.
     $widget['#theme_wrappers'] = array();
     $information = drupal_render($widget);
-
-    // Render the previously hidden elements, using render() instead of
-    // drupal_render(), to undo the earlier hide().
-    $operations = '';
-    foreach ($operations_elements as $operation_element) {
-      $operations .= render($operation_element);
-    }
     $display = '';
     if ($element['#display_field']) {
       unset($widget['display']['#title']);
@@ -121,7 +114,15 @@ function template_preprocess_file_widget_multiple(&$variables) {
       $row[] = $display;
     }
     $row[] = $weight;
-    $row[] = SafeMarkup::set($operations);
+
+    // Show the buttons that had previously been marked as hidden in this
+    // preprocess function. We use show() to undo the earlier hide().
+    foreach (Element::children($operations_elements) as $key) {
+      show($operations_elements[$key]);
+    }
+    $row[] = array(
+      'data' => $operations_elements,
+    );
     $rows[] = array(
       'data' => $row,
       'class' => isset($widget['#attributes']['class']) ? array_merge($widget['#attributes']['class'], array('draggable')) : array('draggable'),
@@ -142,6 +143,7 @@ function template_preprocess_file_widget_multiple(&$variables) {
         'group' => $weight_class,
       ),
     ),
+    '#access' => !empty($rows),
   );
 
   $variables['element'] = $element;
@@ -167,7 +169,7 @@ function template_preprocess_file_upload_help(&$variables) {
   $descriptions = array();
 
   if (!empty($description)) {
-    $descriptions[] = Html::normalize($description);
+    $descriptions[] = FieldFilteredMarkup::create($description);
   }
   if (isset($cardinality)) {
     if ($cardinality == -1) {
@@ -178,7 +180,7 @@ function template_preprocess_file_upload_help(&$variables) {
     }
   }
   if (isset($upload_validators['file_validate_size'])) {
-    $descriptions[] = t('!size limit.', array('!size' => format_size($upload_validators['file_validate_size'][0])));
+    $descriptions[] = t('@size limit.', array('@size' => format_size($upload_validators['file_validate_size'][0])));
   }
   if (isset($upload_validators['file_validate_extensions'])) {
     $descriptions[] = t('Allowed types: @extensions.', array('@extensions' => $upload_validators['file_validate_extensions'][0]));

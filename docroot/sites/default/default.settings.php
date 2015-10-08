@@ -22,7 +22,7 @@
  * 'sites/default' will be used.
  *
  * For example, for a fictitious site installed at
- * http://www.drupal.org:8080/mysite/test/, the 'settings.php' file is searched
+ * https://www.drupal.org:8080/mysite/test/, the 'settings.php' file is searched
  * for in the following directories:
  *
  * - sites/8080.www.drupal.org.mysite.test
@@ -44,11 +44,11 @@
  *
  * Note that if you are installing on a non-standard port number, prefix the
  * hostname with that number. For example,
- * http://www.drupal.org:8080/mysite/test/ could be loaded from
+ * https://www.drupal.org:8080/mysite/test/ could be loaded from
  * sites/8080.www.drupal.org.mysite.test/.
  *
  * @see example.sites.php
- * @see conf_path()
+ * @see \Drupal\Core\DrupalKernel::getSitePath()
  *
  * In addition to customizing application settings through variables in
  * settings.php, you can create a services.yml file in the same directory to
@@ -75,7 +75,7 @@
  *   'host' => 'localhost',
  *   'port' => 3306,
  *   'prefix' => 'myprefix_',
- *   'collation' => 'utf8_general_ci',
+ *   'collation' => 'utf8mb4_general_ci',
  * );
  * @endcode
  *
@@ -127,7 +127,7 @@
  *   'password' => 'password',
  *   'host' => 'localhost',
  *   'prefix' => 'main_',
- *   'collation' => 'utf8_general_ci',
+ *   'collation' => 'utf8mb4_general_ci',
  * );
  * @endcode
  *
@@ -223,13 +223,13 @@ $databases = array();
  * Location of the site configuration files.
  *
  * The $config_directories array specifies the location of file system
- * directories used for configuration data. On install, "active" and "staging"
- * directories are created for configuration. The staging directory is used for
+ * directories used for configuration data. On install, "active" and "sync"
+ * directories are created for configuration. The sync directory is used for
  * configuration imports; the active directory is not used by default, since the
  * default storage for active configuration is the database rather than the file
  * system (this can be changed; see "Active configuration settings" below).
  *
- * The default location for the active and staging directories is inside a
+ * The default location for the active and sync directories is inside a
  * randomly-named directory in the public files path; this setting allows you to
  * override these locations. If you use files for the active configuration, you
  * can enhance security by putting the active configuration outside your
@@ -238,8 +238,7 @@ $databases = array();
  * Example:
  * @code
  *   $config_directories = array(
- *     CONFIG_ACTIVE_DIRECTORY => '/some/directory/outside/webroot',
- *     CONFIG_STAGING_DIRECTORY => '/another/directory/outside/webroot',
+ *     CONFIG_SYNC_DIRECTORY => '/another/directory/outside/webroot',
  *   );
  * @endcode
  */
@@ -254,6 +253,18 @@ $config_directories = array();
  *
  * @see \Drupal\Core\Site\Settings::get()
  */
+
+/**
+ * The active installation profile.
+ *
+ * Changing this after installation is not recommended as it changes which
+ * directories are scanned during extension discovery. If this is set prior to
+ * installation this value will be rewritten according to the profile selected
+ * by the user.
+ *
+ * @see install_select_profile()
+ */
+# $settings['install_profile'] = '';
 
 /**
  * Salt for one-time login links, cancel links, form tokens, etc.
@@ -273,6 +284,16 @@ $config_directories = array();
  * @endcode
  */
 $settings['hash_salt'] = '';
+
+/**
+ * Deployment identifier.
+ *
+ * Drupal's dependency injection container will be automatically invalidated and
+ * rebuilt when the Drupal core version changes. When updating contributed or
+ * custom code that changes the container, changing this identifier will also
+ * allow the container to be invalidated as soon as code is deployed.
+ */
+# $settings['deployment_identifier'] = \Drupal::VERSION;
 
 /**
  * Access control for update.php script.
@@ -371,18 +392,29 @@ $settings['update_free_access'] = FALSE;
 /**
  * Class Loader.
  *
- * By default, Composer's ClassLoader is used, which is best for development, as
- * it does not break when code is moved in the file system. You can decorate the
- * class loader with a cached solution for better performance, which is
- * recommended for production sites.
+ * If the APC extension is detected, the Symfony APC class loader is used for
+ * performance reasons. Detection can be prevented by setting
+ * class_loader_auto_detect to false, as in the example below.
+ */
+# $settings['class_loader_auto_detect'] = FALSE;
+
+/*
+ * If the APC extension is not detected, either because APC is missing or
+ * because auto-detection has been disabled, auto-loading falls back to
+ * Composer's ClassLoader, which is good for development as it does not break
+ * when code is moved in the file system. You can also decorate the base class
+ * loader with another cached solution than the Symfony APC class loader, as
+ * all production sites should have a cached class loader of some sort enabled.
  *
- * To do so, you may decorate and replace the local $class_loader variable.
- *
- * For example, to use Symfony's APC class loader, uncomment the code below.
+ * To do so, you may decorate and replace the local $class_loader variable. For
+ * example, to use Symfony's APC class loader without automatic detection,
+ * uncomment the code below.
  */
 /*
 if ($settings['hash_salt']) {
-  $apc_loader = new \Symfony\Component\ClassLoader\ApcClassLoader('drupal.' . $settings['hash_salt'], $class_loader);
+  $prefix = 'drupal.' . hash('sha256', 'drupal.' . $settings['hash_salt']);
+  $apc_loader = new \Symfony\Component\ClassLoader\ApcClassLoader($prefix, $class_loader);
+  unset($prefix);
   $class_loader->unregister();
   $apc_loader->register();
   $class_loader = $apc_loader;
@@ -407,7 +439,7 @@ if ($settings['hash_salt']) {
  * the code directly via SSH or FTP themselves. This setting completely
  * disables all functionality related to these authorized file operations.
  *
- * @see http://drupal.org/node/244924
+ * @see https://www.drupal.org/node/244924
  *
  * Remove the leading hash signs to disable.
  */
@@ -422,6 +454,19 @@ if ($settings['hash_salt']) {
 # $settings['file_chmod_file'] = 0664;
 
 /**
+ * Public file base URL:
+ *
+ * An alternative base URL to be used for serving public files. This must
+ * include any leading directory path.
+ *
+ * A different value from the domain used by Drupal to be used for accessing
+ * public files. This can be used for a simple CDN integration, or to improve
+ * security by serving user-uploaded files from a different domain or subdomain
+ * pointing to the same server. Do not include a trailing slash.
+ */
+# $settings['file_public_base_url'] = 'http://downloads.example.com/files';
+
+/**
  * Public file path:
  *
  * A local file system path where public files will be stored. This directory
@@ -434,14 +479,14 @@ if ($settings['hash_salt']) {
  * Private file path:
  *
  * A local file system path where private files will be stored. This directory
- * must be absolute, outside of the the Drupal installation directory and not
+ * must be absolute, outside of the Drupal installation directory and not
  * accessible over the web.
  *
  * Note: Caches need to be cleared when this value is changed to make the
  * private:// stream wrapper available to the system.
  *
- * See http://drupal.org/documentation/modules/file for more information about
- * securing private files.
+ * See https://www.drupal.org/documentation/modules/file for more information
+ * about securing private files.
  */
 # $settings['file_private_path'] = '';
 
@@ -481,28 +526,6 @@ if ($settings['hash_salt']) {
  * Note: This setting does not apply to installation and update pages.
  */
 # $settings['maintenance_theme'] = 'bartik';
-
-/**
- * Base URL (optional).
- *
- * If Drupal is generating incorrect URLs on your site, which could
- * be in HTML headers (links to CSS and JS files) or visible links on pages
- * (such as in menus), uncomment the Base URL statement below (remove the
- * leading hash sign) and fill in the absolute URL to your Drupal installation.
- *
- * You might also want to force users to use a given domain.
- * See the .htaccess file for more information.
- *
- * Examples:
- *   $base_url = 'http://www.example.com';
- *   $base_url = 'http://www.example.com:8888';
- *   $base_url = 'http://www.example.com/drupal';
- *   $base_url = 'https://www.example.com:8888/drupal';
- *
- * It is not allowed to have a trailing slash; Drupal will add it
- * for you.
- */
-# $base_url = 'http://www.example.com';  // NO trailing slash!
 
 /**
  * PHP settings:
@@ -577,20 +600,21 @@ if ($settings['hash_salt']) {
  *
  * The options below return a simple, fast 404 page for URLs matching a
  * specific pattern:
- * - $conf['system.performance]['fast_404']['exclude_paths']: A regular
+ * - $config['system.performance']['fast_404']['exclude_paths']: A regular
  *   expression to match paths to exclude, such as images generated by image
- *   styles, or dynamically-resized images. If you need to add more paths, you
+ *   styles, or dynamically-resized images. The default pattern provided below
+ *   also excludes the private file system. If you need to add more paths, you
  *   can add '|path' to the expression.
- * - $conf['system.performance]['fast_404']['paths']: A regular expression to
+ * - $config['system.performance']['fast_404']['paths']: A regular expression to
  *   match paths that should return a simple 404 page, rather than the fully
  *   themed 404 page. If you don't have any aliases ending in htm or html you
  *   can add '|s?html?' to the expression.
- * - $conf['system.performance]['fast_404']['html']: The html to return for
+ * - $config['system.performance']['fast_404']['html']: The html to return for
  *   simple 404 pages.
  *
  * Remove the leading hash signs if you would like to alter this functionality.
  */
-# $config['system.performance']['fast_404']['exclude_paths'] = '/\/(?:styles)\//';
+# $config['system.performance']['fast_404']['exclude_paths'] = '/\/(?:styles)|(?:system\/files)\//';
 # $config['system.performance']['fast_404']['paths'] = '/\.(?:txt|png|gif|jpe?g|css|js|ico|swf|flv|cgi|bat|pl|dll|exe|asp)$/i';
 # $config['system.performance']['fast_404']['html'] = '<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>Not Found</h1><p>The requested URL "@path" was not found on this server.</p></body></html>';
 
@@ -598,6 +622,15 @@ if ($settings['hash_salt']) {
  * Load services definition file.
  */
 $settings['container_yamls'][] = __DIR__ . '/services.yml';
+
+/**
+ * Override the default service container class.
+ *
+ * This is useful for example to trace the service container for performance
+ * tracking purposes, for testing a service container with an error condition or
+ * to test a service container that throws an exception.
+ */
+# $settings['container_base_class'] = '\Drupal\Core\DependencyInjection\Container';
 
 /**
  * Trusted host configuration.

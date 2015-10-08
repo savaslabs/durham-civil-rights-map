@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\field\Tests\TranslationWebTest.
+ * Contains \Drupal\field\Tests\TranslationWebTest.
  */
 
 namespace Drupal\field\Tests;
@@ -104,7 +104,8 @@ class TranslationWebTest extends FieldTestBase {
     ksort($available_langcodes);
     $entity->langcode->value = key($available_langcodes);
     foreach ($available_langcodes as $langcode => $value) {
-      $entity->getTranslation($langcode)->{$field_name}->value = $value + 1;
+      $translation = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : $entity->addTranslation($langcode);
+      $translation->{$field_name}->value = $value + 1;
     }
     $entity->save();
 

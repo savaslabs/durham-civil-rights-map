@@ -77,9 +77,9 @@ class UserLoginBlock extends BlockBase implements ContainerFactoryPluginInterfac
    */
   protected function blockAccess(AccountInterface $account) {
     $route_name = $this->routeMatch->getRouteName();
-    if ($account->isAnonymous() && !in_array($route_name, array('user.register', 'user.login', 'user.logout'))) {
+    if ($account->isAnonymous() && !in_array($route_name, array('user.login', 'user.logout'))) {
       return AccessResult::allowed()
-        ->addCacheContexts(['route', 'user.roles:anonymous']);
+        ->addCacheContexts(['route.name', 'user.roles:anonymous']);
     }
     return AccessResult::forbidden();
   }
@@ -90,8 +90,13 @@ class UserLoginBlock extends BlockBase implements ContainerFactoryPluginInterfac
   public function build() {
     $form = \Drupal::formBuilder()->getForm('Drupal\user\Form\UserLoginForm');
     unset($form['name']['#attributes']['autofocus']);
+    // When unsetting field descriptions, also unset aria-describedby attributes
+    // to avoid introducing an accessibility bug.
+    // @todo Do this automatically in https://www.drupal.org/node/2547063.
     unset($form['name']['#description']);
+    unset($form['name']['#attributes']['aria-describedby']);
     unset($form['pass']['#description']);
+    unset($form['pass']['#attributes']['aria-describedby']);
     $form['name']['#size'] = 15;
     $form['pass']['#size'] = 15;
     $form['#action'] = $this->url('<current>', [], ['query' => $this->getDestinationArray(), 'external' => FALSE]);
@@ -107,7 +112,7 @@ class UserLoginBlock extends BlockBase implements ContainerFactoryPluginInterfac
     }
     $items['request_password'] = \Drupal::l($this->t('Reset your password'), new Url('user.pass', array(), array(
       'attributes' => array(
-        'title' => $this->t('Send password reset instructions via e-mail.'),
+        'title' => $this->t('Send password reset instructions via email.'),
         'class' => array('request-password-link'),
       ),
     )));
@@ -118,15 +123,6 @@ class UserLoginBlock extends BlockBase implements ContainerFactoryPluginInterfac
         '#items' => $items,
       ),
     );
-  }
-
-  /**
-   * {@inheritdoc}
-   *
-   * @todo Make cacheable once https://www.drupal.org/node/2351015 lands.
-   */
-  public function getCacheMaxAge() {
-    return 0;
   }
 
 }

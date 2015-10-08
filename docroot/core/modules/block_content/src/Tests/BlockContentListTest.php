@@ -7,13 +7,14 @@
 
 namespace Drupal\block_content\Tests;
 
-use Drupal\simpletest\WebTestBase;
-
 /**
  * Tests the listing of custom blocks.
  *
+ * Tests the fallback block content list when Views is disabled.
+ *
  * @group block_content
  * @see \Drupal\block\BlockContentListBuilder
+ * @see \Drupal\block_content\Tests\BlockContentListViewsTest
  */
 class BlockContentListTest extends BlockContentTestBase {
 
@@ -45,7 +46,7 @@ class BlockContentListTest extends BlockContentTestBase {
     // Test the contents of each th cell.
     $expected_items = array(t('Block description'), t('Operations'));
     foreach ($elements as $key => $element) {
-      $this->assertIdentical((string) $element[0], $expected_items[$key]);
+      $this->assertEqual($element[0], $expected_items[$key]);
     }
 
     $label = 'Antelope';

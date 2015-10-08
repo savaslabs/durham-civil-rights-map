@@ -45,11 +45,11 @@ function file_test_reset() {
  * Get the arguments passed to invocation of a given hook since
  * file_test_reset() was last called.
  *
- * @param $op
+ * @param string $op
  *   One of the hook_file_* operations: 'load', 'validate', 'download',
  *   'insert', 'update', 'copy', 'move', 'delete'.
  *
- * @return
+ * @return array
  *   Array of the parameters passed to each call.
  *
  * @see _file_test_log_call()
@@ -75,10 +75,10 @@ function file_test_get_all_calls() {
 /**
  * Store the values passed to a hook invocation.
  *
- * @param $op
+ * @param string $op
  *   One of the hook_file_* operations: 'load', 'validate', 'download',
  *   'insert', 'update', 'copy', 'move', 'delete'.
- * @param $args
+ * @param array $args
  *   Values passed to hook.
  *
  * @see file_test_get_calls()
@@ -95,10 +95,10 @@ function _file_test_log_call($op, $args) {
 /**
  * Load the appropriate return value.
  *
- * @param $op
+ * @param string $op
  *   One of the hook_file_[validate,download] operations.
  *
- * @return
+ * @return mixed
  *   Value set by file_test_set_return().
  *
  * @see file_test_set_return()
@@ -112,9 +112,9 @@ function _file_test_get_return($op) {
 /**
  * Assign a return value for a given operation.
  *
- * @param $op
+ * @param string $op
  *   One of the hook_file_[validate,download] operations.
- * @param $value
+ * @param mixed $value
  *   Value for the hook to return.
  *
  * @see _file_test_get_return()
@@ -150,6 +150,11 @@ function file_test_file_validate(File $file) {
  * Implements hook_file_download().
  */
 function file_test_file_download($uri) {
+  if (\Drupal::state()->get('file_test.allow_all', FALSE)) {
+    $files = entity_load_multiple_by_properties('file', array('uri' => $uri));
+    $file = reset($files);
+    return file_get_content_headers($file);
+  }
   _file_test_log_call('download', array($uri));
   return _file_test_get_return('download');
 }
@@ -217,7 +222,7 @@ function file_test_file_url_alter(&$uri) {
       }
       // Public created files.
       else {
-        $wrapper = file_stream_wrapper_get_instance_by_scheme($scheme);
+        $wrapper = \Drupal::service('stream_wrapper_manager')->getViaScheme($scheme);
         $path = $wrapper->getDirectoryPath() . '/' . file_uri_target($uri);
       }
 
@@ -247,7 +252,7 @@ function file_test_file_url_alter(&$uri) {
       }
       // Public created files.
       else {
-        $wrapper = file_stream_wrapper_get_instance_by_scheme($scheme);
+        $wrapper = \Drupal::service('stream_wrapper_manager')->getViaScheme($scheme);
         $path = $wrapper->getDirectoryPath() . '/' . file_uri_target($uri);
       }
 
@@ -270,7 +275,7 @@ function file_test_file_url_alter(&$uri) {
       }
       // Public created files.
       else {
-        $wrapper = file_stream_wrapper_get_instance_by_scheme($scheme);
+        $wrapper = \Drupal::service('stream_wrapper_manager')->getViaScheme($scheme);
         $path = $wrapper->getDirectoryPath() . '/' . file_uri_target($uri);
       }
 
@@ -312,9 +317,9 @@ function file_test_validator(File $file, $errors) {
  * When the function is called with no $filepath parameter, the results are
  * returned.
  *
- * @param $filepath
+ * @param string|NULL $filepath
  *   File path
- * @return
+ * @return array
  *   If $filepath is NULL, an array of all previous $filepath parameters
  */
 function file_test_file_scan_callback($filepath = NULL) {

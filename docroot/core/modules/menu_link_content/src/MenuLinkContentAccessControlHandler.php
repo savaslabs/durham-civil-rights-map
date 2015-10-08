@@ -51,11 +51,12 @@ class MenuLinkContentAccessControlHandler extends EntityAccessControlHandler imp
   /**
    * {@inheritdoc}
    */
-  protected function checkAccess(EntityInterface $entity, $operation, $langcode, AccountInterface $account) {
+  protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
     switch ($operation) {
       case 'view':
-        // There is no direct view.
-        return AccessResult::neutral();
+        // There is no direct viewing of a menu link, but still for purposes of
+        // content_translation we need a generic way to check access.
+        return AccessResult::allowedIfHasPermission($account, 'administer menu');
 
       case 'update':
         if (!$account->hasPermission('administer menu')) {

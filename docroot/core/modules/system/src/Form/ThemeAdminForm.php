@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\system\Form\ThemeAdminForm
+ * Contains \Drupal\system\Form\ThemeAdminForm.
  */
 
 namespace Drupal\system\Form;
@@ -17,7 +17,7 @@ class ThemeAdminForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'system_themes_admin_form';
   }
 

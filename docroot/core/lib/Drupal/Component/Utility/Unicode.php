@@ -100,7 +100,7 @@ EOD;
   protected static $status = 0;
 
   /**
-   * Get the current status of unicode/multibyte support on this environment.
+   * Gets the current status of unicode/multibyte support on this environment.
    *
    * @return int
    *   The status of multibyte support. It can be one of:
@@ -181,6 +181,38 @@ EOD;
     mb_language('uni');
     static::$status = static::STATUS_MULTIBYTE;
     return '';
+  }
+
+  /**
+   * Decodes UTF byte-order mark (BOM) into the encoding's name.
+   *
+   * @param string $data
+   *   The data possibly containing a BOM. This can be the entire contents of
+   *   a file, or just a fragment containing at least the first five bytes.
+   *
+   * @return string|bool
+   *   The name of the encoding, or FALSE if no byte order mark was present.
+   */
+  public static function encodingFromBOM($data) {
+    static $bomMap = array(
+      "\xEF\xBB\xBF" => 'UTF-8',
+      "\xFE\xFF" => 'UTF-16BE',
+      "\xFF\xFE" => 'UTF-16LE',
+      "\x00\x00\xFE\xFF" => 'UTF-32BE',
+      "\xFF\xFE\x00\x00" => 'UTF-32LE',
+      "\x2B\x2F\x76\x38" => 'UTF-7',
+      "\x2B\x2F\x76\x39" => 'UTF-7',
+      "\x2B\x2F\x76\x2B" => 'UTF-7',
+      "\x2B\x2F\x76\x2F" => 'UTF-7',
+      "\x2B\x2F\x76\x38\x2D" => 'UTF-7',
+    );
+
+    foreach ($bomMap as $bom => $encoding) {
+      if (strpos($data, $bom) === 0) {
+        return $encoding;
+      }
+    }
+    return FALSE;
   }
 
   /**
@@ -380,8 +412,8 @@ EOD;
       // Find the starting byte offset.
       $bytes = 0;
       if ($start > 0) {
-        // Count all the continuation bytes from the start until we have found
-        // $start characters or the end of the string.
+        // Count all the characters except continuation bytes from the start
+        // until we have found $start characters or the end of the string.
         $bytes = -1; $chars = -1;
         while ($bytes < $strlen - 1 && $chars < $start) {
           $bytes++;
@@ -392,8 +424,8 @@ EOD;
         }
       }
       elseif ($start < 0) {
-        // Count all the continuation bytes from the end until we have found
-        // abs($start) characters.
+        // Count all the characters except continuation bytes from the end
+        // until we have found abs($start) characters.
         $start = abs($start);
         $bytes = $strlen; $chars = 0;
         while ($bytes > 0 && $chars < $start) {
@@ -411,9 +443,9 @@ EOD;
         $iend = $strlen;
       }
       elseif ($length > 0) {
-        // Count all the continuation bytes from the starting index until we have
-        // found $length characters or reached the end of the string, then
-        // backtrace one byte.
+        // Count all the characters except continuation bytes from the starting
+        // index until we have found $length characters or reached the end of
+        // the string, then backtrace one byte.
         $iend = $istart - 1;
         $chars = -1;
         $last_real = FALSE;
@@ -426,15 +458,15 @@ EOD;
             $last_real = TRUE;
           }
         }
-        // Backtrace one byte if the last character we found was a real character
-        // and we don't need it.
+        // Backtrace one byte if the last character we found was a real
+        // character and we don't need it.
         if ($last_real && $chars >= $length) {
           $iend--;
         }
       }
       elseif ($length < 0) {
-        // Count all the continuation bytes from the end until we have found
-        // abs($start) characters, then backtrace one byte.
+        // Count all the characters except continuation bytes from the end
+        // until we have found abs($start) characters, then backtrace one byte.
         $length = abs($length);
         $iend = $strlen; $chars = 0;
         while ($iend > 0 && $chars < $length) {
@@ -476,7 +508,7 @@ EOD;
    * @param bool $add_ellipsis
    *   If TRUE, add '...' to the end of the truncated string (defaults to
    *   FALSE). The string length will still fall within $max_length.
-   * @param bool $min_wordsafe_length
+   * @param int $min_wordsafe_length
    *   If $wordsafe is TRUE, the minimum acceptable length for truncation (before
    *   adding an ellipsis, if $add_ellipsis is TRUE). Has no effect if $wordsafe
    *   is FALSE. This can be used to prevent having a very short resulting string
@@ -663,6 +695,35 @@ EOD;
     // containing invalid UTF-8 byte sequences. It does not reject character
     // codes above U+10FFFF (represented by 4 or more octets), though.
     return (preg_match('/^./us', $text) == 1);
+  }
+
+  /**
+   * Finds the position of the first occurrence of a string in another string.
+   *
+   * @param string $haystack
+   *   The string to search in.
+   * @param string $needle
+   *   The string to find in $haystack.
+   * @param int $offset
+   *   If specified, start the search at this number of characters from the
+   *   beginning (default 0).
+   *
+   * @return int|false
+   *   The position where $needle occurs in $haystack, always relative to the
+   *   beginning (independent of $offset), or FALSE if not found. Note that
+   *   a return value of 0 is not the same as FALSE.
+   */
+  public static function strpos($haystack, $needle, $offset = 0) {
+    if (static::getStatus() == static::STATUS_MULTIBYTE) {
+      return mb_strpos($haystack, $needle, $offset);
+    }
+    else {
+      // Remove Unicode continuation characters, to be compatible with
+      // Unicode::strlen() and Unicode::substr().
+      $haystack = preg_replace("/[\x80-\xBF]/", '', $haystack);
+      $needle = preg_replace("/[\x80-\xBF]/", '', $needle);
+      return strpos($haystack, $needle, $offset);
+    }
   }
 
 }

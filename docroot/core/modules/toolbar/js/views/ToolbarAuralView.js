@@ -7,13 +7,19 @@
 
   "use strict";
 
-  /**
-   * Backbone view for the aural feedback of the toolbar.
-   */
-  Drupal.toolbar.ToolbarAuralView = Backbone.View.extend({
+  Drupal.toolbar.ToolbarAuralView = Backbone.View.extend(/** @lends Drupal.toolbar.ToolbarAuralView# */{
 
     /**
-     * {@inheritdoc}
+     * Backbone view for the aural feedback of the toolbar.
+     *
+     * @constructs
+     *
+     * @augments Backbone.View
+     *
+     * @param {object} options
+     *   Options for the view.
+     * @param {object} options.strings
+     *   Various strings to use in the view.
      */
     initialize: function (options) {
       this.strings = options.strings;
@@ -25,8 +31,9 @@
     /**
      * Announces an orientation change.
      *
-     * @param Drupal.Toolbar.ToolbarModel model
-     * @param String orientation
+     * @param {Drupal.toolbar.ToolbarModel} model
+     *   The toolbar model in question.
+     * @param {string} orientation
      *   The new value of the orientation attribute in the model.
      */
     onOrientationChange: function (model, orientation) {
@@ -38,8 +45,9 @@
     /**
      * Announces a changed active tray.
      *
-     * @param Drupal.Toolbar.ToolbarModel model
-     * @param Element orientation
+     * @param {Drupal.toolbar.ToolbarModel} model
+     *   The toolbar model in question.
+     * @param {HTMLElement} tray
      *   The new value of the tray attribute in the model.
      */
     onActiveTrayChange: function (model, tray) {

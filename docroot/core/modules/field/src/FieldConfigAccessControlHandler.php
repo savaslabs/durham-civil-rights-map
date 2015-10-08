@@ -22,17 +22,17 @@ class FieldConfigAccessControlHandler extends EntityAccessControlHandler {
   /**
    * {@inheritdoc}
    */
-  protected function checkAccess(EntityInterface $entity, $operation, $langcode, AccountInterface $account) {
+  protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
     if ($operation == 'delete') {
       $field_storage_entity = $entity->getFieldStorageDefinition();
       if ($field_storage_entity->isLocked()) {
         return AccessResult::forbidden()->cacheUntilEntityChanges($field_storage_entity);
       }
       else {
-        return AccessResult::allowedIfHasPermission($account, 'administer ' . $entity->entity_type . ' fields')->cacheUntilEntityChanges($field_storage_entity);
+        return AccessResult::allowedIfHasPermission($account, 'administer ' . $entity->getTargetEntityTypeId() . ' fields')->cacheUntilEntityChanges($field_storage_entity);
       }
     }
-    return AccessResult::allowedIfHasPermission($account, 'administer ' . $entity->entity_type . ' fields');
+    return AccessResult::allowedIfHasPermission($account, 'administer ' . $entity->getTargetEntityTypeId() . ' fields');
   }
 
 }

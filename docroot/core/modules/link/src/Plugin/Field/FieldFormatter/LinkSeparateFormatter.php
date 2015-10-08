@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Contains \Drupal\link\Plugin\field\formatter\LinkSeparateFormatter.
+ * Contains \Drupal\link\Plugin\Field\FieldFormatter\LinkSeparateFormatter.
  *
  * @todo
  * Merge into 'link' formatter once there is a #type like 'item' that
  * can render a compound label and content outside of a form context.
- * http://drupal.org/node/1829202
+ * @see https://www.drupal.org/node/1829202
  */
 
 namespace Drupal\link\Plugin\Field\FieldFormatter;
@@ -42,7 +42,7 @@ class LinkSeparateFormatter extends LinkFormatter {
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $element = array();
     $entity = $items->getEntity();
     $settings = $this->getSettings();
@@ -55,8 +55,9 @@ class LinkSeparateFormatter extends LinkFormatter {
       // If the link text field value is available, use it for the text.
       if (empty($settings['url_only']) && !empty($item->title)) {
         // Unsanitized token replacement here because the entire link title
-        // gets auto-escaped during link generation.
-        $link_title = \Drupal::token()->replace($item->title, array($entity->getEntityTypeId() => $entity), array('sanitize' => FALSE, 'clear' => TRUE));
+        // gets auto-escaped during link generation in
+        // \Drupal\Core\Utility\LinkGenerator::generate().
+        $link_title = \Drupal::token()->replace($item->title, [$entity->getEntityTypeId() => $entity], ['clear' => TRUE]);
       }
 
       // The link_separate formatter has two titles; the link text (as in the

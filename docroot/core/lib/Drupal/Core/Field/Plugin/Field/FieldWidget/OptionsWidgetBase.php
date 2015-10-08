@@ -9,6 +9,7 @@ namespace Drupal\Core\Field\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldFilteredMarkup;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -72,7 +73,7 @@ abstract class OptionsWidgetBase extends WidgetBase {
    */
   public static function validateElement(array $element, FormStateInterface $form_state) {
     if ($element['#required'] && $element['#value'] == '_none') {
-      $form_state->setError($element, t('!name field is required.', array('!name' => $element['#title'])));
+      $form_state->setError($element, t('@name field is required.', array('@name' => $element['#title'])));
     }
 
     // Massage submitted form values.
@@ -190,7 +191,7 @@ abstract class OptionsWidgetBase extends WidgetBase {
    */
   protected function sanitizeLabel(&$label) {
     // Allow a limited set of HTML tags.
-    $label = $this->fieldFilterXss($label);
+    $label = FieldFilteredMarkup::create($label);
   }
 
   /**

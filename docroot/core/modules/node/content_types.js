@@ -7,6 +7,14 @@
 
   "use strict";
 
+  /**
+   * Behaviors for setting summaries on content type form.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches summary behaviors on content type edit forms.
+   */
   Drupal.behaviors.contentTypes = {
     attach: function (context) {
       var $context = $(context);
@@ -29,7 +37,7 @@
       $('#edit-language', context).drupalSetSummary(function (context) {
         var vals = [];
 
-        vals.push($(".form-item-language-configuration-langcode select option:selected", context).text());
+        vals.push($(".js-form-item-language-configuration-langcode select option:selected", context).text());
 
         $('input:checked', context).next('label').each(function () {
           vals.push(Drupal.checkPlain($(this).text()));

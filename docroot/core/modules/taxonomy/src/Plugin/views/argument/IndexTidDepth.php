@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\taxonomy\Plugin\views\argument\IndexTidDepth.
+ * Contains \Drupal\taxonomy\Plugin\views\argument\IndexTidDepth.
  */
 
 namespace Drupal\taxonomy\Plugin\views\argument;
@@ -11,7 +11,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\views\Plugin\views\argument\ArgumentPluginBase;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -140,7 +139,7 @@ class IndexTidDepth extends ArgumentPluginBase implements ContainerFactoryPlugin
   function title() {
     $term = $this->termStorage->load($this->argument);
     if (!empty($term)) {
-      return SafeMarkup::checkPlain($term->getName());
+      return $term->getName();
     }
     // TODO review text
     return $this->t('No name');

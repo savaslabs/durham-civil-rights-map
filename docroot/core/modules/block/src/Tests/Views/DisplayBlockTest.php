@@ -8,8 +8,9 @@
 namespace Drupal\block\Tests\Views;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Url;
+use Drupal\system\Tests\Cache\AssertPageCacheContextsAndTagsTrait;
+use Drupal\views\Entity\View;
 use Drupal\views\Views;
 use Drupal\views\Tests\ViewTestBase;
 use Drupal\views\Tests\ViewTestData;
@@ -22,6 +23,8 @@ use Drupal\Core\Template\Attribute;
  * @see \Drupal\block\Plugin\views\display\Block
  */
 class DisplayBlockTest extends ViewTestBase {
+
+  use AssertPageCacheContextsAndTagsTrait;
 
   /**
    * Modules to install.
@@ -60,19 +63,20 @@ class DisplayBlockTest extends ViewTestBase {
     $edit['block[style][row_plugin]'] = 'fields';
     $this->drupalPostForm('admin/structure/views/add', $edit, t('Save and edit'));
 
+    $pattern = '//tr[.//td[text()=:category] and .//td//a[contains(@href, :href)]]';
+
     // Test that the block was given a default category corresponding to its
     // base table.
     $arguments = array(
-      ':id' => 'edit-category-lists-views',
-      ':li_class' => 'views-block' . Html::getClass($edit['id']) . '-block-1',
       ':href' => \Drupal::Url('block.admin_add', array(
         'plugin_id' => 'views_block:' . $edit['id'] . '-block_1',
         'theme' => 'classy',
       )),
-      ':text' => $edit['label'],
+      ':category' => t('Lists (Views)'),
     );
     $this->drupalGet('admin/structure/block');
-    $elements = $this->xpath('//details[@id=:id]//li[contains(@class, :li_class)]/a[contains(@href, :href) and text()=:text]', $arguments);
+    $this->clickLinkPartialName('Place block');
+    $elements = $this->xpath($pattern, $arguments);
     $this->assertTrue(!empty($elements), 'The test block appears in the category for its base table.');
 
     // Duplicate the block before changing the category.
@@ -81,10 +85,9 @@ class DisplayBlockTest extends ViewTestBase {
 
     // Change the block category to a random string.
     $this->drupalGet('admin/structure/views/view/' . $edit['id'] . '/edit/block_1');
-    $label = t('Lists (Views)');
-    $link = $this->xpath('//a[@id="views-block-1-block-category" and normalize-space(text())=:label]', array(':label' => $label));
+    $link = $this->xpath('//a[@id="views-block-1-block-category" and normalize-space(text())=:category]', $arguments);
     $this->assertTrue(!empty($link));
-    $this->clickLink($label);
+    $this->clickLink(t('Lists (Views)'));
     $category = $this->randomString();
     $this->drupalPostForm(NULL, array('block_category' => $category), t('Apply'));
 
@@ -95,34 +98,30 @@ class DisplayBlockTest extends ViewTestBase {
     $this->drupalPostForm(NULL, array(), t('Save'));
 
     // Test that the blocks are listed under the correct categories.
-    $category_id = Html::getUniqueId('edit-category-' . SafeMarkup::checkPlain($category));
-    $arguments[':id'] = $category_id;
+    $arguments[':category'] = $category;
     $this->drupalGet('admin/structure/block');
-    $elements = $this->xpath('//details[@id=:id]//li[contains(@class, :li_class)]/a[contains(@href, :href) and text()=:text]', $arguments);
+    $this->clickLinkPartialName('Place block');
+    $elements = $this->xpath($pattern, $arguments);
     $this->assertTrue(!empty($elements), 'The test block appears in the custom category.');
 
     $arguments = array(
-      ':id' => 'edit-category-lists-views',
-      ':li_class' => 'views-block' . Html::getClass($edit['id']) . '-block-2',
       ':href' => \Drupal::Url('block.admin_add', array(
         'plugin_id' => 'views_block:' . $edit['id'] . '-block_2',
         'theme' => 'classy',
       )),
-      ':text' => $edit['label'],
+      ':category' => t('Lists (Views)'),
     );
-    $elements = $this->xpath('//details[@id=:id]//li[contains(@class, :li_class)]/a[contains(@href, :href) and text()=:text]', $arguments);
+    $elements = $this->xpath($pattern, $arguments);
     $this->assertTrue(!empty($elements), 'The first duplicated test block remains in the original category.');
 
     $arguments = array(
-      ':id' => $category_id,
-      ':li_class' => 'views-block' . Html::getClass($edit['id']) . '-block-3',
       ':href' => \Drupal::Url('block.admin_add', array(
         'plugin_id' => 'views_block:' . $edit['id'] . '-block_3',
         'theme' => 'classy',
       )),
-      ':text' => $edit['label'],
+      ':category' => $category,
     );
-    $elements = $this->xpath('//details[@id=:id]//li[contains(@class, :li_class)]/a[contains(@href, :href) and text()=:text]', $arguments);
+    $elements = $this->xpath($pattern, $arguments);
     $this->assertTrue(!empty($elements), 'The second duplicated test block appears in the custom category.');
   }
 
@@ -265,6 +264,88 @@ class DisplayBlockTest extends ViewTestBase {
     $this->drupalGet('');
     $result = $this->xpath('//div[contains(@class, "region-sidebar-first")]/div[contains(@class, "block-views")]/h2');
     $this->assertTrue(empty($result), 'The title is not visible.');
+
+    $this->assertCacheTags(array_merge($block->getCacheTags(), ['block_view', 'config:block_list', 'config:system.site', 'config:views.view.test_view_block' ,'rendered']));
+  }
+
+  /**
+   * Tests the various testcases of empty block rendering.
+   */
+  public function testBlockEmptyRendering() {
+    $url = new Url('test_page_test.test_page');
+    // Remove all views_test_data entries.
+    \Drupal::database()->truncate('views_test_data')->execute();
+    /** @var \Drupal\views\ViewEntityInterface $view */
+    $view = View::load('test_view_block');
+    $view->invalidateCaches();
+
+    $block = $this->drupalPlaceBlock('views_block:test_view_block-block_1', array('label' => 'test_view_block-block_1:1', 'views_label' => 'Custom title'));
+    $this->drupalGet('');
+    $this->assertEqual(1, count($this->xpath('//div[contains(@class, "block-views-blocktest-view-block-block-1")]')));
+
+    $display = &$view->getDisplay('block_1');
+    $display['display_options']['block_hide_empty'] = TRUE;
+    $view->save();
+
+    $this->drupalGet($url);
+    $this->assertEqual(0, count($this->xpath('//div[contains(@class, "block-views-blocktest-view-block-block-1")]')));
+    // Ensure that the view cachability metadata is propagated even, for an
+    // empty block.
+    $this->assertCacheTags(array_merge($block->getCacheTags(), ['block_view', 'config:block_list', 'config:views.view.test_view_block' ,'rendered']));
+    $this->assertCacheContexts(['url.query_args:_wrapper_format']);
+
+    // Add a header displayed on empty result.
+    $display = &$view->getDisplay('block_1');
+    $display['display_options']['defaults']['header'] = FALSE;
+    $display['display_options']['header']['example'] = [
+      'field' => 'area_text_custom',
+      'id' => 'area_text_custom',
+      'table' => 'views',
+      'plugin_id' => 'text_custom',
+      'content' => 'test header',
+      'empty' => TRUE,
+    ];
+    $view->save();
+
+    $this->drupalGet($url);
+    $this->assertEqual(1, count($this->xpath('//div[contains(@class, "block-views-blocktest-view-block-block-1")]')));
+    $this->assertCacheTags(array_merge($block->getCacheTags(), ['block_view', 'config:block_list', 'config:views.view.test_view_block' ,'rendered']));
+    $this->assertCacheContexts(['url.query_args:_wrapper_format']);
+
+    // Hide the header on empty results.
+    $display = &$view->getDisplay('block_1');
+    $display['display_options']['defaults']['header'] = FALSE;
+    $display['display_options']['header']['example'] = [
+      'field' => 'area_text_custom',
+      'id' => 'area_text_custom',
+      'table' => 'views',
+      'plugin_id' => 'text_custom',
+      'content' => 'test header',
+      'empty' => FALSE,
+    ];
+    $view->save();
+
+    $this->drupalGet($url);
+    $this->assertEqual(0, count($this->xpath('//div[contains(@class, "block-views-blocktest-view-block-block-1")]')));
+    $this->assertCacheTags(array_merge($block->getCacheTags(), ['block_view', 'config:block_list', 'config:views.view.test_view_block' ,'rendered']));
+    $this->assertCacheContexts(['url.query_args:_wrapper_format']);
+
+    // Add an empty text.
+    $display = &$view->getDisplay('block_1');
+    $display['display_options']['defaults']['empty'] = FALSE;
+    $display['display_options']['empty']['example'] = [
+      'field' => 'area_text_custom',
+      'id' => 'area_text_custom',
+      'table' => 'views',
+      'plugin_id' => 'text_custom',
+      'content' => 'test empty',
+    ];
+    $view->save();
+
+    $this->drupalGet($url);
+    $this->assertEqual(1, count($this->xpath('//div[contains(@class, "block-views-blocktest-view-block-block-1")]')));
+    $this->assertCacheTags(array_merge($block->getCacheTags(), ['block_view', 'config:block_list', 'config:views.view.test_view_block' ,'rendered']));
+    $this->assertCacheContexts(['url.query_args:_wrapper_format']);
   }
 
   /**
@@ -276,8 +357,8 @@ class DisplayBlockTest extends ViewTestBase {
     $cached_block = $this->drupalPlaceBlock('views_block:test_view_block-block_1');
     $this->drupalGet('test-page');
 
-    $id = 'block:block=' . $block->id() . ':|entity.view.edit_form:view=test_view_block:location=block&name=test_view_block&display_id=block_1';
-    $cached_id = 'block:block=' . $cached_block->id() . ':|entity.view.edit_form:view=test_view_block:location=block&name=test_view_block&display_id=block_1';
+    $id = 'block:block=' . $block->id() . ':langcode=en|entity.view.edit_form:view=test_view_block:location=block&name=test_view_block&display_id=block_1&langcode=en';
+    $cached_id = 'block:block=' . $cached_block->id() . ':langcode=en|entity.view.edit_form:view=test_view_block:location=block&name=test_view_block&display_id=block_1&langcode=en';
     // @see \Drupal\contextual\Tests\ContextualDynamicContextTest:assertContextualLinkPlaceHolder()
     $this->assertRaw('<div' . new Attribute(array('data-contextual-id' => $id)) . '></div>', format_string('Contextual link placeholder with id @id exists.', array('@id' => $id)));
     $this->assertRaw('<div' . new Attribute(array('data-contextual-id' => $cached_id)) . '></div>', format_string('Contextual link placeholder with id @id exists.', array('@id' => $cached_id)));
@@ -285,7 +366,7 @@ class DisplayBlockTest extends ViewTestBase {
     // Get server-rendered contextual links.
     // @see \Drupal\contextual\Tests\ContextualDynamicContextTest:renderContextualLinks()
     $post = array('ids[0]' => $id, 'ids[1]' => $cached_id);
-    $response = $this->drupalPost('contextual/render', 'application/json', $post, array('query' => array('destination' => 'test-page')));
+    $response = $this->drupalPostWithFormat('contextual/render', 'json', $post, array('query' => array('destination' => 'test-page')));
     $this->assertResponse(200);
     $json = Json::decode($response);
     $this->assertIdentical($json[$id], '<ul class="contextual-links"><li class="block-configure"><a href="' . base_path() . 'admin/structure/block/manage/' . $block->id() . '">Configure block</a></li><li class="entityviewedit-form"><a href="' . base_path() . 'admin/structure/views/view/test_view_block/edit/block_1">Edit view</a></li></ul>');

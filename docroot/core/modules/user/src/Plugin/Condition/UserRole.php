@@ -33,7 +33,7 @@ class UserRole extends ConditionPluginBase {
       '#type' => 'checkboxes',
       '#title' => $this->t('When the user has the following roles'),
       '#default_value' => $this->configuration['roles'],
-      '#options' => array_map('\Drupal\Component\Utility\SafeMarkup::checkPlain', user_role_names()),
+      '#options' => array_map('\Drupal\Component\Utility\Html::escape', user_role_names()),
       '#description' => $this->t('If you select no roles, the condition will evaluate to TRUE for all users.'),
     );
     return parent::buildConfigurationForm($form, $form_state);
@@ -85,6 +85,19 @@ class UserRole extends ConditionPluginBase {
     }
     $user = $this->getContextValue('user');
     return (bool) array_intersect($this->configuration['roles'], $user->getRoles());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheContexts() {
+    // Optimize cache context, if a user cache context is provided, only use
+    // user.roles, since that's the only part this condition cares about.
+    $contexts = [];
+    foreach (parent::getCacheContexts() as $context) {
+      $contexts[] = $context == 'user' ? 'user.roles' : $context;
+    }
+    return $contexts;
   }
 
 }

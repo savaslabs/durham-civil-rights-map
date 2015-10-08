@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Plugin\ArgumentDefaultTest.
+ * Contains \Drupal\views\Tests\Plugin\ArgumentDefaultTest.
  */
 
 namespace Drupal\views\Tests\Plugin;
@@ -94,11 +94,11 @@ class ArgumentDefaultTest extends PluginTestBase {
     // Note, the undefined index error has two spaces after it.
     $error = array(
       '%type' => 'Notice',
-      '!message' => 'Undefined index:  ' . $argument_type,
+      '@message' => 'Undefined index:  ' . $argument_type,
       '%function' => 'views_handler_argument->validateOptionsForm()',
     );
-    $message = t('%type: !message in %function', $error);
-    $this->assertNoRaw($message, t('Did not find error message: !message.', array('!message' => $message)));
+    $message = t('%type: @message in %function', $error);
+    $this->assertNoRaw($message, format_string('Did not find error message: @message.', array('@message' => $message)));
   }
 
   /**

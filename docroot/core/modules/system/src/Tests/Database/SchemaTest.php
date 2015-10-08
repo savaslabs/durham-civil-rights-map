@@ -2,12 +2,13 @@
 
 /**
  * @file
- * Contains Drupal\system\Tests\Database\SchemaTest.
+ * Contains \Drupal\system\Tests\Database\SchemaTest.
  */
 
 namespace Drupal\system\Tests\Database;
 
 use Drupal\Core\Database\Database;
+use Drupal\Core\Database\SchemaException;
 use Drupal\Core\Database\SchemaObjectDoesNotExistException;
 use Drupal\Core\Database\SchemaObjectExistsException;
 use Drupal\simpletest\KernelTestBase;
@@ -49,6 +50,11 @@ class SchemaTest extends KernelTestBase {
           'default' => "'\"funky default'\"",
           'description' => 'Schema column description for string.',
         ),
+        'test_field_string_ascii'  => array(
+          'type' => 'varchar_ascii',
+          'length' => 255,
+          'description' => 'Schema column description for ASCII string.',
+        ),
       ),
     );
     db_create_table('test_table', $table_specification);
@@ -61,6 +67,21 @@ class SchemaTest extends KernelTestBase {
 
     // Assert that the column comment has been set.
     $this->checkSchemaComment($table_specification['fields']['test_field']['description'], 'test_table', 'test_field');
+
+    if (Database::getConnection()->databaseType() == 'mysql') {
+      // Make sure that varchar fields have the correct collation.
+      $columns = db_query('SHOW FULL COLUMNS FROM {test_table}');
+      foreach ($columns as $column) {
+        if ($column->Field == 'test_field_string') {
+          $string_check = ($column->Collation == 'utf8mb4_general_ci');
+        }
+        if ($column->Field == 'test_field_string_ascii') {
+          $string_ascii_check = ($column->Collation == 'ascii_general_ci');
+        }
+      }
+      $this->assertTrue(!empty($string_check), 'string field has the right collation.');
+      $this->assertTrue(!empty($string_ascii_check), 'ASCII string field has the right collation.');
+    }
 
     // An insert without a value for the column 'test_table' should fail.
     $this->assertFalse($this->tryInsert(), 'Insert without a default failed.');
@@ -79,7 +100,7 @@ class SchemaTest extends KernelTestBase {
     $index_exists = Database::getConnection()->schema()->indexExists('test_table', 'test_field');
     $this->assertIdentical($index_exists, FALSE, 'Fake index does not exists');
     // Add index.
-    db_add_index('test_table', 'test_field', array('test_field'));
+    db_add_index('test_table', 'test_field', array('test_field'), $table_specification);
     // Test for created index and test for the boolean result of indexExists().
     $index_exists = Database::getConnection()->schema()->indexExists('test_table', 'test_field');
     $this->assertIdentical($index_exists, TRUE, 'Index created.');
@@ -216,6 +237,141 @@ class SchemaTest extends KernelTestBase {
     }
     catch (\Exception $e) {}
     $this->assertTrue(db_table_exists('test_timestamp'), 'Table with database specific datatype was created.');
+  }
+
+  /**
+   * Tests that indexes on string fields are limited to 191 characters on MySQL.
+   *
+   * @see \Drupal\Core\Database\Driver\mysql\Schema::getNormalizedIndexes()
+   */
+  function testIndexLength() {
+    if (Database::getConnection()->databaseType() != 'mysql') {
+      return;
+    }
+    $table_specification = array(
+      'fields' => array(
+        'id'  => array(
+          'type' => 'int',
+          'default' => NULL,
+        ),
+        'test_field_text'  => array(
+          'type' => 'text',
+          'not null' => TRUE,
+        ),
+        'test_field_string_long'  => array(
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+        ),
+        'test_field_string_ascii_long'  => array(
+          'type' => 'varchar_ascii',
+          'length' => 255,
+        ),
+        'test_field_string_short'  => array(
+          'type' => 'varchar',
+          'length' => 128,
+          'not null' => TRUE,
+        ),
+      ),
+      'indexes' => array(
+        'test_regular' => array(
+          'test_field_text',
+          'test_field_string_long',
+          'test_field_string_ascii_long',
+          'test_field_string_short',
+        ),
+        'test_length' => array(
+          array('test_field_text', 128),
+          array('test_field_string_long', 128),
+          array('test_field_string_ascii_long', 128),
+          array('test_field_string_short', 128),
+        ),
+        'test_mixed' => array(
+          array('test_field_text', 200),
+          'test_field_string_long',
+          array('test_field_string_ascii_long', 200),
+          'test_field_string_short',
+        ),
+      ),
+    );
+    db_create_table('test_table_index_length', $table_specification);
+
+    $schema_object = Database::getConnection()->schema();
+
+    // Ensure expected exception thrown when adding index with missing info.
+    $expected_exception_message = "MySQL needs the 'test_field_text' field specification in order to normalize the 'test_regular' index";
+    $missing_field_spec = $table_specification;
+    unset($missing_field_spec['fields']['test_field_text']);
+    try {
+      $schema_object->addIndex('test_table_index_length', 'test_separate', [['test_field_text', 200]], $missing_field_spec);
+      $this->fail('SchemaException not thrown when adding index with missing information.');
+    }
+    catch (SchemaException $e) {
+      $this->assertEqual($expected_exception_message, $e->getMessage());
+    }
+
+    // Add a separate index.
+    $schema_object->addIndex('test_table_index_length', 'test_separate', [['test_field_text', 200]], $table_specification);
+    $table_specification_with_new_index = $table_specification;
+    $table_specification_with_new_index['indexes']['test_separate'] = [['test_field_text', 200]];
+
+    // Ensure that the exceptions of addIndex are thrown as expected.
+
+    try {
+      $schema_object->addIndex('test_table_index_length', 'test_separate', [['test_field_text', 200]], $table_specification);
+      $this->fail('\Drupal\Core\Database\SchemaObjectExistsException exception missed.');
+    }
+    catch (SchemaObjectExistsException $e) {
+      $this->pass('\Drupal\Core\Database\SchemaObjectExistsException thrown when index already exists.');
+    }
+
+    try {
+      $schema_object->addIndex('test_table_non_existing', 'test_separate', [['test_field_text', 200]], $table_specification);
+      $this->fail('\Drupal\Core\Database\SchemaObjectDoesNotExistException exception missed.');
+    }
+    catch (SchemaObjectDoesNotExistException $e) {
+      $this->pass('\Drupal\Core\Database\SchemaObjectDoesNotExistException thrown when index already exists.');
+    }
+
+    // Get index information.
+    $results = db_query('SHOW INDEX FROM {test_table_index_length}');
+    $expected_lengths = array(
+      'test_regular' => array(
+        'test_field_text' => 191,
+        'test_field_string_long' => 191,
+        'test_field_string_ascii_long' => NULL,
+        'test_field_string_short' => NULL,
+      ),
+      'test_length' => array(
+        'test_field_text' => 128,
+        'test_field_string_long' => 128,
+        'test_field_string_ascii_long' => 128,
+        'test_field_string_short' => NULL,
+      ),
+      'test_mixed' => array(
+        'test_field_text' => 191,
+        'test_field_string_long' => 191,
+        'test_field_string_ascii_long' => 200,
+        'test_field_string_short' => NULL,
+      ),
+      'test_separate' => array(
+        'test_field_text' => 191,
+      ),
+    );
+
+    // Count the number of columns defined in the indexes.
+    $column_count = 0;
+    foreach ($table_specification_with_new_index['indexes'] as $index) {
+      foreach ($index as $field) {
+        $column_count++;
+      }
+    }
+    $test_count = 0;
+    foreach ($results as $result) {
+      $this->assertEqual($result->Sub_part, $expected_lengths[$result->Key_name][$result->Column_name], 'Index length matches expected value.');
+      $test_count++;
+    }
+    $this->assertEqual($test_count, $column_count, 'Number of tests matches expected value.');
   }
 
   /**
@@ -484,7 +640,7 @@ class SchemaTest extends KernelTestBase {
   }
 
   /**
-   * Tests changing columns between numeric types.
+   * Tests changing columns between types.
    */
   function testSchemaChangeField() {
     $field_specs = array(
@@ -505,6 +661,27 @@ class SchemaTest extends KernelTestBase {
         $this->assertFieldChange($old_spec, $new_spec);
       }
     }
+
+    $field_specs = array(
+      array('type' => 'varchar_ascii', 'length' => '255'),
+      array('type' => 'varchar', 'length' => '255'),
+      array('type' => 'text'),
+      array('type' => 'blob', 'size' => 'big'),
+    );
+
+    foreach ($field_specs as $i => $old_spec) {
+      foreach ($field_specs as $j => $new_spec) {
+        if ($i === $j) {
+          // Do not change a field into itself.
+          continue;
+        }
+        // Note if the serialized data contained an object this would fail on
+        // Postgres.
+        // @see https://www.drupal.org/node/1031122
+        $this->assertFieldChange($old_spec, $new_spec, serialize(['string' => "This \n has \\\\ some backslash \"*string action.\\n"]));
+      }
+    }
+
   }
 
   /**
@@ -515,7 +692,7 @@ class SchemaTest extends KernelTestBase {
    * @param $new_spec
    *   The ending field specification.
    */
-  protected function assertFieldChange($old_spec, $new_spec) {
+  protected function assertFieldChange($old_spec, $new_spec, $test_data = NULL) {
     $table_name = 'test_table_' . ($this->counter++);
     $table_spec = array(
       'fields' => array(
@@ -533,8 +710,23 @@ class SchemaTest extends KernelTestBase {
     // Remove inserted rows.
     db_truncate($table_name)->execute();
 
+    if ($test_data) {
+      $id = db_insert($table_name)
+        ->fields(['test_field'], [$test_data])
+        ->execute();
+    }
+
     // Change the field.
     db_change_field($table_name, 'test_field', 'test_field', $new_spec);
+
+    if ($test_data) {
+      $field_value = db_select($table_name)
+        ->fields($table_name, ['test_field'])
+        ->condition('serial_column', $id)
+        ->execute()
+        ->fetchField();
+      $this->assertIdentical($field_value, $test_data);
+    }
 
     // Check the field was changed.
     $this->assertFieldCharacteristics($table_name, 'test_field', $new_spec);
@@ -542,4 +734,63 @@ class SchemaTest extends KernelTestBase {
     // Clean-up.
     db_drop_table($table_name);
   }
+
+  /**
+   * Tests the findTables() method.
+   */
+  public function testFindTables() {
+    // We will be testing with three tables, two of them using the default
+    // prefix and the third one with an individually specified prefix.
+
+    // Set up a new connection with different connection info.
+    $connection_info = Database::getConnectionInfo();
+
+    // Add per-table prefix to the second table.
+    $new_connection_info = $connection_info['default'];
+    $new_connection_info['prefix']['test_2_table'] = $new_connection_info['prefix']['default'] . '_shared_';
+    Database::addConnectionInfo('test', 'default', $new_connection_info);
+
+    Database::setActiveConnection('test');
+
+    // Create the tables.
+    $table_specification = [
+      'description' => 'Test table.',
+      'fields' => [
+        'id'  => [
+          'type' => 'int',
+          'default' => NULL,
+        ],
+      ],
+    ];
+    Database::getConnection()->schema()->createTable('test_1_table', $table_specification);
+    Database::getConnection()->schema()->createTable('test_2_table', $table_specification);
+    Database::getConnection()->schema()->createTable('the_third_table', $table_specification);
+
+    // Check the "all tables" syntax.
+    $tables = Database::getConnection()->schema()->findTables('%');
+    sort($tables);
+    $expected = [
+      // The 'config' table is added by
+      // \Drupal\simpletest\KernelTestBase::containerBuild().
+      'config',
+      'test_1_table',
+      // This table uses a per-table prefix, yet it is returned as un-prefixed.
+      'test_2_table',
+      'the_third_table',
+    ];
+    $this->assertEqual($tables, $expected, 'All tables were found.');
+
+    // Check the restrictive syntax.
+    $tables = Database::getConnection()->schema()->findTables('test_%');
+    sort($tables);
+    $expected = [
+      'test_1_table',
+      'test_2_table',
+    ];
+    $this->assertEqual($tables, $expected, 'Two tables were found.');
+
+    // Go back to the initial connection.
+    Database::setActiveConnection('default');
+  }
+
 }

@@ -88,10 +88,10 @@ class PathController extends ControllerBase {
       $row = array();
       // @todo Should Path module store leading slashes? See
       //   https://www.drupal.org/node/2430593.
-      $row['data']['alias'] = $this->l(Unicode::truncate($data->alias, 50, FALSE, TRUE), Url::fromUserInput('/' . $data->source, array(
+      $row['data']['alias'] = $this->l(Unicode::truncate($data->alias, 50, FALSE, TRUE), Url::fromUserInput($data->source, array(
         'attributes' => array('title' => $data->alias),
       )));
-      $row['data']['source'] = $this->l(Unicode::truncate($data->source, 50, FALSE, TRUE), Url::fromUserInput('/' . $data->source, array(
+      $row['data']['source'] = $this->l(Unicode::truncate($data->source, 50, FALSE, TRUE), Url::fromUserInput($data->source, array(
         'alias' => TRUE,
         'attributes' => array('title' => $data->source),
       )));
@@ -128,7 +128,7 @@ class PathController extends ControllerBase {
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $rows,
-      '#empty' => $this->t('No URL aliases available. <a href="@link">Add URL alias</a>.', array('@link' => $this->url('path.admin_add'))),
+      '#empty' => $this->t('No URL aliases available. <a href=":link">Add URL alias</a>.', array(':link' => $this->url('path.admin_add'))),
     );
     $build['path_pager'] = array('#type' => 'pager');
 

@@ -39,6 +39,8 @@ class ContactSitewideTest extends WebTestBase {
   protected function setUp() {
     parent::setUp();
     $this->drupalPlaceBlock('system_breadcrumb_block');
+    $this->drupalPlaceBlock('local_actions_block');
+    $this->drupalPlaceBlock('page_title_block');
   }
 
   /**
@@ -77,7 +79,7 @@ class ContactSitewideTest extends WebTestBase {
     // User form could not be changed or deleted.
     // Cannot use ::assertNoLinkByHref as it does partial url matching and with
     // field_ui enabled admin/structure/contact/manage/personal/fields exists.
-    // @todo: See https://drupal.org/node/2031223 for the above
+    // @todo: See https://www.drupal.org/node/2031223 for the above.
     $edit_link = $this->xpath('//a[@href=:href]', array(
       ':href' => \Drupal::url('entity.contact_form.edit_form', array('contact_form' => 'personal'))
     ));
@@ -124,11 +126,11 @@ class ContactSitewideTest extends WebTestBase {
     $this->assertText(t('Recipients field is required.'));
 
     // Test validation of max_length machine name.
-    $recipients = array('simpletest@example.com', 'simpletest2@example.com', 'simpletest3@example.com');
+    $recipients = array('simpletest&@example.com', 'simpletest2@example.com', 'simpletest3@example.com');
     $max_length = EntityTypeInterface::BUNDLE_MAX_LENGTH;
     $max_length_exceeded = $max_length + 1;
     $this->addContactForm($id = Unicode::strtolower($this->randomMachineName($max_length_exceeded)), $label = $this->randomMachineName($max_length_exceeded), implode(',', array($recipients[0])), '', TRUE);
-    $this->assertText(format_string('Machine-readable name cannot be longer than !max characters but is currently !exceeded characters long.', array('!max' => $max_length, '!exceeded' => $max_length_exceeded)));
+    $this->assertText(format_string('Machine-readable name cannot be longer than @max characters but is currently @exceeded characters long.', array('@max' => $max_length, '@exceeded' => $max_length_exceeded)));
     $this->addContactForm($id = Unicode::strtolower($this->randomMachineName($max_length)), $label = $this->randomMachineName($max_length), implode(',', array($recipients[0])), '', TRUE);
     $this->assertRaw(t('Contact form %label has been added.', array('%label' => $label)));
 
@@ -143,6 +145,10 @@ class ContactSitewideTest extends WebTestBase {
 
     // Make sure the newly created form is included in the list of forms.
     $this->assertNoUniqueText($label, 'New form included in forms list.');
+
+    // Ensure that the recipient email is escaped on the listing.
+    $this->drupalGet('admin/structure/contact');
+    $this->assertEscaped($recipients[0]);
 
     // Test update contact form.
     $this->updateContactForm($id, $label = $this->randomMachineName(16), $recipients_str = implode(',', array($recipients[0], $recipients[1])), $reply = $this->randomMachineName(30), FALSE);
@@ -231,7 +237,7 @@ class ContactSitewideTest extends WebTestBase {
     }
     // Submit contact form one over limit.
     $this->submitContact($this->randomMachineName(16), $recipients[0], $this->randomMachineName(16), $id, $this->randomMachineName(64));
-    $this->assertRaw(t('You cannot send more than %number messages in @interval. Try again later.', array('%number' => $this->config('contact.settings')->get('flood.limit'), '@interval' => \Drupal::service('date.formatter')->formatInterval(600))));
+    $this->assertRaw(t('You cannot send more than %number messages in 10 min. Try again later.', array('%number' => $this->config('contact.settings')->get('flood.limit'))));
 
     // Test listing controller.
     $this->drupalLogin($admin_user);
@@ -250,10 +256,17 @@ class ContactSitewideTest extends WebTestBase {
     // Test field UI and field integration.
     $this->drupalGet('admin/structure/contact');
 
+    $view_link = $this->xpath('//table/tbody/tr/td/a[contains(@href, :href) and text()=:text]', [
+      ':href' => \Drupal::url('entity.contact_form.canonical', ['contact_form' => $contact_form]),
+      ':text' => $label,
+      ]
+    );
+    $this->assertTrue(!empty($view_link), 'Contact listing links to contact form.');
+
     // Find out in which row the form we want to add a field to is.
     $i = 0;
     foreach($this->xpath('//table/tbody/tr') as $row) {
-      if (((string)$row->td[0]) == $label) {
+      if (((string) $row->td[0]->a) == $label) {
         break;
       }
       $i++;

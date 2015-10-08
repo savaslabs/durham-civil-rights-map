@@ -95,7 +95,7 @@ class SystemManager {
   /**
    * Checks for requirement severity.
    *
-   * @return boolean
+   * @return bool
    *   Returns the status of the system.
    */
   public function checkRequirements() {
@@ -119,7 +119,7 @@ class SystemManager {
     usort($requirements, function($a, $b) {
       if (!isset($a['weight'])) {
         if (!isset($b['weight'])) {
-          return strcmp($a['title'], $b['title']);
+          return strcasecmp($a['title'], $b['title']);
         }
         return -$b['weight'];
       }
@@ -200,6 +200,14 @@ class SystemManager {
     );
     $tree = $this->menuTree->transform($tree, $manipulators);
     foreach ($tree as $key => $element) {
+      // Only render accessible links.
+      if (!$element->access->isAllowed()) {
+        // @todo Bubble cacheability metadata of both accessible and
+        //   inaccessible links. Currently made impossible by the way admin
+        //   blocks are rendered.
+        continue;
+      }
+
       /** @var $link \Drupal\Core\Menu\MenuLinkInterface */
       $link = $element->link;
       $content[$key]['title'] = $link->getTitle();

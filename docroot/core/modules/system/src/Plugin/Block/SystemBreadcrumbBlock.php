@@ -74,23 +74,7 @@ class SystemBreadcrumbBlock extends BlockBase implements ContainerFactoryPluginI
    * {@inheritdoc}
    */
   public function build() {
-    $breadcrumb = $this->breadcrumbManager->build($this->routeMatch);
-    if (!empty($breadcrumb)) {
-      // $breadcrumb is expected to be an array of rendered breadcrumb links.
-      return array(
-        '#theme' => 'breadcrumb',
-        '#links' => $breadcrumb,
-      );
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   *
-   * @todo Make cacheable as part of https://drupal.org/node/1805054
-   */
-  public function getCacheMaxAge() {
-    return 0;
+    return $this->breadcrumbManager->build($this->routeMatch)->toRenderable();
   }
 
 }

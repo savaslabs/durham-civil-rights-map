@@ -2,13 +2,14 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Plugin\CacheTest.
+ * Contains \Drupal\views\Tests\Plugin\CacheTest.
  */
 
 namespace Drupal\views\Tests\Plugin;
 
+use Drupal\Core\Render\RenderContext;
 use Drupal\node\Entity\Node;
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 use Drupal\views_test_data\Plugin\views\filter\FilterTest as FilterPlugin;
 
@@ -18,7 +19,7 @@ use Drupal\views_test_data\Plugin\views\filter\FilterTest as FilterPlugin;
  * @group views
  * @see views_plugin_cache
  */
-class CacheTest extends ViewUnitTestBase {
+class CacheTest extends ViewKernelTestBase {
 
   /**
    * Views used by this test.
@@ -43,6 +44,9 @@ class CacheTest extends ViewUnitTestBase {
     $this->installEntitySchema('node');
     $this->installEntitySchema('taxonomy_term');
     $this->installEntitySchema('user');
+
+    // Setup the current time properly.
+    \Drupal::request()->server->set('REQUEST_TIME', time());
   }
 
   /**
@@ -276,19 +280,27 @@ class CacheTest extends ViewUnitTestBase {
       )
     ));
 
-    $output = $view->preview();
-    \Drupal::service('renderer')->render($output);
+    $output = $view->buildRenderable();
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = \Drupal::service('renderer');
+    $renderer->executeInRenderContext(new RenderContext(), function () use (&$output, $renderer) {
+      return $renderer->render($output);
+    });
+
     unset($view->pre_render_called);
     $view->destroy();
 
     $view->setDisplay();
-    $output = $view->preview();
-    \Drupal::service('renderer')->render($output);
+    $output = $view->buildRenderable();
+    $renderer->executeInRenderContext(new RenderContext(), function () use (&$output, $renderer) {
+      return $renderer->render($output);
+    });
+
     $this->assertTrue(in_array('views_test_data/test', $output['#attached']['library']), 'Make sure libraries are added for cached views.');
     $this->assertEqual(['foo' => 'bar'], $output['#attached']['drupalSettings'], 'Make sure drupalSettings are added for cached views.');
     // Note: views_test_data_views_pre_render() adds some cache tags.
     $this->assertEqual(['config:views.view.test_cache_header_storage', 'views_test_data:1'], $output['#cache']['tags']);
-    $this->assertEqual(['views_test_data_post_render_cache' => [['foo' => 'bar']]], $output['#post_render_cache']);
+    $this->assertEqual(['non-existing-placeholder-just-for-testing-purposes' => ['#lazy_builder' => ['views_test_data_placeholders', ['bar']]]], $output['#attached']['placeholders']);
     $this->assertFalse(!empty($view->build_info['pre_render_called']), 'Make sure hook_views_pre_render is not called for the cached view.');
   }
 
