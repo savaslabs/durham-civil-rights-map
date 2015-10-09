@@ -1,6 +1,6 @@
 uuid: 4daefb36-02eb-4504-b000-e98d7f9de77b
 langcode: en
-status: true
+status: false
 dependencies:
   module:
     - system
@@ -8,7 +8,7 @@ dependencies:
     - bartik
 id: bartik_messages
 theme: bartik
-region: messages
+region: '-1'
 weight: 0
 provider: null
 plugin: system_messages_block

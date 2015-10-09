@@ -1,6 +1,6 @@
 uuid: 4369a422-e8a7-4446-8316-229a01745e4f
 langcode: en
-status: true
+status: false
 dependencies:
   module:
     - system
@@ -8,7 +8,7 @@ dependencies:
     - seven
 id: seven_messages
 theme: seven
-region: messages
+region: '-1'
 weight: 0
 provider: null
 plugin: system_messages_block
