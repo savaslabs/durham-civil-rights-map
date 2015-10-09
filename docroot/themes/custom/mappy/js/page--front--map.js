@@ -51,7 +51,7 @@
     }
   });
 
-  $.getJSON('/points', function (data) {
+  $.getJSON('/points?_format=json', function (data) {
     addDataToMap(data, map, new pmpIcon);
     searchCtrl.indexFeatures(data, ['title_1', 'address_text', 'description', 'field_tags']);
   });
