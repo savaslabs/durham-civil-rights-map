@@ -68,7 +68,7 @@ class GeofieldDefaultFormatter extends FormatterBase {
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $elements = array();
     \Drupal::service('geophp.geophp');
 

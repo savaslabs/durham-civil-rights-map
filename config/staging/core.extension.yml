@@ -22,9 +22,7 @@ module:
   help: 0
   history: 0
   image: 0
-  jssor: 0
   kint: 0
-  leaflet: 0
   link: 0
   menu_ui: 0
   node: 0
@@ -37,7 +35,6 @@ module:
   search: 0
   serialization: 0
   shortcut: 0
-  stage_file_proxy: 0
   system: 0
   taxonomy: 0
   text: 0

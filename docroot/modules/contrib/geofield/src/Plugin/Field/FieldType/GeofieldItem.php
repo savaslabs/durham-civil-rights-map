@@ -120,8 +120,8 @@ class GeofieldItem extends FieldItemBase {
    */
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
     $properties['value'] = DataDefinition::create('string')
-      ->setLabel(t('Geometry'))
-      ->addConstraint('GeoType', []);
+      ->setLabel(t('Geometry'));
+     // ->addConstraint('GeoConstraint', []);
 
     $properties['geo_type'] = DataDefinition::create('string')
       ->setLabel(t('Geometry Type'));
