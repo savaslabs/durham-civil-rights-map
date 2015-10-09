@@ -654,17 +654,3 @@ $config_directories['temp'] = '../config/temp';
 if (file_exists(__DIR__ . '/settings.local.php')) {
   include __DIR__ . '/settings.local.php';
 }
-
-$databases['default']['default'] = array (
-  'database' => 'paulimurray_drupal',
-  'username' => 'root',
-  'password' => '',
-  'prefix' => '',
-  'host' => 'localhost',
-  'port' => '3306',
-  'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
-  'driver' => 'mysql',
-);
-$config_directories['sync'] = 'sites/default/files/config_C439MPG6GwOKWUcVhLqc2qTsH1M04SoFGKKr7q51ngV_y_B4OyLYBIpyC09uDA8WkZIUMnjusQ/sync';
-
-ini_set('always_populate_raw_post_data', -1);
