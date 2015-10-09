@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Database\SelectTableSortDefaultTest.
+ * Contains \Drupal\system\Tests\Database\SelectTableSortDefaultTest.
  */
 
 namespace Drupal\system\Tests\Database;
@@ -71,7 +71,10 @@ class SelectTableSortDefaultTest extends DatabaseWebTestBase {
   }
 
   /**
-   * Confirms that no error is thrown if no sort is set in a tableselect.
+   * Confirms that tableselect is rendered without error.
+   *
+   * Specifically that no sort is set in a tableselect, and that header links
+   * are correct.
    */
   function testTableSortDefaultSort() {
     $this->drupalGet('database_test/tablesort_default_sort');
@@ -80,5 +83,10 @@ class SelectTableSortDefaultTest extends DatabaseWebTestBase {
     // because if there were any fatal errors or exceptions in displaying the
     // sorted table, it would not print the table.
     $this->assertText(t('Username'));
+
+    // Verify that the header links are built properly.
+    $this->assertLinkByHref('database_test/tablesort_default_sort');
+    $this->assertPattern('/\<a.*title\=\"' . t('sort by Username') . '\".*\>/');
   }
+
 }

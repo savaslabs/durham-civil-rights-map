@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\file\Tests\FileManagedFileElementTest.
+ * Contains \Drupal\file\Tests\FileManagedFileElementTest.
  */
 
 namespace Drupal\file\Tests;
@@ -36,6 +36,18 @@ class FileManagedFileElementTest extends FileFieldTestBase {
           // Submit without a file.
           $this->drupalPostForm($path, array(), t('Save'));
           $this->assertRaw(t('The file ids are %fids.', array('%fids' => implode(',', array()))), 'Submitted without a file.');
+
+          // Submit with a file, but with an invalid form token. Ensure the file
+          // was not saved.
+          $last_fid_prior = $this->getLastFileId();
+          $edit = [
+            $file_field_name => drupal_realpath($test_file->getFileUri()),
+            'form_token' => 'invalid token',
+          ];
+          $this->drupalPostForm($path, $edit, t('Save'));
+          $this->assertText('The form has become outdated. Copy any unsaved work in the form below');
+          $last_fid = $this->getLastFileId();
+          $this->assertEqual($last_fid_prior, $last_fid, 'File was not saved when uploaded with an invalid form token.');
 
           // Submit a new file, without using the Upload button.
           $last_fid_prior = $this->getLastFileId();
@@ -142,4 +154,26 @@ class FileManagedFileElementTest extends FileFieldTestBase {
     $this->assertNoFieldByXpath('//input[@name="nested[file][file_' . $fid_list[0] . '][selected]"]', NULL, 'An individual file can be deleted from a multiple file element.');
     $this->assertFieldByXpath('//input[@name="nested[file][file_' . $fid_list[1] . '][selected]"]', NULL, 'Second individual file not deleted when the first file is deleted from a multiple file element.');
   }
+
+  /**
+   * Ensure that warning is shown if file on the field has been removed.
+   */
+  public function testManagedFileRemoved() {
+    $this->drupalGet('file/test/1/0/1');
+    $test_file = $this->getTestFile('text');
+    $file_field_name = 'files[nested_file][]';
+
+    $edit = [$file_field_name => drupal_realpath($test_file->getFileUri())];
+    $this->drupalPostForm(NULL, $edit, t('Upload'));
+
+    $fid = $this->getLastFileId();
+    $file = \Drupal::entityManager()->getStorage('file')->load($fid);
+    $file->delete();
+
+    $this->drupalPostForm(NULL, $edit, t('Upload'));
+    // We expect the title 'Managed <em>file & butter</em>' which got escaped
+    // via a t() call before.
+    $this->assertRaw('The file referenced by the Managed <em>file &amp; butter</em> field does not exist.');
+  }
+
 }

@@ -6,12 +6,13 @@
 
 namespace Drupal\Core\Field;
 
-use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Component\Utility\Xss;
-
 /**
  * Useful methods when dealing with displaying allowed tags.
+ *
+ * @deprecated in Drupal 8.0.x, will be removed before Drupal 9.0.0. Use
+ *   \Drupal\Core\Field\FieldFilteredMarkup instead.
+ *
+ * @see \Drupal\Core\Field\FieldFilteredMarkup
  */
 trait AllowedTagsXssTrait {
 
@@ -23,7 +24,7 @@ trait AllowedTagsXssTrait {
    *
    * Used for items entered by administrators, like field descriptions, allowed
    * values, where some (mainly inline) mark-up may be desired (so
-   * \Drupal\Component\Utility\SafeMarkup::checkPlain() is not acceptable).
+   * \Drupal\Component\Utility\Html::escape() is not acceptable).
    *
    * @param string $string
    *   The string with raw HTML in it.
@@ -33,21 +34,21 @@ trait AllowedTagsXssTrait {
    *   valid UTF-8.
    */
   public function fieldFilterXss($string) {
-    return SafeMarkup::set(Html::normalize(Xss::filter($string, $this->allowedTags())));
+   return FieldFilteredMarkup::create($string);
   }
 
   /**
    * Returns a list of tags allowed by AllowedTagsXssTrait::fieldFilterXss().
    */
   public function allowedTags() {
-    return array('a', 'b', 'big', 'code', 'del', 'em', 'i', 'ins',  'pre', 'q', 'small', 'span', 'strong', 'sub', 'sup', 'tt', 'ol', 'ul', 'li', 'p', 'br', 'img');
+    return FieldFilteredMarkup::allowedTags();
   }
 
   /**
    * Returns a human-readable list of allowed tags for display in help texts.
    */
   public function displayAllowedTags() {
-    return '<' . implode('> <', $this->allowedTags()) . '>';
+    return FieldFilteredMarkup::displayAllowedTags();
   }
 
 }

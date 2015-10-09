@@ -8,6 +8,7 @@
 namespace Drupal\Core\Entity;
 
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\RefinableCacheableDependencyTrait;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Unicode;
@@ -23,6 +24,8 @@ use Drupal\Core\Url;
  * Defines a base entity class.
  */
 abstract class Entity implements EntityInterface {
+
+  use RefinableCacheableDependencyTrait;
 
   use DependencySerializationTrait {
     __sleep as traitSleep;
@@ -67,7 +70,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Returns the entity manager.
+   * Gets the entity manager.
    *
    * @return \Drupal\Core\Entity\EntityManagerInterface
    */
@@ -76,7 +79,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Returns the language manager.
+   * Gets the language manager.
    *
    * @return \Drupal\Core\Language\LanguageManagerInterface
    */
@@ -85,7 +88,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Returns the UUID generator.
+   * Gets the UUID generator.
    *
    * @return \Drupal\Component\Uuid\UuidInterface
    */
@@ -192,10 +195,7 @@ abstract class Entity implements EntityInterface {
         $uri = call_user_func($uri_callback, $this);
       }
       else {
-        throw new UndefinedLinkTemplateException(SafeMarkup::format('No link template "@rel" found for the "@entity_type" entity type', array(
-          '@rel' => $rel,
-          '@entity_type' => $this->getEntityTypeId(),
-        )));
+        throw new UndefinedLinkTemplateException("No link template '$rel' found for the '{$this->getEntityTypeId()}' entity type");
       }
     }
 
@@ -204,19 +204,16 @@ abstract class Entity implements EntityInterface {
     $uri
       ->setOption('entity_type', $this->getEntityTypeId())
       ->setOption('entity', $this);
+
+    // Display links by default based on the current language.
+    if ($rel !== 'collection') {
+      $options += ['language' => $this->language()];
+    }
+
     $uri_options = $uri->getOptions();
     $uri_options += $options;
-    return $uri->setOptions($uri_options);
-  }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getSystemPath($rel = 'canonical') {
-    if ($this->hasLinkTemplate($rel) && $uri = $this->urlInfo($rel)) {
-      return $uri->getInternalPath();
-    }
-    return '';
+    return $uri->setOptions($uri_options);
   }
 
   /**
@@ -228,7 +225,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Returns an array link templates.
+   * Gets an array link templates.
    *
    * @return array
    *   An array of link templates containing paths.
@@ -267,7 +264,7 @@ abstract class Entity implements EntityInterface {
   }
 
   /**
-   * Returns an array of placeholders for this entity.
+   * Gets an array of placeholders for this entity.
    *
    * Individual entity classes may override this method to add additional
    * placeholders if desired. If so, they should be sure to replicate the
@@ -314,22 +311,25 @@ abstract class Entity implements EntityInterface {
         ->getAccessControlHandler($this->entityTypeId)
         ->createAccess($this->bundle(), $account, [], $return_as_object);
     }
-    return  $this->entityManager()
+    return $this->entityManager()
       ->getAccessControlHandler($this->entityTypeId)
-      ->access($this, $operation, LanguageInterface::LANGCODE_DEFAULT, $account, $return_as_object);
+      ->access($this, $operation, $account, $return_as_object);
   }
 
   /**
    * {@inheritdoc}
    */
   public function language() {
-    $langcode = $this->{$this->getEntityType()->getKey('langcode')};
-    $language = $this->languageManager()->getLanguage($langcode);
-    if (!$language) {
-      // Make sure we return a proper language object.
-      $langcode = $this->langcode ?: LanguageInterface::LANGCODE_NOT_SPECIFIED;
-      $language = new Language(array('id' => $langcode));
+    if ($key = $this->getEntityType()->getKey('langcode')) {
+      $langcode = $this->$key;
+      $language = $this->languageManager()->getLanguage($langcode);
+      if ($language) {
+        return $language;
+      }
     }
+    // Make sure we return a proper language object.
+    $langcode = !empty($this->langcode) ? $this->langcode : LanguageInterface::LANGCODE_NOT_SPECIFIED;
+    $language = new Language(array('id' => $langcode));
     return $language;
   }
 
@@ -381,12 +381,7 @@ abstract class Entity implements EntityInterface {
     if ($this->getEntityType()->getBundleOf()) {
       // Throw an exception if the bundle ID is longer than 32 characters.
       if (Unicode::strlen($this->id()) > EntityTypeInterface::BUNDLE_MAX_LENGTH) {
-        throw new ConfigEntityIdLengthException(SafeMarkup::format(
-          'Attempt to create a bundle with an ID longer than @max characters: @id.', array(
-            '@max' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
-            '@id' => $this->id(),
-          )
-        ));
+        throw new ConfigEntityIdLengthException("Attempt to create a bundle with an ID longer than " . EntityTypeInterface::BUNDLE_MAX_LENGTH . " characters: $this->id().");
       }
     }
   }
@@ -440,22 +435,36 @@ abstract class Entity implements EntityInterface {
    * {@inheritdoc}
    */
   public function getCacheContexts() {
-    return [];
+    return $this->cacheContexts;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getCacheTags() {
-    // @todo Add bundle-specific listing cache tag? https://drupal.org/node/2145751
+  public function getCacheTagsToInvalidate() {
+    // @todo Add bundle-specific listing cache tag?
+    //   https://www.drupal.org/node/2145751
+    if ($this->isNew()) {
+      return [];
+    }
     return [$this->entityTypeId . ':' . $this->id()];
   }
 
   /**
    * {@inheritdoc}
    */
+  public function getCacheTags() {
+    if ($this->cacheTags) {
+      return Cache::mergeTags($this->getCacheTagsToInvalidate(), $this->cacheTags);
+    }
+    return $this->getCacheTagsToInvalidate();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getCacheMaxAge() {
-    return Cache::PERMANENT;
+    return $this->cacheMaxAge;
   }
 
   /**
@@ -510,7 +519,7 @@ abstract class Entity implements EntityInterface {
     }
     if ($update) {
       // An existing entity was updated, also invalidate its unique cache tag.
-      $tags = Cache::mergeTags($tags, $this->getCacheTags());
+      $tags = Cache::mergeTags($tags, $this->getCacheTagsToInvalidate());
     }
     Cache::invalidateTags($tags);
   }
@@ -531,7 +540,7 @@ abstract class Entity implements EntityInterface {
       // other pages than the one it's on. The one it's on is handled by its own
       // cache tag, but subsequent list pages would not be invalidated, hence we
       // must invalidate its list cache tags as well.)
-      $tags = Cache::mergeTags($tags, $entity->getCacheTags());
+      $tags = Cache::mergeTags($tags, $entity->getCacheTagsToInvalidate());
     }
     Cache::invalidateTags($tags);
   }

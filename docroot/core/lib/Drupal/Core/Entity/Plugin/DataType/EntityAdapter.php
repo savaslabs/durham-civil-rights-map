@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Entity\Plugin\DataType;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\TypedData\EntityDataDefinition;
@@ -81,12 +80,12 @@ class EntityAdapter extends TypedData implements \IteratorAggregate, ComplexData
    */
   public function get($property_name) {
     if (!isset($this->entity)) {
-      throw new MissingDataException(SafeMarkup::format('Unable to get property @name as no entity has been provided.', array('@name' => $property_name)));
+      throw new MissingDataException("Unable to get property $property_name as no entity has been provided.");
     }
     if (!$this->entity instanceof FieldableEntityInterface) {
       // @todo: Add support for config entities in
       // https://www.drupal.org/node/1818574.
-      throw new \InvalidArgumentException(SafeMarkup::format('Unable to get unknown property @name.', array('@name' => $property_name)));
+      throw new \InvalidArgumentException("Unable to get unknown property $property_name.");
     }
     // This will throw an exception for unknown fields.
     return $this->entity->get($property_name);
@@ -97,12 +96,12 @@ class EntityAdapter extends TypedData implements \IteratorAggregate, ComplexData
    */
   public function set($property_name, $value, $notify = TRUE) {
     if (!isset($this->entity)) {
-      throw new MissingDataException(SafeMarkup::format('Unable to set property @name as no entity has been provided.', array('@name' => $property_name)));
+      throw new MissingDataException("Unable to set property $property_name as no entity has been provided.");
     }
     if (!$this->entity instanceof FieldableEntityInterface) {
       // @todo: Add support for config entities in
       // https://www.drupal.org/node/1818574.
-      throw new \InvalidArgumentException(SafeMarkup::format('Unable to set unknown property @name.', array('@name' => $property_name)));
+      throw new \InvalidArgumentException("Unable to set unknown property $property_name.");
     }
     // This will throw an exception for unknown fields.
     $this->entity->set($property_name, $value, $notify);
@@ -114,7 +113,7 @@ class EntityAdapter extends TypedData implements \IteratorAggregate, ComplexData
    */
   public function getProperties($include_computed = FALSE) {
     if (!isset($this->entity)) {
-      throw new MissingDataException(SafeMarkup::format('Unable to get properties as no entity has been provided.'));
+      throw new MissingDataException('Unable to get properties as no entity has been provided.');
     }
     if (!$this->entity instanceof FieldableEntityInterface) {
       // @todo: Add support for config entities in
@@ -129,7 +128,7 @@ class EntityAdapter extends TypedData implements \IteratorAggregate, ComplexData
    */
   public function toArray() {
     if (!isset($this->entity)) {
-      throw new MissingDataException(SafeMarkup::format('Unable to get property values as no entity has been provided.'));
+      throw new MissingDataException('Unable to get property values as no entity has been provided.');
     }
     return $this->entity->toArray();
   }
@@ -149,13 +148,6 @@ class EntityAdapter extends TypedData implements \IteratorAggregate, ComplexData
       // Let the entity know of any changes.
       $this->entity->onChange($property_name);
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getDataDefinition() {
-    return $this->definition;
   }
 
   /**

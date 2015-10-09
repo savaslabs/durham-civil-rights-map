@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\views\Tests\Handler\FieldFieldAccessTest.
+ * Contains \Drupal\views\Tests\Handler\FieldFieldAccessTestBase.
  */
 
 namespace Drupal\views\Tests\Handler;
@@ -10,13 +10,13 @@ namespace Drupal\views\Tests\Handler;
 use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
 use Drupal\views\Entity\View;
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 
 /**
  * Provides a base class for base field access in views.
  */
-abstract class FieldFieldAccessTestBase extends ViewUnitTestBase {
+abstract class FieldFieldAccessTestBase extends ViewKernelTestBase {
 
   /**
    * Stores an user entity with access to fields.
@@ -125,7 +125,7 @@ abstract class FieldFieldAccessTestBase extends ViewUnitTestBase {
     $account_switcher->switchTo($this->userWithAccess);
     $executable = Views::getView($view_id);
     $build = $executable->preview();
-    $this->setRawContent($renderer->render($build));
+    $this->setRawContent($renderer->renderRoot($build));
 
     $this->assertText($field_content);
     $this->assertTrue(isset($executable->field[$field_name]));
@@ -133,7 +133,7 @@ abstract class FieldFieldAccessTestBase extends ViewUnitTestBase {
     $account_switcher->switchTo($this->userWithoutAccess);
     $executable = Views::getView($view_id);
     $build = $executable->preview();
-    $this->setRawContent($renderer->render($build));
+    $this->setRawContent($renderer->renderRoot($build));
 
     $this->assertNoText($field_content);
     $this->assertFalse(isset($executable->field[$field_name]));

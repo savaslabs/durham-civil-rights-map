@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Plugin\views\pager\Full.
+ * Contains \Drupal\views\Plugin\views\pager\Full.
  */
 
 namespace Drupal\views\Plugin\views\pager;
@@ -34,8 +34,8 @@ class Full extends SqlBase {
     // Use the same default quantity that core uses by default.
     $options['quantity'] = array('default' => 9);
 
-    $options['tags']['contains']['first'] = array('default' => $this->t('« first'));
-    $options['tags']['contains']['last'] = array('default' => $this->t('last »'));
+    $options['tags']['contains']['first'] = array('default' => $this->t('« First'));
+    $options['tags']['contains']['last'] = array('default' => $this->t('Last »'));
 
     return $options;
   }
@@ -96,6 +96,7 @@ class Full extends SqlBase {
       '#element' => $this->options['id'],
       '#parameters' => $input,
       '#quantity' => $this->options['quantity'],
+      '#route_name' => !empty($this->view->live_preview) ? '<current>' : '<none>',
     );
   }
 

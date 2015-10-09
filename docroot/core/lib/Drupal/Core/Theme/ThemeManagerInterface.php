@@ -18,15 +18,16 @@ interface ThemeManagerInterface {
   /**
    * Generates themed output.
    *
+   * See the @link themeable Default theme implementations topic @endlink for
+   * details.
+   *
    * @param string $hook
    *   The name of the theme hook to call.
    * @param array $variables
    *   An associative array of theme variables.
    *
-   * @return string
-   *   The rendered output.
-   *
-   * @see _theme
+   * @return string|\Drupal\Component\Render\MarkupInterface
+   *   The rendered output, or a Markup object.
    */
   public function render($hook, array $variables);
 

@@ -1,12 +1,14 @@
 <?php
 
 /**
+ * @file
  * Contains \Drupal\Core\Asset\CssOptimizer.
  */
 
 namespace Drupal\Core\Asset;
 
 use Drupal\Core\Asset\AssetOptimizerInterface;
+use Drupal\Component\Utility\Unicode;
 
 /**
  * Optimizes a CSS asset.
@@ -125,6 +127,19 @@ class CssOptimizer implements AssetOptimizerInterface {
     // but are merely there to disable certain module CSS files.
     $content = '';
     if ($contents = @file_get_contents($file)) {
+      // If a BOM is found, convert the file to UTF-8, then use substr() to
+      // remove the BOM from the result.
+      if ($encoding = (Unicode::encodingFromBOM($contents))) {
+        $contents = Unicode::substr(Unicode::convertToUtf8($contents, $encoding), 1);
+      }
+      // If no BOM, check for fallback encoding. Per CSS spec the regex is very strict.
+      elseif (preg_match('/^@charset "([^"]+)";/', $contents, $matches)) {
+        if ($matches[1] !== 'utf-8' && $matches[1] !== 'UTF-8') {
+          $contents = substr($contents, strlen($matches[0]));
+          $contents = Unicode::convertToUtf8($contents, $matches[1]);
+        }
+      }
+
       // Return the processed stylesheet.
       $content = $this->processCss($contents, $_optimize);
     }
@@ -162,8 +177,7 @@ class CssOptimizer implements AssetOptimizerInterface {
     $directory = $directory == '.' ? '' : $directory .'/';
 
     // Alter all internal url() paths. Leave external paths alone. We don't need
-    // to normalize absolute paths here (i.e. remove folder/... segments)
-    // because that will be done later.
+    // to normalize absolute paths here because that will be done later.
     return preg_replace('/url\(\s*([\'"]?)(?![a-z]+:|\/+)([^\'")]+)([\'"]?)\s*\)/i', 'url(\1' . $directory . '\2\3)', $file);
   }
 

@@ -99,7 +99,7 @@ class UserPasswordForm extends FormBase {
     else {
       $form['mail'] = array(
         '#prefix' => '<p>',
-        '#markup' => $this->t('Password reset instructions will be sent to your registered e-mail address.'),
+        '#markup' => $this->t('Password reset instructions will be sent to your registered email address.'),
         '#suffix' => '</p>',
       );
       $form['name']['#default_value'] = $this->getRequest()->query->get('name');
@@ -116,17 +116,23 @@ class UserPasswordForm extends FormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $name = trim($form_state->getValue('name'));
     // Try to load by email.
-    $users = $this->userStorage->loadByProperties(array('mail' => $name, 'status' => '1'));
+    $users = $this->userStorage->loadByProperties(array('mail' => $name));
     if (empty($users)) {
       // No success, try to load by name.
-      $users = $this->userStorage->loadByProperties(array('name' => $name, 'status' => '1'));
+      $users = $this->userStorage->loadByProperties(array('name' => $name));
     }
     $account = reset($users);
     if ($account && $account->id()) {
-      $form_state->setValueForElement(array('#parents' => array('account')), $account);
+      // Blocked accounts cannot request a new password.
+      if (!$account->isActive()) {
+        $form_state->setErrorByName('name', $this->t('%name is blocked or has not been activated yet.', array('%name' => $name)));
+      }
+      else {
+        $form_state->setValueForElement(array('#parents' => array('account')), $account);
+      }
     }
     else {
-      $form_state->setErrorByName('name', $this->t('Sorry, %name is not recognized as a username or an email address.', array('%name' => $name)));
+      $form_state->setErrorByName('name', $this->t('%name is not recognized as a username or an email address.', array('%name' => $name)));
     }
   }
 

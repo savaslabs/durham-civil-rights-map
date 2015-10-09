@@ -73,6 +73,15 @@ class LibraryDiscoveryParserTest extends UnitTestCase {
 
     $this->moduleHandler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
     $this->themeManager = $this->getMock('Drupal\Core\Theme\ThemeManagerInterface');
+    $mock_active_theme = $this->getMockBuilder('Drupal\Core\Theme\ActiveTheme')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $mock_active_theme->expects($this->any())
+      ->method('getLibrariesOverride')
+      ->willReturn([]);
+    $this->themeManager->expects($this->any())
+      ->method('getActiveTheme')
+      ->willReturn($mock_active_theme);
     $this->libraryDiscoveryParser = new TestLibraryDiscoveryParser($this->root, $this->moduleHandler, $this->themeManager);
   }
 
@@ -478,7 +487,7 @@ class LibraryDiscoveryParserTest extends UnitTestCase {
     $this->assertTrue(isset($library['license']));
     $default_license = array(
       'name' => 'GNU-GPL-2.0-or-later',
-      'url' => 'https://drupal.org/licensing/faq',
+      'url' => 'https://www.drupal.org/licensing/faq',
       'gpl-compatible' => TRUE,
     );
     $this->assertEquals($library['license'], $default_license);

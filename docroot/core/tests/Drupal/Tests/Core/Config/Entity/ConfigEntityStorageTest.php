@@ -7,6 +7,7 @@
 
 namespace Drupal\Tests\Core\Config\Entity {
 
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
@@ -22,7 +23,7 @@ class ConfigEntityStorageTest extends UnitTestCase {
   /**
    * The entity type.
    *
-   * @var \Drupal\Core\Entity\EntityTypeInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Config\Entity\ConfigEntityTypeInterface|\PHPUnit_Framework_MockObject_MockObject
    */
   protected $entityType;
 
@@ -104,6 +105,13 @@ class ConfigEntityStorageTest extends UnitTestCase {
   protected $configManager;
 
   /**
+   * The cache contexts manager.
+   *
+   * @var \Drupal\Core\Cache\Context\CacheContextsManager|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $cacheContextsManager;
+
+  /**
    * {@inheritdoc}
    *
    * @covers ::__construct
@@ -111,7 +119,7 @@ class ConfigEntityStorageTest extends UnitTestCase {
   protected function setUp() {
     parent::setUp();
 
-    $this->entityType = $this->getMock('Drupal\Core\Entity\EntityTypeInterface');
+    $this->entityType = $this->getMock('Drupal\Core\Config\Entity\ConfigEntityTypeInterface');
     $this->entityTypeId = 'test_entity_type';
     $this->entityType->expects($this->any())
       ->method('getKey')
@@ -170,12 +178,17 @@ class ConfigEntityStorageTest extends UnitTestCase {
 
     $this->configManager = $this->getMock('Drupal\Core\Config\ConfigManagerInterface');
 
+    $this->cacheContextsManager = $this->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
+      ->disableOriginalConstructor()
+      ->getMock();
+
     $container = new ContainerBuilder();
     $container->set('entity.manager', $this->entityManager);
     $container->set('config.typed', $this->typedConfigManager);
     $container->set('cache_tags.invalidator', $this->cacheTagsInvalidator);
     $container->set('config.manager', $this->configManager);
     $container->set('language_manager', $this->languageManager);
+    $container->set('cache_contexts_manager', $this->cacheContextsManager);
     \Drupal::setContainer($container);
 
   }
@@ -279,6 +292,9 @@ class ConfigEntityStorageTest extends UnitTestCase {
       ->method('setData');
     $config_object->expects($this->once())
       ->method('save');
+    $config_object->expects($this->atLeastOnce())
+      ->method('get')
+      ->willReturn([]);
 
     $this->cacheTagsInvalidator->expects($this->once())
       ->method('invalidateTags')
@@ -343,6 +359,9 @@ class ConfigEntityStorageTest extends UnitTestCase {
       ->method('setData');
     $config_object->expects($this->once())
       ->method('save');
+    $config_object->expects($this->atLeastOnce())
+      ->method('get')
+      ->willReturn([]);
 
     $this->cacheTagsInvalidator->expects($this->once())
       ->method('invalidateTags')
@@ -408,6 +427,9 @@ class ConfigEntityStorageTest extends UnitTestCase {
       ->method('setData');
     $config_object->expects($this->once())
       ->method('save');
+    $config_object->expects($this->atLeastOnce())
+      ->method('get')
+      ->willReturn([]);
 
     $this->cacheTagsInvalidator->expects($this->once())
       ->method('invalidateTags')
@@ -546,6 +568,9 @@ class ConfigEntityStorageTest extends UnitTestCase {
       ->will($this->returnValue(TRUE));
     $config_object->expects($this->once())
       ->method('save');
+    $config_object->expects($this->atLeastOnce())
+      ->method('get')
+      ->willReturn([]);
 
     $this->cacheTagsInvalidator->expects($this->once())
       ->method('invalidateTags')
@@ -599,6 +624,18 @@ class ConfigEntityStorageTest extends UnitTestCase {
         array('', array('id' => 'foo')),
         array('id', 'foo'),
       )));
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheContexts')
+      ->willReturn([]);
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheTags')
+      ->willReturn(['config:foo']);
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheMaxAge')
+      ->willReturn(Cache::PERMANENT);
+    $config_object->expects($this->exactly(1))
+      ->method('getName')
+      ->willReturn('foo');
 
     $this->cacheTagsInvalidator->expects($this->never())
       ->method('invalidateTags');
@@ -652,6 +689,18 @@ class ConfigEntityStorageTest extends UnitTestCase {
         array('', array('id' => 'foo')),
         array('id', 'foo'),
       )));
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheContexts')
+      ->willReturn([]);
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheTags')
+      ->willReturn(['config:foo']);
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheMaxAge')
+      ->willReturn(Cache::PERMANENT);
+    $config_object->expects($this->exactly(1))
+      ->method('getName')
+      ->willReturn('foo');
 
     $this->configFactory->expects($this->once())
       ->method('loadMultiple')
@@ -682,6 +731,19 @@ class ConfigEntityStorageTest extends UnitTestCase {
         array('', array('id' => 'foo')),
         array('id', 'foo'),
       )));
+    $foo_config_object->expects($this->exactly(1))
+      ->method('getCacheContexts')
+      ->willReturn([]);
+    $foo_config_object->expects($this->exactly(1))
+      ->method('getCacheTags')
+      ->willReturn(['config:foo']);
+    $foo_config_object->expects($this->exactly(1))
+      ->method('getCacheMaxAge')
+      ->willReturn(Cache::PERMANENT);
+    $foo_config_object->expects($this->exactly(1))
+      ->method('getName')
+      ->willReturn('foo');
+
     $bar_config_object = $this->getMockBuilder('Drupal\Core\Config\Config')
       ->disableOriginalConstructor()
       ->getMock();
@@ -691,6 +753,18 @@ class ConfigEntityStorageTest extends UnitTestCase {
         array('', array('id' => 'bar')),
         array('id', 'bar'),
       )));
+    $bar_config_object->expects($this->exactly(1))
+      ->method('getCacheContexts')
+      ->willReturn([]);
+    $bar_config_object->expects($this->exactly(1))
+      ->method('getCacheTags')
+      ->willReturn(['config:bar']);
+    $bar_config_object->expects($this->exactly(1))
+      ->method('getCacheMaxAge')
+      ->willReturn(Cache::PERMANENT);
+    $bar_config_object->expects($this->exactly(1))
+      ->method('getName')
+      ->willReturn('foo');
 
     $this->configFactory->expects($this->once())
       ->method('listAll')
@@ -730,6 +804,18 @@ class ConfigEntityStorageTest extends UnitTestCase {
         array('', array('id' => 'foo')),
         array('id', 'foo'),
       )));
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheContexts')
+      ->willReturn([]);
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheTags')
+      ->willReturn(['config:foo']);
+    $config_object->expects($this->exactly(1))
+      ->method('getCacheMaxAge')
+      ->willReturn(Cache::PERMANENT);
+    $config_object->expects($this->exactly(1))
+      ->method('getName')
+      ->willReturn('foo');
 
     $this->configFactory->expects($this->once())
       ->method('loadMultiple')

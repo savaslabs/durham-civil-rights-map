@@ -8,6 +8,7 @@
 namespace Drupal\Core\Queue;
 
 use Drupal\Core\Database\Connection;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 
 /**
  * Default queue implementation.
@@ -15,6 +16,8 @@ use Drupal\Core\Database\Connection;
  * @ingroup queue
  */
 class DatabaseQueue implements ReliableQueueInterface {
+
+  use DependencySerializationTrait;
 
   /**
    * The name of the queue this instance is working with.
@@ -44,7 +47,7 @@ class DatabaseQueue implements ReliableQueueInterface {
   }
 
   /**
-   * Implements Drupal\Core\Queue\QueueInterface::createItem().
+   * {@inheritdoc}
    */
   public function createItem($data) {
     $query = $this->connection->insert('queue')
@@ -60,14 +63,14 @@ class DatabaseQueue implements ReliableQueueInterface {
   }
 
   /**
-   * Implements Drupal\Core\Queue\QueueInterface::numberOfItems().
+   * {@inheritdoc}
    */
   public function numberOfItems() {
     return $this->connection->query('SELECT COUNT(item_id) FROM {queue} WHERE name = :name', array(':name' => $this->name))->fetchField();
   }
 
   /**
-   * Implements Drupal\Core\Queue\QueueInterface::claimItem().
+   * {@inheritdoc}
    */
   public function claimItem($lease_time = 30) {
     // Claim an item by updating its expire fields. If claim is not successful
@@ -103,7 +106,7 @@ class DatabaseQueue implements ReliableQueueInterface {
   }
 
   /**
-   * Implements Drupal\Core\Queue\QueueInterface::releaseItem().
+   * {@inheritdoc}
    */
   public function releaseItem($item) {
     $update = $this->connection->update('queue')
@@ -115,7 +118,7 @@ class DatabaseQueue implements ReliableQueueInterface {
   }
 
   /**
-   * Implements Drupal\Core\Queue\QueueInterface::deleteItem().
+   * {@inheritdoc}
    */
   public function deleteItem($item) {
     $this->connection->delete('queue')
@@ -124,7 +127,7 @@ class DatabaseQueue implements ReliableQueueInterface {
   }
 
   /**
-   * Implements Drupal\Core\Queue\QueueInterface::createQueue().
+   * {@inheritdoc}
    */
   public function createQueue() {
     // All tasks are stored in a single database table (which is created when
@@ -133,7 +136,7 @@ class DatabaseQueue implements ReliableQueueInterface {
   }
 
   /**
-   * Implements Drupal\Core\Queue\QueueInterface::deleteQueue().
+   * {@inheritdoc}
    */
   public function deleteQueue() {
     $this->connection->delete('queue')

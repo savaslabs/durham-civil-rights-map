@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\comment\CommentForm.
+ * Contains \Drupal\comment\CommentForm.
  */
 
 namespace Drupal\comment;
@@ -13,6 +13,7 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\ContentEntityForm;
+use Drupal\Core\Entity\EntityConstraintViolationListInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -67,22 +68,6 @@ class CommentForm extends ContentEntityForm {
   }
 
   /**
-   * {@inheritdoc}
-   */
-  protected function init(FormStateInterface $form_state) {
-    $comment = $this->entity;
-
-    // Make the comment inherit the current content language unless specifically
-    // set.
-    if ($comment->isNew()) {
-      $language_content = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_CONTENT);
-      $comment->langcode->value = $language_content->getId();
-    }
-
-    parent::init($form_state);
-  }
-
-  /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
@@ -92,6 +77,16 @@ class CommentForm extends ContentEntityForm {
     $field_name = $comment->getFieldName();
     $field_definition = $this->entityManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle())[$comment->getFieldName()];
     $config = $this->config('user.settings');
+
+    // In several places within this function, we vary $form on:
+    // - The current user's permissions.
+    // - Whether the current user is authenticated or anonymous.
+    // - The 'user.settings' configuration.
+    // - The comment field's definition.
+    $form['#cache']['contexts'][] = 'user.permissions';
+    $form['#cache']['contexts'][] = 'user.roles:authenticated';
+    $this->renderer->addCacheableDependency($form, $config);
+    $this->renderer->addCacheableDependency($form, $field_definition->getConfig($entity->bundle()));
 
     // Use #comment-form as unique jump target, regardless of entity type.
     $form['#id'] = Html::getUniqueId('comment_form');
@@ -104,10 +99,6 @@ class CommentForm extends ContentEntityForm {
       $form['#attached']['library'][] = 'core/drupal.form';
       $form['#attributes']['data-user-info-from-browser'] = TRUE;
     }
-
-    // Vary per role, because we check a permission above and attach an asset
-    // library only for authenticated users.
-    $form['#cache']['contexts'][] = 'user.roles';
 
     // If not replying to a comment, use our dedicated page callback for new
     // Comments on entities.
@@ -130,8 +121,11 @@ class CommentForm extends ContentEntityForm {
     }
 
     // Prepare default values for form elements.
+    $author = '';
     if ($is_admin) {
-      $author = $comment->getAuthorName();
+      if (!$comment->getOwnerId()) {
+        $author = $comment->getAuthorName();
+      }
       $status = $comment->getStatus();
       if (empty($comment_preview)) {
         $form['#title'] = $this->t('Edit comment %title', array(
@@ -140,12 +134,6 @@ class CommentForm extends ContentEntityForm {
       }
     }
     else {
-      if ($this->currentUser->isAuthenticated()) {
-        $author = $this->currentUser->getUsername();
-      }
-      else {
-        $author = ($comment->getAuthorName() ? $comment->getAuthorName() : '');
-      }
       $status = ($this->currentUser->hasPermission('skip comment approval') ? CommentInterface::PUBLISHED : CommentInterface::NOT_PUBLISHED);
     }
 
@@ -154,34 +142,46 @@ class CommentForm extends ContentEntityForm {
       $date = !empty($comment->date) ? $comment->date : DrupalDateTime::createFromTimestamp($comment->getCreatedTime());
     }
 
-    // Add the author name field depending on the current user.
+    // The uid field is only displayed when a user with the permission
+    // 'administer comments' is editing an existing comment from an
+    // authenticated user.
+    $owner = $comment->getOwner();
+    $form['author']['uid'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'user',
+      '#default_value' => $owner->isAnonymous() ? NULL : $owner,
+      // A comment can be made anonymous by leaving this field empty therefore
+      // there is no need to list them in the autocomplete.
+      '#selection_settings' => ['include_anonymous' => FALSE],
+      '#title' => $this->t('Authored by'),
+      '#description' => $this->t('Leave blank for %anonymous.', ['%anonymous' => $config->get('anonymous')]),
+      '#access' => $is_admin,
+    ];
+
+    // The name field is displayed when an anonymous user is adding a comment or
+    // when a user with the permission 'administer comments' is editing an
+    // existing comment from an anonymous user.
     $form['author']['name'] = array(
       '#type' => 'textfield',
-      '#title' => $this->t('Your name'),
+      '#title' => $is_admin ? $this->t('Name for @anonymous', ['@anonymous' => $config->get('anonymous')]) : $this->t('Your name'),
       '#default_value' => $author,
       '#required' => ($this->currentUser->isAnonymous() && $anonymous_contact == COMMENT_ANONYMOUS_MUST_CONTACT),
       '#maxlength' => 60,
+      '#access' => $this->currentUser->isAnonymous() || $is_admin,
       '#size' => 30,
+      '#attributes'=> [
+        'data-drupal-default-value' => $config->get('anonymous'),
+      ],
     );
+
     if ($is_admin) {
-      $form['author']['name']['#type'] = 'entity_autocomplete';
-      $form['author']['name']['#target_type'] = 'user';
-      $form['author']['name']['#selection_settings'] = ['include_anonymous' => FALSE];
-      $form['author']['name']['#process_default_value'] = FALSE;
-      // The user name is validated and processed in static::buildEntity() and
-      // static::validate().
-      $form['author']['name']['#element_validate'] = array();
-      $form['author']['name']['#title'] = $this->t('Authored by');
-      $form['author']['name']['#description'] = $this->t('Leave blank for %anonymous.', array('%anonymous' => $config->get('anonymous')));
-    }
-    elseif ($this->currentUser->isAuthenticated()) {
-      $form['author']['name']['#type'] = 'item';
-      $form['author']['name']['#value'] = $form['author']['name']['#default_value'];
-      $form['author']['name']['#theme'] = 'username';
-      $form['author']['name']['#account'] = $this->currentUser;
-    }
-    elseif($this->currentUser->isAnonymous()) {
-      $form['author']['name']['#attributes']['data-drupal-default-value'] = $config->get('anonymous');
+      // When editing a comment only display the name textfield if the uid field
+      // is empty.
+      $form['author']['name']['#states'] = [
+        'visible' => [
+          ':input[name="uid"]' => array('empty' => TRUE),
+        ],
+      ];
     }
 
     // Add author email and homepage fields depending on the current user.
@@ -225,10 +225,6 @@ class CommentForm extends ContentEntityForm {
       '#access' => $is_admin,
     );
 
-    $this->renderer->addCacheableDependency($form, $config);
-    // The form depends on the field definition.
-    $this->renderer->addCacheableDependency($form, $field_definition->getConfig($entity->bundle()));
-
     return parent::form($form, $form_state, $comment);
   }
 
@@ -257,7 +253,6 @@ class CommentForm extends ContentEntityForm {
       '#type' => 'submit',
       '#value' => $this->t('Preview'),
       '#access' => $preview_mode != DRUPAL_DISABLED,
-      '#validate' => array('::validate'),
       '#submit' => array('::submitForm', '::preview'),
     );
 
@@ -276,32 +271,39 @@ class CommentForm extends ContentEntityForm {
     else {
       $comment->setCreatedTime(REQUEST_TIME);
     }
-    $author_name = $form_state->getValue('name');
-
-    if (!$this->currentUser->isAnonymous()) {
-      // Assign the owner based on the given user name - none means anonymous.
-      $accounts = $this->entityManager->getStorage('user')
-        ->loadByProperties(array('name' => $author_name));
-      $account = reset($accounts);
-      $uid = $account ? $account->id() : 0;
-      $comment->setOwnerId($uid);
+    // Empty author ID should revert to anonymous.
+    $author_id = $form_state->getValue('uid');
+    if ($comment->id() && $this->currentUser->hasPermission('administer comments')) {
+      // Admin can leave the author ID blank to revert to anonymous.
+      $author_id = $author_id ?: 0;
     }
-
-    // If the comment was posted by an anonymous user and no author name was
-    // required, use "Anonymous" by default.
-    if ($comment->getOwnerId() === 0 && (!isset($author_name) || $author_name === '')) {
-      $comment->setAuthorName($this->config('user.settings')->get('anonymous'));
+    if (!is_null($author_id)) {
+      if ($author_id === 0 && $form['author']['name']['#access']) {
+        // Use the author name value when the form has access to the element and
+        // the author ID is anonymous.
+        $comment->setAuthorName($form_state->getValue('name'));
+      }
+      else {
+        // Ensure the author name is not set.
+        $comment->setAuthorName(NULL);
+      }
     }
+    else {
+      $author_id = $this->currentUser->id();
+    }
+    $comment->setOwnerId($author_id);
 
     // Validate the comment's subject. If not specified, extract from comment
     // body.
     if (trim($comment->getSubject()) == '') {
-      // The body may be in any format, so:
-      // 1) Filter it into HTML
-      // 2) Strip out all HTML tags
-      // 3) Convert entities back to plain-text.
-      $comment_text = $comment->comment_body->processed;
-      $comment->setSubject(Unicode::truncate(trim(Html::decodeEntities(strip_tags($comment_text))), 29, TRUE, TRUE));
+      if ($comment->hasField('comment_body')) {
+        // The body may be in any format, so:
+        // 1) Filter it into HTML
+        // 2) Strip out all HTML tags
+        // 3) Convert entities back to plain-text.
+        $comment_text = $comment->comment_body->processed;
+        $comment->setSubject(Unicode::truncate(trim(Html::decodeEntities(strip_tags($comment_text))), 29, TRUE, TRUE));
+      }
       // Edge cases where the comment body is populated only by HTML tags will
       // require a default subject.
       if ($comment->getSubject() == '') {
@@ -314,21 +316,22 @@ class CommentForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function validate(array $form, FormStateInterface $form_state) {
-    $comment = parent::validate($form, $form_state);
+  protected function getEditedFieldNames(FormStateInterface $form_state) {
+    return array_merge(['created', 'name'], parent::getEditedFieldNames($form_state));
+  }
 
-    // Customly trigger validation of manually added fields and add in
-    // violations.
-    $violations = $comment->created->validate();
-    foreach ($violations as $violation) {
+  /**
+   * {@inheritdoc}
+   */
+  protected function flagViolations(EntityConstraintViolationListInterface $violations, array $form, FormStateInterface $form_state) {
+    // Manually flag violations of fields not handled by the form display.
+    foreach ($violations->getByField('created') as $violation) {
       $form_state->setErrorByName('date', $violation->getMessage());
     }
-    $violations = $comment->name->validate();
-    foreach ($violations as $violation) {
+    foreach ($violations->getByField('name') as $violation) {
       $form_state->setErrorByName('name', $violation->getMessage());
     }
-
-    return $comment;
+    parent::flagViolations($violations, $form, $form_state);
   }
 
   /**

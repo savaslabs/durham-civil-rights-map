@@ -1,21 +1,28 @@
 /**
+ * @file
  * Attaches behaviors for the Comment module's "new" indicator.
  *
  * May only be loaded for authenticated users, with the History module
  * installed.
  */
+
 (function ($, Drupal, window) {
 
   "use strict";
 
   /**
-   * Render "new" comment indicators wherever necessary.
+   * Renders "new" comment indicators wherever necessary.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches "new" comment indicators behavior.
    */
   Drupal.behaviors.commentNewIndicator = {
     attach: function (context) {
-      // Collect all "new" comment indicator placeholders (and their corresponding
-      // node IDs) newer than 30 days ago that have not already been read after
-      // their last comment timestamp.
+      // Collect all "new" comment indicator placeholders (and their
+      // corresponding node IDs) newer than 30 days ago that have not already
+      // been read after their last comment timestamp.
       var nodeIDs = [];
       var $placeholders = $(context)
         .find('[data-comment-timestamp]')
@@ -44,6 +51,12 @@
     }
   };
 
+  /**
+   * Processes the markup for "new comment" indicators.
+   *
+   * @param {jQuery} $placeholders
+   *   The elements that should be processed.
+   */
   function processCommentNewIndicators($placeholders) {
     var isFirstNewComment = true;
     var newCommentString = Drupal.t('new');
@@ -61,7 +74,7 @@
         var $comment = $(placeholder)
           .removeClass('hidden')
           .text(newCommentString)
-          .closest('.comment')
+          .closest('.js-comment')
           // Add 'new' class to the comment, so it can be styled.
           .addClass('new');
 

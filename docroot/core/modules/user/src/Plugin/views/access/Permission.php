@@ -2,12 +2,13 @@
 
 /**
  * @file
- * Definition of Drupal\user\Plugin\views\access\Permission.
+ * Contains \Drupal\user\Plugin\views\access\Permission.
  */
 
 namespace Drupal\user\Plugin\views\access;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -27,7 +28,7 @@ use Symfony\Component\Routing\Route;
  *   help = @Translation("Access will be granted to users with the specified permission string.")
  * )
  */
-class Permission extends AccessPluginBase {
+class Permission extends AccessPluginBase implements CacheableDependencyInterface {
 
   /**
    * Overrides Drupal\views\Plugin\Plugin::$usesOptions.
@@ -120,7 +121,7 @@ class Permission extends AccessPluginBase {
     foreach ($permissions as $perm => $perm_item) {
       $provider = $perm_item['provider'];
       $display_name = $this->moduleHandler->getName($provider);
-      $perms[$display_name][$perm] = SafeMarkup::checkPlain(strip_tags($perm_item['title']));
+      $perms[$display_name][$perm] = strip_tags($perm_item['title']);
     }
 
     $form['perm'] = array(
@@ -130,6 +131,27 @@ class Permission extends AccessPluginBase {
       '#default_value' => $this->options['perm'],
       '#description' => $this->t('Only users with the selected permission flag will be able to access this display.'),
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheMaxAge() {
+    return Cache::PERMANENT;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheContexts() {
+    return ['user.permissions'];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheTags() {
+    return [];
   }
 
 }

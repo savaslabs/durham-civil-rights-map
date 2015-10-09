@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\System\ThemeTest.
+ * Contains \Drupal\system\Tests\System\ThemeTest.
  */
 
 namespace Drupal\system\Tests\System;
@@ -30,7 +30,7 @@ class ThemeTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('node', 'block', 'file');
+  public static $modules = ['node', 'block', 'file'];
 
   protected function setUp() {
     parent::setUp();
@@ -40,6 +40,7 @@ class ThemeTest extends WebTestBase {
     $this->adminUser = $this->drupalCreateUser(array('access administration pages', 'view the administration theme', 'administer themes', 'bypass node access', 'administer blocks'));
     $this->drupalLogin($this->adminUser);
     $this->node = $this->drupalCreateNode();
+    $this->drupalPlaceBlock('local_tasks_block');
   }
 
   /**
@@ -95,7 +96,7 @@ class ThemeTest extends WebTestBase {
 
       // Verify logo path examples.
       $elements = $this->xpath('//div[contains(@class, :item)]/div[@class=:description]/code', array(
-        ':item' => 'form-item-logo-path',
+        ':item' => 'js-form-item-logo-path',
         ':description' => 'description',
       ));
       // Expected default values (if all else fails).
@@ -122,9 +123,11 @@ class ThemeTest extends WebTestBase {
       $this->assertEqual((string) $elements[1], $explicit_file);
       $this->assertEqual((string) $elements[2], $local_file);
 
-      // Verify the actual 'src' attribute of the logo being output.
+      // Verify the actual 'src' attribute of the logo being output in a site
+      // branding block.
+      $this->drupalPlaceBlock('system_branding_block', ['region' => 'header']);
       $this->drupalGet('');
-      $elements = $this->xpath('//header/a[@rel=:rel]/img', array(
+      $elements = $this->xpath('//header//a[@rel=:rel]/img', array(
           ':rel' => 'home',
         )
       );
@@ -174,8 +177,9 @@ class ThemeTest extends WebTestBase {
     $fields = $this->xpath($this->constructFieldXpath('name', 'logo_path'));
     $uploaded_filename = 'public://' . $fields[0]['value'];
 
+    $this->drupalPlaceBlock('system_branding_block', ['region' => 'header']);
     $this->drupalGet('');
-    $elements = $this->xpath('//header/a[@rel=:rel]/img', array(
+    $elements = $this->xpath('//header//a[@rel=:rel]/img', array(
         ':rel' => 'home',
       )
     );
@@ -273,6 +277,10 @@ class ThemeTest extends WebTestBase {
     $this->drupalGet('admin/appearance');
     $this->assertText(t('This theme requires the base theme @base_theme to operate correctly.', array('@base_theme' => 'not_real_test_basetheme')));
     $this->assertText(t('This theme requires the theme engine @theme_engine to operate correctly.', array('@theme_engine' => 'not_real_engine')));
+    // Check for the error text of a theme with the wrong core version.
+    $this->assertText("This theme is not compatible with Drupal 8.x. Check that the .info.yml file contains the correct 'core' value.");
+    // Check for the error text of a theme without a content region.
+    $this->assertText("This theme is missing a 'content' region.");
   }
 
   /**
@@ -334,4 +342,28 @@ class ThemeTest extends WebTestBase {
     $this->clickLink(t('Uninstall'));
     $this->assertRaw('The <em class="placeholder">Classy</em> theme has been uninstalled');
   }
+
+  /**
+   * Tests installing a theme and setting it as default.
+   */
+  function testInstallAndSetAsDefault() {
+    $this->drupalGet('admin/appearance');
+    // Bartik is uninstalled in the test profile and has the third "Install and
+    // set as default" link.
+    $this->clickLink(t('Install and set as default'), 2);
+    // Test the confirmation message.
+    $this->assertText('Bartik is now the default theme.');
+    // Make sure Bartik is now set as the default theme in config.
+    $this->assertEqual($this->config('system.theme')->get('default'), 'bartik');
+
+    // This checks for a regression. See https://www.drupal.org/node/2498691.
+    $this->assertNoText('The bartik theme was not found.');
+
+    $themes = \Drupal::service('theme_handler')->rebuildThemeData();
+    $version = $themes['bartik']->info['version'];
+
+    // Confirm Bartik is indicated as the default theme.
+    $this->assertTextPattern('/Bartik ' . preg_quote($version) . '\s{2,}\(default theme\)/');
+  }
+
 }

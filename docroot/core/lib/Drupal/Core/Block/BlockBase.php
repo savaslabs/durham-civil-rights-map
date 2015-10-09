@@ -8,14 +8,13 @@
 namespace Drupal\Core\Block;
 
 use Drupal\block\BlockInterface;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginBase;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\Core\Cache\Cache;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Component\Transliteration\TransliterationInterface;
 
@@ -29,6 +28,8 @@ use Drupal\Component\Transliteration\TransliterationInterface;
  * @ingroup block_api
  */
 abstract class BlockBase extends ContextAwarePluginBase implements BlockPluginInterface {
+
+  use ContextAwarePluginAssignmentTrait;
 
   /**
    * The transliteration service.
@@ -47,7 +48,7 @@ abstract class BlockBase extends ContextAwarePluginBase implements BlockPluginIn
 
     $definition = $this->getPluginDefinition();
     // Cast the admin label to a string since it is an object.
-    // @see \Drupal\Core\StringTranslation\TranslationWrapper
+    // @see \Drupal\Core\StringTranslation\TranslatableMarkup
     return (string) $definition['admin_label'];
   }
 
@@ -89,10 +90,6 @@ abstract class BlockBase extends ContextAwarePluginBase implements BlockPluginIn
       'label' => '',
       'provider' => $this->pluginDefinition['provider'],
       'label_display' => BlockInterface::BLOCK_LABEL_VISIBLE,
-      'cache' => array(
-        // Blocks are cacheable by default.
-        'max_age' => Cache::PERMANENT,
-      ),
     );
   }
 
@@ -165,7 +162,7 @@ abstract class BlockBase extends ContextAwarePluginBase implements BlockPluginIn
     $form['admin_label'] = array(
       '#type' => 'item',
       '#title' => $this->t('Block description'),
-      '#markup' => SafeMarkup::checkPlain($definition['admin_label']),
+      '#plain_text' => $definition['admin_label'],
     );
     $form['label'] = array(
       '#type' => 'textfield',
@@ -180,24 +177,10 @@ abstract class BlockBase extends ContextAwarePluginBase implements BlockPluginIn
       '#default_value' => ($this->configuration['label_display'] === BlockInterface::BLOCK_LABEL_VISIBLE),
       '#return_value' => BlockInterface::BLOCK_LABEL_VISIBLE,
     );
-    // Identical options to the ones for page caching.
-    // @see \Drupal\system\Form\PerformanceForm::buildForm()
-    $period = array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 86400);
-    $period = array_map(array(\Drupal::service('date.formatter'), 'formatInterval'), array_combine($period, $period));
-    $period[0] = '<' . $this->t('no caching') . '>';
-    $period[\Drupal\Core\Cache\Cache::PERMANENT] = $this->t('Forever');
-    $form['cache'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('Cache settings'),
-    );
-    $form['cache']['max_age'] = array(
-      '#type' => 'select',
-      '#title' => $this->t('Maximum age'),
-      '#description' => $this->t('The maximum time this block may be cached.'),
-      '#default_value' => $this->configuration['cache']['max_age'],
-      '#options' => $period,
-    );
 
+    // Add context mapping UI form elements.
+    $contexts = $form_state->getTemporaryValue('gathered_contexts') ?: [];
+    $form['context_mapping'] = $this->addContextAssignmentElement($this, $contexts);
     // Add plugin-specific settings for this block type.
     $form += $this->blockForm($form, $form_state);
     return $form;
@@ -244,7 +227,6 @@ abstract class BlockBase extends ContextAwarePluginBase implements BlockPluginIn
       $this->configuration['label'] = $form_state->getValue('label');
       $this->configuration['label_display'] = $form_state->getValue('label_display');
       $this->configuration['provider'] = $form_state->getValue('provider');
-      $this->configuration['cache'] = $form_state->getValue('cache');
       $this->blockSubmit($form, $form_state);
     }
   }
@@ -265,14 +247,9 @@ abstract class BlockBase extends ContextAwarePluginBase implements BlockPluginIn
     //   \Drupal\system\MachineNameController::transliterate(), so it might make
     //   sense to provide a common service for the two.
     $transliterated = $this->transliteration()->transliterate($admin_label, LanguageInterface::LANGCODE_DEFAULT, '_');
-
-    $replace_pattern = '[^a-z0-9_.]+';
-
     $transliterated = Unicode::strtolower($transliterated);
 
-    if (isset($replace_pattern)) {
-      $transliterated = preg_replace('@' . $replace_pattern . '@', '', $transliterated);
-    }
+    $transliterated = preg_replace('@[^a-z0-9_.]+@', '', $transliterated);
 
     return $transliterated;
   }
@@ -297,27 +274,6 @@ abstract class BlockBase extends ContextAwarePluginBase implements BlockPluginIn
    */
   public function setTransliteration(TransliterationInterface $transliteration) {
     $this->transliteration = $transliteration;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheContexts() {
-    return [];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheTags() {
-    return [];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheMaxAge() {
-    return (int)$this->configuration['cache']['max_age'];
   }
 
 }

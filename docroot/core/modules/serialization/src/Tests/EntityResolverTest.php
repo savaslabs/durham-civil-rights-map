@@ -20,7 +20,7 @@ class EntityResolverTest extends NormalizerTestBase {
    *
    * @var array
    */
-  public static $modules = array('entity_reference', 'hal', 'rest');
+  public static $modules = ['hal', 'rest'];
 
   /**
    * The format being tested.
@@ -32,7 +32,6 @@ class EntityResolverTest extends NormalizerTestBase {
   protected function setUp() {
     parent::setUp();
 
-    $this->installSchema('system', 'router');
     \Drupal::service('router.builder')->rebuild();
 
     // Create the test field storage.

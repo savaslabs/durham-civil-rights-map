@@ -2,9 +2,10 @@
 
 /**
  * @file
- * Definition of Drupal\Component\Datetime\DateTimePlus
+ * Contains \Drupal\Component\Datetime\DateTimePlus.
  */
 namespace Drupal\Component\Datetime;
+use Drupal\Component\Utility\ToStringTrait;
 
 /**
  * Wraps DateTime().
@@ -27,6 +28,8 @@ namespace Drupal\Component\Datetime;
  * errors using hasErrors() and getErrors().
  */
 class DateTimePlus {
+
+  use ToStringTrait;
 
   const FORMAT   = 'Y-m-d H:i:s';
 
@@ -271,16 +274,12 @@ class DateTimePlus {
   }
 
   /**
-   * Implements __toString() for dates.
+   * Renders the timezone name.
    *
-   * The DateTime class does not implement this.
-   *
-   * @see https://bugs.php.net/bug.php?id=62911
-   * @see http://www.serverphorums.com/read.php?7,555645
+   * @return string
    */
-  public function __toString() {
-    $format = static::FORMAT;
-    return $this->format($format) . ' ' . $this->getTimeZone()->getName();
+  public function render() {
+    return $this->format(static::FORMAT) . ' ' . $this->getTimeZone()->getName();
   }
 
   /**
@@ -414,7 +413,7 @@ class DateTimePlus {
   }
 
   /**
-   * Retrieves error messages.
+   * Gets error messages.
    *
    * Public function to return the error messages.
    */
@@ -508,7 +507,7 @@ class DateTimePlus {
    * @param array $array
    *   An array of datetime values keyed by date part.
    *
-   * @return boolean
+   * @return bool
    *   TRUE if the datetime parts contain valid values, otherwise FALSE.
    */
   public static function checkArray($array) {
@@ -568,8 +567,6 @@ class DateTimePlus {
    * @param string $format
    *   A format string using either PHP's date().
    * @param array $settings
-   *   - langcode: (optional) String two letter language code used to control
-   *     the result of the format(). Defaults to NULL.
    *   - timezone: (optional) String timezone name. Defaults to the timezone
    *     of the date object.
    *
@@ -585,11 +582,18 @@ class DateTimePlus {
 
     // Format the date and catch errors.
     try {
-      $value = $this->dateTimeObject->format($format);
+      // Clone the date/time object so we can change the time zone without
+      // disturbing the value stored in the object.
+      $dateTimeObject = clone $this->dateTimeObject;
+      if (isset($settings['timezone'])) {
+        $dateTimeObject->setTimezone(new \DateTimeZone($settings['timezone']));
+      }
+      $value = $dateTimeObject->format($format);
     }
     catch (\Exception $e) {
       $this->errors[] = $e->getMessage();
     }
+
     return $value;
   }
 }

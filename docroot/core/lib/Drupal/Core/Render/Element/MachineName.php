@@ -15,9 +15,58 @@ use Drupal\Core\Language\LanguageInterface;
  * Provides a machine name render element.
  *
  * Provides a form element to enter a machine name, which is validated to ensure
- * that the name is unique and does not contain disallowed characters. All
- * disallowed characters are replaced with a replacement character via
- * JavaScript.
+ * that the name is unique and does not contain disallowed characters.
+ *
+ * The element may be automatically populated via JavaScript when used in
+ * conjunction with a separate "source" form element (typically specifying the
+ * human-readable name). As the user types text into the source element, the
+ * JavaScript converts all values to lower case, replaces any remaining
+ * disallowed characters with a replacement, and populates the associated
+ * machine name form element.
+ *
+ * Properties:
+ * - #machine_name: An associative array containing:
+ *   - exists: A callable to invoke for checking whether a submitted machine
+ *     name value already exists. The submitted value is passed as an argument.
+ *     In most cases, an existing API or menu argument loader function can be
+ *     re-used. The callback is only invoked if the submitted value differs from
+ *     the element's #default_value.
+ *   - source: (optional) The #array_parents of the form element containing the
+ *     human-readable name (i.e., as contained in the $form structure) to use as
+ *     source for the machine name. Defaults to array('label').
+ *   - label: (optional) Text to display as label for the machine name value
+ *     after the human-readable name form element. Defaults to t('Machine name').
+ *   - replace_pattern: (optional) A regular expression (without delimiters)
+ *     matching disallowed characters in the machine name. Defaults to
+ *     '[^a-z0-9_]+'.
+ *   - replace: (optional) A character to replace disallowed characters in the
+ *     machine name via JavaScript. Defaults to '_' (underscore). When using a
+ *     different character, 'replace_pattern' needs to be set accordingly.
+ *   - error: (optional) A custom form error message string to show, if the
+ *     machine name contains disallowed characters.
+ *   - standalone: (optional) Whether the live preview should stay in its own
+ *     form element rather than in the suffix of the source element. Defaults
+ *     to FALSE.
+ * - #maxlength: (optional) Maximum allowed length of the machine name. Defaults
+ *   to 64.
+ * - #disabled: (optional) Should be set to TRUE if an existing machine name
+ *   must not be changed after initial creation.
+ *
+ * Usage example:
+ * @code
+ * $form['id'] = array(
+ *   '#type' => 'machine_name',
+ *   '#default_value' => $this->entity->id(),
+ *   '#disabled' => !$this->entity->isNew(),
+ *   '#maxlength' => 64,
+ *   '#description' => $this->t('A unique name for this item. It must only contain lowercase letters, numbers, and underscores.'),
+ *   '#machine_name' => array(
+ *     'exists' => array($this, 'exists'),
+ *   ),
+ * );
+ * @endcode
+ *
+ * @see \Drupal\Core\Render\Element\Textfield
  *
  * @FormElement("machine_name")
  */
@@ -55,6 +104,11 @@ class MachineName extends Textfield {
    * {@inheritdoc}
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
+    if ($input !== FALSE && $input !== NULL) {
+      // This should be a string, but allow other scalars since they might be
+      // valid input in programmatic form submissions.
+      return is_scalar($input) ? (string) $input : '';
+    }
     return NULL;
   }
 
@@ -62,35 +116,7 @@ class MachineName extends Textfield {
    * Processes a machine-readable name form element.
    *
    * @param array $element
-   *   The form element to process. Properties used:
-   *   - #machine_name: An associative array containing:
-   *     - exists: A callable to invoke for checking whether a submitted machine
-   *       name value already exists. The submitted value is passed as an
-   *       argument. In most cases, an existing API or menu argument loader
-   *       function can be re-used. The callback is only invoked if the
-   *       submitted value differs from the element's #default_value.
-   *     - source: (optional) The #array_parents of the form element containing
-   *       the human-readable name (i.e., as contained in the $form structure)
-   *       to use as source for the machine name. Defaults to array('label').
-   *     - label: (optional) Text to display as label for the machine name value
-   *       after the human-readable name form element. Defaults to "Machine
-   *       name".
-   *     - replace_pattern: (optional) A regular expression (without delimiters)
-   *       matching disallowed characters in the machine name. Defaults to
-   *       '[^a-z0-9_]+'.
-   *     - replace: (optional) A character to replace disallowed characters in
-   *       the machine name via JavaScript. Defaults to '_' (underscore). When
-   *       using a different character, 'replace_pattern' needs to be set
-   *       accordingly.
-   *     - error: (optional) A custom form error message string to show, if the
-   *       machine name contains disallowed characters.
-   *     - standalone: (optional) Whether the live preview should stay in its
-   *       own form element rather than in the suffix of the source
-   *       element. Defaults to FALSE.
-   *   - #maxlength: (optional) Maximum allowed length of the machine name.
-   *     Defaults to 64.
-   *   - #disabled: (optional) Should be set to TRUE if an existing machine
-   *     name must not be changed after initial creation.
+   *   The form element to process. See main class documentation for properties.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The current state of the form.
    * @param array $complete_form
@@ -114,7 +140,7 @@ class MachineName extends Textfield {
     );
     // A form element that only wants to set one #machine_name property (usually
     // 'source' only) would leave all other properties undefined, if the defaults
-    // were defined in hook_element_info(). Therefore, we apply the defaults here.
+    // were defined by an element plugin. Therefore, we apply the defaults here.
     $element['#machine_name'] += array(
       'source' => array('label'),
       'target' => '#' . $element['#id'],

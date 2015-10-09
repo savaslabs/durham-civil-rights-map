@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\url_alter_test\PathProcessor.
+ * Contains \Drupal\url_alter_test\PathProcessor.
  */
 
 namespace Drupal\url_alter_test;
@@ -19,20 +19,18 @@ class PathProcessor implements InboundPathProcessorInterface {
    * Implements Drupal\Core\PathProcessor\InboundPathProcessorInterface::processInbound().
    */
   public function processInbound($path, Request $request) {
-    if (preg_match('!^user/([^/]+)(/.*)?!', $path, $matches)) {
+    if (preg_match('!^/user/([^/]+)(/.*)?!', $path, $matches)) {
       if ($account = user_load_by_name($matches[1])) {
         $matches += array(2 => '');
-        $path = 'user/' . $account->id() . $matches[2];
+        $path = '/user/' . $account->id() . $matches[2];
       }
     }
 
     // Rewrite community/ to forum/.
-    if ($path == 'community' || strpos($path, 'community/') === 0) {
-      $path = 'forum' . substr($path, 9);
-    }
+    $path = preg_replace('@^/community(.*)@', '/forum$1', $path);
 
-    if ($path == 'url-alter-test/bar') {
-      $path = 'url-alter-test/foo';
+    if ($path == '/url-alter-test/bar') {
+      $path = '/url-alter-test/foo';
     }
     return $path;
   }

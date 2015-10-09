@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Plugin\views\field\Counter.
+ * Contains \Drupal\views\Plugin\views\field\Counter.
  */
 
 namespace Drupal\views\Plugin\views\field;
@@ -18,6 +18,8 @@ use Drupal\views\ResultRow;
  * @ViewsField("counter")
  */
 class Counter extends FieldPluginBase {
+
+  use UncacheableFieldHandlerTrait;
 
   /**
    * {@inheritdoc}

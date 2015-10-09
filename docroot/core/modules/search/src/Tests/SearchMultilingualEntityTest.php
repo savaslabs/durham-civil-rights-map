@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\search\Tests\SearchMultilingualEntityTest.
+ * Contains \Drupal\search\Tests\SearchMultilingualEntityTest.
  */
 
 namespace Drupal\search\Tests;
@@ -40,9 +40,6 @@ class SearchMultilingualEntityTest extends SearchTestBase {
     // report, and administer cron. Log in.
     $user = $this->drupalCreateUser(array('administer search', 'search content', 'use advanced search', 'access content', 'access site reports', 'administer site configuration'));
     $this->drupalLogin($user);
-
-    // Make sure that auto-cron is disabled.
-    $this->config('system.cron')->set('threshold.autorun', 0)->save();
 
     // Set up the search plugin.
     $this->plugin = $this->container->get('plugin.manager.search')->createInstance('node_search');
@@ -264,11 +261,11 @@ class SearchMultilingualEntityTest extends SearchTestBase {
   /**
    * Verifies the indexing status counts.
    *
-   * @param $remaining
+   * @param int $remaining
    *   Count of remaining items to verify.
-   * @param $total
+   * @param int $total
    *   Count of total items to verify.
-   * @param $message
+   * @param string $message
    *   Message to use, something like "after updating the search index".
    */
   protected function assertIndexCounts($remaining, $total, $message) {

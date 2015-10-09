@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\responsive_image\ResponsiveImageStyleListBuilder.
+ * Contains \Drupal\responsive_image\ResponsiveImageStyleListBuilder.
  */
 
 namespace Drupal\responsive_image;
@@ -28,7 +28,7 @@ class ResponsiveImageStyleListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    $row['label'] = $this->getLabel($entity);
+    $row['label'] = $entity->label();
     $row['id'] = $entity->id();
     return $row + parent::buildRow($entity);
   }

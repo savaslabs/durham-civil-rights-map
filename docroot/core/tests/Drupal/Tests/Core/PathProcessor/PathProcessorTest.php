@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\Tests\Core\PathProcessor\PathProcessorTest.
+ * Contains \Drupal\Tests\Core\PathProcessor\PathProcessorTest.
  */
 
 namespace Drupal\Tests\Core\PathProcessor;
@@ -62,6 +62,7 @@ class PathProcessorTest extends UnitTestCase {
     $method_definitions = array(
       LanguageNegotiationUrl::METHOD_ID => array(
         'class' => '\Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrl',
+        'weight' => 9,
       ),
     );
 
@@ -103,11 +104,11 @@ class PathProcessorTest extends UnitTestCase {
 
     $system_path_map = array(
       // Set up one proper alias that can be resolved to a system path.
-      array('foo', NULL, 'user/1'),
+      array('/foo', NULL, '/user/1'),
       // Passing in anything else should return the same string.
-      array('fr/foo', NULL, 'fr/foo'),
-      array('fr', NULL, 'fr'),
-      array('user/login', NULL, 'user/login'),
+      array('/fr/foo', NULL, '/fr/foo'),
+      array('/fr', NULL, '/fr'),
+      array('/user/login', NULL, '/user/login'),
     );
 
     $alias_manager->expects($this->any())
@@ -119,7 +120,7 @@ class PathProcessorTest extends UnitTestCase {
     $config_factory_stub = $this->getConfigFactoryStub(
       array(
         'system.site' => array(
-          'page.front' => 'user/login'
+          'page.front' => '/user/login'
         ),
         'language.negotiation' => array(
           'url' => array(
@@ -134,7 +135,10 @@ class PathProcessorTest extends UnitTestCase {
       ->getMock();
     $negotiator->expects($this->any())
       ->method('getNegotiationMethods')
-      ->will($this->returnValue(array(LanguageNegotiationUrl::METHOD_ID => array('class' => 'Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrl'))));
+      ->will($this->returnValue(array(LanguageNegotiationUrl::METHOD_ID => array(
+        'class' => 'Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrl',
+        'weight' => 9,
+        ))));
     $method = new LanguageNegotiationUrl();
     $method->setConfig($config_factory_stub);
     $method->setLanguageManager($this->languageManager);
@@ -169,16 +173,16 @@ class PathProcessorTest extends UnitTestCase {
     }
 
     // Test resolving the French homepage using the incorrect processor order.
-    $test_path = 'fr';
+    $test_path = '/fr';
     $request = Request::create($test_path);
     $processed = $processor_manager->processInbound($test_path, $request);
-    $this->assertEquals('', $processed, 'Processing in the incorrect order fails to resolve the system path from the empty path');
+    $this->assertEquals('/', $processed, 'Processing in the incorrect order fails to resolve the system path from the empty path');
 
     // Test resolving an existing alias using the incorrect processor order.
-    $test_path = 'fr/foo';
+    $test_path = '/fr/foo';
     $request = Request::create($test_path);
     $processed = $processor_manager->processInbound($test_path, $request);
-    $this->assertEquals('foo', $processed, 'Processing in the incorrect order fails to resolve the system path from an alias');
+    $this->assertEquals('/foo', $processed, 'Processing in the incorrect order fails to resolve the system path from an alias');
 
     // Now create a new processor manager and add the processors, this time in
     // the correct order.
@@ -194,15 +198,15 @@ class PathProcessorTest extends UnitTestCase {
     }
 
     // Test resolving the French homepage using the correct processor order.
-    $test_path = 'fr';
+    $test_path = '/fr';
     $request = Request::create($test_path);
     $processed = $processor_manager->processInbound($test_path, $request);
-    $this->assertEquals('user/login', $processed, 'Processing in the correct order resolves the system path from the empty path.');
+    $this->assertEquals('/user/login', $processed, 'Processing in the correct order resolves the system path from the empty path.');
 
     // Test resolving an existing alias using the correct processor order.
-    $test_path = 'fr/foo';
+    $test_path = '/fr/foo';
     $request = Request::create($test_path);
     $processed = $processor_manager->processInbound($test_path, $request);
-    $this->assertEquals('user/1', $processed, 'Processing in the correct order resolves the system path from an alias.');
+    $this->assertEquals('/user/1', $processed, 'Processing in the correct order resolves the system path from an alias.');
   }
 }

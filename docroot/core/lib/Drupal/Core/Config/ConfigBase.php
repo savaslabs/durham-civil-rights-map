@@ -8,9 +8,10 @@
 namespace Drupal\Core\Config;
 
 use Drupal\Component\Utility\NestedArray;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\MarkupInterface;
 use Drupal\Core\Cache\Cache;
-use Drupal\Core\Cache\CacheableDependencyInterface;
+use Drupal\Core\Cache\RefinableCacheableDependencyInterface;
+use Drupal\Core\Cache\RefinableCacheableDependencyTrait;
 use \Drupal\Core\DependencyInjection\DependencySerializationTrait;
 
 /**
@@ -28,8 +29,9 @@ use \Drupal\Core\DependencyInjection\DependencySerializationTrait;
  * @see \Drupal\Core\Config\Config
  * @see \Drupal\Core\Theme\ThemeSettings
  */
-abstract class ConfigBase implements CacheableDependencyInterface {
+abstract class ConfigBase implements RefinableCacheableDependencyInterface {
   use DependencySerializationTrait;
+  use RefinableCacheableDependencyTrait;
 
   /**
    * The name of the configuration object.
@@ -97,24 +99,17 @@ abstract class ConfigBase implements CacheableDependencyInterface {
   public static function validateName($name) {
     // The name must be namespaced by owner.
     if (strpos($name, '.') === FALSE) {
-      throw new ConfigNameException(SafeMarkup::format('Missing namespace in Config object name @name.', array(
-        '@name' => $name,
-      )));
+      throw new ConfigNameException("Missing namespace in Config object name $name.");
     }
     // The name must be shorter than Config::MAX_NAME_LENGTH characters.
     if (strlen($name) > self::MAX_NAME_LENGTH) {
-      throw new ConfigNameException(SafeMarkup::format('Config object name @name exceeds maximum allowed length of @length characters.', array(
-        '@name' => $name,
-        '@length' => self::MAX_NAME_LENGTH,
-      )));
+      throw new ConfigNameException("Config object name $name exceeds maximum allowed length of " . static::MAX_NAME_LENGTH . " characters.");
     }
 
     // The name must not contain any of the following characters:
     // : ? * < > " ' / \
     if (preg_match('/[:?*<>"\'\/\\\\]/', $name)) {
-      throw new ConfigNameException(SafeMarkup::format('Invalid character in Config object name @name.', array(
-        '@name' => $name,
-      )));
+      throw new ConfigNameException("Invalid character in Config object name $name.");
     }
   }
 
@@ -159,10 +154,6 @@ abstract class ConfigBase implements CacheableDependencyInterface {
    *
    * @param array $data
    *   The new configuration data.
-   * @param bool $validate_keys
-   *   (optional) Whether the data should be verified for valid keys. Set to
-   *   FALSE if the $data is known to be valid already (for example, being
-   *   loaded from the config storage).
    *
    * @return $this
    *   The configuration object.
@@ -170,10 +161,9 @@ abstract class ConfigBase implements CacheableDependencyInterface {
    * @throws \Drupal\Core\Config\ConfigValueException
    *   If any key in $data in any depth contains a dot.
    */
-  public function setData(array $data, $validate_keys = TRUE) {
-    if ($validate_keys) {
-      $this->validateKeys($data);
-    }
+  public function setData(array $data) {
+    $data = $this->castSafeStrings($data);
+    $this->validateKeys($data);
     $this->data = $data;
     return $this;
   }
@@ -193,6 +183,7 @@ abstract class ConfigBase implements CacheableDependencyInterface {
    *   If $value is an array and any of its keys in any depth contains a dot.
    */
   public function set($key, $value) {
+    $value = $this->castSafeStrings($value);
     // The dot/period is a reserved character; it may appear between keys, but
     // not within keys.
     if (is_array($value)) {
@@ -222,7 +213,7 @@ abstract class ConfigBase implements CacheableDependencyInterface {
   protected function validateKeys(array $data) {
     foreach ($data as $key => $value) {
       if (strpos($key, '.') !== FALSE) {
-        throw new ConfigValueException(SafeMarkup::format('@key key contains a dot which is not supported.', array('@key' => $key)));
+        throw new ConfigValueException("$key key contains a dot which is not supported.");
       }
       if (is_array($value)) {
         $this->validateKeys($value);
@@ -269,21 +260,44 @@ abstract class ConfigBase implements CacheableDependencyInterface {
    * {@inheritdoc}
    */
   public function getCacheContexts() {
-    return [];
+    return $this->cacheContexts;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getCacheTags() {
-    return ['config:' . $this->name];
+    return Cache::mergeTags(['config:' . $this->name], $this->cacheTags);
   }
 
   /**
    * {@inheritdoc}
    */
   public function getCacheMaxAge() {
-    return Cache::PERMANENT;
+    return $this->cacheMaxAge;
+  }
+
+  /**
+   * Casts any objects that implement MarkupInterface to string.
+   *
+   * @param mixed $data
+   *   The configuration data.
+   *
+   * @return mixed
+   *   The data with any safe strings cast to string.
+   */
+  protected function castSafeStrings($data) {
+    if ($data instanceof MarkupInterface) {
+      $data = (string) $data;
+    }
+    else if (is_array($data)) {
+      array_walk_recursive($data, function (&$value) {
+        if ($value instanceof MarkupInterface) {
+          $value = (string) $value;
+        }
+      });
+    }
+    return $data;
   }
 
 }

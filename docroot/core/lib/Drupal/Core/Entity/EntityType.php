@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Entity;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\Exception\EntityTypeIdLengthException;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -111,7 +110,15 @@ class EntityType implements EntityTypeInterface {
   /**
    * The name of a callback that returns the label of the entity.
    *
-   * @var string|null
+   * @var callable|null
+   *
+   * @deprecated in Drupal 8.0.x-dev and will be removed before Drupal 9.0.0.
+   *   Use Drupal\Core\Entity\EntityInterface::label() for complex label
+   *   generation as needed.
+   *
+   * @see \Drupal\Core\Entity\EntityInterface::label()
+   *
+   * @todo Remove usages of label_callback https://www.drupal.org/node/2450793.
    */
   protected $label_callback = NULL;
 
@@ -120,7 +127,7 @@ class EntityType implements EntityTypeInterface {
    *
    * @var string
    */
-  protected $bundle_entity_type = 'bundle';
+  protected $bundle_entity_type = NULL;
 
   /**
    * The name of the entity type for which bundles are provided.
@@ -234,6 +241,13 @@ class EntityType implements EntityTypeInterface {
   protected $constraints = array();
 
   /**
+   * Any additional properties and values.
+   *
+   * @var array
+   */
+  protected $additional = [];
+
+  /**
    * Constructs a new EntityType.
    *
    * @param array $definition
@@ -245,16 +259,11 @@ class EntityType implements EntityTypeInterface {
   public function __construct($definition) {
     // Throw an exception if the entity type ID is longer than 32 characters.
     if (Unicode::strlen($definition['id']) > static::ID_MAX_LENGTH) {
-      throw new EntityTypeIdLengthException(SafeMarkup::format(
-        'Attempt to create an entity type with an ID longer than @max characters: @id.', array(
-          '@max' => static::ID_MAX_LENGTH,
-          '@id' => $definition['id'],
-        )
-      ));
+      throw new EntityTypeIdLengthException('Attempt to create an entity type with an ID longer than ' . static::ID_MAX_LENGTH . " characters: {$definition['id']}.");
     }
 
     foreach ($definition as $property => $value) {
-      $this->{$property} = $value;
+      $this->set($property, $value);
     }
 
     // Ensure defaults.
@@ -285,14 +294,25 @@ class EntityType implements EntityTypeInterface {
    * {@inheritdoc}
    */
   public function get($property) {
-    return isset($this->{$property}) ? $this->{$property} : NULL;
+    if (property_exists($this, $property)) {
+      $value = isset($this->{$property}) ? $this->{$property} : NULL;
+    }
+    else {
+      $value = isset($this->additional[$property]) ? $this->additional[$property] : NULL;
+    }
+    return $value;
   }
 
   /**
    * {@inheritdoc}
    */
   public function set($property, $value) {
-    $this->{$property} = $value;
+    if (property_exists($this, $property)) {
+      $this->{$property} = $value;
+    }
+    else {
+      $this->additional[$property] = $value;
+    }
     return $this;
   }
 
@@ -654,13 +674,6 @@ class EntityType implements EntityTypeInterface {
   /**
    * {@inheritdoc}
    */
-  public function getConfigPrefix() {
-    return FALSE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function getRevisionDataTable() {
     return $this->revision_data_table;
   }
@@ -683,7 +696,7 @@ class EntityType implements EntityTypeInterface {
    * {@inheritdoc}
    */
   public function getLabel() {
-    return (string) $this->label;
+    return $this->label;
   }
 
   /**
@@ -720,7 +733,7 @@ class EntityType implements EntityTypeInterface {
    * {@inheritdoc}
    */
   public function getGroupLabel() {
-    return !empty($this->group_label) ? (string) $this->group_label : $this->t('Other', array(), array('context' => 'Entity type group'));
+    return !empty($this->group_label) ? $this->group_label : $this->t('Other', array(), array('context' => 'Entity type group'));
   }
 
   /**
@@ -775,6 +788,32 @@ class EntityType implements EntityTypeInterface {
   public function addConstraint($constraint_name, $options = NULL) {
     $this->constraints[$constraint_name] = $options;
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getBundleConfigDependency($bundle) {
+    // If this entity type uses entities to manage its bundles then depend on
+    // the bundle entity.
+    if ($bundle_entity_type_id = $this->getBundleEntityType()) {
+      if (!$bundle_entity = \Drupal::entityManager()->getStorage($bundle_entity_type_id)->load($bundle)) {
+        throw new \LogicException(sprintf('Missing bundle entity, entity type %s, entity id %s.', $bundle_entity_type_id, $bundle));
+      }
+      $config_dependency = [
+        'type' => 'config',
+        'name' => $bundle_entity->getConfigDependencyName(),
+      ];
+    }
+    else {
+      // Depend on the provider of the entity type.
+      $config_dependency = [
+        'type' => 'module',
+        'name' => $this->getProvider(),
+      ];
+    }
+
+    return $config_dependency;
   }
 
 }

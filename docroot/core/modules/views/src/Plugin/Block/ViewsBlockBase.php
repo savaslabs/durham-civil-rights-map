@@ -159,7 +159,7 @@ abstract class ViewsBlockBase extends BlockBase implements ContainerFactoryPlugi
     );
 
     if ($this->view->storage->access('edit') && \Drupal::moduleHandler()->moduleExists('views_ui')) {
-      $form['views_label']['#description'] = $this->t('Changing the title here means it cannot be dynamically altered anymore. (Try changing it directly in <a href="@url">@name</a>.)', array('@url' => \Drupal::url('entity.view.edit_display_form', array('view' => $this->view->storage->id(), 'display_id' => $this->displayID)), '@name' => $this->view->storage->label()));
+      $form['views_label']['#description'] = $this->t('Changing the title here means it cannot be dynamically altered anymore. (Try changing it directly in <a href=":url">@name</a>.)', array(':url' => \Drupal::url('entity.view.edit_display_form', array('view' => $this->view->storage->id(), 'display_id' => $this->displayID)), '@name' => $this->view->storage->label()));
     }
     else {
       $form['views_label']['#description'] = $this->t('Changing the title here means it cannot be dynamically altered anymore.');
@@ -201,8 +201,13 @@ abstract class ViewsBlockBase extends BlockBase implements ContainerFactoryPlugi
       if (is_string($output)) {
         $output = array('#markup' => $output);
       }
-      // Add the contextual links.
-      views_add_contextual_links($output, $block_type, $this->view, $this->displayID);
+
+      // views_add_contextual_links() needs the following information in
+      // order to be attached to the view.
+      $output['#view_id'] = $this->view->storage->id();
+      $output['#view_display_show_admin_links'] = $this->view->getShowAdminLinks();
+      $output['#view_display_plugin_id'] = $this->view->display_handler->getPluginId();
+      views_add_contextual_links($output, $block_type, $this->displayID);
     }
   }
 

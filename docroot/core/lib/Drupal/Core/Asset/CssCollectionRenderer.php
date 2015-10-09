@@ -1,12 +1,13 @@
 <?php
 
 /**
+ * @file
  * Contains \Drupal\Core\Asset\CssCollectionRenderer.
  */
 
 namespace Drupal\Core\Asset;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\State\StateInterface;
 
 /**
@@ -17,7 +18,7 @@ use Drupal\Core\State\StateInterface;
  * - They are the standard tag intended for linking to a resource.
  * - On Firefox 2 and perhaps other browsers, CSS files included with @import
  *   statements don't get saved when saving the complete web page for offline
- *   use: http://drupal.org/node/145218.
+ *   use: https://www.drupal.org/node/145218.
  * - On IE, if only LINK tags and no @import statements are used, all the CSS
  *   files are downloaded in parallel, resulting in faster page load, but if
  *   @import statements are used and span across multiple STYLE tags, all the
@@ -29,8 +30,8 @@ use Drupal\Core\State\StateInterface;
  *   http://www.stevesouders.com/blog/2009/04/09/dont-use-import/.
  *
  * However, IE has an annoying limit of 31 total CSS inclusion tags
- * (http://drupal.org/node/228818) and LINK tags are limited to one file per
- * tag, whereas STYLE tags can contain multiple @import statements allowing
+ * (https://www.drupal.org/node/228818) and LINK tags are limited to one file
+ * per tag, whereas STYLE tags can contain multiple @import statements allowing
  * multiple files to be loaded per tag. When CSS aggregation is disabled, a
  * Drupal site can easily have more than 31 CSS files that need to be loaded, so
  * using LINK tags exclusively would result in a site that would display
@@ -102,7 +103,7 @@ class CssCollectionRenderer implements AssetCollectionRendererInterface {
     // For filthy IE hack.
     $current_ie_group_keys = NULL;
     $get_ie_group_key = function ($css_asset) {
-      return array($css_asset['type'], $css_asset['preprocess'], $css_asset['group'], $css_asset['every_page'], $css_asset['media'], $css_asset['browsers']);
+      return array($css_asset['type'], $css_asset['preprocess'], $css_asset['group'], $css_asset['media'], $css_asset['browsers']);
     };
 
     // Loop through all CSS assets, by key, to allow for the special IE
@@ -122,9 +123,9 @@ class CssCollectionRenderer implements AssetCollectionRendererInterface {
         //      LINK tag.
         //    - file CSS assets that can be aggregated (and possibly have been):
         //      in this case, figure out which subsequent file CSS assets share
-        //      the same key properties ('group', 'every_page', 'media' and
-        //      'browsers') and output this group into as few STYLE tags as
-        //      possible (a STYLE tag may contain only 31 @import statements).
+        //      the same key properties ('group', 'media' and 'browsers') and
+        //      output this group into as few STYLE tags as possible (a STYLE
+        //      tag may contain only 31 @import statements).
         case 'file':
           // The dummy query string needs to be added to the URL to control
           // browser-caching.
@@ -158,7 +159,7 @@ class CssCollectionRenderer implements AssetCollectionRendererInterface {
               $import = array();
               // Start with the current CSS asset, iterate over subsequent CSS
               // assets and find which ones have the same 'type', 'group',
-              // 'every_page', 'preprocess', 'media' and 'browsers' properties.
+              // 'preprocess', 'media' and 'browsers' properties.
               $j = $i;
               $next_css_asset = $css_asset;
               $current_ie_group_key = $get_ie_group_key($css_asset);
@@ -167,7 +168,7 @@ class CssCollectionRenderer implements AssetCollectionRendererInterface {
                 // control browser-caching. IE7 does not support a media type on
                 // the @import statement, so we instead specify the media for
                 // the group on the STYLE tag.
-                $import[] = '@import url("' . SafeMarkup::checkPlain(file_create_url($next_css_asset['data']) . '?' . $query_string) . '");';
+                $import[] = '@import url("' . Html::escape(file_create_url($next_css_asset['data']) . '?' . $query_string) . '");';
                 // Move the outer for loop skip the next item, since we
                 // processed it here.
                 $i = $j;

@@ -21,7 +21,7 @@ function mappy_page_attachments_alter(&$page) {
   $path_args = explode('/', $current_path);
   if (sizeof($path_args) > 2) {
     $current_node = \Drupal\node\Entity\Node::load($path_args[2]);
-    if ($current_node->bundle() == 'place') {
+    if ($current_node && $current_node->bundle() == 'place') {
       $page['#attached']['drupalSettings']['mappy']['nodepageMap']['label'] = $current_node->getTitle();
       $coords = $current_node->location_coordinates;
       $page['#attached']['drupalSettings']['mappy']['nodepageMap']['lat'] = $coords->lat;

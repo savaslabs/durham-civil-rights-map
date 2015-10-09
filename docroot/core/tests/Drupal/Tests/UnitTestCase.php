@@ -7,9 +7,14 @@
 
 namespace Drupal\Tests;
 
+use Drupal\Component\FileCache\FileCacheFactory;
 use Drupal\Component\Utility\Random;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\StringTranslation\PluralTranslatableMarkup;
+
 
 /**
  * Provides a base class and helpers for Drupal unit tests.
@@ -40,6 +45,10 @@ abstract class UnitTestCase extends \PHPUnit_Framework_TestCase {
     // Ensure that an instantiated container in the global state of \Drupal from
     // a previous test does not leak into this test.
     \Drupal::unsetContainer();
+
+    // Ensure that the NullFileCache implementation is used for the FileCache as
+    // unit tests should not be relying on caches implicitly.
+    FileCacheFactory::setConfiguration(['default' => ['class' => '\Drupal\Component\FileCache\NullFileCache']]);
 
     $this->root = dirname(dirname(substr(__DIR__, 0, -strlen(__NAMESPACE__))));
   }
@@ -202,7 +211,20 @@ abstract class UnitTestCase extends \PHPUnit_Framework_TestCase {
     $translation = $this->getMock('Drupal\Core\StringTranslation\TranslationInterface');
     $translation->expects($this->any())
       ->method('translate')
-      ->will($this->returnCallback('Drupal\Component\Utility\SafeMarkup::format'));
+      ->willReturnCallback(function ($string, array $args = array(), array $options = array()) use ($translation) {
+        return new TranslatableMarkup($string, $args, $options, $translation);
+      });
+    $translation->expects($this->any())
+      ->method('translateString')
+      ->willReturnCallback(function (TranslatableMarkup $wrapper) {
+        return $wrapper->getUntranslatedString();
+      });
+    $translation->expects($this->any())
+      ->method('formatPlural')
+      ->willReturnCallback(function ($count, $singular, $plural, array $args = [], array $options = []) use ($translation) {
+        $wrapper = new PluralTranslatableMarkup($count, $singular, $plural, $args, $options, $translation);
+        return $wrapper;
+      });
     return $translation;
   }
 

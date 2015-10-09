@@ -119,7 +119,7 @@ class UserValidationTest extends KernelTestBase {
     // @todo There are two violations because EmailItem::getConstraints()
     //   overlaps with the implicit constraint of the 'email' property type used
     //   in EmailItem::propertyDefinitions(). Resolve this in
-    //   https://drupal.org/node/2023465.
+    //   https://www.drupal.org/node/2023465.
     $this->assertEqual(count($violations), 2, 'Violations found when email is too long');
     $this->assertEqual($violations[0]->getPropertyPath(), 'mail.0.value');
     $this->assertEqual($violations[0]->getMessage(), t('%name: the email address can not be longer than @max characters.', array('%name' => $user->get('mail')->getFieldDefinition()->getLabel(), '@max' => Email::EMAIL_MAX_LENGTH)));
@@ -134,9 +134,9 @@ class UserValidationTest extends KernelTestBase {
     $this->assertEqual($violations[0]->getMessage(), t('The email address %mail is already taken.', array('%mail' => 'existing@example.com')));
     $user->set('mail', NULL);
     $violations = $user->validate();
-    $this->assertEqual(count($violations), 1, 'E-mail addresses may not be removed');
+    $this->assertEqual(count($violations), 1, 'Email addresses may not be removed');
     $this->assertEqual($violations[0]->getPropertyPath(), 'mail');
-    $this->assertEqual($violations[0]->getMessage(), t('!name field is required.', array('!name' => SafeMarkup::placeholder($user->getFieldDefinition('mail')->getLabel()))));
+    $this->assertEqual($violations[0]->getMessage(), t('@name field is required.', array('@name' => $user->getFieldDefinition('mail')->getLabel())));
     $user->set('mail', 'someone@example.com');
 
     $user->set('timezone', $this->randomString(33));

@@ -5,9 +5,10 @@
  * Defines a "managed_file" Form API field and a "file" field for Field module.
  */
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Datetime\Entity\DateFormat;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
@@ -30,15 +31,15 @@ function file_help($route_name, RouteMatchInterface $route_match) {
     case 'help.page.file':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The File module allows you to create fields that contain files. See the <a href="!field">Field module help</a> and the <a href="!field_ui">Field UI help</a> pages for general information on fields and how to create and manage them. For more information, see the <a href="!file_documentation">online documentation for the File module</a>.', array('!field' => \Drupal::url('help.page', array('name' => 'field')), '!field_ui' => \Drupal::url('help.page', array('name' => 'field_ui')), '!file_documentation' => 'https://drupal.org/documentation/modules/file')) . '</p>';
+      $output .= '<p>' . t('The File module allows you to create fields that contain files. See the <a href=":field">Field module help</a> and the <a href=":field_ui">Field UI help</a> pages for general information on fields and how to create and manage them. For more information, see the <a href=":file_documentation">online documentation for the File module</a>.', array(':field' => \Drupal::url('help.page', array('name' => 'field')), ':field_ui' => (\Drupal::moduleHandler()->moduleExists('field_ui')) ? \Drupal::url('help.page', array('name' => 'field_ui')) :'#', ':file_documentation' => 'https://www.drupal.org/documentation/modules/file')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Managing and displaying file fields') . '</dt>';
-      $output .= '<dd>' . t('The <em>settings</em> and the <em>display</em> of the file field can be configured separately. See the <a href="!field_ui">Field UI help</a> for more information on how to manage fields and their display.', array('!field_ui' => \Drupal::url('help.page', array('name' => 'field_ui')))) . '</dd>';
+      $output .= '<dd>' . t('The <em>settings</em> and the <em>display</em> of the file field can be configured separately. See the <a href=":field_ui">Field UI help</a> for more information on how to manage fields and their display.', array(':field_ui' => (\Drupal::moduleHandler()->moduleExists('field_ui')) ? \Drupal::url('help.page', array('name' => 'field_ui')) : '#')) . '</dd>';
       $output .= '<dt>' . t('Allowing file extensions') . '</dt>';
       $output .= '<dd>' . t('In the field settings, you can define the allowed file extensions (for example <em>pdf docx psd</em>) for the files that will be uploaded with the file field.') . '</dd>';
       $output .= '<dt>' . t('Storing files ') . '</dt>';
-      $output .= '<dd>' . t('Uploaded files can either be stored as <em>public</em> or <em>private</em>, depending on the <a href="!file-system">File system settings</a>. For more information, see the <a href="!system-help">System module help page</a>.', array('!file-system' => \Drupal::url('system.file_system_settings'), '!system-help' => \Drupal::url('help.page', array('name' => 'system')))) . '</dd>';
+      $output .= '<dd>' . t('Uploaded files can either be stored as <em>public</em> or <em>private</em>, depending on the <a href=":file-system">File system settings</a>. For more information, see the <a href=":system-help">System module help page</a>.', array(':file-system' => \Drupal::url('system.file_system_settings'), ':system-help' => \Drupal::url('help.page', array('name' => 'system')))) . '</dd>';
       $output .= '<dt>' . t('Restricting the maximum file size') . '</dt>';
       $output .= '<dd>' . t('The maximum file size that users can upload is limited by PHP settings of the server, but you can restrict by entering the desired value as the <em>Maximum upload size</em> setting. The maximum file size is automatically displayed to users in the help text of the file field.') . '</dd>';
       $output .= '<dt>' . t('Displaying files and descriptions') . '<dt>';
@@ -53,7 +54,7 @@ function file_help($route_name, RouteMatchInterface $route_match) {
  *
  * @param array $fids
  *   (optional) An array of entity IDs. If omitted, all entities are loaded.
- * @param $reset
+ * @param bool $reset
  *   Whether to reset the internal file_load_multiple() cache.
  *
  * @return array
@@ -77,9 +78,9 @@ function file_load_multiple(array $fids = NULL, $reset = FALSE) {
 /**
  * Loads a single file entity from the database.
  *
- * @param $fid
+ * @param int $fid
  *   A file ID.
- * @param $reset
+ * @param bool $reset
  *   Whether to reset the internal file_load_multiple() cache.
  *
  * @return \Drupal\file\FileInterface
@@ -116,10 +117,10 @@ function file_load($fid, $reset = FALSE) {
  *
  * @param \Drupal\file\FileInterface $source
  *   A file entity.
- * @param $destination
+ * @param string $destination
  *   A string containing the destination that $source should be copied to.
  *   This must be a stream wrapper URI.
- * @param $replace
+ * @param int $replace
  *   Replace behavior when the destination file already exists:
  *   - FILE_EXISTS_REPLACE - Replace the existing file. If a managed file with
  *       the destination name exists then its database entry will be updated. If
@@ -128,7 +129,7 @@ function file_load($fid, $reset = FALSE) {
  *       unique.
  *   - FILE_EXISTS_ERROR - Do nothing and return FALSE.
  *
- * @return
+ * @return \Drupal\file\FileInterface|FALSE
  *   File object if the copy is successful, or FALSE in the event of an error.
  *
  * @see file_unmanaged_copy()
@@ -151,8 +152,8 @@ function file_copy(FileInterface $source, $destination = NULL, $replace = FILE_E
     $file->setFileUri($uri);
     $file->setFilename(drupal_basename($uri));
     // If we are replacing an existing file re-use its database record.
-    // @todo Do not create a new entity in order to update it, see
-    //   https://drupal.org/node/2241865
+    // @todo Do not create a new entity in order to update it. See
+    //   https://www.drupal.org/node/2241865.
     if ($replace == FILE_EXISTS_REPLACE) {
       $existing_files = entity_load_multiple_by_properties('file', array('uri' => $uri));
       if (count($existing_files)) {
@@ -191,10 +192,10 @@ function file_copy(FileInterface $source, $destination = NULL, $replace = FILE_E
  *
  * @param \Drupal\file\FileInterface $source
  *   A file entity.
- * @param $destination
+ * @param string $destination
  *   A string containing the destination that $source should be moved to.
  *   This must be a stream wrapper URI.
- * @param $replace
+ * @param int $replace
  *   Replace behavior when the destination file already exists:
  *   - FILE_EXISTS_REPLACE - Replace the existing file. If a managed file with
  *       the destination name exists then its database entry will be updated and
@@ -267,7 +268,7 @@ function file_move(FileInterface $source, $destination = NULL, $replace = FILE_E
  *
  * @param \Drupal\file\FileInterface $file
  *   A file entity.
- * @param $validators
+ * @param array $validators
  *   An optional, associative array of callback functions used to validate the
  *   file. The keys are function names and the values arrays of callback
  *   parameters which will be passed in after the file entity. The
@@ -275,7 +276,7 @@ function file_move(FileInterface $source, $destination = NULL, $replace = FILE_E
  *   indicates that the file passed validation. The functions will be called in
  *   the order specified.
  *
- * @return
+ * @return array
  *   An array containing validation error messages.
  *
  * @see hook_file_validate()
@@ -300,7 +301,7 @@ function file_validate(FileInterface $file, $validators = array()) {
  * @param \Drupal\file\FileInterface $file
  *   A file entity.
  *
- * @return
+ * @return array
  *   An array. If the file name is too long, it will contain an error message.
  */
 function file_validate_name_length(FileInterface $file) {
@@ -320,10 +321,10 @@ function file_validate_name_length(FileInterface $file) {
  *
  * @param \Drupal\file\FileInterface $file
  *   A file entity.
- * @param $extensions
+ * @param string $extensions
  *   A string with a space separated list of allowed extensions.
  *
- * @return
+ * @return array
  *   An array. If the file extension is not allowed, it will contain an error
  *   message.
  *
@@ -344,14 +345,14 @@ function file_validate_extensions(FileInterface $file, $extensions) {
  *
  * @param \Drupal\file\FileInterface $file
  *   A file entity.
- * @param $file_limit
+ * @param int $file_limit
  *   An integer specifying the maximum file size in bytes. Zero indicates that
  *   no limit should be enforced.
- * @param $user_limit
+ * @param int $user_limit
  *   An integer specifying the maximum number of bytes the user is allowed.
  *   Zero indicates that no limit should be enforced.
  *
- * @return
+ * @return array
  *   An array. If the file size exceeds limits, it will contain an error
  *   message.
  *
@@ -379,7 +380,7 @@ function file_validate_size(FileInterface $file, $file_limit = 0, $user_limit = 
  * @param \Drupal\file\FileInterface $file
  *   A file entity.
  *
- * @return
+ * @return array
  *   An array. If the file is not an image, it will contain an error message.
  *
  * @see hook_file_validate()
@@ -400,17 +401,17 @@ function file_validate_is_image(FileInterface $file) {
 /**
  * Verifies that image dimensions are within the specified maximum and minimum.
  *
- * Non-image files will be ignored. If a image toolkit is available the image
+ * Non-image files will be ignored. If an image toolkit is available the image
  * will be scaled to fit within the desired maximum dimensions.
  *
  * @param \Drupal\file\FileInterface $file
  *   A file entity. This function may resize the file affecting its size.
- * @param $maximum_dimensions
+ * @param string $maximum_dimensions
  *   An optional string in the form WIDTHxHEIGHT e.g. '640x480' or '85x85'. If
  *   an image toolkit is installed the image will be resized down to these
  *   dimensions. A value of 0 indicates no restriction on size, so resizing
  *   will be attempted.
- * @param $minimum_dimensions
+ * @param string $minimum_dimensions
  *   An optional string in the form WIDTHxHEIGHT. This will check that the
  *   image meets a minimum size. A value of 0 indicates no restriction.
  *
@@ -458,13 +459,13 @@ function file_validate_image_resolution(FileInterface $file, $maximum_dimensions
 /**
  * Saves a file to the specified destination and creates a database entry.
  *
- * @param $data
+ * @param string $data
  *   A string containing the contents of the file.
- * @param $destination
+ * @param string $destination
  *   A string containing the destination URI. This must be a stream wrapper URI.
  *   If no value is provided, a randomized name will be generated and the file
  *   will be saved using Drupal's default files scheme, usually "public://".
- * @param $replace
+ * @param int $replace
  *   Replace behavior when the destination file already exists:
  *   - FILE_EXISTS_REPLACE - Replace the existing file. If a managed file with
  *       the destination name exists then its database entry will be updated. If
@@ -498,8 +499,8 @@ function file_save_data($data, $destination = NULL, $replace = FILE_EXISTS_RENAM
       'status' => FILE_STATUS_PERMANENT,
     ));
     // If we are replacing an existing file re-use its database record.
-    // @todo Do not create a new entity in order to update it, see
-    //   https://drupal.org/node/2241865
+    // @todo Do not create a new entity in order to update it. See
+    //   https://www.drupal.org/node/2241865.
     if ($replace == FILE_EXISTS_REPLACE) {
       $existing_files = entity_load_multiple_by_properties('file', array('uri' => $uri));
       if (count($existing_files)) {
@@ -527,7 +528,7 @@ function file_save_data($data, $destination = NULL, $replace = FILE_EXISTS_RENAM
  * @param \Drupal\file\FileInterface $file
  *   A file entity.
  *
- * @return
+ * @return array
  *   An associative array of headers, as expected by
  *   \Symfony\Component\HttpFoundation\StreamedResponse.
  */
@@ -591,6 +592,20 @@ function file_file_download($uri) {
     return;
   }
 
+  // Find out if a temporary file is still used in the system.
+  if ($file->isTemporary()) {
+    $usage = \Drupal::service('file.usage')->listUsage($file);
+    if (empty($usage) && $file->getOwnerId() != \Drupal::currentUser()->id()) {
+      // Deny access to temporary files without usage that are not owned by the
+      // same user. This prevents the security issue that a private file that
+      // was protected by field permissions becomes available after its usage
+      // was removed and before it is actually deleted from the file system.
+      // Modules that depend on this behavior should make the file permanent
+      // instead.
+      return -1;
+    }
+  }
+
   // Find out which (if any) fields of this type contain the file.
   $references = file_get_file_references($file, NULL, EntityStorageInterface::FIELD_LOAD_CURRENT, NULL);
 
@@ -613,10 +628,11 @@ function file_file_download($uri) {
 }
 
 /**
- * Implements file_cron()
+ * Implements hook_cron().
  */
 function file_cron() {
   $age = \Drupal::config('system.file')->get('temporary_maximum_age');
+  $file_storage = \Drupal::entityManager()->getStorage('file');
 
   // Only delete temporary files if older than $age. Note that automatic cleanup
   // is disabled if $age set to 0.
@@ -626,7 +642,7 @@ function file_cron() {
       ->condition('changed', REQUEST_TIME - $age, '<')
       ->range(0, 100)
       ->execute();
-    $files = file_load_multiple($fids);
+    $files = $file_storage->loadMultiple($fids);
     foreach ($files as $file) {
       $references = \Drupal::service('file.usage')->listUsage($file);
       if (empty($references)) {
@@ -651,10 +667,10 @@ function file_cron() {
  * Temporary files are periodically cleaned. Use the 'file.usage' service to
  * register the usage of the file which will automatically mark it as permanent.
  *
- * @param $form_field_name
+ * @param string $form_field_name
  *   A string that is the associative array key of the upload form element in
  *   the form array.
- * @param $validators
+ * @param array $validators
  *   An optional, associative array of callback functions used to validate the
  *   file. See file_validate() for a full discussion of the array format.
  *   If no extension validator is provided it will default to a limited safe
@@ -663,20 +679,20 @@ function file_cron() {
  *   explicitly set the 'file_validate_extensions' validator to an empty array
  *   (Beware: this is not safe and should only be allowed for trusted users, if
  *   at all).
- * @param $destination
+ * @param string $destination
  *   A string containing the URI that the file should be copied to. This must
  *   be a stream wrapper URI. If this value is omitted, Drupal's temporary
  *   files scheme will be used ("temporary://").
- * @param $delta
+ * @param int $delta
  *   Delta of the file to save or NULL to save all files. Defaults to NULL.
- * @param $replace
+ * @param int $replace
  *   Replace behavior when the destination file already exists:
  *   - FILE_EXISTS_REPLACE: Replace the existing file.
  *   - FILE_EXISTS_RENAME: Append _{incrementing number} until the filename is
  *     unique.
  *   - FILE_EXISTS_ERROR: Do nothing and return FALSE.
  *
- * @return
+ * @return array
  *   Function returns array of files or a single file object if $delta
  *   != NULL. Each file object contains the file information if the
  *   upload succeeded or FALSE in the event of an error. Function
@@ -836,18 +852,18 @@ function file_save_upload($form_field_name, $validators = array(), $destination 
 
     // Check for errors.
     if (!empty($errors)) {
-      $message = t('The specified file %name could not be uploaded.', array('%name' => $file->getFilename()));
-      if (count($errors) > 1) {
-        $item_list = array(
+      $message = array(
+        'error' => array(
+          '#markup' => t('The specified file %name could not be uploaded.', array('%name' => $file->getFilename())),
+        ),
+        'item_list' => array(
           '#theme' => 'item_list',
           '#items' => $errors,
-        );
-        $message = SafeMarkup::set($message . drupal_render($item_list));
-      }
-      else {
-        $message = SafeMarkup::set($message . ' ' . SafeMarkup::escape(array_pop($errors)));
-      }
-      drupal_set_message($message, 'error');
+        ),
+      );
+      // @todo Add support for render arrays in drupal_set_message()? See
+      //  https://www.drupal.org/node/2505497.
+      drupal_set_message(\Drupal::service('renderer')->renderPlain($message), 'error');
       $files[$i] = FALSE;
       continue;
     }
@@ -867,8 +883,8 @@ function file_save_upload($form_field_name, $validators = array(), $destination 
     drupal_chmod($file->getFileUri());
 
     // If we are replacing an existing file re-use its database record.
-    // @todo Do not create a new entity in order to update it, see
-    //   https://drupal.org/node/2241865
+    // @todo Do not create a new entity in order to update it. See
+    //   https://www.drupal.org/node/2241865.
     if ($replace == FILE_EXISTS_REPLACE) {
       $existing_files = entity_load_multiple_by_properties('file', array('uri' => $file->getFileUri()));
       if (count($existing_files)) {
@@ -892,7 +908,7 @@ function file_save_upload($form_field_name, $validators = array(), $destination 
 /**
  * Determines the preferred upload progress implementation.
  *
- * @return
+ * @return string|FALSE
  *   A string indicating which upload progress system is available. Either "apc"
  *   or "uploadprogress". If neither are available, returns FALSE.
  */
@@ -923,7 +939,7 @@ function file_file_predelete(File $file) {
 /**
  * Implements hook_tokens().
  */
-function file_tokens($type, $tokens, array $data = array(), array $options = array()) {
+function file_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
   $token_service = \Drupal::token();
 
   $url_options = array('absolute' => TRUE);
@@ -934,7 +950,6 @@ function file_tokens($type, $tokens, array $data = array(), array $options = arr
   else {
     $langcode = NULL;
   }
-  $sanitize = !empty($options['sanitize']);
 
   $replacements = array();
 
@@ -951,15 +966,15 @@ function file_tokens($type, $tokens, array $data = array(), array $options = arr
 
         // Essential file data
         case 'name':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($file->getFilename()) : $file->getFilename();
+          $replacements[$original] = $file->getFilename();
           break;
 
         case 'path':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($file->getFileUri()) : $file->getFileUri();
+          $replacements[$original] = $file->getFileUri();
           break;
 
         case 'mime':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($file->getMimeType()) : $file->getMimeType();
+          $replacements[$original] = $file->getMimeType();
           break;
 
         case 'size':
@@ -967,35 +982,41 @@ function file_tokens($type, $tokens, array $data = array(), array $options = arr
           break;
 
         case 'url':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain(file_create_url($file->getFileUri())) : file_create_url($file->getFileUri());
+          $replacements[$original] = file_create_url($file->getFileUri());
           break;
 
         // These tokens are default variations on the chained tokens handled below.
         case 'created':
+          $date_format = DateFormat::load('medium');
+          $bubbleable_metadata->addCacheableDependency($date_format);
           $replacements[$original] = format_date($file->getCreatedTime(), 'medium', '', NULL, $langcode);
           break;
 
         case 'changed':
+          $date_format = DateFormat::load('medium');
+          $bubbleable_metadata = $bubbleable_metadata->addCacheableDependency($date_format);
           $replacements[$original] = format_date($file->getChangedTime(), 'medium', '', NULL, $langcode);
           break;
 
         case 'owner':
-          $name = $file->getOwner()->label();
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($name) : $name;
+          $owner = $file->getOwner();
+          $bubbleable_metadata->addCacheableDependency($owner);
+          $name = $owner->label();
+          $replacements[$original] = $name;
           break;
       }
     }
 
     if ($date_tokens = $token_service->findWithPrefix($tokens, 'created')) {
-      $replacements += $token_service->generate('date', $date_tokens, array('date' => $file->getCreatedTime()), $options);
+      $replacements += $token_service->generate('date', $date_tokens, array('date' => $file->getCreatedTime()), $options, $bubbleable_metadata);
     }
 
     if ($date_tokens = $token_service->findWithPrefix($tokens, 'changed')) {
-      $replacements += $token_service->generate('date', $date_tokens, array('date' => $file->getChangedTime()), $options);
+      $replacements += $token_service->generate('date', $date_tokens, array('date' => $file->getChangedTime()), $options, $bubbleable_metadata);
     }
 
     if (($owner_tokens = $token_service->findWithPrefix($tokens, 'owner')) && $file->getOwner()) {
-      $replacements += $token_service->generate('user', $owner_tokens, array('user' => $file->getOwner()), $options);
+      $replacements += $token_service->generate('user', $owner_tokens, array('user' => $file->getOwner()), $options, $bubbleable_metadata);
     }
   }
 
@@ -1130,12 +1151,12 @@ function file_managed_file_submit($form, FormStateInterface $form_state) {
 /**
  * Saves any files that have been uploaded into a managed_file element.
  *
- * @param $element
+ * @param array $element
  *   The FAPI element whose values are being saved.
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  *   The current state of the form.
  *
- * @return
+ * @return array
  *   An array of file entities for each file that was saved, keyed by its file
  *   ID, or FALSE if no files were saved.
  */
@@ -1149,7 +1170,7 @@ function file_managed_file_save_upload($element, FormStateInterface $form_state)
   $destination = isset($element['#upload_location']) ? $element['#upload_location'] : NULL;
   if (isset($destination) && !file_prepare_directory($destination, FILE_CREATE_DIRECTORY)) {
     \Drupal::logger('file')->notice('The upload directory %directory for the file field !name could not be created or is not accessible. A newly uploaded file could not be saved in this directory as a consequence, and the upload was canceled.', array('%directory' => $destination, '!name' => $element['#field_name']));
-    $form_state->setErrorByName($upload_name, t('The file could not be uploaded.'));
+    $form_state->setError($element, t('The file could not be uploaded.'));
     return FALSE;
   }
 
@@ -1159,7 +1180,7 @@ function file_managed_file_save_upload($element, FormStateInterface $form_state)
   if ($files_uploaded) {
     if (!$files = file_save_upload($upload_name, $element['#upload_validators'], $destination)) {
       \Drupal::logger('file')->notice('The file upload failed. %upload', array('%upload' => $upload_name));
-      $form_state->setErrorByName($upload_name, t('Files in the !name field were unable to be uploaded.', array('!name' => $element['#title'])));
+      $form_state->setError($element, t('Files in the @name field were unable to be uploaded.', array('@name' => $element['#title'])));
       return array();
     }
 
@@ -1211,7 +1232,7 @@ function template_preprocess_file_link(&$variables) {
   $file = $variables['file'];
   $options = array();
 
-  $file_entity = ($file instanceof File) ? $file : file_load($file->fid);
+  $file_entity = ($file instanceof File) ? $file : File::load($file->fid);
   $url = file_create_url($file_entity->getFileUri());
 
   $mime_type = $file->getMimeType();
@@ -1225,7 +1246,7 @@ function template_preprocess_file_link(&$variables) {
   }
   else {
     $link_text = $variables['description'];
-    $options['attributes']['title'] = SafeMarkup::checkPlain($file_entity->getFilename());
+    $options['attributes']['title'] = $file_entity->getFilename();
   }
 
   // Classes to add to the file field for icons.
@@ -1251,7 +1272,7 @@ function template_preprocess_file_link(&$variables) {
  *   A MIME type.
  *
  * @return string
- *   A class associated to the file.
+ *   A class associated with the file.
  */
 function file_icon_class($mime_type) {
   // Search for a group with the files MIME type.
@@ -1277,7 +1298,7 @@ function file_icon_class($mime_type) {
  * @param string $mime_type
  *   A MIME type.
  *
- * @return
+ * @return string|FALSE
  *   The generic icon MIME package expected for this file.
  */
 function file_icon_map($mime_type) {
@@ -1413,19 +1434,19 @@ function file_icon_map($mime_type) {
  * @param \Drupal\Core\Field\FieldDefinitionInterface $field
  *   (optional) A field definition to be used for this check. If given, limits the
  *   reference check to the given field.
- * @param $age
+ * @param int $age
  *   (optional) A constant that specifies which references to count. Use
  *   EntityStorageInterface::FIELD_LOAD_REVISION to retrieve all
  *   references within all revisions or
  *   EntityStorageInterface::FIELD_LOAD_CURRENT to retrieve references
  *   only in the current revisions.
- * @param $field_type
+ * @param string $field_type
  *   (optional) The name of a field type. If given, limits the reference check
  *   to fields of the given type. If both $field and $field_type is given but
  *   $field is not the same type as $field_type, an empty array will be
  *   returned.
  *
- * @return
+ * @return array
  *   A multidimensional array. The keys are field_name, entity_type,
  *   entity_id and the value is an entity referencing this file.
  *

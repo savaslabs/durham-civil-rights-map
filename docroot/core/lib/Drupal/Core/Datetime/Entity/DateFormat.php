@@ -25,7 +25,13 @@ use Drupal\Core\Datetime\DateFormatInterface;
  *     "label" = "label"
  *   },
  *   admin_permission = "administer site configuration",
- *   list_cache_tags = { "rendered" }
+ *   list_cache_tags = { "rendered" },
+ *   config_export = {
+ *     "id",
+ *     "label",
+ *     "locked",
+ *     "pattern",
+ *   }
  * )
  */
 class DateFormat extends ConfigEntityBase implements DateFormatInterface {
@@ -35,14 +41,14 @@ class DateFormat extends ConfigEntityBase implements DateFormatInterface {
    *
    * @var string
    */
-  public $id;
+  protected $id;
 
   /**
    * The human-readable name of the date format entity.
    *
    * @var string
    */
-  public $label;
+  protected $label;
 
   /**
    * The date format pattern.
@@ -95,7 +101,7 @@ class DateFormat extends ConfigEntityBase implements DateFormatInterface {
   /**
    * {@inheritdoc}
    */
-  public function getCacheTags() {
+  public function getCacheTagsToInvalidate() {
     return ['rendered'];
   }
 

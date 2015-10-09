@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Contains Drupal\views\Tests\Plugin\StyleHtmlListTest.
+ * Contains \Drupal\views\Tests\Plugin\StyleHtmlListTest.
  */
 
 namespace Drupal\views\Tests\Plugin;
 
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 
 /**
@@ -16,7 +16,7 @@ use Drupal\views\Views;
  * @group views
  * @see \Drupal\views\Plugin\views\style\HtmlList
  */
-class StyleHtmlListTest extends ViewUnitTestBase {
+class StyleHtmlListTest extends ViewKernelTestBase {
 
   /**
    * Views used by this test.
@@ -31,7 +31,7 @@ class StyleHtmlListTest extends ViewUnitTestBase {
   function testDefaultRowClasses() {
     $view = Views::getView('test_style_html_list');
     $output = $view->preview();
-    $output = drupal_render($output);
+    $output = \Drupal::service('renderer')->renderRoot($output);
 
     // Check that an empty class attribute is not added if the wrapper class is
     // not set.
@@ -46,7 +46,7 @@ class StyleHtmlListTest extends ViewUnitTestBase {
     $view->style_plugin->options['wrapper_class'] = 'wrapper-class';
 
     $output = $view->preview();
-    $output = drupal_render($output);
+    $output = \Drupal::service('renderer')->renderRoot($output);
 
     // Check that class attribute is present if the wrapper class is set.
     $this->assertTrue(strpos($output, '<div class="wrapper-class">') !== FALSE, 'Class is added to DIV');

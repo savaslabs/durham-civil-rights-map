@@ -127,7 +127,21 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
    */
   public function getButtons() {
     $button = function($name, $direction = 'ltr') {
-      return '<a href="#" class="cke-icon-only cke_' . $direction . '" role="button" title="' . $name . '" aria-label="' . $name . '"><span class="cke_button_icon cke_button__' . str_replace(' ', '', $name) . '_icon">' . $name . '</span></a>';
+      // In the markup below, we mostly use the name (which may include spaces),
+      // but in one spot we use it as a CSS class, so strip spaces.
+      // Note: this uses str_replace() instead of Html::cleanCssIdentifier()
+      // because we must provide these class names exactly how CKEditor expects
+      // them in its library, which cleanCssIdentifier() does not do.
+      $class_name = str_replace(' ', '', $name);
+      return [
+        '#type' => 'inline_template',
+        '#template' => '<a href="#" class="cke-icon-only cke_{{ direction }}" role="button" title="{{ name }}" aria-label="{{ name }}"><span class="cke_button_icon cke_button__{{ classname }}_icon">{{ name }}</span></a>',
+        '#context' => [
+          'direction' => $direction,
+          'name' => $name,
+          'classname' => $class_name,
+        ],
+      ];
     };
 
     return array(
@@ -135,48 +149,59 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
       'Bold' => array(
         'label' => t('Bold'),
         'image_alternative' => $button('bold'),
+        'image_alternative_rtl' => $button('bold', 'rtl'),
       ),
       'Italic' => array(
         'label' => t('Italic'),
         'image_alternative' => $button('italic'),
+        'image_alternative_rtl' => $button('italic', 'rtl'),
       ),
       'Underline' => array(
         'label' => t('Underline'),
         'image_alternative' => $button('underline'),
+        'image_alternative_rtl' => $button('underline', 'rtl'),
       ),
       'Strike' => array(
         'label' => t('Strike-through'),
         'image_alternative' => $button('strike'),
+        'image_alternative_rtl' => $button('strike', 'rtl'),
       ),
       'Superscript' => array(
         'label' => t('Superscript'),
         'image_alternative' => $button('super script'),
+        'image_alternative_rtl' => $button('super script', 'rtl'),
       ),
       'Subscript' => array(
         'label' => t('Subscript'),
         'image_alternative' => $button('sub script'),
+        'image_alternative_rtl' => $button('sub script', 'rtl'),
       ),
       // "removeformat" plugin.
       'RemoveFormat' => array(
         'label' => t('Remove format'),
         'image_alternative' => $button('remove format'),
+        'image_alternative_rtl' => $button('remove format', 'rtl'),
       ),
       // "justify" plugin.
       'JustifyLeft' => array(
         'label' => t('Align left'),
         'image_alternative' => $button('justify left'),
+        'image_alternative_rtl' => $button('justify left', 'rtl'),
       ),
       'JustifyCenter' => array(
         'label' => t('Align center'),
         'image_alternative' => $button('justify center'),
+        'image_alternative_rtl' => $button('justify center', 'rtl'),
       ),
       'JustifyRight' => array(
         'label' => t('Align right'),
         'image_alternative' => $button('justify right'),
+        'image_alternative_rtl' => $button('justify right', 'rtl'),
       ),
       'JustifyBlock' => array(
         'label' => t('Justify'),
         'image_alternative' => $button('justify block'),
+        'image_alternative_rtl' => $button('justify block', 'rtl'),
       ),
       // "list" plugin.
       'BulletedList' => array(
@@ -215,11 +240,13 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
       'Blockquote' => array(
         'label' => t('Blockquote'),
         'image_alternative' => $button('blockquote'),
+        'image_alternative_rtl' => $button('blockquote', 'rtl'),
       ),
       // "horizontalrule" plugin
       'HorizontalRule' => array(
         'label' => t('Horizontal rule'),
         'image_alternative' => $button('horizontal rule'),
+        'image_alternative_rtl' => $button('horizontal rule', 'rtl'),
       ),
       // "clipboard" plugin.
       'Cut' => array(
@@ -253,15 +280,23 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
       'SpecialChar' => array(
         'label' => t('Character map'),
         'image_alternative' => $button('special char'),
+        'image_alternative_rtl' => $button('special char', 'rtl'),
       ),
       'Format' => array(
         'label' => t('HTML block format'),
-        'image_alternative' => '<a href="#" role="button" aria-label="' . t('Format') . '"><span class="ckeditor-button-dropdown">' . t('Format') . '<span class="ckeditor-button-arrow"></span></span></a>',
+        'image_alternative' => [
+          '#type' => 'inline_template',
+          '#template' => '<a href="#" role="button" aria-label="{{ format_text }}"><span class="ckeditor-button-dropdown">{{ format_text }}<span class="ckeditor-button-arrow"></span></span></a>',
+          '#context' => [
+            'format_text' => t('Format'),
+          ],
+        ],
       ),
       // "table" plugin.
       'Table' => array(
         'label' => t('Table'),
         'image_alternative' => $button('table'),
+        'image_alternative_rtl' => $button('table', 'rtl'),
       ),
       // "showblocks" plugin.
       'ShowBlocks' => array(
@@ -273,16 +308,24 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
       'Source' => array(
         'label' => t('Source code'),
         'image_alternative' => $button('source'),
+        'image_alternative_rtl' => $button('source', 'rtl'),
       ),
       // "maximize" plugin.
       'Maximize' => array(
         'label' => t('Maximize'),
         'image_alternative' => $button('maximize'),
+        'image_alternative_rtl' => $button('maximize', 'rtl'),
       ),
       // No plugin, separator "button" for toolbar builder UI use only.
       '-' => array(
         'label' => t('Separator'),
-        'image_alternative' => '<a href="#" role="button" aria-label="' . t('Button separator') . '" class="ckeditor-separator"></a>',
+        'image_alternative' => [
+          '#type' => 'inline_template',
+          '#template' => '<a href="#" role="button" aria-label="{{ button_separator_text }}" class="ckeditor-separator"></a>',
+          '#context' => [
+            'button_separator_text' => t('Button separator'),
+          ],
+        ],
         'attributes' => array(
           'class' => array('ckeditor-button-separator'),
           'data-drupal-ckeditor-type' => 'separator',
@@ -302,10 +345,6 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
    *
    * @return array
    *   An array containing the "format_tags" configuration.
-   *
-   * @see ckeditor_rebuild()
-   * @see ckeditor_filter_format_insert()
-   * @see ckeditor_filter_format_update()
    */
   protected function generateFormatTagsSetting(Editor $editor) {
     // When no text format is associated yet, assume no tag is allowed.
@@ -315,9 +354,35 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
     }
 
     $format = $editor->getFilterFormat();
-    // The <p> tag is always allowed — HTML without <p> tags is nonsensical.
-    $default = 'p';
-    return \Drupal::state()->get('ckeditor_internal_format_tags:' . $format->id(), $default);
+    $cid = 'ckeditor_internal_format_tags:' . $format->id();
+
+    if ($cached = $this->cache->get($cid)) {
+      $format_tags = $cached->data;
+    }
+    else {
+      // The <p> tag is always allowed — HTML without <p> tags is nonsensical.
+      $format_tags = ['p'];
+
+      // Given the list of possible format tags, automatically determine whether
+      // the current text format allows this tag, and thus whether it should show
+      // up in the "Format" dropdown.
+      $possible_format_tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre'];
+      foreach ($possible_format_tags as $tag) {
+        $input = '<' . $tag . '>TEST</' . $tag . '>';
+        $output = trim(check_markup($input, $editor->id()));
+        if ($input == $output) {
+          $format_tags[] = $tag;
+        }
+      }
+      $format_tags = implode(';', $format_tags);
+
+      // Cache the "format_tags" configuration. This cache item is infinitely
+      // valid; it only changes whenever the text format is changed, hence it's
+      // tagged with the text format's cache tag.
+      $this->cache->set($cid, $format_tags, Cache::PERMANENT, $format->getCacheTags());
+    }
+
+    return $format_tags;
   }
 
   /**
@@ -451,6 +516,13 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
         }
         // Tell CKEditor the tag is allowed, along with some tags.
         elseif (is_array($attributes)) {
+          // Set defaults (these will be overridden below if more specific
+          // values are present).
+          $allowed[$tag] = array(
+            'attributes' => FALSE,
+            'styles' => FALSE,
+            'classes' => FALSE,
+          );
           // Configure allowed attributes, allowed "style" attribute values and
           // allowed "class" attribute values.
           // CKEditor only allows specific values for the "class" and "style"
@@ -514,6 +586,9 @@ class Internal extends CKEditorPluginBase implements ContainerFactoryPluginInter
           }
         }
       }
+
+      ksort($allowed);
+      ksort($disallowed);
 
       return array($allowed, $disallowed);
     }

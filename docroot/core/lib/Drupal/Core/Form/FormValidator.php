@@ -45,6 +45,13 @@ class FormValidator implements FormValidatorInterface {
   protected $logger;
 
   /**
+   * The form error handler.
+   *
+   * @var \Drupal\Core\Form\FormErrorHandlerInterface
+   */
+  protected $formErrorHandler;
+
+  /**
    * Constructs a new FormValidator.
    *
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
@@ -55,12 +62,15 @@ class FormValidator implements FormValidatorInterface {
    *   The CSRF token generator.
    * @param \Psr\Log\LoggerInterface $logger
    *   A logger instance.
+   * @param \Drupal\Core\Form\FormErrorHandlerInterface $form_error_handler
+   *   The form error handler.
    */
-  public function __construct(RequestStack $request_stack, TranslationInterface $string_translation, CsrfTokenGenerator $csrf_token, LoggerInterface $logger) {
+  public function __construct(RequestStack $request_stack, TranslationInterface $string_translation, CsrfTokenGenerator $csrf_token, LoggerInterface $logger, FormErrorHandlerInterface $form_error_handler) {
     $this->requestStack = $request_stack;
     $this->stringTranslation = $string_translation;
     $this->csrfToken = $csrf_token;
     $this->logger = $logger;
+    $this->formErrorHandler = $form_error_handler;
   }
 
   /**
@@ -95,13 +105,12 @@ class FormValidator implements FormValidatorInterface {
     }
 
     // If the session token was set by self::prepareForm(), ensure that it
-    // matches the current user's session.
+    // matches the current user's session. This is duplicate to code in
+    // FormBuilder::doBuildForm() but left to protect any custom form handling
+    // code.
     if (isset($form['#token'])) {
-      if (!$this->csrfToken->validate($form_state->getValue('form_token'), $form['#token'])) {
-        $url = $this->requestStack->getCurrentRequest()->getRequestUri();
-
-        // Setting this error will cause the form to fail validation.
-        $form_state->setErrorByName('form_token', $this->t('The form has become outdated. Copy any unsaved work in the form below and then <a href="@link">reload this page</a>.', array('@link' => $url)));
+      if (!$this->csrfToken->validate($form_state->getValue('form_token'), $form['#token']) || $form_state->hasInvalidToken()) {
+        $this->setInvalidTokenError($form_state);
 
         // Stop here and don't run any further validation handlers, because they
         // could invoke non-safe operations which opens the door for CSRF
@@ -115,6 +124,16 @@ class FormValidator implements FormValidatorInterface {
     $this->doValidateForm($form, $form_state, $form_id);
     $this->finalizeValidation($form, $form_state, $form_id);
     $this->handleErrorsWithLimitedValidation($form, $form_state, $form_id);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setInvalidTokenError(FormStateInterface $form_state) {
+    $url = $this->requestStack->getCurrentRequest()->getRequestUri();
+
+    // Setting this error will cause the form to fail validation.
+    $form_state->setErrorByName('form_token', $this->t('The form has become outdated. Copy any unsaved work in the form below and then <a href=":link">reload this page</a>.', array(':link' => $url)));
   }
 
   /**
@@ -184,8 +203,9 @@ class FormValidator implements FormValidatorInterface {
    *   The unique string identifying the form.
    */
   protected function finalizeValidation(&$form, FormStateInterface &$form_state, $form_id) {
-    // After validation, loop through and assign each element its errors.
-    $this->setElementErrorsFromFormState($form, $form_state);
+    // Delegate handling of form errors to a service.
+    $this->formErrorHandler->handleFormErrors($form, $form_state);
+
     // Mark this form as validated.
     $form_state->setValidationComplete();
   }
@@ -276,7 +296,7 @@ class FormValidator implements FormValidatorInterface {
         // form constructors are encouraged to set #title anyway, and then set
         // #title_display to 'invisible'. This improves accessibility.
         elseif (isset($elements['#title'])) {
-          $form_state->setError($elements, $this->t('!name field is required.', array('!name' => $elements['#title'])));
+          $form_state->setError($elements, $this->t('@name field is required.', array('@name' => $elements['#title'])));
         }
         else {
           $form_state->setError($elements);
@@ -311,7 +331,7 @@ class FormValidator implements FormValidatorInterface {
   protected function performRequiredValidation(&$elements, FormStateInterface &$form_state) {
     // Verify that the value is not longer than #maxlength.
     if (isset($elements['#maxlength']) && Unicode::strlen($elements['#value']) > $elements['#maxlength']) {
-      $form_state->setError($elements, $this->t('!name cannot be longer than %max characters but is currently %length characters long.', array('!name' => empty($elements['#title']) ? $elements['#parents'][0] : $elements['#title'], '%max' => $elements['#maxlength'], '%length' => Unicode::strlen($elements['#value']))));
+      $form_state->setError($elements, $this->t('@name cannot be longer than %max characters but is currently %length characters long.', array('@name' => empty($elements['#title']) ? $elements['#parents'][0] : $elements['#title'], '%max' => $elements['#maxlength'], '%length' => Unicode::strlen($elements['#value']))));
     }
 
     if (isset($elements['#options']) && isset($elements['#value'])) {
@@ -392,28 +412,6 @@ class FormValidator implements FormValidatorInterface {
     else {
       return NULL;
     }
-  }
-
-  /**
-   * Stores the errors of each element directly on the element.
-   *
-   * We must provide a way for non-form functions to check the errors for a
-   * specific element. The most common usage of this is a #pre_render callback.
-   *
-   * @param array $elements
-   *   An associative array containing the structure of a form element.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The current state of the form.
-   */
-  protected function setElementErrorsFromFormState(array &$elements, FormStateInterface &$form_state) {
-    // Recurse through all children.
-    foreach (Element::children($elements) as $key) {
-      if (isset($elements[$key]) && $elements[$key]) {
-        $this->setElementErrorsFromFormState($elements[$key], $form_state);
-      }
-    }
-    // Store the errors for this element on the element directly.
-    $elements['#errors'] = $form_state->getError($elements);
   }
 
 }

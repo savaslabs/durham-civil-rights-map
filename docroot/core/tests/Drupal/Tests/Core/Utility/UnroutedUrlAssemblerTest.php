@@ -7,6 +7,8 @@
 
 namespace Drupal\Tests\Core\Utility;
 
+use Drupal\Core\GeneratedUrl;
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Utility\UnroutedUrlAssembler;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -53,9 +55,8 @@ class UnroutedUrlAssemblerTest extends UnitTestCase {
     parent::setUp();
 
     $this->requestStack = new RequestStack();
-    $this->configFactory = $this->getConfigFactoryStub(['system.filter' => []]);
     $this->pathProcessor = $this->getMock('Drupal\Core\PathProcessor\OutboundPathProcessorInterface');
-    $this->unroutedUrlAssembler = new UnroutedUrlAssembler($this->requestStack, $this->configFactory, $this->pathProcessor);
+    $this->unroutedUrlAssembler = new UnroutedUrlAssembler($this->requestStack, $this->pathProcessor);
   }
 
   /**
@@ -83,6 +84,9 @@ class UnroutedUrlAssemblerTest extends UnitTestCase {
   public function testAssembleWithExternalUrl($uri, array $options, $expected) {
    $this->setupRequestStack(FALSE);
    $this->assertEquals($expected, $this->unroutedUrlAssembler->assemble($uri, $options));
+   $generated_url = $this->unroutedUrlAssembler->assemble($uri, $options, TRUE);
+   $this->assertEquals($expected, $generated_url->getGeneratedUrl());
+   $this->assertInstanceOf('\Drupal\Core\Render\BubbleableMetadata', $generated_url);
   }
 
   /**
@@ -97,7 +101,7 @@ class UnroutedUrlAssemblerTest extends UnitTestCase {
       ['http://example.com/test', ['https' => TRUE], 'https://example.com/test'],
       ['https://example.com/test', ['https' => FALSE], 'http://example.com/test'],
       ['https://example.com/test?foo=1#bar', [], 'https://example.com/test?foo=1#bar'],
-      ['//drupal.org', [], '//drupal.org'],
+      ['//www.drupal.org', [], '//www.drupal.org'],
     ];
   }
 
@@ -120,6 +124,8 @@ class UnroutedUrlAssemblerTest extends UnitTestCase {
     return [
       ['base:example', [], FALSE, '/example'],
       ['base:example', ['query' => ['foo' => 'bar']], FALSE, '/example?foo=bar'],
+      ['base:example', ['query' => ['foo' => '"bar"']], FALSE, '/example?foo=%22bar%22'],
+      ['base:example', ['query' => ['foo' => '"bar"', 'zoo' => 'baz']], FALSE, '/example?foo=%22bar%22&zoo=baz'],
       ['base:example', ['fragment' => 'example', ], FALSE, '/example#example'],
       ['base:example', [], TRUE, '/subdir/example'],
       ['base:example', ['query' => ['foo' => 'bar']], TRUE, '/subdir/example?foo=bar'],
@@ -144,12 +150,23 @@ class UnroutedUrlAssemblerTest extends UnitTestCase {
    */
   public function testAssembleWithEnabledProcessing() {
     $this->setupRequestStack(FALSE);
-    $this->pathProcessor->expects($this->once())
+    $this->pathProcessor->expects($this->exactly(2))
       ->method('processOutbound')
-      ->with('test-uri', ['path_processing' => TRUE, 'fragment' => NULL, 'query' => [], 'absolute' => NULL, 'prefix' => NULL, 'script' => NULL])
-      ->willReturn('test-other-uri');
+      ->willReturnCallback(function($path, &$options = [], Request $request = NULL, BubbleableMetadata $bubbleable_metadata = NULL) {
+        if ($bubbleable_metadata) {
+          $bubbleable_metadata->setCacheContexts(['some-cache-context']);
+        }
+        return 'test-other-uri';
+      });
+
     $result = $this->unroutedUrlAssembler->assemble('base:test-uri', ['path_processing' => TRUE]);
     $this->assertEquals('/test-other-uri', $result);
+
+    $result = $this->unroutedUrlAssembler->assemble('base:test-uri', ['path_processing' => TRUE], TRUE);
+    $expected_generated_url = new GeneratedUrl();
+    $expected_generated_url->setGeneratedUrl('/test-other-uri')
+      ->setCacheContexts(['some-cache-context']);
+    $this->assertEquals($expected_generated_url, $result);
   }
 
   /**

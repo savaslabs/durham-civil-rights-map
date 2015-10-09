@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\File\ReadOnlyStreamWrapperTest.
+ * Contains \Drupal\system\Tests\File\ReadOnlyStreamWrapperTest.
  */
 
 namespace Drupal\system\Tests\File;
@@ -34,12 +34,13 @@ class ReadOnlyStreamWrapperTest extends FileTestBase {
   function testReadOnlyBehavior() {
     // Generate a test file
     $filename = $this->randomMachineName();
-    $filepath = conf_path() . '/files/' . $filename;
+    $site_path = $this->container->get('site.path');
+    $filepath = $site_path . '/files/' . $filename;
     file_put_contents($filepath, $filename);
 
     // Generate a read-only stream wrapper instance
     $uri = $this->scheme . '://' . $filename;
-    file_stream_wrapper_get_instance_by_scheme($this->scheme);
+    \Drupal::service('stream_wrapper_manager')->getViaScheme($this->scheme);
 
     // Attempt to open a file in read/write mode
     $handle = @fopen($uri, 'r+');
@@ -79,7 +80,7 @@ class ReadOnlyStreamWrapperTest extends FileTestBase {
 
     // Test the mkdir() function by attempting to create a directory.
     $dirname = $this->randomMachineName();
-    $dir = conf_path() . '/files/' . $dirname;
+    $dir = $site_path . '/files/' . $dirname;
     $readonlydir = $this->scheme . '://' . $dirname;
     $this->assertFalse(@drupal_mkdir($readonlydir, 0775, 0), 'Unable to create directory with read-only stream wrapper.');
     // Create a temporary directory for testing purposes

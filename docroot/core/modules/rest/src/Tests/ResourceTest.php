@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\rest\test\ResourceTest.
+ * Contains \Drupal\rest\Tests\ResourceTest.
  */
 
 namespace Drupal\rest\Tests;
-
-use Drupal\rest\Tests\RESTTestBase;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\user\Entity\Role;
 
 /**
  * Tests the structure of a REST resource.
@@ -24,6 +24,13 @@ class ResourceTest extends RESTTestBase {
   public static $modules = array('hal', 'rest', 'entity_test');
 
   /**
+   * The entity.
+   *
+   * @var \Drupal\Core\Entity\EntityInterface
+   */
+  protected $entity;
+
+  /**
    * {@inheritdoc}
    */
   protected function setUp() {
@@ -33,6 +40,10 @@ class ResourceTest extends RESTTestBase {
     // Create an entity programmatically.
     $this->entity = $this->entityCreate('entity_test');
     $this->entity->save();
+
+    Role::load(AccountInterface::ANONYMOUS_ROLE)
+      ->grantPermission('view test entity')
+      ->save();
   }
 
   /**
@@ -54,12 +65,13 @@ class ResourceTest extends RESTTestBase {
     $this->config->save();
     $this->rebuildCache();
 
-    // Verify that accessing the resource returns 401.
-    $response = $this->httpRequest($this->entity->urlInfo(), 'GET', NULL, $this->defaultMimeType);
-    // AcceptHeaderMatcher considers the canonical, non-REST route a match, but
-    // a lower quality one: no format restrictions means there's always a match,
-    // and hence when there is no matching REST route, the non-REST route is
-    // used, but it can't render into application/hal+json, so it returns a 406.
+    // Verify that accessing the resource returns 406.
+    $response = $this->httpRequest($this->entity->urlInfo()->setRouteParameter('_format', $this->defaultFormat), 'GET');
+    // \Drupal\Core\Routing\RequestFormatRouteFilter considers the canonical,
+    // non-REST route a match, but a lower quality one: no format restrictions
+    // means there's always a match and hence when there is no matching REST
+    // route, the non-REST route is used, but can't render into
+    // application/hal+json, so it returns a 406.
     $this->assertResponse('406', 'HTTP response code is 406 when the resource does not define formats, because it falls back to the canonical, non-REST route.');
     $this->curlClose();
   }
@@ -84,11 +96,12 @@ class ResourceTest extends RESTTestBase {
     $this->rebuildCache();
 
     // Verify that accessing the resource returns 401.
-    $response = $this->httpRequest($this->entity->urlInfo(), 'GET', NULL, $this->defaultMimeType);
-    // AcceptHeaderMatcher considers the canonical, non-REST route a match, but
-    // a lower quality one: no format restrictions means there's always a match,
-    // and hence when there is no matching REST route, the non-REST route is
-    // used, but it can't render into application/hal+json, so it returns a 406.
+    $response = $this->httpRequest($this->entity->urlInfo()->setRouteParameter('_format', $this->defaultFormat), 'GET');
+    // \Drupal\Core\Routing\RequestFormatRouteFilter considers the canonical,
+    // non-REST route a match, but a lower quality one: no format restrictions
+    // means there's always a match and hence when there is no matching REST
+    // route, the non-REST route is used, but can't render into
+    // application/hal+json, so it returns a 406.
     $this->assertResponse('406', 'HTTP response code is 406 when the resource does not define formats, because it falls back to the canonical, non-REST route.');
     $this->curlClose();
   }

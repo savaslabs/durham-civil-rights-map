@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Database\Driver\sqlite\Connection
+ * Contains \Drupal\Core\Database\Driver\sqlite\Connection.
  */
 
 namespace Drupal\Core\Database\Driver\sqlite;
@@ -71,7 +71,15 @@ class Connection extends DatabaseConnection {
         // Only attach the database once.
         if (!isset($this->attachedDatabases[$prefix])) {
           $this->attachedDatabases[$prefix] = $prefix;
-          $this->query('ATTACH DATABASE :database AS :prefix', array(':database' => $connection_options['database'] . '-' . $prefix, ':prefix' => $prefix));
+          if ($connection_options['database'] === ':memory:') {
+            // In memory database use ':memory:' as database name. According to
+            // http://www.sqlite.org/inmemorydb.html it will open a unique
+            // database so attaching it twice is not a problem.
+            $this->query('ATTACH DATABASE :database AS :prefix', array(':database' => $connection_options['database'], ':prefix' => $prefix));
+          }
+          else {
+            $this->query('ATTACH DATABASE :database AS :prefix', array(':database' => $connection_options['database'] . '-' . $prefix, ':prefix' => $prefix));
+          }
         }
 
         // Add a ., so queries become prefix.table, which is proper syntax for
@@ -112,6 +120,12 @@ class Connection extends DatabaseConnection {
     $pdo->sqliteCreateFunction('rand', array(__CLASS__, 'sqlFunctionRand'));
     $pdo->sqliteCreateFunction('regexp', array(__CLASS__, 'sqlFunctionRegexp'));
 
+    // SQLite does not support the LIKE BINARY operator, so we overload the
+    // non-standard GLOB operator for case-sensitive matching. Another option
+    // would have been to override another non-standard operator, MATCH, but
+    // that does not support the NOT keyword prefix.
+    $pdo->sqliteCreateFunction('glob', array(__CLASS__, 'sqlFunctionLikeBinary'));
+
     // Create a user-space case-insensitive collation with UTF-8 support.
     $pdo->sqliteCreateCollation('NOCASE_UTF8', array('Drupal\Component\Utility\Unicode', 'strcasecmp'));
 
@@ -140,9 +154,9 @@ class Connection extends DatabaseConnection {
 
           // We can prune the database file if it doesn't have any tables.
           if ($count == 0) {
-            // Detach the database.
-            $this->query('DETACH DATABASE :schema', array(':schema' => $prefix));
-            // Destroy the database file.
+            // Detaching the database fails at this point, but no other queries
+            // are executed after the connection is destructed so we can simply
+            // remove the database file.
             unlink($this->connectionOptions['database'] . '-' . $prefix);
           }
         }
@@ -152,6 +166,18 @@ class Connection extends DatabaseConnection {
         }
       }
     }
+  }
+
+  /**
+   * Gets all the attached databases.
+   *
+   * @return array
+   *   An array of attached database names.
+   *
+   * @see \Drupal\Core\Database\Driver\sqlite\Connection::__construct()
+   */
+  public function getAttachedDatabases() {
+    return $this->attachedDatabases;
   }
 
   /**
@@ -257,6 +283,24 @@ class Connection extends DatabaseConnection {
   }
 
   /**
+   * SQLite compatibility implementation for the LIKE BINARY SQL operator.
+   *
+   * SQLite supports case-sensitive LIKE operations through the
+   * 'case_sensitive_like' PRAGMA statement, but only for ASCII characters, so
+   * we have to provide our own implementation with UTF-8 support.
+   *
+   * @see https://sqlite.org/pragma.html#pragma_case_sensitive_like
+   * @see https://sqlite.org/lang_expr.html#like
+   */
+  public static function sqlFunctionLikeBinary($pattern, $subject) {
+    // Replace the SQL LIKE wildcard meta-characters with the equivalent regular
+    // expression meta-characters and escape the delimiter that will be used for
+    // matching.
+    $pattern = str_replace(array('%', '_'), array('.*?', '.'), preg_quote($pattern, '/'));
+    return preg_match('/^' . $pattern . '$/', $subject);
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function prepare($statement, array $driver_options = array()) {
@@ -325,6 +369,8 @@ class Connection extends DatabaseConnection {
     static $specials = array(
       'LIKE' => array('postfix' => " ESCAPE '\\'"),
       'NOT LIKE' => array('postfix' => " ESCAPE '\\'"),
+      'LIKE BINARY' => array('postfix' => " ESCAPE '\\'", 'operator' => 'GLOB'),
+      'NOT LIKE BINARY' => array('postfix' => " ESCAPE '\\'", 'operator' => 'NOT GLOB'),
     );
     return isset($specials[$operator]) ? $specials[$operator] : NULL;
   }

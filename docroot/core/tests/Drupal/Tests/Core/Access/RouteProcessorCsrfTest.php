@@ -7,6 +7,7 @@
 
 namespace Drupal\Tests\Core\Access;
 
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Tests\UnitTestCase;
 use Drupal\Core\Access\RouteProcessorCsrf;
 use Symfony\Component\Routing\Route;
@@ -49,58 +50,73 @@ class RouteProcessorCsrfTest extends UnitTestCase {
     $route = new Route('/test-path');
     $parameters = array();
 
-    $this->processor->processOutbound('test', $route, $parameters);
+    $bubbleable_metadata = new BubbleableMetadata();
+    $this->processor->processOutbound('test', $route, $parameters, $bubbleable_metadata);
     // No parameters should be added to the parameters array.
     $this->assertEmpty($parameters);
+    // Cacheability of routes without a _csrf_token route requirement is
+    // unaffected.
+    $this->assertEquals((new BubbleableMetadata()), $bubbleable_metadata);
   }
 
   /**
    * Tests the processOutbound() method with a _csrf_token route requirement.
    */
   public function testProcessOutbound() {
-    $this->csrfToken->expects($this->once())
-      ->method('get')
-      // The leading '/' will be stripped from the path.
-      ->with('test-path')
-      ->will($this->returnValue('test_token'));
-
     $route = new Route('/test-path', array(), array('_csrf_token' => 'TRUE'));
     $parameters = array();
 
-    $this->processor->processOutbound('test', $route, $parameters);
+    $bubbleable_metadata = new BubbleableMetadata();
+    $this->processor->processOutbound('test', $route, $parameters, $bubbleable_metadata);
     // 'token' should be added to the parameters array.
     $this->assertArrayHasKey('token', $parameters);
-    $this->assertSame($parameters['token'], 'test_token');
+    // Bubbleable metadata of routes with a _csrf_token route requirement is a
+    // placeholder.
+    $path = 'test-path';
+    $placeholder = hash('sha1', $path);
+    $placeholder_render_array = [
+      '#lazy_builder' => ['route_processor_csrf:renderPlaceholderCsrfToken', [$path]],
+    ];
+    $this->assertSame($parameters['token'], $placeholder);
+    $this->assertEquals((new BubbleableMetadata())->setAttachments(['placeholders' => [$placeholder => $placeholder_render_array]]), $bubbleable_metadata);
   }
 
   /**
    * Tests the processOutbound() method with a dynamic path and one replacement.
    */
   public function testProcessOutboundDynamicOne() {
-    $this->csrfToken->expects($this->once())
-      ->method('get')
-      ->with('test-path/100')
-      ->will($this->returnValue('test_token'));
-
     $route = new Route('/test-path/{slug}', array(), array('_csrf_token' => 'TRUE'));
     $parameters = array('slug' => 100);
 
-    $this->assertNull($this->processor->processOutbound('test', $route, $parameters));
+    $bubbleable_metadata = new BubbleableMetadata();
+    $this->processor->processOutbound('test', $route, $parameters, $bubbleable_metadata);
+    // Bubbleable metadata of routes with a _csrf_token route requirement is a
+    // placeholder.
+    $path = 'test-path/100';
+    $placeholder = hash('sha1', $path);
+    $placeholder_render_array = [
+      '#lazy_builder' => ['route_processor_csrf:renderPlaceholderCsrfToken', [$path]],
+    ];
+    $this->assertEquals((new BubbleableMetadata())->setAttachments(['placeholders' => [$placeholder => $placeholder_render_array]]), $bubbleable_metadata);
   }
 
   /**
    * Tests the processOutbound() method with two parameter replacements.
    */
   public function testProcessOutboundDynamicTwo() {
-    $this->csrfToken->expects($this->once())
-      ->method('get')
-      ->with('100/test-path/test')
-      ->will($this->returnValue('test_token'));
-
     $route = new Route('{slug_1}/test-path/{slug_2}', array(), array('_csrf_token' => 'TRUE'));
     $parameters = array('slug_1' => 100, 'slug_2' => 'test');
 
-    $this->assertNull($this->processor->processOutbound('test', $route, $parameters));
+    $bubbleable_metadata = new BubbleableMetadata();
+    $this->processor->processOutbound('test', $route, $parameters, $bubbleable_metadata);
+    // Bubbleable metadata of routes with a _csrf_token route requirement is a
+    // placeholder.
+    $path = '100/test-path/test';
+    $placeholder = hash('sha1', $path);
+    $placeholder_render_array = [
+      '#lazy_builder' => ['route_processor_csrf:renderPlaceholderCsrfToken', [$path]],
+    ];
+    $this->assertEquals((new BubbleableMetadata())->setAttachments(['placeholders' => [$placeholder => $placeholder_render_array]]), $bubbleable_metadata);
   }
 
 }

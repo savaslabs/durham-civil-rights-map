@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\options\Type\ListIntegerItem.
+ * Contains \Drupal\options\Plugin\Field\FieldType\ListIntegerItem.
  */
 
 namespace Drupal\options\Plugin\Field\FieldType;
@@ -71,6 +71,13 @@ class ListIntegerItem extends ListItemBase {
     if (!preg_match('/^-?\d+$/', $option)) {
       return t('Allowed values list: keys must be integers.');
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected static function castAllowedValue($value) {
+    return (int) $value;
   }
 
 }

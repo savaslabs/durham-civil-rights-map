@@ -37,7 +37,7 @@ class ActiveLinkResponseFilterTest extends UnitTestCase {
       // Simple HTML.
       0 => array('prefix' => '<div><p>', 'suffix' => '</p></div>'),
       // Tricky HTML5 example that's unsupported by PHP <=5.4's DOMDocument:
-      // https://drupal.org/comment/7938201#comment-7938201.
+      // https://www.drupal.org/comment/7938201#comment-7938201.
       1 => array('prefix' => '<div><p>', 'suffix' => '</p>' . $edge_case_html5 . '</div>'),
       // Multi-byte content *before* the HTML that needs the "is-active" class.
       2 => array('prefix' => '<div><p>αβγδεζηθικλμνξοσὠ</p><p>', 'suffix' => '</p></div>'),
@@ -326,6 +326,42 @@ class ActiveLinkResponseFilterTest extends UnitTestCase {
       5 => $front_special_link_active . ' ' . $front_path_link_active,
     ];
 
+    // Test cases to verify that links to the front page do not get the
+    // 'is-active' class when not on the front page.
+    $other_link = '<a data-drupal-link-system-path="otherpage">Other page</a>';
+    $other_link_active = '<a data-drupal-link-system-path="otherpage" class="is-active">Other page</a>';
+    $data['<front>-and-other-link-on-other-path'] = [
+      0 => $front_special_link . ' ' . $other_link,
+      1 => 'otherpage',
+      2 => FALSE,
+      3 => 'en',
+      4 => [],
+      5 => $front_special_link . ' ' . $other_link_active,
+    ];
+    $data['front-and-other-link-on-other-path'] = [
+      0 => $front_path_link . ' ' . $other_link,
+      1 => 'otherpage',
+      2 => FALSE,
+      3 => 'en',
+      4 => [],
+      5 => $front_path_link . ' ' . $other_link_active,
+    ];
+    $data['other-and-<front>-link-on-other-path'] = [
+      0 => $other_link . ' ' . $front_special_link,
+      1 => 'otherpage',
+      2 => FALSE,
+      3 => 'en',
+      4 => [],
+      5 => $other_link_active . ' ' . $front_special_link,
+    ];
+    $data['other-and-front-link-on-other-path'] = [
+      0 => $other_link . ' ' . $front_path_link,
+      1 => 'otherpage',
+      2 => FALSE,
+      3 => 'en',
+      4 => [],
+      5 => $other_link_active . ' ' . $front_path_link,
+    ];
     return $data;
   }
 

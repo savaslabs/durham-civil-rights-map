@@ -91,7 +91,6 @@ abstract class FormElementBase implements ElementInterface {
    *   A render array for the source value.
    */
   protected function getSourceElement(LanguageInterface $source_language, $source_config) {
-    // @todo Should support singular+plurals https://www.drupal.org/node/2454829
     if ($source_config) {
       $value = '<span lang="' . $source_language->getId() . '">' . nl2br($source_config) . '</span>';
     }
@@ -101,9 +100,9 @@ abstract class FormElementBase implements ElementInterface {
 
     return array(
       '#type' => 'item',
-      '#title' => $this->t('!label <span class="visually-hidden">(!source_language)</span>', array(
-        '!label' => $this->t($this->definition->getLabel()),
-        '!source_language' => $source_language->getName(),
+      '#title' => $this->t('@label <span class="visually-hidden">(@source_language)</span>', array(
+        '@label' => $this->definition->getLabel(),
+        '@source_language' => $source_language->getName(),
       )),
       '#markup' => $value,
     );
@@ -162,11 +161,10 @@ abstract class FormElementBase implements ElementInterface {
    */
   protected function getTranslationElement(LanguageInterface $translation_language, $source_config, $translation_config) {
     // Add basic properties that apply to all form elements.
-    // @todo Should support singular+plurals https://www.drupal.org/node/2454829
     return array(
-      '#title' => $this->t('!label <span class="visually-hidden">(!source_language)</span>', array(
-        '!label' => $this->t($this->definition['label']),
-        '!source_language' => $translation_language->getName(),
+      '#title' => $this->t('@label <span class="visually-hidden">(@source_language)</span>', array(
+        '@label' => $this->definition['label'],
+        '@source_language' => $translation_language->getName(),
       )),
       '#default_value' => $translation_config,
       '#attributes' => array('lang' => $translation_language->getId()),

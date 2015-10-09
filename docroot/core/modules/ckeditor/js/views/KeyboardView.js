@@ -1,19 +1,20 @@
 /**
  * @file
- * A Backbone View that provides the aural view of CKEditor keyboard UX configuration.
+ * Backbone View providing the aural view of CKEditor keyboard UX configuration.
  */
 
 (function (Drupal, Backbone, $) {
 
   "use strict";
 
-  /**
-   * Backbone View for CKEditor toolbar configuration; keyboard UX.
-   */
-  Drupal.ckeditor.KeyboardView = Backbone.View.extend({
+  Drupal.ckeditor.KeyboardView = Backbone.View.extend(/** @lends Drupal.ckeditor.KeyboardView# */{
 
     /**
-     * {@inheritdoc}
+     * Backbone View for CKEditor toolbar configuration; keyboard UX.
+     *
+     * @constructs
+     *
+     * @augments Backbone.View
      */
     initialize: function () {
       // Add keyboard arrow support.
@@ -22,7 +23,7 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     render: function () {
     },
@@ -30,7 +31,8 @@
     /**
      * Handles keypresses on a CKEditor configuration button.
      *
-     * @param jQuery.Event event
+     * @param {jQuery.Event} event
+     *   The keypress event triggered.
      */
     onPressButton: function (event) {
       var upDownKeys = [
@@ -68,10 +70,11 @@
         var $originalGroup = $group;
         var dir;
 
-        // Move available buttons between their container and the active toolbar.
+        // Move available buttons between their container and the active
+        // toolbar.
         if (containerType === 'source') {
-          // Move the button to the active toolbar configuration when the down or
-          // up keys are pressed.
+          // Move the button to the active toolbar configuration when the down
+          // or up keys are pressed.
           if (_.indexOf([40, 63233], event.keyCode) > -1) {
             // Move the button to the first row, first button group index
             // position.
@@ -141,8 +144,8 @@
         }
         // Move dividers between their container and the active toolbar.
         else if (containerType === 'dividers') {
-          // Move the button to the active toolbar configuration when the down or
-          // up keys are pressed.
+          // Move the button to the active toolbar configuration when the down
+          // or up keys are pressed.
           if (_.indexOf([40, 63233], event.keyCode) > -1) {
             // Move the button to the first row, first button group index
             // position.
@@ -168,8 +171,8 @@
           else {
             view.$el.find('.ui-sortable').sortable('refresh');
           }
-          // Refocus the target button so that the user can continue from a known
-          // place.
+          // Refocus the target button so that the user can continue from a
+          // known place.
           $target.trigger('focus');
         });
 
@@ -181,7 +184,8 @@
     /**
      * Handles keypresses on a CKEditor configuration group.
      *
-     * @param jQuery.Event event
+     * @param {jQuery.Event} event
+     *   The keypress event triggered.
      */
     onPressGroup: function (event) {
       var upDownKeys = [

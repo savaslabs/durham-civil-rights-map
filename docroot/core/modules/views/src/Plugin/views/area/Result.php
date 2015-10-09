@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\views\Plugin\views\area\Result.
+ * Contains \Drupal\views\Plugin\views\area\Result.
  */
 
 namespace Drupal\views\Plugin\views\area;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\style\DefaultSummary;
@@ -84,11 +84,10 @@ class Result extends AreaPluginBase {
     // Calculate the page totals.
     $current_page = (int) $this->view->getCurrentPage() + 1;
     $per_page = (int) $this->view->getItemsPerPage();
-    $count = count($this->view->result);
     // @TODO: Maybe use a possible is views empty functionality.
     // Not every view has total_rows set, use view->result instead.
     $total = isset($this->view->total_rows) ? $this->view->total_rows : count($this->view->result);
-    $label = SafeMarkup::checkPlain($this->view->storage->label());
+    $label = Html::escape($this->view->storage->label());
     if ($per_page === 0) {
       $page_count = 1;
       $start = 1;

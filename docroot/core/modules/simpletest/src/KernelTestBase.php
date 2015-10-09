@@ -7,12 +7,14 @@
 
 namespace Drupal\simpletest;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Variable;
 use Drupal\Core\Database\Database;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DrupalKernel;
 use Drupal\Core\Entity\Sql\SqlEntityStorageInterface;
+use Drupal\Core\Extension\ExtensionDiscovery;
 use Drupal\Core\KeyValueStore\KeyValueMemoryFactory;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Site\Settings;
@@ -31,6 +33,9 @@ use Symfony\Component\HttpFoundation\Request;
  * The module/hook system is functional and operates on a fixed module list.
  * Additional modules needed in a test may be loaded and added to the fixed
  * module list.
+ *
+ * @deprecated in Drupal 8.0.x, will be removed before Drupal 8.2.x. Use
+ *   \Drupal\KernelTests\KernelTestBase instead.
  *
  * @see \Drupal\simpletest\KernelTestBase::$modules
  * @see \Drupal\simpletest\KernelTestBase::enableModules()
@@ -111,23 +116,20 @@ abstract class KernelTestBase extends TestBase {
    * @see config_get_config_directory()
    *
    * @throws \RuntimeException
-   *   Thrown when CONFIG_ACTIVE_DIRECTORY or CONFIG_STAGING_DIRECTORY cannot
-   *   be created or made writable.
+   *   Thrown when CONFIG_SYNC_DIRECTORY cannot be created or made writable.
    */
   protected function prepareConfigDirectories() {
     $this->configDirectories = array();
     include_once DRUPAL_ROOT . '/core/includes/install.inc';
-    foreach (array(CONFIG_ACTIVE_DIRECTORY, CONFIG_STAGING_DIRECTORY) as $type) {
-      // Assign the relative path to the global variable.
-      $path = $this->siteDirectory . '/config_' . $type;
-      $GLOBALS['config_directories'][$type] = $path;
-      // Ensure the directory can be created and is writeable.
-      if (!install_ensure_config_directory($type)) {
-        throw new \RuntimeException("Failed to create '$type' config directory $path");
-      }
-      // Provide the already resolved path for tests.
-      $this->configDirectories[$type] = $path;
+    // Assign the relative path to the global variable.
+    $path = $this->siteDirectory . '/config_' . CONFIG_SYNC_DIRECTORY;
+    $GLOBALS['config_directories'][CONFIG_SYNC_DIRECTORY] = $path;
+    // Ensure the directory can be created and is writeable.
+    if (!install_ensure_config_directory(CONFIG_SYNC_DIRECTORY)) {
+      throw new \RuntimeException("Failed to create '" . CONFIG_SYNC_DIRECTORY . "' config directory $path");
     }
+    // Provide the already resolved path for tests.
+    $this->configDirectories[CONFIG_SYNC_DIRECTORY] = $path;
   }
 
   /**
@@ -188,6 +190,22 @@ EOD;
     }
     $this->kernel->boot();
 
+    // Ensure database install tasks have been run.
+    require_once __DIR__ . '/../../../includes/install.inc';
+    $connection = Database::getConnection();
+    $errors = db_installer_object($connection->driver())->runTasks();
+    if (!empty($errors)) {
+      $this->fail('Failed to run installer database tasks: ' . implode(', ', $errors));
+    }
+
+    // Reboot the kernel because the container might contain a connection to the
+    // database that has been closed during the database install tasks. This
+    // prevents any services created during the first boot from having stale
+    // database connections, for example, \Drupal\Core\Config\DatabaseStorage.
+    $this->kernel->shutdown();
+    $this->kernel->boot();
+
+
     // Save the original site directory path, so that extensions in the
     // site-specific directory can still be discovered in the test site
     // environment.
@@ -245,7 +263,7 @@ EOD;
     // Tests based on this class are entitled to use Drupal's File and
     // StreamWrapper APIs.
     // @todo Move StreamWrapper management into DrupalKernel.
-    // @see https://drupal.org/node/2028109
+    // @see https://www.drupal.org/node/2028109
     file_prepare_directory($this->publicFilesDirectory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
     $this->settingsSet('file_public_path', $this->publicFilesDirectory);
     $this->streamWrappers = array();
@@ -267,7 +285,7 @@ EOD;
     // state variables in Drupal, stream wrappers are a global state construct
     // of PHP core, which has to be maintained manually.
     // @todo Move StreamWrapper management into DrupalKernel.
-    // @see https://drupal.org/node/2028109
+    // @see https://www.drupal.org/node/2028109
     foreach ($this->streamWrappers as $scheme => $type) {
       $this->unregisterStreamWrapper($scheme, $type);
     }
@@ -380,9 +398,7 @@ EOD;
   protected function installConfig(array $modules) {
     foreach ($modules as $module) {
       if (!$this->container->get('module_handler')->moduleExists($module)) {
-        throw new \RuntimeException(format_string("'@module' module is not enabled.", array(
-          '@module' => $module,
-        )));
+        throw new \RuntimeException("'$module' module is not enabled");
       }
       \Drupal::service('config.installer')->installDefaultConfig('module', $module);
     }
@@ -404,31 +420,22 @@ EOD;
    *   found in the module specified.
    */
   protected function installSchema($module, $tables) {
-    // drupal_get_schema_unprocessed() is technically able to install a schema
+    // drupal_get_module_schema() is technically able to install a schema
     // of a non-enabled module, but its ability to load the module's .install
     // file depends on many other factors. To prevent differences in test
     // behavior and non-reproducible test failures, we only allow the schema of
     // explicitly loaded/enabled modules to be installed.
     if (!$this->container->get('module_handler')->moduleExists($module)) {
-      throw new \RuntimeException(format_string("'@module' module is not enabled.", array(
-        '@module' => $module,
-      )));
+      throw new \RuntimeException("'$module' module is not enabled");
     }
     $tables = (array) $tables;
     foreach ($tables as $table) {
-      $schema = drupal_get_schema_unprocessed($module, $table);
+      $schema = drupal_get_module_schema($module, $table);
       if (empty($schema)) {
-        throw new \RuntimeException(format_string("Unknown '@table' table schema in '@module' module.", array(
-          '@module' => $module,
-          '@table' => $table,
-        )));
+        throw new \RuntimeException("Unknown '$table' table schema in '$module' module.");
       }
       $this->container->get('database')->schema()->createTable($table, $schema);
     }
-    // We need to refresh the schema cache, as any call to drupal_get_schema()
-    // would not know of/return the schema otherwise.
-    // @todo Refactor Schema API to make this obsolete.
-    drupal_get_schema(NULL, TRUE);
     $this->pass(format_string('Installed %module tables: %tables.', array(
       '%tables' => '{' . implode('}, {', $tables) . '}',
       '%module' => $module,
@@ -483,6 +490,14 @@ EOD;
    *   The new modules are only added to the active module list and loaded.
    */
   protected function enableModules(array $modules) {
+    // Perform an ExtensionDiscovery scan as this function may receive a
+    // profile that is not the current profile, and we don't yet have a cached
+    // way to receive inactive profile information.
+    // @todo Remove as part of https://www.drupal.org/node/2186491
+    $listing = new ExtensionDiscovery(\Drupal::root());
+    $module_list = $listing->scan('module');
+    // In ModuleHandlerTest we pass in a profile as if it were a module.
+    $module_list += $listing->scan('profile');
     // Set the list of modules in the extension handler.
     $module_handler = $this->container->get('module_handler');
 
@@ -492,7 +507,7 @@ EOD;
     $extensions = $active_storage->read('core.extension');
 
     foreach ($modules as $module) {
-      $module_handler->addModule($module, drupal_get_path('module', $module));
+      $module_handler->addModule($module, $module_list[$module]->getPath());
       // Maintain the list of enabled modules in configuration.
       $extensions['module'][$module] = 0;
     }
@@ -570,10 +585,16 @@ EOD;
    *   The rendered string output (typically HTML).
    */
   protected function render(array &$elements) {
-    $content = $this->container->get('renderer')->renderRoot($elements);
-    drupal_process_attached($elements);
+    // Use the bare HTML page renderer to render our links.
+    $renderer = $this->container->get('bare_html_page_renderer');
+    $response = $renderer->renderBarePage(
+      $elements, '', $this->container->get('theme.manager')->getActiveTheme()->getName()
+    );
+
+    // Glean the content from the response object.
+    $content = $response->getContent();
     $this->setRawContent($content);
-    $this->verbose('<pre style="white-space: pre-wrap">' . SafeMarkup::checkPlain($content));
+    $this->verbose('<pre style="white-space: pre-wrap">' . Html::escape($content));
     return $content;
   }
 

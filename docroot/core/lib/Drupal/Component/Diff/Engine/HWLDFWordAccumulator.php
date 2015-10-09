@@ -1,9 +1,13 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\Component\Diff\Engine\HWLDFWordAccumulator.
+ */
+
 namespace Drupal\Component\Diff\Engine;
 
 use Drupal\Component\Utility\Unicode;
-use Drupal\Component\Utility\SafeMarkup;
 
 /**
  *  Additions by Axel Boldt follow, partly taken from diff.php, phpwiki-1.3.3
@@ -33,10 +37,10 @@ class HWLDFWordAccumulator {
   protected function _flushGroup($new_tag) {
     if ($this->group !== '') {
       if ($this->tag == 'mark') {
-        $this->line .= '<span class="diffchange">' . SafeMarkup::checkPlain($this->group) . '</span>';
+        $this->line = $this->line . '<span class="diffchange">' . $this->group . '</span>';
       }
       else {
-        $this->line .= SafeMarkup::checkPlain($this->group);
+        $this->line = $this->line . $this->group;
       }
     }
     $this->group = '';
@@ -46,9 +50,7 @@ class HWLDFWordAccumulator {
   protected function _flushLine($new_tag) {
     $this->_flushGroup($new_tag);
     if ($this->line != '') {
-      // @todo This is probably not the right place to do this. To be
-      //   addressed in https://drupal.org/node/2280963
-      array_push($this->lines, SafeMarkup::set($this->line));
+      array_push($this->lines, $this->line);
     }
     else {
       // make empty lines visible by inserting an NBSP

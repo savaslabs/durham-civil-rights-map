@@ -17,9 +17,9 @@ settings:
   label: 'Site branding'
   provider: system
   label_display: '0'
-  cache:
-    max_age: -1
   use_site_logo: false
   use_site_name: true
   use_site_slogan: false
+  cache:
+    max_age: -1
 visibility: {  }

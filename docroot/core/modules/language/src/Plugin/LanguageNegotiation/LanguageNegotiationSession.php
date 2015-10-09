@@ -9,6 +9,7 @@ namespace Drupal\language\Plugin\LanguageNegotiation;
 
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\PathProcessor\OutboundPathProcessorInterface;
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Url;
 use Drupal\language\LanguageNegotiationMethodBase;
 use Drupal\language\LanguageSwitcherInterface;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Identify language from a request/session parameter.
  *
- * @Plugin(
+ * @LanguageNegotiation(
  *   id = Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationSession::METHOD_ID,
  *   weight = -6,
  *   name = @Translation("Session"),
@@ -85,7 +86,7 @@ class LanguageNegotiationSession extends LanguageNegotiationMethodBase implement
   /**
    * {@inheritdoc}
    */
-  public function processOutbound($path, &$options = array(), Request $request = NULL) {
+  public function processOutbound($path, &$options = array(), Request $request = NULL, BubbleableMetadata $bubbleable_metadata = NULL) {
     if ($request) {
       // The following values are not supposed to change during a single page
       // request processing.
@@ -114,6 +115,16 @@ class LanguageNegotiationSession extends LanguageNegotiationMethodBase implement
         if (!isset($options['query'][$this->queryParam])) {
           $options['query'][$this->queryParam] = $this->queryValue;
         }
+        if ($bubbleable_metadata) {
+          // Cached URLs that have been processed by this outbound path
+          // processor must be:
+          $bubbleable_metadata
+            // - invalidated when the language negotiation config changes, since
+            //   another query parameter may be used to determine the language.
+            ->addCacheTags($this->config->get('language.negotiation')->getCacheTags())
+            // - varied by the configured query parameter.
+            ->addCacheContexts(['url.query_args:' . $this->queryParam]);
+        }
       }
     }
     return $path;
@@ -133,7 +144,10 @@ class LanguageNegotiationSession extends LanguageNegotiationMethodBase implement
     foreach ($this->languageManager->getNativeLanguages() as $language) {
       $langcode = $language->getId();
       $links[$langcode] = array(
-        'url' => $url,
+        // We need to clone the $url object to avoid using the same one for all links.
+        // When the links are rendered, options are set on the $url object,
+        // so if we use the same one, they would be set for all links.
+        'url' => clone $url,
         'title' => $language->getName(),
         'attributes' => array('class' => array('language-link')),
         'query' => $query,

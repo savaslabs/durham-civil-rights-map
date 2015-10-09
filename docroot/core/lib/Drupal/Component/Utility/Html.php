@@ -35,11 +35,11 @@ class Html {
   protected static $seenIds;
 
   /**
-   * Contains the current AJAX HTML IDs.
+   * Stores whether the current request was sent via AJAX.
    *
-   * @var string
+   * @var bool
    */
-  protected static $ajaxHTMLIDs;
+  protected static $isAjax = FALSE;
 
   /**
    * Prepares a string for use as a valid class name.
@@ -78,12 +78,24 @@ class Html {
   public static function cleanCssIdentifier($identifier, array $filter = array(
     ' ' => '-',
     '_' => '-',
-    '__' => '__',
     '/' => '-',
     '[' => '-',
-    ']' => ''
+    ']' => '',
   )) {
-    $identifier = strtr($identifier, $filter);
+    // We could also use strtr() here but its much slower than str_replace(). In
+    // order to keep '__' to stay '__' we first replace it with a different
+    // placeholder after checking that it is not defined as a filter.
+    $double_underscore_replacements = 0;
+    if (!isset($filter['__'])) {
+      $identifier = str_replace('__', '##', $identifier, $double_underscore_replacements);
+    }
+    $identifier = str_replace(array_keys($filter), array_values($filter), $identifier);
+    // Replace temporary placeholder '##' with '__' only if the original
+    // $identifier contained '__'.
+    if ($double_underscore_replacements > 0) {
+      $identifier = str_replace('##', '__', $identifier);
+    }
+
     // Valid characters in a CSS identifier are:
     // - the hyphen (U+002D)
     // - a-z (U+0030 - U+0039)
@@ -102,13 +114,13 @@ class Html {
   }
 
   /**
-   * Sets the AJAX HTML IDs.
+   * Sets if this request is an Ajax request.
    *
-   * @param string $ajax_html_ids
-   *   The AJAX HTML IDs, probably coming from the current request.
+   * @param bool $is_ajax
+   *   TRUE if this request is an Ajax request, FALSE otherwise.
    */
-  public static function setAjaxHtmlIds($ajax_html_ids = '') {
-    static::$ajaxHTMLIDs = $ajax_html_ids;
+  public static function setIsAjax($is_ajax) {
+    static::$isAjax = $is_ajax;
   }
 
   /**
@@ -142,43 +154,15 @@ class Html {
   public static function getUniqueId($id) {
     // If this is an Ajax request, then content returned by this page request
     // will be merged with content already on the base page. The HTML IDs must
-    // be unique for the fully merged content. Therefore, initialize $seen_ids
-    // to take into account IDs that are already in use on the base page.
+    // be unique for the fully merged content. Therefore use unique IDs.
+    if (static::$isAjax) {
+      return static::getId($id) . '--' . Crypt::randomBytesBase64(8);
+    }
+
+    // @todo Remove all that code once we switch over to random IDs only,
+    // see https://www.drupal.org/node/1090592.
     if (!isset(static::$seenIdsInit)) {
-      // Ideally, Drupal would provide an API to persist state information about
-      // prior page requests in the database, and we'd be able to add this
-      // function's $seen_ids static variable to that state information in order
-      // to have it properly initialized for this page request. However, no such
-      // page state API exists, so instead, ajax.js adds all of the in-use HTML
-      // IDs to the POST data of Ajax submissions. Direct use of $_POST is
-      // normally not recommended as it could open up security risks, but
-      // because the raw POST data is cast to a number before being returned by
-      // this function, this usage is safe.
-      if (empty(static::$ajaxHTMLIDs)) {
-        static::$seenIdsInit = array();
-      }
-      else {
-        // This function ensures uniqueness by appending a counter to the base
-        // id requested by the calling function after the first occurrence of
-        // that requested id. $_POST['ajax_html_ids'] contains the ids as they
-        // were returned by this function, potentially with the appended
-        // counter, so we parse that to reconstruct the $seen_ids array.
-        $ajax_html_ids = explode(' ', static::$ajaxHTMLIDs);
-        foreach ($ajax_html_ids as $seen_id) {
-          // We rely on '--' being used solely for separating a base id from the
-          // counter, which this function ensures when returning an id.
-          $parts = explode('--', $seen_id, 2);
-          if (!empty($parts[1]) && is_numeric($parts[1])) {
-            list($seen_id, $i) = $parts;
-          }
-          else {
-            $i = 1;
-          }
-          if (!isset(static::$seenIdsInit[$seen_id]) || ($i > static::$seenIdsInit[$seen_id])) {
-            static::$seenIdsInit[$seen_id] = $i;
-          }
-        }
-      }
+      static::$seenIdsInit = array();
     }
     if (!isset(static::$seenIds)) {
       static::$seenIds = static::$seenIdsInit;
@@ -215,7 +199,7 @@ class Html {
    * @see self::getUniqueId()
    */
   public static function getId($id) {
-    $id = strtr(Unicode::strtolower($id), array(' ' => '-', '_' => '-', '[' => '-', ']' => ''));
+    $id = str_replace([' ', '_', '[', ']'], ['-', '-', '-', ''], Unicode::strtolower($id));
 
     // As defined in http://www.w3.org/TR/html4/types.html#type-name, HTML IDs can
     // only contain letters, digits ([0-9]), hyphens ("-"), underscores ("_"),
@@ -278,9 +262,9 @@ class Html {
 <body>!html</body>
 </html>
 EOD;
-    // PHP's \DOMDocument serialization adds straw whitespace in case the markup
-    // of the wrapping document contains newlines, so ensure to remove all
-    // newlines before injecting the actual HTML body to process.
+    // PHP's \DOMDocument serialization adds extra whitespace when the markup
+    // of the wrapping document contains newlines, so ensure we remove all
+    // newlines before injecting the actual HTML body to be processed.
     $document = strtr($document, array("\n" => '', '!html' => $html));
 
     $dom = new \DOMDocument();
@@ -308,14 +292,16 @@ EOD;
     $body_node = $document->getElementsByTagName('body')->item(0);
     $html = '';
 
-    foreach ($body_node->getElementsByTagName('script') as $node) {
-      static::escapeCdataElement($node);
-    }
-    foreach ($body_node->getElementsByTagName('style') as $node) {
-      static::escapeCdataElement($node, '/*', '*/');
-    }
-    foreach ($body_node->childNodes as $node) {
-      $html .= $document->saveXML($node);
+    if ($body_node !== NULL) {
+      foreach ($body_node->getElementsByTagName('script') as $node) {
+        static::escapeCdataElement($node);
+      }
+      foreach ($body_node->getElementsByTagName('style') as $node) {
+        static::escapeCdataElement($node, '/*', '*/');
+      }
+      foreach ($body_node->childNodes as $node) {
+        $html .= $document->saveXML($node);
+      }
     }
     return $html;
   }
@@ -366,14 +352,59 @@ EOD;
    * "&lt;", not "<"). Be careful when using this function, as it will revert
    * previous sanitization efforts (&lt;script&gt; will become <script>).
    *
+   * This method is not the opposite of Html::escape(). For example, this method
+   * will convert "&eacute;" to "é", whereas Html::escape() will not convert "é"
+   * to "&eacute;".
+   *
    * @param string $text
    *   The text to decode entities in.
    *
    * @return string
    *   The input $text, with all HTML entities decoded once.
+   *
+   * @see html_entity_decode()
+   * @see \Drupal\Component\Utility\Html::escape()
    */
   public static function decodeEntities($text) {
     return html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+  }
+
+  /**
+   * Escapes text by converting special characters to HTML entities.
+   *
+   * This method escapes HTML for sanitization purposes by replacing the
+   * following special characters with their HTML entity equivalents:
+   * - & (ampersand) becomes &amp;
+   * - " (double quote) becomes &quot;
+   * - ' (single quote) becomes &#039;
+   * - < (less than) becomes &lt;
+   * - > (greater than) becomes &gt;
+   * Special characters that have already been escaped will be double-escaped
+   * (for example, "&lt;" becomes "&amp;lt;"), and invalid UTF-8 encoding
+   * will be converted to the Unicode replacement character ("�").
+   *
+   * This method is not the opposite of Html::decodeEntities(). For example,
+   * this method will not encode "é" to "&eacute;", whereas
+   * Html::decodeEntities() will convert all HTML entities to UTF-8 bytes,
+   * including "&eacute;" and "&lt;" to "é" and "<".
+   *
+   * When constructing @link theme_render render arrays @endlink passing the output of Html::escape() to
+   * '#markup' is not recommended. Use the '#plain_text' key instead and the
+   * renderer will autoescape the text.
+   *
+   * @param string $text
+   *   The input text.
+   *
+   * @return string
+   *   The text with all HTML special characters converted.
+   *
+   * @see htmlspecialchars()
+   * @see \Drupal\Component\Utility\Html::decodeEntities()
+   *
+   * @ingroup sanitization
+   */
+  public static function escape($text) {
+    return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
   }
 
 }

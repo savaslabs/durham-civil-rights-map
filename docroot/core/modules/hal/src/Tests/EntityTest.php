@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\hal\Tests\NormalizeTest.
+ * Contains \Drupal\hal\Tests\EntityTest.
  */
 
 namespace Drupal\hal\Tests;
@@ -198,7 +198,8 @@ class EntityTest extends NormalizerTestBase {
 
     $original_values = $comment->toArray();
     // cid will not exist and hostname will always be denied view access.
-    unset($original_values['cid'], $original_values['hostname']);
+    // No value will exist for name as this is only for anonymous users.
+    unset($original_values['cid'], $original_values['hostname'], $original_values['name']);
 
     $normalized = $this->serializer->normalize($comment, $this->format, ['account' => $account]);
 

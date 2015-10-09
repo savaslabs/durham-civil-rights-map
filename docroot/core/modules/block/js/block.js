@@ -1,9 +1,19 @@
+/**
+ * @file
+ * Block behaviors.
+ */
+
 (function ($, window) {
 
   "use strict";
 
   /**
    * Provide the summary information for the block settings vertical tabs.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches the behavior for the block settings summaries.
    */
   Drupal.behaviors.blockSettingsSummary = {
     attach: function () {
@@ -14,12 +24,21 @@
         return;
       }
 
+      /**
+       * Create a summary for checkboxes in the provided context.
+       *
+       * @param {HTMLDocument|HTMLElement} context
+       *   A context where one would find checkboxes to summarize.
+       *
+       * @return {string}
+       *   A string with the summary.
+       */
       function checkboxesSummary(context) {
         var vals = [];
         var $checkboxes = $(context).find('input[type="checkbox"]:checked + label');
         var il = $checkboxes.length;
         for (var i = 0; i < il; i++) {
-          vals.push($($checkboxes[i]).text());
+          vals.push($($checkboxes[i]).html());
         }
         if (!vals.length) {
           vals.push(Drupal.t('Not restricted'));
@@ -27,9 +46,9 @@
         return vals.join(', ');
       }
 
-      $('#edit-visibility-node-type, #edit-visibility-language, #edit-visibility-user-role').drupalSetSummary(checkboxesSummary);
+      $('[data-drupal-selector="edit-visibility-node-type"], [data-drupal-selector="edit-visibility-language"], [data-drupal-selector="edit-visibility-user-role"]').drupalSetSummary(checkboxesSummary);
 
-      $('#edit-visibility-request-path').drupalSetSummary(function (context) {
+      $('[data-drupal-selector="edit-visibility-request-path"]').drupalSetSummary(function (context) {
         var $pages = $(context).find('textarea[name="visibility[request_path][pages]"]');
         if (!$pages.val()) {
           return Drupal.t('Not restricted');
@@ -42,10 +61,15 @@
   };
 
   /**
-   * Move a block in the blocks table from one region to another via select list.
+   * Move a block in the blocks table between regions via select list.
    *
    * This behavior is dependent on the tableDrag behavior, since it uses the
    * objects initialized in that behavior to update the row.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches the tableDrag behaviour for blocks in block administration.
    */
   Drupal.behaviors.blockDrag = {
     attach: function (context, settings) {
@@ -55,14 +79,16 @@
       }
 
       var table = $('#blocks');
-      var tableDrag = Drupal.tableDrag.blocks; // Get the blocks tableDrag object.
-
+      // Get the blocks tableDrag object.
+      var tableDrag = Drupal.tableDrag.blocks;
       // Add a handler for when a row is swapped, update empty regions.
       tableDrag.row.prototype.onSwap = function (swappedRow) {
         checkEmptyRegions(table, this);
+        updateLastPlaced(table, this);
       };
 
-      // Add a handler so when a row is dropped, update fields dropped into new regions.
+      // Add a handler so when a row is dropped, update fields dropped into
+      // new regions.
       tableDrag.onDrop = function () {
         var dragObject = this;
         var $rowElement = $(dragObject.rowObject.element);
@@ -73,48 +99,100 @@
         var regionField = $rowElement.find('select.block-region-select');
         // Check whether the newly picked region is available for this block.
         if (regionField.find('option[value=' + regionName + ']').length === 0) {
-          // If not, alert the user and keep the block in its old region setting.
+          // If not, alert the user and keep the block in its old region
+          // setting.
           window.alert(Drupal.t('The block cannot be placed in this region.'));
-          // Simulate that there was a selected element change, so the row is put
-          // back to from where the user tried to drag it.
+          // Simulate that there was a selected element change, so the row is
+          // put back to from where the user tried to drag it.
           regionField.trigger('change');
         }
-        else if ($rowElement.prev('tr').is('.region-message')) {
+
+        // Update region and weight fields if the region has been changed.
+        if (!regionField.is('.block-region-' + regionName)) {
           var weightField = $rowElement.find('select.block-weight');
           var oldRegionName = weightField[0].className.replace(/([^ ]+[ ]+)*block-weight-([^ ]+)([ ]+[^ ]+)*/, '$2');
-
-          if (!regionField.is('.block-region-' + regionName)) {
-            regionField.removeClass('block-region-' + oldRegionName).addClass('block-region-' + regionName);
-            weightField.removeClass('block-weight-' + oldRegionName).addClass('block-weight-' + regionName);
-            regionField.val(regionName);
-          }
+          regionField.removeClass('block-region-' + oldRegionName).addClass('block-region-' + regionName);
+          weightField.removeClass('block-weight-' + oldRegionName).addClass('block-weight-' + regionName);
+          regionField.val(regionName);
         }
+
+        updateBlockWeights(table, regionName);
       };
 
       // Add the behavior to each region select list.
-      $(context).find('select.block-region-select').once('block-region-select').each(function () {
-        $(this).on('change', function (event) {
+      $(context).find('select.block-region-select').once('block-region-select')
+        .on('change', function (event) {
           // Make our new row and select field.
           var row = $(this).closest('tr');
           var select = $(this);
-          tableDrag.rowObject = new tableDrag.row(row);
 
-          // Find the correct region and insert the row as the last in the region.
+          // Find the correct region and insert the row as the last in the
+          // region.
           table.find('.region-' + select[0].value + '-message').nextUntil('.region-message').eq(-1).before(row);
 
+          updateBlockWeights(table, select[0].value);
           // Modify empty regions with added or removed fields.
           checkEmptyRegions(table, row);
+          // Update last placed block indication.
+          updateLastPlaced(table, row);
+          // Show unsaved changes warning.
+          if (!tableDrag.changed) {
+            $(Drupal.theme('tableDragChangedWarning')).insertBefore(tableDrag.table).hide().fadeIn('slow');
+            tableDrag.changed = true;
+          }
           // Remove focus from selectbox.
           select.trigger('blur');
         });
-      });
 
+      var updateLastPlaced = function ($table, rowObject) {
+        // Remove the color-success class from new block if applicable.
+        $table.find('.color-success').removeClass('color-success');
+
+        var $rowObject = $(rowObject);
+        if (!$rowObject.is('.drag-previous')) {
+          $table.find('.drag-previous').removeClass('drag-previous');
+          $rowObject.addClass('drag-previous');
+        }
+      };
+
+      /**
+       * Update block weights in the given region.
+       *
+       * @param {jQuery} $table
+       *   Table with draggable items.
+       * @param {string} region
+       *   Machine name of region containing blocks to update.
+       */
+      var updateBlockWeights = function ($table, region) {
+        // Calculate minimum weight.
+        var weight = -Math.round($table.find('.draggable').length / 2);
+        // Update the block weights.
+        $table.find('.region-' + region + '-message').nextUntil('.region-title')
+          .find('select.block-weight').val(function () {
+            // Increment the weight before assigning it to prevent using the
+            // absolute minimum available weight. This way we always have an
+            // unused upper and lower bound, which makes manually setting the
+            // weights easier for users who prefer to do it that way.
+            return ++weight;
+          });
+      };
+
+      /**
+       * Checks empty regions and toggles classes based on this.
+       *
+       * @param {jQuery} table
+       *   The jQuery object representing the table to inspect.
+       * @param {jQuery} rowObject
+       *   The jQuery object representing the table row.
+       */
       var checkEmptyRegions = function (table, rowObject) {
         table.find('tr.region-message').each(function () {
           var $this = $(this);
-          // If the dragged row is in this region, but above the message row, swap it down one space.
+          // If the dragged row is in this region, but above the message row,
+          // swap it down one space.
           if ($this.prev('tr').get(0) === rowObject.element) {
-            // Prevent a recursion problem when using the keyboard to move rows up.
+            // Prevent a recursion problem when using the keyboard to move rows
+            // up.
             if ((rowObject.method !== 'keyboard' || rowObject.direction === 'down')) {
               rowObject.swap('after', this);
             }

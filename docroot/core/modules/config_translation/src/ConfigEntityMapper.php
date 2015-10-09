@@ -8,17 +8,17 @@
 namespace Drupal\config_translation;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Config\TypedConfigManagerInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Routing\RouteMatch;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\Core\Url;
 use Drupal\locale\LocaleConfigManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -43,7 +43,7 @@ class ConfigEntityMapper extends ConfigNamesMapper {
   /**
    * Loaded entity instance to help produce the translation interface.
    *
-   * @var \Drupal\Core\Entity\EntityInterface
+   * @var \Drupal\Core\Config\Entity\ConfigEntityInterface
    */
   protected $entity;
 
@@ -110,13 +110,23 @@ class ConfigEntityMapper extends ConfigNamesMapper {
   /**
    * {@inheritdoc}
    */
-  public function populateFromRequest(Request $request) {
-    parent::populateFromRequest($request);
-    $entity = $request->attributes->get($this->entityType);
+  public function populateFromRouteMatch(RouteMatchInterface $route_match) {
+    parent::populateFromRouteMatch($route_match);
+    $entity = $route_match->getParameter($this->entityType);
     $this->setEntity($entity);
   }
 
   /**
+   * Gets the entity instance for this mapper.
+   *
+   * @return \Drupal\Core\Config\Entity\ConfigEntityInterface $entity
+   *   The configuration entity.
+   */
+  public function getEntity() {
+    return $this->entity;
+  }
+
+    /**
    * Sets the entity instance for this mapper.
    *
    * This method can only be invoked when the concrete entity is known, that is
@@ -125,13 +135,13 @@ class ConfigEntityMapper extends ConfigNamesMapper {
    * configuration names to use to check permissions or display a translation
    * screen.
    *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The entity to set.
+   * @param \Drupal\Core\Config\Entity\ConfigEntityInterface $entity
+   *   The configuration entity to set.
    *
    * @return bool
    *   TRUE, if the entity was set successfully; FALSE otherwise.
    */
-  public function setEntity(EntityInterface $entity) {
+  public function setEntity(ConfigEntityInterface $entity) {
     if (isset($this->entity)) {
       return FALSE;
     }
@@ -143,6 +153,7 @@ class ConfigEntityMapper extends ConfigNamesMapper {
     // page with more names if form altering added more configuration to an
     // entity. This is not a Drupal 8 best practice (ideally the configuration
     // would have pluggable components), but this may happen as well.
+    /** @var \Drupal\Core\Config\Entity\ConfigEntityTypeInterface $entity_type_info */
     $entity_type_info = $this->entityManager->getDefinition($this->entityType);
     $this->addConfigName($entity_type_info->getConfigPrefix() . '.' . $entity->id());
 
@@ -153,11 +164,7 @@ class ConfigEntityMapper extends ConfigNamesMapper {
    * {@inheritdoc}
    */
   public function getTitle() {
-    // Title based on the entity label. Should be translated for display in the
-    // current page language. The title placeholder is later escaped for
-    // display.
-    $entity_type_info = $this->entityManager->getDefinition($this->entityType);
-    return $this->t($this->pluginDefinition['title'], array('!label' => $this->entity->label(), '!entity_type' => $entity_type_info->getLowercaseLabel()));
+    return $this->entity->label() . ' ' . $this->pluginDefinition['title'];
   }
 
   /**
@@ -234,7 +241,7 @@ class ConfigEntityMapper extends ConfigNamesMapper {
    */
   public function getContextualLinkGroup() {
     // @todo Contextual groups do not map to entity types in a predictable
-    //   way. See https://drupal.org/node/2134841 to make them predictable.
+    //   way. See https://www.drupal.org/node/2134841 to make them predictable.
     switch ($this->entityType) {
       case 'menu':
       case 'block':

@@ -8,12 +8,12 @@
 namespace Drupal\language;
 
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\Core\PhpStorage\PhpStorageFactory;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageDefault;
 use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
 use Drupal\language\Config\LanguageConfigFactoryOverrideInterface;
 use Drupal\language\Entity\ConfigurableLanguage;
@@ -105,7 +105,7 @@ class ConfigurableLanguageManager extends LanguageManager implements Configurabl
    * {@inheritdoc}
    */
   public static function rebuildServices() {
-    PhpStorageFactory::get('service_container')->deleteAll();
+    \Drupal::service('kernel')->invalidateContainer();
   }
 
   /**
@@ -183,10 +183,14 @@ class ConfigurableLanguageManager extends LanguageManager implements Configurabl
    */
   public function getDefinedLanguageTypesInfo() {
     if (!isset($this->languageTypesInfo)) {
+      $defaults = parent::getDefinedLanguageTypesInfo();
+
       $info = $this->moduleHandler->invokeAll('language_types_info');
+      $language_info = $info + $defaults;
+
       // Let other modules alter the list of language types.
-      $this->moduleHandler->alter('language_types_info', $info);
-      $this->languageTypesInfo = $info;
+      $this->moduleHandler->alter('language_types_info', $language_info);
+      $this->languageTypesInfo = $language_info;
     }
     return $this->languageTypesInfo;
   }
@@ -466,7 +470,7 @@ class ConfigurableLanguageManager extends LanguageManager implements Configurabl
         unset($predefined[$key]);
         continue;
       }
-      $predefined[$key] = $this->t($value[0]);
+      $predefined[$key] = new TranslatableMarkup($value[0]);
     }
     asort($predefined);
     return $predefined;

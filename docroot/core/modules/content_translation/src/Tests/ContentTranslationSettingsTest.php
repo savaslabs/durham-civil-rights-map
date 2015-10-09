@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\content_translation\Tests\ContentTranslationSettingsTest.
+ * Contains \Drupal\content_translation\Tests\ContentTranslationSettingsTest.
  */
 
 namespace Drupal\content_translation\Tests;
@@ -133,7 +133,7 @@ class ContentTranslationSettingsTest extends WebTestBase {
 
     // Test that language settings are correctly stored.
     $language_configuration = ContentLanguageSettings::loadByEntityTypeBundle('comment', 'comment_article');
-    $this->assertEqual($language_configuration->getDefaultLangcode(), 'current_interface', 'The default language for article comments is set to the current interface language.');
+    $this->assertEqual($language_configuration->getDefaultLangcode(), 'current_interface', 'The default language for article comments is set to the interface text language selected for page.');
     $this->assertTrue($language_configuration->isLanguageAlterable(), 'The language selector for article comments is shown.');
 
     // Verify language widget appears on comment type form.
@@ -182,6 +182,24 @@ class ContentTranslationSettingsTest extends WebTestBase {
       $this->assertEqual($definitions['body']->isTranslatable(), $translatable, 'Field translatability correctly switched.');
       $this->assertEqual($field->isTranslatable(), $definitions['body']->isTranslatable(), 'Configurable field translatability correctly switched.');
     }
+
+    // Test that the order of the language list is similar to other language
+    // lists, such as in Views UI.
+    $this->drupalGet('admin/config/regional/content-language');
+
+    $expected_elements = array(
+      'site_default',
+      'current_interface',
+      'authors_default',
+      'en',
+      'und',
+      'zxx',
+    );
+    $elements = $this->xpath('//select[@id="edit-settings-node-article-settings-language-langcode"]/option');
+    // Compare values inside the option elements with expected values.
+    for ($i = 0; $i < count($elements); $i++) {
+      $this->assertEqual($elements[$i]->attributes()->{'value'}, $expected_elements[$i]);
+    }
   }
 
   /**
@@ -199,6 +217,11 @@ class ContentTranslationSettingsTest extends WebTestBase {
     $this->drupalPostForm('admin/config/people/accounts', $edit, t('Save configuration'));
     $this->drupalGet('admin/config/people/accounts');
     $this->assertFieldChecked('edit-language-content-translation');
+
+    // Make sure account settings can be saved.
+    $this->drupalPostForm('admin/config/people/accounts', array('anonymous' => 'Save me please!'), 'Save configuration');
+    $this->assertFieldByName('anonymous', 'Save me please!', 'Anonymous name has been changed.');
+    $this->assertText('The configuration options have been saved.');
   }
 
   /**
@@ -213,7 +236,7 @@ class ContentTranslationSettingsTest extends WebTestBase {
    * @param array $edit
    *   An array of values to submit to the content translation settings page.
    *
-   * @return boolean
+   * @return bool
    *   TRUE if the assertion succeeded, FALSE otherwise.
    */
   protected function assertSettings($entity_type, $bundle, $enabled, $edit) {

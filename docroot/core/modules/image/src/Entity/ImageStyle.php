@@ -48,6 +48,11 @@ use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
  *     "edit-form" = "/admin/config/media/image-styles/manage/{image_style}",
  *     "delete-form" = "/admin/config/media/image-styles/manage/{image_style}/delete",
  *     "collection" = "/admin/config/media/image-styles",
+ *   },
+ *   config_export = {
+ *     "name",
+ *     "label",
+ *     "effects",
  *   }
  * )
  */
@@ -221,7 +226,7 @@ class ImageStyle extends ConfigEntityBase implements ImageStyleInterface, Entity
     // to the actual file path, this avoids bootstrapping PHP once the files are
     // built.
     if ($clean_urls === FALSE && file_uri_scheme($uri) == 'public' && !file_exists($uri)) {
-      $directory_path = file_stream_wrapper_get_instance_by_uri($uri)->getDirectoryPath();
+      $directory_path = \Drupal::service('stream_wrapper_manager')->getViaUri($uri)->getDirectoryPath();
       return Url::fromUri('base:' . $directory_path . '/' . file_uri_target($uri), array('absolute' => TRUE, 'query' => $token_query))->toString();
     }
 
@@ -262,7 +267,7 @@ class ImageStyle extends ConfigEntityBase implements ImageStyleInterface, Entity
     // Clear caches so that formatters may be added for this style.
     drupal_theme_rebuild();
 
-    Cache::invalidateTags($this->getCacheTags());
+    Cache::invalidateTags($this->getCacheTagsToInvalidate());
 
     return $this;
   }
@@ -271,17 +276,19 @@ class ImageStyle extends ConfigEntityBase implements ImageStyleInterface, Entity
    * {@inheritdoc}
    */
   public function createDerivative($original_uri, $derivative_uri) {
+
+    // If the source file doesn't exist, return FALSE without creating folders.
+    $image = \Drupal::service('image.factory')->get($original_uri);
+    if (!$image->isValid()) {
+      return FALSE;
+    }
+
     // Get the folder for the final location of this style.
     $directory = drupal_dirname($derivative_uri);
 
     // Build the destination folder tree if it doesn't already exist.
     if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
       \Drupal::logger('image')->error('Failed to create style directory: %directory', array('%directory' => $directory));
-      return FALSE;
-    }
-
-    $image = \Drupal::service('image.factory')->get($original_uri);
-    if (!$image->isValid()) {
       return FALSE;
     }
 
@@ -302,9 +309,9 @@ class ImageStyle extends ConfigEntityBase implements ImageStyleInterface, Entity
   /**
    * {@inheritdoc}
    */
-  public function transformDimensions(array &$dimensions) {
+  public function transformDimensions(array &$dimensions, $uri) {
     foreach ($this->getEffects() as $effect) {
-      $effect->transformDimensions($dimensions);
+      $effect->transformDimensions($dimensions, $uri);
     }
   }
 

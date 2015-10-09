@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\Core\Entity\Plugin\Field\FieldType\UuidItem.
+ * Contains \Drupal\Core\Field\Plugin\Field\FieldType\UuidItem.
  */
 
 namespace Drupal\Core\Field\Plugin\Field\FieldType;
@@ -30,6 +30,7 @@ class UuidItem extends StringItem {
   public static function defaultStorageSettings() {
     return array(
       'max_length' => 128,
+      'is_ascii' => TRUE,
     ) + parent::defaultStorageSettings();
   }
 

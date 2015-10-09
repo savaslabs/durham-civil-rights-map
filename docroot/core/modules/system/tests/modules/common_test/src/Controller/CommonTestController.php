@@ -7,7 +7,7 @@
 
 namespace Drupal\common_test\Controller;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -19,7 +19,8 @@ class CommonTestController {
   /**
    * Returns links to the current page, with and without query strings.
    *
-   * Using #type 'link' causes these links to be rendered with _l().
+   * Using #type 'link' causes these links to be rendered with the link
+   * generator.
    */
   public function typeLinkActiveClass() {
     return array(
@@ -77,8 +78,7 @@ class CommonTestController {
         ),
       ),
     );
-    drupal_render($attached);
-    return '';
+    return \Drupal::service('renderer')->renderRoot($attached);
   }
 
   /**
@@ -90,7 +90,7 @@ class CommonTestController {
    */
   public function destination() {
     $destination = \Drupal::destination()->getAsArray();
-    $output = "The destination: " . SafeMarkup::checkPlain($destination['destination']);
+    $output = "The destination: " . Html::escape($destination['destination']);
     return new Response($output);
   }
 

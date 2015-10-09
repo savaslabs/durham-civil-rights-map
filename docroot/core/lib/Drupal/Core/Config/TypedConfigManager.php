@@ -8,7 +8,6 @@
 namespace Drupal\Core\Config;
 
 use Drupal\Component\Utility\NestedArray;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Config\Schema\ArrayElement;
 use Drupal\Core\Config\Schema\ConfigSchemaAlterException;
@@ -17,7 +16,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\TypedData\TypedDataManager;
 
 /**
- * Manages config type plugins.
+ * Manages config schema type plugins.
  */
 class TypedConfigManager extends TypedDataManager implements TypedConfigManagerInterface {
 
@@ -56,19 +55,23 @@ class TypedConfigManager extends TypedDataManager implements TypedConfigManagerI
     $this->configStorage = $configStorage;
     $this->schemaStorage = $schemaStorage;
     $this->setCacheBackend($cache, 'typed_config_definitions');
-    $this->discovery = new ConfigSchemaDiscovery($schemaStorage);
     $this->alterInfo('config_schema_info');
     $this->moduleHandler = $module_handler;
   }
 
   /**
-   * Gets typed configuration data.
-   *
-   * @param string $name
-   *   Configuration object name.
-   *
-   * @return \Drupal\Core\Config\Schema\TypedConfigInterface
-   *   Typed configuration data.
+   * {@inheritdoc}
+   */
+  protected function getDiscovery() {
+    if (!isset($this->discovery)) {
+      $this->discovery = new ConfigSchemaDiscovery($this->schemaStorage);
+    }
+    return $this->discovery;
+  }
+
+
+  /**
+   * {@inheritdoc}
    */
   public function get($name) {
     $data = $this->configStorage->read($name);
@@ -116,7 +119,7 @@ class TypedConfigManager extends TypedDataManager implements TypedConfigManagerI
   /**
    * {@inheritdoc}
    */
-  public function getDefinition($base_plugin_id, $exception_on_invalid = TRUE, $is_config_name = FALSE) {
+  public function getDefinition($base_plugin_id, $exception_on_invalid = TRUE) {
     $definitions = $this->getDefinitions();
     if (isset($definitions[$base_plugin_id])) {
       $type = $base_plugin_id;
@@ -145,14 +148,6 @@ class TypedConfigManager extends TypedDataManager implements TypedConfigManagerI
       'definition_class' => '\Drupal\Core\TypedData\DataDefinition',
       'type' => $type,
     );
-    // If this is definition expected for a config name and it is defined as a
-    // mapping, add a langcode element if not already present.
-    if ($is_config_name && isset($definition['mapping']) && !isset($definition['mapping']['langcode'])) {
-      $definition['mapping']['langcode'] = array(
-        'type' => 'string',
-        'label' => 'Language code',
-      );
-    }
     return $definition;
   }
 
@@ -281,8 +276,12 @@ class TypedConfigManager extends TypedDataManager implements TypedConfigManagerI
         return $value;
       }
       elseif (!$parts) {
+        $value = $data[$name];
+        if (is_bool($value)) {
+          $value = (int) $value;
+        }
         // If no more parts left, this is the final property.
-        return (string)$data[$name];
+        return (string) $value;
       }
       else {
         // Get nested value and continue processing.
@@ -322,32 +321,19 @@ class TypedConfigManager extends TypedDataManager implements TypedConfigManagerI
     parent::alterDefinitions($definitions);
     $altered_schema = array_keys($definitions);
     if ($discovered_schema != $altered_schema) {
-      $added_keys = array_diff($altered_schema, $discovered_schema);
-      $removed_keys = array_diff($discovered_schema, $altered_schema);
+      $added_keys = implode(',', array_diff($altered_schema, $discovered_schema));
+      $removed_keys = implode(',', array_diff($discovered_schema, $altered_schema));
       if (!empty($added_keys) && !empty($removed_keys)) {
-        $message = 'Invoking hook_config_schema_info_alter() has added (@added) and removed (@removed) schema definitions';
+        $message = "Invoking hook_config_schema_info_alter() has added ($added_keys) and removed ($removed_keys) schema definitions";
       }
       elseif (!empty($added_keys)) {
-        $message = 'Invoking hook_config_schema_info_alter() has added (@added) schema definitions';
+        $message = "Invoking hook_config_schema_info_alter() has added ($added_keys) schema definitions";
       }
       else {
-        $message = 'Invoking hook_config_schema_info_alter() has removed (@removed) schema definitions';
+        $message = "Invoking hook_config_schema_info_alter() has removed ($removed_keys) schema definitions";
       }
-      throw new ConfigSchemaAlterException(SafeMarkup::format($message, ['@added' => implode(',', $added_keys), '@removed' => implode(',', $removed_keys)]));
+      throw new ConfigSchemaAlterException($message);
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function createInstance($data_type, array $configuration = array()) {
-    $instance = parent::createInstance($data_type, $configuration);
-    // Enable elements to construct their own definitions using the typed config
-    // manager.
-    if ($instance instanceof ArrayElement) {
-      $instance->setTypedConfig($this);
-    }
-    return $instance;
   }
 
 }

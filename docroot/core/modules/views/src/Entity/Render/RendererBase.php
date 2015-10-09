@@ -7,18 +7,18 @@
 
 namespace Drupal\views\Entity\Render;
 
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\views\Plugin\CacheablePluginInterface;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 
 /**
- * Defines a base class for entity row renderers.
+ * Defines a base class for entity renderers.
  */
-abstract class RendererBase implements CacheablePluginInterface {
+abstract class RendererBase implements CacheableDependencyInterface {
 
   /**
    * The view executable wrapping the view storage entity.
@@ -46,7 +46,7 @@ abstract class RendererBase implements CacheablePluginInterface {
    *
    * @var array
    */
-  protected $build = array();
+  protected $build;
 
   /**
    * Constructs a renderer object.
@@ -67,8 +67,8 @@ abstract class RendererBase implements CacheablePluginInterface {
   /**
    * {@inheritdoc}
    */
-  public function isCacheable() {
-    return TRUE;
+  public function getCacheMaxAge() {
+    return Cache::PERMANENT;
   }
 
   /**
@@ -79,15 +79,11 @@ abstract class RendererBase implements CacheablePluginInterface {
   }
 
   /**
-   * Returns the language code associated to the given row.
-   *
-   * @param \Drupal\views\ResultRow $row
-   *   The result row.
-   *
-   * @return string
-   *   A language code.
+   * {@inheritdoc}
    */
-  abstract public function getLangcode(ResultRow $row);
+  public function getCacheTags() {
+    return [];
+  }
 
   /**
    * Alters the query if needed.
@@ -97,38 +93,26 @@ abstract class RendererBase implements CacheablePluginInterface {
    * @param string $relationship
    *   (optional) The relationship, used by a field.
    */
-  public function query(QueryPluginBase $query, $relationship = NULL) {
-  }
+  abstract public function query(QueryPluginBase $query, $relationship = NULL);
 
   /**
-   * Runs before each row is rendered.
+   * Runs before each entity is rendered.
    *
    * @param $result
    *   The full array of results from the query.
    */
   public function preRender(array $result) {
-    $view_builder = $this->view->rowPlugin->entityManager->getViewBuilder($this->entityType->id());
-
-    /** @var \Drupal\views\ResultRow $row */
-    foreach ($result as $row) {
-      $entity = $row->_entity;
-      $entity->view = $this->view;
-      $this->build[$entity->id()] = $view_builder->view($entity, $this->view->rowPlugin->options['view_mode'], $this->getLangcode($row));
-    }
   }
 
   /**
-   * Renders a row object.
+   * Renders entity data.
    *
    * @param \Drupal\views\ResultRow $row
    *   A single row of the query result.
    *
    * @return array
-   *   The renderable array of a single row.
+   *   A renderable array for the entity data contained in the result row.
    */
-  public function render(ResultRow $row) {
-    $entity_id = $row->_entity->id();
-    return $this->build[$entity_id];
-  }
+  abstract public function render(ResultRow $row);
 
 }

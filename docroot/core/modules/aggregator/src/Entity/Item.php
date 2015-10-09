@@ -108,7 +108,8 @@ class Item extends ContentEntityBase implements ItemInterface {
       ))
       ->setDisplayConfigurable('view', TRUE);
 
-    // @todo Convert to a real UUID field in https://drupal.org/node/2149851.
+    // @todo Convert to a real UUID field in
+    //   https://www.drupal.org/node/2149851.
     $fields['guid'] = BaseFieldDefinition::create('string_long')
       ->setLabel(t('GUID'))
       ->setDescription(t('Unique identifier for the feed item.'));
@@ -224,13 +225,15 @@ class Item extends ContentEntityBase implements ItemInterface {
     // handles the regular cases. The Item entity has one special case: a newly
     // created Item is *also* associated with a Feed, so we must invalidate the
     // associated Feed's cache tag.
-    Cache::invalidateTags($this->getCacheTags());
+    if (!$update) {
+      Cache::invalidateTags($this->getCacheTagsToInvalidate());
+    }
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getCacheTags() {
+  public function getCacheTagsToInvalidate() {
     return Feed::load($this->getFeedId())->getCacheTags();
   }
 

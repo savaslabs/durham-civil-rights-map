@@ -11,9 +11,9 @@ use Drupal\language\LanguageNegotiationMethodBase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Class for identifying the language from the current interface language.
+ * Identifies the language from the interface text language selected for page.
  *
- * @Plugin(
+ * @LanguageNegotiation(
  *   id = Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUI::METHOD_ID,
  *   types = {Drupal\Core\Language\LanguageInterface::TYPE_CONTENT},
  *   weight = 9,

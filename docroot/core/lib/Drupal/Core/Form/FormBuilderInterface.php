@@ -13,6 +13,21 @@ namespace Drupal\Core\Form;
 interface FormBuilderInterface {
 
   /**
+   * Request key for AJAX forms that submit to the form's original route.
+   *
+   * This constant is distinct from a "drupal_ajax" value for
+   * \Drupal\Core\EventSubscriber\MainContentViewSubscriber::WRAPPER_FORMAT,
+   * because that one is set for all AJAX submissions, including ones with
+   * dedicated routes for which self::buildForm() should not exit early via a
+   * \Drupal\Core\Form\FormAjaxException.
+   *
+   * @todo Re-evaluate the need for this constant after
+   *   https://www.drupal.org/node/2502785 and
+   *   https://www.drupal.org/node/2503429.
+   */
+  const AJAX_FORM_REQUEST = 'ajax_form';
+
+  /**
    * Determines the ID of a form.
    *
    * @param \Drupal\Core\Form\FormInterface|string $form_arg
@@ -55,7 +70,7 @@ interface FormBuilderInterface {
    * Builds and processes a form for a given form ID.
    *
    * The form may also be retrieved from the cache if the form was built in a
-   * previous page-load. The form is then passed on for processing, validation
+   * previous page load. The form is then passed on for processing, validation,
    * and submission if there is proper input.
    *
    * @param \Drupal\Core\Form\FormInterface|string $form_id
@@ -68,6 +83,14 @@ interface FormBuilderInterface {
    * @return array
    *   The rendered form. This function may also perform a redirect and hence
    *   may not return at all depending upon the $form_state flags that were set.
+   *
+   * @throws \Drupal\Core\Form\FormAjaxException
+   *   Thrown when a form is triggered via an AJAX submission. It will be
+   *   handled by \Drupal\Core\Form\EventSubscriber\FormAjaxSubscriber.
+   * @throws \Drupal\Core\Form\EnforcedResponseException
+   *   Thrown when a form builder returns a response directly, usually a
+   *   \Symfony\Component\HttpFoundation\RedirectResponse. It will be handled by
+   *   \Drupal\Core\EventSubscriber\EnforcedFormResponseSubscriber.
    *
    * @see self::redirectForm()
    */
@@ -85,9 +108,7 @@ interface FormBuilderInterface {
    * form workflow, to be returned for rendering.
    *
    * Ajax form submissions are almost always multi-step workflows, so that is
-   * one common use-case during which form rebuilding occurs. See
-   * Drupal\system\FormAjaxController::content() for more information about
-   * creating Ajax-enabled forms.
+   * one common use-case during which form rebuilding occurs.
    *
    * @param string $form_id
    *   The unique string identifying the desired form. If a function with that
@@ -107,7 +128,6 @@ interface FormBuilderInterface {
    *   The newly built form.
    *
    * @see self::processForm()
-   * @see \Drupal\system\FormAjaxController::content()
    */
   public function rebuildForm($form_id, FormStateInterface &$form_state, $old_form = NULL);
 

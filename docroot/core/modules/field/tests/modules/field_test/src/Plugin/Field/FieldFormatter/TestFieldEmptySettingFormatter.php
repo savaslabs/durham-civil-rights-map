@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\field_test\Plugin\field\formatter\TestFieldEmptySettingFormatter
+ * Contains \Drupal\field_test\Plugin\Field\FieldFormatter\TestFieldEmptySettingFormatter.
  */
 
 namespace Drupal\field_test\Plugin\Field\FieldFormatter;
@@ -63,7 +63,7 @@ class TestFieldEmptySettingFormatter extends FormatterBase {
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $elements = array();
 
     if (!empty($items)) {

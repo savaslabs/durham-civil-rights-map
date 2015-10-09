@@ -12,9 +12,8 @@ use Behat\Mink\Element\Element;
 use Behat\Mink\Exception\Exception;
 use Behat\Mink\Mink;
 use Behat\Mink\Session;
-use Drupal\Component\Utility\Crypt;
-use Drupal\Component\Utility\Random;
 use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Database\Database;
@@ -25,6 +24,7 @@ use Drupal\Core\Session\UserSession;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\StreamWrapper\StreamWrapperInterface;
 use Drupal\Core\Test\TestRunnerKernel;
+use Drupal\Core\Url;
 use Drupal\user\UserInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -51,6 +51,9 @@ use Symfony\Component\HttpFoundation\Request;
  * @see \Drupal\simpletest\WebTestBase
  */
 abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
+
+  use RandomGeneratorTrait;
+  use SessionTestTrait;
 
   /**
    * Class loader.
@@ -145,25 +148,11 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   protected $configImporter;
 
   /**
-   * The random data generator.
-   *
-   * @var \Drupal\Component\Utility\Random
-   */
-  protected $randomGenerator;
-
-  /**
    * The profile to install as a basis for testing.
    *
    * @var string
    */
   protected $profile = 'testing';
-
-  /**
-   * The current session name, if available.
-   *
-   * @var string
-   */
-  protected $sessionName;
 
   /**
    * The current user logged in using the Mink controlled browser.
@@ -329,10 +318,9 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     $test_connection_info = Database::getConnectionInfo('default');
     $test_prefix = $test_connection_info['default']['prefix']['default'];
     if ($original_prefix != $test_prefix) {
-      $tables = Database::getConnection()->schema()->findTables($test_prefix . '%');
-      $prefix_length = strlen($test_prefix);
+      $tables = Database::getConnection()->schema()->findTables('%');
       foreach ($tables as $table) {
-        if (Database::getConnection()->schema()->dropTable(substr($table, $prefix_length))) {
+        if (Database::getConnection()->schema()->dropTable($table)) {
           unset($tables[$table]);
         }
       }
@@ -418,7 +406,14 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // The URL generator service is not necessarily available yet; e.g., in
     // interactive installer tests.
     if ($this->container->has('url_generator')) {
-      $url = $this->container->get('url_generator')->generateFromPath($path, $options);
+      if (UrlHelper::isExternal($path)) {
+        $url = Url::fromUri($path, $options)->toString();
+      }
+      else {
+        // This is needed for language prefixing.
+        $options['path_processing'] = TRUE;
+        $url = Url::fromUri('base:/' . $path, $options)->toString();
+      }
     }
     else {
       $url = $this->getAbsoluteUrl($path);
@@ -457,7 +452,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
         $path = substr($path, $length);
       }
       // Ensure that we have an absolute path.
-      if ($path[0] !== '/') {
+      if (empty($path) || $path[0] !== '/') {
         $path = '/' . $path;
       }
       // Finally, prepend the $base_url.
@@ -579,69 +574,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   }
 
   /**
-   * Gets the random generator for the utility methods.
-   *
-   * @return \Drupal\Component\Utility\Random
-   *   The random generator
-   */
-  protected function getRandomGenerator() {
-    if (!is_object($this->randomGenerator)) {
-      $this->randomGenerator = new Random();
-    }
-    return $this->randomGenerator;
-  }
-
-  /**
-   * Generates a unique random string containing letters and numbers.
-   *
-   * Do not use this method when testing unvalidated user input. Instead, use
-   * \Drupal\simpletest\BrowserTestBase::randomString().
-   *
-   * @param int $length
-   *   (optional) Length of random string to generate.
-   *
-   * @return string
-   *   Randomly generated unique string.
-   *
-   * @see \Drupal\Component\Utility\Random::name()
-   */
-  public function randomMachineName($length = 8) {
-    return $this->getRandomGenerator()->name($length, TRUE);
-  }
-
-  /**
-   * Generates a pseudo-random string of ASCII characters of codes 32 to 126.
-   *
-   * Do not use this method when special characters are not possible (e.g., in
-   * machine or file names that have already been validated); instead, use
-   * \Drupal\simpletest\TestBase::randomMachineName(). If $length is greater
-   * than 2 the random string will include at least one ampersand ('&')
-   * character to ensure coverage for special characters and avoid the
-   * introduction of random test failures.
-   *
-   * @param int $length
-   *   (optional) Length of random string to generate.
-   *
-   * @return string
-   *   Pseudo-randomly generated unique string including special characters.
-   *
-   * @see \Drupal\Component\Utility\Random::string()
-   */
-  public function randomString($length = 8) {
-    if ($length < 3) {
-      return $this->getRandomGenerator()->string($length, TRUE, array($this, 'randomStringValidate'));
-    }
-
-    // To prevent the introduction of random test failures, ensure that the
-    // returned string contains a character that needs to be escaped in HTML by
-    // injecting an ampersand into it.
-    $replacement_pos = floor($length / 2);
-    // Remove 1 from the length to account for the ampersand character.
-    $string = $this->getRandomGenerator()->string($length - 1, TRUE, array($this, 'randomStringValidate'));
-    return substr_replace($string, '&', $replacement_pos, 0);
-  }
-
-  /**
    * Checks whether a given list of permission names is valid.
    *
    * @param array $permissions
@@ -702,7 +634,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     ), t('Log in'));
 
     // @see BrowserTestBase::drupalUserIsLoggedIn()
-    $account->sessionId = $this->getSession()->getCookie(session_name());
+    $account->sessionId = $this->getSession()->getCookie($this->getSessionName());
     $this->assertTrue($this->drupalUserIsLoggedIn($account), SafeMarkup::format('User %name successfully logged in.', array('name' => $account->getUsername())));
 
     $this->loggedInUser = $account;
@@ -835,11 +767,9 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
       'passRaw' => $this->randomMachineName(),
     ));
 
-    // Some tests (SessionTest and SessionHttpsTest) need to examine whether the
-    // proper session cookies were set on a response. Because the child site
-    // uses the same session name as the test runner, it is necessary to make
-    // that available to test-methods.
-    $this->sessionName = session_name();
+    // The child site derives its session name from the database prefix when
+    // running web tests.
+    $this->generateSessionName($this->databasePrefix);
 
     // Get parameters for install_drupal() before removing global variables.
     $parameters = $this->installParameters();
@@ -850,7 +780,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // Not using File API; a potential error must trigger a PHP warning.
     $directory = DRUPAL_ROOT . '/' . $this->siteDirectory;
     copy(DRUPAL_ROOT . '/sites/default/default.settings.php', $directory . '/settings.php');
-    copy(DRUPAL_ROOT . '/sites/default/default.services.yml', $directory . '/services.yml');
 
     // All file system paths are created by System module during installation.
     // @see system_requirements()
@@ -929,7 +858,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // By default, verbosely display all errors and disable all production
     // environment optimizations for all tests to avoid needless overhead and
     // ensure a sane default experience for test authors.
-    // @see https://drupal.org/node/2259167
+    // @see https://www.drupal.org/node/2259167
     $config->getEditable('system.logging')
       ->set('error_level', 'verbose')
       ->save();
@@ -957,7 +886,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // Reset/rebuild all data structures after enabling the modules, primarily
     // to synchronize all data structures and caches between the test runner and
     // the child site.
-    // Affects e.g. file_get_stream_wrappers().
+    // Affects e.g. StreamWrapperManagerInterface::getWrappers().
     // @see \Drupal\Core\DrupalKernel::bootCode()
     // @todo Test-specific setUp() methods may set up further fixtures; find a
     //   way to execute this after setUp() is done, or to eliminate it entirely.
@@ -1090,7 +1019,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    */
   protected function prepareEnvironment() {
     // Bootstrap Drupal so we can use Drupal's built in functions.
-    $this->classLoader = require __DIR__ . '/../../../vendor/autoload.php';
+    $this->classLoader = require __DIR__ . '/../../../../autoload.php';
     $request = Request::createFromGlobals();
     $kernel = TestRunnerKernel::createFromRequest($request, $this->classLoader);
     // TestRunnerKernel expects the working directory to be DRUPAL_ROOT.
@@ -1265,6 +1194,9 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     $server = array_merge($server, $override_server_vars);
 
     $request = Request::create($request_path, 'GET', array(), array(), array(), $server);
+    // Ensure the the request time is REQUEST_TIME to ensure that API calls
+    // in the test use the right timestamp.
+    $request->server->set('REQUEST_TIME', REQUEST_TIME);
     $this->container->get('request_stack')->push($request);
 
     // The request context is normally set by the router_listener from within
@@ -1333,12 +1265,14 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *   Return TRUE if the user is logged in, FALSE otherwise.
    */
   protected function drupalUserIsLoggedIn(UserInterface $account) {
-    if (!isset($account->sessionId)) {
-      return FALSE;
+    $logged_in = FALSE;
+
+    if (isset($account->sessionId)) {
+      $session_handler = $this->container->get('session_handler.storage');
+      $logged_in = (bool) $session_handler->read($account->sessionId);
     }
-    // The session ID is hashed before being stored in the database.
-    // @see \Drupal\Core\Session\SessionHandler::read()
-    return (bool) db_query("SELECT sid FROM {users_field_data} u INNER JOIN {sessions} s ON u.uid = s.uid AND u.default_langcode = 1 WHERE s.sid = :sid", array(':sid' => Crypt::hashBase64($account->sessionId)))->fetchField();
+
+    return $logged_in;
   }
 
 }

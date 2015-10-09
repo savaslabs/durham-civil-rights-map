@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\entity_test\Routing\RouteSubscriber.
+ * Contains \Drupal\entity_test\Routing\EntityTestRoutes.
  */
 
 namespace Drupal\entity_test\Routing;
@@ -60,7 +60,8 @@ class EntityTestRoutes {
       $routes["entity.$entity_type_id.admin_form"] = new Route(
         "$entity_type_id/structure/{bundle}",
         array('_controller' => '\Drupal\entity_test\Controller\EntityTestController::testAdmin'),
-        array('_permission' => 'administer entity_test content')
+        array('_permission' => 'administer entity_test content'),
+        array('_admin_route' => TRUE)
       );
     }
     return $routes;

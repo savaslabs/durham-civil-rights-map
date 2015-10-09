@@ -1,14 +1,17 @@
 <?php
 
 /**
- * @file Contains \Drupal\Tests\Core\Field\FieldItemListTest.
+ * @file
+ * Contains \Drupal\Tests\Core\Field\FieldItemListTest.
  */
 
 namespace Drupal\Tests\Core\Field;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemInterface;
 use Drupal\Core\Field\FieldItemList;
+use Drupal\Core\Form\FormState;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -89,6 +92,14 @@ class FieldItemListTest extends UnitTestCase {
     // Tests field item lists where both have the differently ordered values.
     $datasets[] = [TRUE, $field_item_c, $field_item_d];
 
+    /** @var \Drupal\Core\Field\FieldItemBase  $field_item_e */
+    $field_item_e = $this->getMockForAbstractClass('Drupal\Core\Field\FieldItemBase', [], '', FALSE);
+    $field_item_e->setValue(['2']);
+
+    // Tests field item lists where both have same values but different data
+    // types.
+    $datasets[] = [TRUE, $field_item_b, $field_item_e];
+
     return $datasets;
   }
 
@@ -146,4 +157,60 @@ class FieldItemListTest extends UnitTestCase {
     $this->assertEquals(TRUE, $field_list_a->equals($field_list_b));
   }
 
+  /**
+   * @covers ::defaultValuesForm
+   */
+  public function testDefaultValuesForm() {
+    $field_definition = $this->getMock(FieldDefinitionInterface::class);
+    $field_definition->expects($this->any())
+      ->method('getType')
+      ->willReturn('field_type');
+    /** @var \Drupal\Core\Field\FieldItemList|\PHPUnit_Framework_MockObject_MockObject $field_list */
+    $field_list = $this->getMock(FieldItemList::class, ['defaultValueWidget'], [$field_definition]);
+    $field_list->expects($this->any())
+      ->method('defaultValueWidget')
+      ->willReturn(NULL);
+    $form = [];
+    $form_state = new FormState();
+    $string_translation = $this->getStringTranslationStub();
+    $field_list->setStringTranslation($string_translation);
+
+    $this->assertEquals('No widget available for: <em class="placeholder">field_type</em>.', $field_list->defaultValuesForm($form, $form_state)['#markup']);
+  }
+
+  /**
+   * @covers ::defaultValuesFormValidate
+   */
+  public function testDefaultValuesFormValidate() {
+    $field_definition = $this->getMock(FieldDefinitionInterface::class);
+    /** @var \Drupal\Core\Field\FieldItemList|\PHPUnit_Framework_MockObject_MockObject $field_list */
+    $field_list = $this->getMock(FieldItemList::class, ['defaultValueWidget', 'validate'], [$field_definition]);
+    $field_list->expects($this->any())
+      ->method('defaultValueWidget')
+      ->willReturn(NULL);
+    $field_list->expects($this->never())
+      ->method('validate');
+    $form = [];
+    $form_state = new FormState();
+
+    $field_list->defaultValuesFormValidate([], $form, $form_state);
+  }
+
+  /**
+   * @covers ::defaultValuesFormSubmit
+   */
+  public function testDefaultValuesFormSubmit() {
+    $field_definition = $this->getMock(FieldDefinitionInterface::class);
+    /** @var \Drupal\Core\Field\FieldItemList|\PHPUnit_Framework_MockObject_MockObject $field_list */
+    $field_list = $this->getMock(FieldItemList::class, ['defaultValueWidget', 'getValue'], [$field_definition]);
+    $field_list->expects($this->any())
+      ->method('defaultValueWidget')
+      ->willReturn(NULL);
+    $form = [];
+    $form_state = new FormState();
+    $field_list->expects($this->never())
+      ->method('getValue');
+
+    $this->assertNull($field_list->defaultValuesFormSubmit([], $form, $form_state));
+  }
 }

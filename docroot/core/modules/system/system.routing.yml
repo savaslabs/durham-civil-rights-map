@@ -1,12 +1,3 @@
-system.ajax:
-  path: '/system/ajax'
-  defaults:
-    _controller: '\Drupal\system\Controller\FormAjaxController::content'
-  options:
-    _theme: ajax_base_page
-  requirements:
-    _access: 'TRUE'
-
 system.401:
   path: '/system/401'
   defaults:
@@ -372,7 +363,7 @@ system.theme_settings:
   path: '/admin/appearance/settings'
   defaults:
     _form: '\Drupal\system\Form\ThemeSettingsForm'
-    _title: 'Settings'
+    _title: 'Appearance settings'
   requirements:
     _permission: 'administer themes'
 
@@ -394,7 +385,7 @@ system.theme_settings_theme:
 '<none>':
   path: ''
   options:
-    _only_fragment: TRUE
+    _no_path: TRUE
   requirements:
     _access: 'TRUE'
 
@@ -457,14 +448,14 @@ system.batch_page.json:
   options:
     _admin_route: TRUE
 
+# Note: This route just exists for generating URLs, the dedicated
+# frontcontroller is used if the URL is accessed.
 system.db_update:
   path: '/update.php/{op}'
   defaults:
-    _title: 'Drupal database update'
-    _controller: '\Drupal\system\Controller\DbUpdateController::handle'
     op: 'info'
   requirements:
-    _access_system_update: 'TRUE'
+    _access: 'TRUE'
 
 system.admin_content:
   path: '/admin/content'
@@ -476,9 +467,8 @@ system.admin_content:
     _permission: 'access administration pages'
 
 system.entity_autocomplete:
-  path: '/entity_reference_autocomplete/{target_type}/{selection_handler}/{selection_settings}'
+  path: '/entity_reference_autocomplete/{target_type}/{selection_handler}/{selection_settings_key}'
   defaults:
     _controller: '\Drupal\system\Controller\EntityAutocompleteController::handleAutocomplete'
-    selection_settings: ''
   requirements:
     _access: 'TRUE'

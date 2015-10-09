@@ -15,7 +15,7 @@ namespace Drupal\Component\Utility;
 class Xss {
 
   /**
-   * The list of html tags allowed by filterAdmin().
+   * The list of HTML tags allowed by filterAdmin().
    *
    * @var array
    *
@@ -24,19 +24,26 @@ class Xss {
   protected static $adminTags = array('a', 'abbr', 'acronym', 'address', 'article', 'aside', 'b', 'bdi', 'bdo', 'big', 'blockquote', 'br', 'caption', 'cite', 'code', 'col', 'colgroup', 'command', 'dd', 'del', 'details', 'dfn', 'div', 'dl', 'dt', 'em', 'figcaption', 'figure', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hgroup', 'hr', 'i', 'img', 'ins', 'kbd', 'li', 'mark', 'menu', 'meter', 'nav', 'ol', 'output', 'p', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'section', 'small', 'span', 'strong', 'sub', 'summary', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'time', 'tr', 'tt', 'u', 'ul', 'var', 'wbr');
 
   /**
+   * The default list of HTML tags allowed by filter().
+   *
+   * @var array
+   *
+   * @see \Drupal\Component\Utility\Xss::filter()
+   */
+  protected static $htmlTags = array('a', 'em', 'strong', 'cite', 'blockquote', 'code', 'ul', 'ol', 'li', 'dl', 'dt', 'dd');
+
+  /**
    * Filters HTML to prevent cross-site-scripting (XSS) vulnerabilities.
    *
    * Based on kses by Ulf Harnhammar, see http://sourceforge.net/projects/kses.
    * For examples of various XSS attacks, see: http://ha.ckers.org/xss.html.
    *
-   * This code does five things:
+   * This code does four things:
    * - Removes characters and constructs that can trick browsers.
    * - Makes sure all HTML entities are well-formed.
    * - Makes sure all HTML tags and attributes are well-formed.
    * - Makes sure no HTML tags contain URLs with a disallowed protocol (e.g.
    *   javascript:).
-   * - Marks the sanitized, XSS-safe version of $string as safe markup for
-   *   rendering.
    *
    * @param $string
    *   The string with raw HTML in it. It will be stripped of everything that
@@ -49,11 +56,13 @@ class Xss {
    *   valid UTF-8.
    *
    * @see \Drupal\Component\Utility\Unicode::validateUtf8()
-   * @see \Drupal\Component\Utility\SafeMarkup
    *
    * @ingroup sanitization
    */
-  public static function filter($string, $html_tags = array('a', 'em', 'strong', 'cite', 'blockquote', 'code', 'ul', 'ol', 'li', 'dl', 'dt', 'dd')) {
+  public static function filter($string, array $html_tags = NULL) {
+    if (is_null($html_tags)) {
+      $html_tags = static::$htmlTags;
+    }
     // Only operate on valid UTF-8 strings. This is necessary to prevent cross
     // site scripting issues on Internet Explorer 6.
     if (!Unicode::validateUtf8($string)) {
@@ -79,7 +88,8 @@ class Xss {
     $splitter = function ($matches) use ($html_tags, $class) {
       return $class::split($matches[1], $html_tags, $class);
     };
-    return SafeMarkup::set(preg_replace_callback('%
+    // Strip any tags that are not in the whitelist.
+    return preg_replace_callback('%
       (
       <(?=[^a-zA-Z!/])  # a lone <
       |                 # or
@@ -88,7 +98,7 @@ class Xss {
       <[^>]*(>|$)       # a string that starts with a <, up until the > or the end of the string
       |                 # or
       >                 # just a >
-      )%x', $splitter, $string));
+      )%x', $splitter, $string);
   }
 
   /**
@@ -96,7 +106,7 @@ class Xss {
    *
    * Use only for fields where it is impractical to use the
    * whole filter system, but where some (mainly inline) mark-up
-   * is desired (so \Drupal\Component\Utility\SafeMarkup::checkPlain() is
+   * is desired (so \Drupal\Component\Utility\Html::escape() is
    * not acceptable).
    *
    * Allows all tags that can be used inside an HTML body, save
@@ -107,6 +117,11 @@ class Xss {
    *
    * @return string
    *   The filtered string.
+   *
+   * @ingroup sanitization
+   *
+   * @see \Drupal\Component\Utility\Xss::getAdminTagList()
+   *
    */
   public static function filterAdmin($string) {
     return static::filter($string, static::$adminTags);
@@ -139,11 +154,10 @@ class Xss {
       return '&lt;';
     }
 
-    if (!preg_match('%^<\s*(/\s*)?([a-zA-Z0-9\-]+)([^>]*)>?|(<!--.*?-->)$%', $string, $matches)) {
+    if (!preg_match('%^<\s*(/\s*)?([a-zA-Z0-9\-]+)\s*([^>]*)>?|(<!--.*?-->)$%', $string, $matches)) {
       // Seriously malformed.
       return '';
     }
-
     $slash = trim($matches[1]);
     $elem = &$matches[2];
     $attrlist = &$matches[3];
@@ -316,4 +330,23 @@ class Xss {
     return !isset($html_tags[strtolower($elem)]);
   }
 
+  /**
+   * Gets the list of HTML tags allowed by Xss::filterAdmin().
+   *
+   * @return array
+   *   The list of HTML tags allowed by filterAdmin().
+   */
+  public static function getAdminTagList() {
+    return static::$adminTags;
+  }
+
+  /**
+   * Gets the standard list of HTML tags allowed by Xss::filter().
+   *
+   * @return array
+   *   The list of HTML tags allowed by Xss::filter().
+   */
+  public static function getHtmlTagList() {
+    return static::$htmlTags;
+  }
 }

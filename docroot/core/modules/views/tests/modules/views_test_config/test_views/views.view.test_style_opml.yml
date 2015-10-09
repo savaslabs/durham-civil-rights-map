@@ -21,7 +21,7 @@ display:
       access:
         type: none
       cache:
-        type: none
+        type: tag
       query:
         type: views_query
       exposed_form:
@@ -83,8 +83,21 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          display_as_link: false
-          plugin_id: aggregator_title_link
+          click_sort_column: value
+          type: aggregator_title
+          settings:
+            display_as_link: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+          plugin_id: field
           entity_type: aggregator_feed
           entity_field: title
         url:
@@ -238,10 +251,12 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          date_format: html_date
-          custom_date_format: ''
-          timezone: ''
-          plugin_id: date
+          type: timestamp
+          settings:
+            date_format: html_date
+            custom_date_format: ''
+            timezone: ''
+          plugin_id: field
           entity_type: aggregator_feed
           entity_field: modified
       filters: {  }
@@ -280,7 +295,7 @@ display:
   page:
     display_plugin: page
     id: page_1
-    display_title: Page
+    display_title: <em>Page</em>
     position: 1
     display_options:
       path: test-opml-style

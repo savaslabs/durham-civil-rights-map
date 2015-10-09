@@ -8,7 +8,6 @@
 namespace Drupal\Tests\Component\Utility;
 
 use Drupal\Component\Utility\UrlHelper;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -94,7 +93,7 @@ class UrlHelperTest extends UnitTestCase {
   public function testValidAbsolute($url, $scheme) {
     $test_url = $scheme . '://' . $url;
     $valid_url = UrlHelper::isValid($test_url, TRUE);
-    $this->assertTrue($valid_url, SafeMarkup::format('@url is a valid URL.', array('@url' => $test_url)));
+    $this->assertTrue($valid_url, $test_url . ' is a valid URL.');
   }
 
   /**
@@ -125,7 +124,7 @@ class UrlHelperTest extends UnitTestCase {
   public function testInvalidAbsolute($url, $scheme) {
     $test_url = $scheme . '://' . $url;
     $valid_url = UrlHelper::isValid($test_url, TRUE);
-    $this->assertFalse($valid_url, SafeMarkup::format('@url is NOT a valid URL.', array('@url' => $test_url)));
+    $this->assertFalse($valid_url, $test_url . ' is NOT a valid URL.');
   }
 
   /**
@@ -159,7 +158,7 @@ class UrlHelperTest extends UnitTestCase {
   public function testValidRelative($url, $prefix) {
     $test_url = $prefix . $url;
     $valid_url = UrlHelper::isValid($test_url);
-    $this->assertTrue($valid_url, SafeMarkup::format('@url is a valid URL.', array('@url' => $test_url)));
+    $this->assertTrue($valid_url, $test_url . ' is a valid URL.');
   }
 
   /**
@@ -190,7 +189,7 @@ class UrlHelperTest extends UnitTestCase {
   public function testInvalidRelative($url, $prefix) {
     $test_url = $prefix . $url;
     $valid_url = UrlHelper::isValid($test_url);
-    $this->assertFalse($valid_url, SafeMarkup::format('@url is NOT a valid URL.', array('@url' => $test_url)));
+    $this->assertFalse($valid_url, $test_url . ' is NOT a valid URL.');
   }
 
   /**
@@ -359,9 +358,9 @@ class UrlHelperTest extends UnitTestCase {
       array('https://example.com/external/path', TRUE),
       array('javascript://fake-external-path', FALSE),
       // External URL without an explicit protocol.
-      array('//drupal.org/foo/bar?foo=bar&bar=baz&baz#foo', TRUE),
+      array('//www.drupal.org/foo/bar?foo=bar&bar=baz&baz#foo', TRUE),
       // Internal URL starting with a slash.
-      array('/drupal.org', FALSE),
+      array('/www.drupal.org', FALSE),
     );
   }
 
@@ -381,8 +380,10 @@ class UrlHelperTest extends UnitTestCase {
    */
   public function testFilterBadProtocol($uri, $expected, $protocols) {
     UrlHelper::setAllowedProtocols($protocols);
-    $filtered = UrlHelper::filterBadProtocol($uri);
-    $this->assertEquals($expected, $filtered);
+    $this->assertEquals($expected, UrlHelper::filterBadProtocol($uri));
+    // Multiple calls to UrlHelper::filterBadProtocol() do not cause double
+    // escaping.
+    $this->assertEquals($expected, UrlHelper::filterBadProtocol(UrlHelper::filterBadProtocol($uri)));
   }
 
   /**

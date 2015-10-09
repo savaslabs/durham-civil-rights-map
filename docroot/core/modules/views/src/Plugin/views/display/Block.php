@@ -7,7 +7,6 @@
 
 namespace Drupal\views\Plugin\views\display;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\Block\ViewsBlock;
@@ -149,7 +148,7 @@ class Block extends DisplayPluginBase {
     if (empty($block_description)) {
       $block_description = $this->t('None');
     }
-    $block_category = SafeMarkup::checkPlain($this->getOption('block_category'));
+    $block_category = $this->getOption('block_category');
 
     $options['block_description'] = array(
       'category' => 'block',
@@ -197,7 +196,7 @@ class Block extends DisplayPluginBase {
         $form['block_category'] = array(
           '#type' => 'textfield',
           '#autocomplete_route_name' => 'block.category_autocomplete',
-          '#description' => $this->t('The category this block will appear under on the <a href="@href">blocks placement page</a>.', array('@href' => \Drupal::url('block.admin_display'))),
+          '#description' => $this->t('The category this block will appear under on the <a href=":href">blocks placement page</a>.', array(':href' => \Drupal::url('block.admin_display'))),
           '#default_value' => $this->getOption('block_category'),
         );
         break;

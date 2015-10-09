@@ -8,7 +8,7 @@
 namespace Drupal\Core\Menu;
 
 use Drupal\Component\Plugin\Exception\PluginException;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Url;
 
@@ -110,13 +110,6 @@ abstract class MenuLinkBase extends PluginBase implements MenuLinkInterface {
   /**
    * {@inheritdoc}
    */
-  public function isCacheable() {
-    return TRUE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function getRouteName() {
     return isset($this->pluginDefinition['route_name']) ? $this->pluginDefinition['route_name'] : '';
   }
@@ -137,7 +130,7 @@ abstract class MenuLinkBase extends PluginBase implements MenuLinkInterface {
       $options['attributes']['title'] = $description;
     }
     if (empty($this->pluginDefinition['url'])) {
-      return new Url($this->pluginDefinition['route_name'], $this->pluginDefinition['route_parameters'], $options);
+      return new Url($this->getRouteName(), $this->getRouteParameters(), $options);
     }
     else {
       return Url::fromUri($this->pluginDefinition['url'], $options);
@@ -176,7 +169,28 @@ abstract class MenuLinkBase extends PluginBase implements MenuLinkInterface {
    * {@inheritdoc}
    */
   public function deleteLink() {
-    throw new PluginException(SafeMarkup::format('Menu link plugin with ID @id does not support deletion', array('@id' => $this->getPluginId())));
+    throw new PluginException("Menu link plugin with ID '{$this->getPluginId()}' does not support deletion");
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheMaxAge() {
+    return Cache::PERMANENT;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheContexts() {
+    return [];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheTags() {
+    return [];
   }
 
 }

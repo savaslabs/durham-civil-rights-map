@@ -7,8 +7,10 @@
 
 namespace Drupal\Core\Render\Element;
 
+use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\PluginBase;
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
 
@@ -127,11 +129,7 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
    * @see self::preRenderAjaxForm()
    */
   public static function processAjaxForm(&$element, FormStateInterface $form_state, &$complete_form) {
-    $element = static::preRenderAjaxForm($element);
-    if (!empty($element['#ajax_processed'])) {
-      $form_state->setCached();
-    }
-    return $element;
+    return static::preRenderAjaxForm($element);
   }
 
   /**
@@ -179,7 +177,7 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
           // the form's first submit button. Triggering Ajax in this situation
           // leads to problems, like breaking autocomplete textfields, so we bind
           // to mousedown instead of click.
-          // @see http://drupal.org/node/216059
+          // @see https://www.drupal.org/node/216059
           $element['#ajax']['event'] = 'mousedown';
           // Retain keyboard accessibility by setting 'keypress'. This causes
           // ajax.js to trigger 'event' when SPACE or ENTER are pressed while the
@@ -234,14 +232,20 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
       // content negotiation takes care of formatting the response appropriately.
       // However, 'url' and 'options' may be set when wanting server processing
       // to be substantially different for a JavaScript triggered submission.
-      // One such substantial difference is form elements that use
-      // #ajax['callback'] for determining which part of the form needs
-      // re-rendering. For that, we have a special 'system/ajax' route.
-      $settings += array(
-        'url' => isset($settings['callback']) ? Url::fromRoute('system.ajax') : NULL,
-        'options' => array(),
-        'accepts' => 'application/vnd.drupal-ajax'
-      );
+      $settings += [
+        'url' => NULL,
+        'options' => ['query' => []],
+        'dialogType' => 'ajax',
+      ];
+      if (array_key_exists('callback', $settings) && !isset($settings['url'])) {
+        $settings['url'] = Url::fromRoute('<current>');
+        // Add all the current query parameters in order to ensure that we build
+        // the same form on the AJAX POST requests. For example,
+        // \Drupal\user\AccountForm takes query parameters into account in order
+        // to hide the password field dynamically.
+        $settings['options']['query'] += \Drupal::request()->query->all();
+        $settings['options']['query'][FormBuilderInterface::AJAX_FORM_REQUEST] = TRUE;
+      }
 
       // @todo Legacy support. Remove in Drupal 8.
       if (isset($settings['method']) && $settings['method'] == 'replace') {
@@ -250,7 +254,11 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
 
       // Convert \Drupal\Core\Url object to string.
       if (isset($settings['url']) && $settings['url'] instanceof Url) {
-        $settings['url'] = $settings['url']->setOptions($settings['options'])->toString();
+        $url = $settings['url']->setOptions($settings['options'])->toString(TRUE);
+        BubbleableMetadata::createFromRenderArray($element)
+          ->merge($url)
+          ->applyTo($element);
+        $settings['url'] = $url->getGeneratedUrl();
       }
       else {
         $settings['url'] = NULL;
@@ -296,6 +304,7 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
       }
 
       $element['#attached']['drupalSettings']['ajax'][$element['#id']] = $settings;
+      $element['#attached']['drupalSettings']['ajaxTrustedUrl'][$settings['url']] = TRUE;
 
       // Indicate that Ajax processing was successful.
       $element['#ajax_processed'] = TRUE;

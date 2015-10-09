@@ -27,7 +27,7 @@ abstract class CommentTestBase extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('comment', 'node', 'history', 'field_ui', 'datetime');
+  public static $modules = ['block', 'comment', 'node', 'history', 'field_ui', 'datetime'];
 
   /**
    * An administrative user with permission to configure comment settings.
@@ -70,6 +70,9 @@ abstract class CommentTestBase extends WebTestBase {
       'skip comment approval',
       'post comments',
       'access comments',
+      // Usernames aren't shown in comment edit form autocomplete unless this
+      // permission is granted.
+      'access user profiles',
       'access content',
      ));
     $this->webUser = $this->drupalCreateUser(array(
@@ -86,6 +89,7 @@ abstract class CommentTestBase extends WebTestBase {
 
     // Create a test node authored by the web user.
     $this->node = $this->drupalCreateNode(array('type' => 'article', 'promote' => 1, 'uid' => $this->webUser->id()));
+    $this->drupalPlaceBlock('local_tasks_block');
   }
 
   /**
@@ -117,7 +121,7 @@ abstract class CommentTestBase extends WebTestBase {
     else {
       $field = FieldConfig::loadByName('node', 'article', $field_name);
     }
-    $preview_mode = $field->settings['preview'];
+    $preview_mode = $field->getSetting('preview');
 
     // Must get the page before we test for fields.
     if ($entity !== NULL) {
@@ -182,19 +186,27 @@ abstract class CommentTestBase extends WebTestBase {
    * @param bool $reply
    *   Boolean indicating whether the comment is a reply to another comment.
    *
-   * @return boolean
+   * @return bool
    *   Boolean indicating whether the comment was found.
    */
   function commentExists(CommentInterface $comment = NULL, $reply = FALSE) {
     if ($comment) {
-      $regex = '!' . ($reply ? '<div class="indented">(.*?)' : '');
-      $regex .= '<a id="comment-' . $comment->id() . '"(.*?)';
-      $regex .= $comment->getSubject() . '(.*?)';
-      $regex .= $comment->comment_body->value . '(.*?)';
-      $regex .= ($reply ? '</article>\s</div>(.*?)' : '');
-      $regex .= '!s';
+      $comment_element = $this->cssSelect('.comment-wrapper ' . ($reply ? '.indented ' : '') . '#comment-' . $comment->id() . ' ~ article');
+      if (empty($comment_element)) {
+        return FALSE;
+      }
 
-      return (boolean) preg_match($regex, $this->getRawContent());
+      $comment_title = $comment_element[0]->xpath('div/h3/a');
+      if (empty($comment_title) || ((string)$comment_title[0]) !== $comment->getSubject()) {
+        return FALSE;
+      }
+
+      $comment_body = $comment_element[0]->xpath('div/div/p');
+      if (empty($comment_body) || ((string)$comment_body[0]) !== $comment->comment_body->value) {
+        return FALSE;
+      }
+
+      return TRUE;
     }
     else {
       return FALSE;
@@ -314,7 +326,7 @@ abstract class CommentTestBase extends WebTestBase {
    */
   public function setCommentSettings($name, $value, $message, $field_name = 'comment') {
     $field = FieldConfig::loadByName('node', 'article', $field_name);
-    $field->settings[$name] = $value;
+    $field->setSetting($name, $value);
     $field->save();
     // Display status message.
     $this->pass($message);
@@ -323,7 +335,7 @@ abstract class CommentTestBase extends WebTestBase {
   /**
    * Checks whether the commenter's contact information is displayed.
    *
-   * @return boolean
+   * @return bool
    *   Contact info is available.
    */
   function commentContactInfoAvailable() {

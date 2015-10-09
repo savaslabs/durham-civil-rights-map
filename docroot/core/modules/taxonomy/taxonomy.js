@@ -1,18 +1,29 @@
+/**
+ * @file
+ * Taxonomy behaviors.
+ */
+
 (function ($) {
 
   "use strict";
 
   /**
-   * Move a block in the blocks table from one region to another via select list.
+   * Move a block in the blocks table from one region to another.
    *
    * This behavior is dependent on the tableDrag behavior, since it uses the
    * objects initialized in that behavior to update the row.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches the drag behavior to a applicable table element.
    */
   Drupal.behaviors.termDrag = {
     attach: function (context, settings) {
       var backStep = settings.taxonomy.backStep;
       var forwardStep = settings.taxonomy.forwardStep;
-      var tableDrag = Drupal.tableDrag.taxonomy; // Get the blocks tableDrag object.
+      // Get the blocks tableDrag object.
+      var tableDrag = Drupal.tableDrag.taxonomy;
       var $table = $('#taxonomy');
       var rows = $table.find('tr').length;
 

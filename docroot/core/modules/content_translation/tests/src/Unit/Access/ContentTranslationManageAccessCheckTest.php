@@ -9,6 +9,8 @@ namespace Drupal\Tests\content_translation\Unit\Access;
 
 use Drupal\content_translation\Access\ContentTranslationManageAccessCheck;
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Language\Language;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\Routing\Route;
@@ -21,6 +23,29 @@ use Symfony\Component\Routing\Route;
  * @group content_translation
  */
 class ContentTranslationManageAccessCheckTest extends UnitTestCase {
+
+  /**
+   * The cache contexts manager.
+   *
+   * @var \Drupal\Core\Cache\Context\CacheContextsManager|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $cacheContextsManager;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    parent::setUp();
+
+    $this->cacheContextsManager = $this->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $this->cacheContextsManager->method('assertValidTokens')->willReturn(TRUE);
+
+    $container = new ContainerBuilder();
+    $container->set('cache_contexts_manager', $this->cacheContextsManager);
+    \Drupal::setContainer($container);
+  }
 
   /**
    * Tests the create access method.
@@ -47,13 +72,17 @@ class ContentTranslationManageAccessCheckTest extends UnitTestCase {
     // Set the mock language manager.
     $language_manager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
     $language_manager->expects($this->at(0))
-      ->method('getLanguages')
-      ->will($this->returnValue(array('en' => array(), 'it' => array())));
-    $language_manager->expects($this->at(1))
       ->method('getLanguage')
       ->with($this->equalTo($source))
       ->will($this->returnValue(new Language(array('id' => 'en'))));
+    $language_manager->expects($this->at(1))
+      ->method('getLanguages')
+      ->will($this->returnValue(array('en' => array(), 'it' => array())));
     $language_manager->expects($this->at(2))
+      ->method('getLanguage')
+      ->with($this->equalTo($source))
+      ->will($this->returnValue(new Language(array('id' => 'en'))));
+    $language_manager->expects($this->at(3))
       ->method('getLanguage')
       ->with($this->equalTo($target))
       ->will($this->returnValue(new Language(array('id' => 'it'))));
@@ -70,8 +99,17 @@ class ContentTranslationManageAccessCheckTest extends UnitTestCase {
       ->with()
       ->will($this->returnValue(array()));
     $entity->expects($this->once())
+      ->method('getCacheContexts')
+      ->willReturn([]);
+    $entity->expects($this->once())
+      ->method('getCacheMaxAge')
+      ->willReturn(Cache::PERMANENT);
+    $entity->expects($this->once())
       ->method('getCacheTags')
       ->will($this->returnValue(array('node:1337')));
+    $entity->expects($this->once())
+      ->method('getCacheContexts')
+      ->willReturn(array());
 
     // Set the route requirements.
     $route = new Route('test_route');

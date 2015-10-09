@@ -20,7 +20,7 @@ display:
         options:
           perm: 'access content'
       cache:
-        type: none
+        type: tag
         options: {  }
       pager:
         type: full
@@ -38,10 +38,10 @@ display:
             offset: false
             offset_label: Offset
           tags:
-            previous: '‹ previous'
-            next: 'next ›'
-            first: '« first'
-            last: 'last »'
+            previous: '‹ Previous'
+            next: 'Next ›'
+            first: '« First'
+            last: 'Last »'
           quantity: 9
       query:
         type: views_query

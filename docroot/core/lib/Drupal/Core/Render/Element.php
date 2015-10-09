@@ -8,6 +8,7 @@
 namespace Drupal\Core\Render;
 
 use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Access\AccessResultInterface;
 
 /**
  * Provides helper methods for Drupal render elements.
@@ -96,7 +97,7 @@ class Element {
           $child_weights[$key] = floor($weight * 1000) + $i / $count;
         }
         // Only trigger an error if the value is not null.
-        // @see http://drupal.org/node/1283892
+        // @see https://www.drupal.org/node/1283892
         elseif (isset($value)) {
           trigger_error(SafeMarkup::format('"@key" is an invalid render array key', array('@key' => $key)), E_USER_ERROR);
         }
@@ -136,13 +137,8 @@ class Element {
     foreach (static::children($elements) as $key) {
       $child = $elements[$key];
 
-      // Skip un-accessible children.
-      if (isset($child['#access']) && !$child['#access']) {
-        continue;
-      }
-
       // Skip value and hidden elements, since they are not rendered.
-      if (isset($child['#type']) && in_array($child['#type'], array('value', 'hidden'))) {
+      if (!static::isVisibleElement($child)) {
         continue;
       }
 
@@ -150,6 +146,21 @@ class Element {
     }
 
     return array_keys($visible_children);
+  }
+
+  /**
+   * Determines if an element is visible.
+   *
+   * @param array $element
+   *   The element to check for visibility.
+   *
+   * @return bool
+   *   TRUE if the element is visible, otherwise FALSE.
+   */
+  public static function isVisibleElement($element) {
+    return (!isset($element['#type']) || !in_array($element['#type'], ['value', 'hidden', 'token']))
+      && (!isset($element['#access'])
+      || (($element['#access'] instanceof AccessResultInterface && $element['#access']->isAllowed()) || ($element['#access'] === TRUE)));
   }
 
   /**
@@ -175,6 +186,22 @@ class Element {
         $element['#attributes'][$attribute] = $element[$property];
       }
     }
+  }
+
+  /**
+   * Indicates whether the given element is empty.
+   *
+   * An element that only has #cache set is considered empty, because it will
+   * render to the empty string.
+   *
+   * @param array $elements
+   *   The element.
+   *
+   * @return bool
+   *   Whether the given element is empty.
+   */
+  public static function isEmpty(array $elements) {
+    return empty($elements) || (count($elements) === 1 && array_keys($elements) === ['#cache']);
   }
 
 }

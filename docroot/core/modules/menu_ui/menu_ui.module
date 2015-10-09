@@ -8,6 +8,8 @@
  * used for navigation.
  */
 
+use Drupal\Core\Breadcrumb\Breadcrumb;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Block\BlockPluginInterface;
 use Drupal\Core\Link;
@@ -35,21 +37,21 @@ function menu_ui_help($route_name, RouteMatchInterface $route_match) {
     case 'help.page.menu_ui':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Menu UI module provides an interface for managing menus. A menu is a hierarchical collection of links, which can be within or external to the site, generally used for navigation. For more information, see the <a href="!menu">online documentation for the Menu UI module</a>.', array('!menu' => 'https://drupal.org/documentation/modules/menu/')) . '</p>';
+      $output .= '<p>' . t('The Menu UI module provides an interface for managing menus. A menu is a hierarchical collection of links, which can be within or external to the site, generally used for navigation. For more information, see the <a href=":menu">online documentation for the Menu UI module</a>.', array(':menu' => 'https://www.drupal.org/documentation/modules/menu/')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Managing menus') . '</dt>';
-      $output .= '<dd>' . t('Users with the <em>Administer menus and menu items</em> permission can add, edit, and delete custom menus on the <a href="!menu">Menus page</a>. Custom menus can be special site menus, menus of external links, or any combination of internal and external links. You may create an unlimited number of additional menus, each of which will automatically have an associated block (if you have the <a href="!block_help">Block module</a> installed). By selecting <em>Edit menu</em>, you can add, edit, or delete links for a given menu. The links listing page provides a drag-and-drop interface for controlling the order of links, and creating a hierarchy within the menu.', array('!block_help' => \Drupal::url('help.page', array('name' => 'block')), '!menu' => \Drupal::url('entity.menu.collection'))) . '</dd>';
+      $output .= '<dd>' . t('Users with the <em>Administer menus and menu items</em> permission can add, edit, and delete custom menus on the <a href=":menu">Menus page</a>. Custom menus can be special site menus, menus of external links, or any combination of internal and external links. You may create an unlimited number of additional menus, each of which will automatically have an associated block (if you have the <a href=":block_help">Block module</a> installed). By selecting <em>Edit menu</em>, you can add, edit, or delete links for a given menu. The links listing page provides a drag-and-drop interface for controlling the order of links, and creating a hierarchy within the menu.', array(':block_help' => (\Drupal::moduleHandler()->moduleExists('block')) ? \Drupal::url('help.page', array('name' => 'block')) : '#', ':menu' => \Drupal::url('entity.menu.collection'))) . '</dd>';
       $output .= '<dt>' . t('Displaying menus') . '</dt>';
-      $output .= '<dd>' . t('If you have the Block module enabled, then each menu that you create is rendered in a block that you enable and position on the <a href="!blocks">Block layout page</a>. In some <a href="!themes">themes</a>, the main menu and possibly the secondary menu will be output automatically; you may be able to disable this behavior on the <a href="!themes">theme\'s settings page</a>.', array('!blocks' => (\Drupal::moduleHandler()->moduleExists('block')) ? \Drupal::url('block.admin_display') : '#', '!themes' => \Drupal::url('system.themes_page'), '!theme_settings' => \Drupal::url('system.theme_settings'))) . '</dd>';
+      $output .= '<dd>' . t('If you have the Block module enabled, then each menu that you create is rendered in a block that you enable and position on the <a href=":blocks">Block layout page</a>. In some <a href=":themes">themes</a>, the main menu and possibly the secondary menu will be output automatically; you may be able to disable this behavior on the <a href=":themes">theme\'s settings page</a>.', array(':blocks' => (\Drupal::moduleHandler()->moduleExists('block')) ? \Drupal::url('block.admin_display') : '#', ':themes' => \Drupal::url('system.themes_page'), ':theme_settings' => \Drupal::url('system.theme_settings'))) . '</dd>';
       $output .= '</dl>';
       return $output;
   }
-  if ($route_name == 'entity.menu.add_form' && \Drupal::moduleHandler()->moduleExists('block')) {
-    return '<p>' . t('You can enable the newly-created block for this menu on the <a href="!blocks">Block layout page</a>.', array('!blocks' => \Drupal::url('block.admin_display'))) . '</p>';
+  if ($route_name == 'entity.menu.add_form' && \Drupal::moduleHandler()->moduleExists('block') && \Drupal::currentUser()->hasPermission('administer blocks')) {
+    return '<p>' . t('You can enable the newly-created block for this menu on the <a href=":blocks">Block layout page</a>.', array(':blocks' => \Drupal::url('block.admin_display'))) . '</p>';
   }
-  elseif ($route_name == 'entity.menu.collection' && \Drupal::moduleHandler()->moduleExists('block')) {
-    return '<p>' . t('Each menu has a corresponding block that is managed on the <a href="!blocks">Block layout page</a>.', array('!blocks' => \Drupal::url('block.admin_display'))) . '</p>';
+  elseif ($route_name == 'entity.menu.collection' && \Drupal::moduleHandler()->moduleExists('block') && \Drupal::currentUser()->hasPermission('administer blocks')) {
+    return '<p>' . t('Each menu has a corresponding block that is managed on the <a href=":blocks">Block layout page</a>.', array(':blocks' => \Drupal::url('block.admin_display'))) . '</p>';
   }
 }
 
@@ -145,8 +147,8 @@ function _menu_ui_node_save(NodeInterface $node, array $values) {
       'link' => ['uri' => 'entity:node/' . $node->id()],
       'langcode' => $node->getUntranslated()->language()->getId(),
     ));
+    $entity->enabled->value = 1;
   }
-  $entity->enabled->value = 1;
   $entity->title->value = trim($values['title']);
   $entity->description->value = trim($values['description']);
   $entity->menu_name->value = $values['menu_name'];
@@ -402,7 +404,8 @@ function menu_ui_form_node_type_form_alter(&$form, FormStateInterface $form_stat
   //   To avoid an 'illegal option' error after saving the form we have to load
   //   all available menu parents. Otherwise, it is not possible to dynamically
   //   add options to the list using ajax.
-  $options = $menu_parent_selector->getParentSelectOptions('');
+  $options_cacheability = new CacheableMetadata();
+  $options = $menu_parent_selector->getParentSelectOptions('', NULL, $options_cacheability);
   $form['menu']['menu_parent'] = array(
     '#type' => 'select',
     '#title' => t('Default parent item'),
@@ -411,8 +414,9 @@ function menu_ui_form_node_type_form_alter(&$form, FormStateInterface $form_stat
     '#description' => t('Choose the menu item to be the default parent for a new link in the content authoring form.'),
     '#attributes' => array('class' => array('menu-title-select')),
   );
+  $options_cacheability->applyTo($form['menu']['menu_parent']);
 
-  $form['actions']['submit']['#validate'][] = 'menu_ui_form_node_type_form_validate';
+  $form['#validate'][] = 'menu_ui_form_node_type_form_validate';
   $form['#entity_builders'][] = 'menu_ui_form_node_type_form_builder';
 }
 
@@ -449,9 +453,9 @@ function menu_ui_form_node_type_form_builder($entity_type, NodeTypeInterface $ty
 /**
  * Return an associative array of the custom menus names.
  *
- * @param $all
- *   If FALSE return only user-added menus, or if TRUE also include
- *   the menus defined by the system.
+ * @param bool $all
+ *   (optional) If FALSE return only user-added menus, or if TRUE also include
+ *   the menus defined by the system. Defaults to TRUE.
  *
  * @return array
  *   An array with the machine-readable names as the keys, and human-readable
@@ -483,14 +487,14 @@ function menu_ui_preprocess_block(&$variables) {
 /**
  * Implements hook_system_breadcrumb_alter().
  */
-function menu_ui_system_breadcrumb_alter(array &$breadcrumb, RouteMatchInterface $route_match, array $context) {
+function menu_ui_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatchInterface $route_match, array $context) {
   // Custom breadcrumb behavior for editing menu links, we append a link to
   // the menu in which the link is found.
   if (($route_match->getRouteName() == 'menu_ui.link_edit') && $menu_link = $route_match->getParameter('menu_link_plugin')) {
     if (($menu_link instanceof MenuLinkInterface)) {
       // Add a link to the menu admin screen.
       $menu = Menu::load($menu_link->getMenuName());
-      $breadcrumb[] = Link::createFromRoute($menu->label(), 'entity.menu.edit_form', array('menu' => $menu->id()));
+      $breadcrumb->addLink(Link::createFromRoute($menu->label(), 'entity.menu.edit_form', ['menu' => $menu->id()]));
     }
   }
 }

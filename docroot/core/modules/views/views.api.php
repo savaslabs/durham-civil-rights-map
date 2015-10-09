@@ -6,7 +6,9 @@
  */
 
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\views\Plugin\views\cache\CachePluginBase;
 use Drupal\views\Plugin\views\PluginBase;
+use Drupal\views\ViewExecutable;
 
 /**
  * @defgroup views_overview Views overview
@@ -73,6 +75,11 @@ use Drupal\views\Plugin\views\PluginBase;
  * Hooks that allow other modules to implement the Views API.
  * @ingroup views_overview
  * @}
+ */
+
+/**
+ * @addtogroup hooks
+ * @{
  */
 
 /**
@@ -480,7 +487,7 @@ function hook_field_views_data(\Drupal\field\FieldStorageConfigInterface $field_
       'id' => 'standard',
       'base' => 'file_managed',
       'base field' => 'target_id',
-      'label' => t('image from !field_name', array('!field_name' => $field_storage->getName())),
+      'label' => t('image from @field_name', array('@field_name' => $field_storage->getName())),
     );
   }
 
@@ -524,7 +531,7 @@ function hook_field_views_data_alter(array &$data, \Drupal\field\FieldStorageCon
     'field field' => $field_name . '_target_id',
     'base' => $entity_type->getBaseTable(),
     'base field' => $entity_type->getKey('id'),
-    'label' => t('!field_name', array('!field_name' => $field_name)),
+    'label' => $field_name,
     'join_extra' => array(
       0 => array(
         'field' => 'deleted',
@@ -581,7 +588,7 @@ function hook_field_views_data_views_data_alter(array &$data, \Drupal\field\Fiel
     'field field' => $field_name . '_target_id',
     'base' => $entity_type->getBaseTable(),
     'base field' => $entity_type->getKey('id'),
-    'label' => t('!field_name', array('!field_name' => $field_name)),
+    'label' => $field_name,
     'join_extra' => array(
       0 => array(
         'field' => 'deleted',
@@ -623,7 +630,8 @@ function hook_views_query_substitutions(ViewExecutable $view) {
  *
  * @return array
  *   An associative array where each key is a string to be replaced, and the
- *   corresponding value is its replacement.
+ *   corresponding value is its replacement. The value will be escaped unless it
+ *   is already marked safe.
  */
 function hook_views_form_substitutions() {
   return array(
@@ -796,12 +804,12 @@ function hook_views_pre_render(ViewExecutable $view) {
  *   The view object about to be processed.
  * @param string $output
  *   A flat string with the rendered output of the view.
- * @param CacheBackendInterface $cache
+ * @param \Drupal\views\Plugin\views\cache\CachePluginBase $cache
  *   The cache settings.
  *
  * @see \Drupal\views\ViewExecutable
  */
-function hook_views_post_render(ViewExecutable $view, &$output, CacheBackendInterface $cache) {
+function hook_views_post_render(ViewExecutable $view, &$output, CachePluginBase $cache) {
   // When using full pager, disable any time-based caching if there are fewer
   // than 10 results.
   if ($view->pager instanceof Drupal\views\Plugin\views\pager\Full && $cache instanceof Drupal\views\Plugin\views\cache\Time && count($view->result) < 10) {
@@ -1210,6 +1218,10 @@ function hook_views_plugins_sort_alter(array &$plugins) {
   // Change the 'title' handler class.
   $plugins['title']['class'] = 'Drupal\\example\\ExampleClass';
 }
+
+/**
+ * @} End of "addtogroup hooks".
+ */
 
 /**
  * @}

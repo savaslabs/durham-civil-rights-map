@@ -7,8 +7,8 @@
  * This file handles tokens for the global 'site' and 'date' tokens.
  */
 
-use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Component\Utility\Xss;
+use Drupal\Core\Datetime\Entity\DateFormat;
+use Drupal\Core\Render\BubbleableMetadata;
 
 /**
  * Implements hook_token_info().
@@ -68,7 +68,7 @@ function system_token_info() {
   );
   $date['since'] = array(
     'name' => t("Time-since"),
-    'description' => t("A date in 'time-since' format. (%date)", array('%date' => \Drupal::service('date.formatter')->formatInterval(REQUEST_TIME - 360, 2))),
+    'description' => t("A date in 'time-since' format. (%date)", array('%date' => \Drupal::service('date.formatter')->formatTimeDiffSince(REQUEST_TIME - 360))),
   );
   $date['raw'] = array(
     'name' => t("Raw timestamp"),
@@ -87,7 +87,7 @@ function system_token_info() {
 /**
  * Implements hook_tokens().
  */
-function system_tokens($type, $tokens, array $data = array(), array $options = array()) {
+function system_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
   $token_service = \Drupal::token();
 
   $url_options = array('absolute' => TRUE);
@@ -98,37 +98,54 @@ function system_tokens($type, $tokens, array $data = array(), array $options = a
   else {
     $langcode = NULL;
   }
-  $sanitize = !empty($options['sanitize']);
-
   $replacements = array();
 
   if ($type == 'site') {
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'name':
-          $site_name = \Drupal::config('system.site')->get('name');
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($site_name) : $site_name;
+          $config = \Drupal::config('system.site');
+          $bubbleable_metadata->addCacheableDependency($config);
+          $site_name = $config->get('name');
+          $replacements[$original] = $site_name;
           break;
 
         case 'slogan':
-          $slogan = \Drupal::config('system.site')->get('slogan');
-          $replacements[$original] = $sanitize ? Xss::filterAdmin($slogan) : $slogan;
+          $config = \Drupal::config('system.site');
+          $bubbleable_metadata->addCacheableDependency($config);
+          $slogan = $config->get('slogan');
+          $build = [
+            '#markup' => $slogan,
+          ];
+          // @todo Fix in https://www.drupal.org/node/2577827
+          $replacements[$original] = \Drupal::service('renderer')->renderPlain($build);
           break;
 
         case 'mail':
-          $replacements[$original] = \Drupal::config('system.site')->get('mail');
+          $config = \Drupal::config('system.site');
+          $bubbleable_metadata->addCacheableDependency($config);
+          $replacements[$original] = $config->get('mail');
           break;
 
         case 'url':
-          $replacements[$original] = \Drupal::url('<front>', array(), $url_options);
+          /** @var \Drupal\Core\GeneratedUrl $result */
+          $result = \Drupal::url('<front>', array(), $url_options, TRUE);
+          $bubbleable_metadata->addCacheableDependency($result);
+          $replacements[$original] = $result->getGeneratedUrl();
           break;
 
         case 'url-brief':
-          $replacements[$original] = preg_replace(array('!^https?://!', '!/$!'), '', \Drupal::url('<front>', array(), $url_options));
+          /** @var \Drupal\Core\GeneratedUrl $result */
+          $result = \Drupal::url('<front>', array(), $url_options, TRUE);
+          $bubbleable_metadata->addCacheableDependency($result);
+          $replacements[$original] = preg_replace(array('!^https?://!', '!/$!'), '', $result->getGeneratedUrl());
           break;
 
         case 'login-url':
-          $replacements[$original] = \Drupal::url('user.page', [], $url_options);
+          /** @var \Drupal\Core\GeneratedUrl $result */
+          $result = \Drupal::url('user.page', [], $url_options, TRUE);
+          $bubbleable_metadata->addCacheableDependency($result);
+          $replacements[$original] = $result->getGeneratedUrl();
           break;
       }
     }
@@ -137,6 +154,9 @@ function system_tokens($type, $tokens, array $data = array(), array $options = a
   elseif ($type == 'date') {
     if (empty($data['date'])) {
       $date = REQUEST_TIME;
+      // We depend on the current request time, so the tokens are not cacheable
+      // at all.
+      $bubbleable_metadata->setCacheMaxAge(0);
     }
     else {
       $date = $data['date'];
@@ -145,23 +165,20 @@ function system_tokens($type, $tokens, array $data = array(), array $options = a
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'short':
-          $replacements[$original] = format_date($date, 'short', '', NULL, $langcode);
-          break;
-
         case 'medium':
-          $replacements[$original] = format_date($date, 'medium', '', NULL, $langcode);
-          break;
-
         case 'long':
-          $replacements[$original] = format_date($date, 'long', '', NULL, $langcode);
+          $date_format = DateFormat::load($name);
+          $bubbleable_metadata->addCacheableDependency($date_format);
+          $replacements[$original] = format_date($date, $name, '', NULL, $langcode);
           break;
 
         case 'since':
-          $replacements[$original] = \Drupal::service('date.formatter')->formatInterval((REQUEST_TIME - $date), 2, $langcode);
+          $replacements[$original] = \Drupal::service('date.formatter')->formatTimeDiffSince($date, array('langcode' => $langcode));
+          $bubbleable_metadata->setCacheMaxAge(0);
           break;
 
         case 'raw':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($date) : $date;
+          $replacements[$original] = $date;
           break;
       }
     }

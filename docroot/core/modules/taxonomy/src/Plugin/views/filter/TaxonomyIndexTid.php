@@ -16,7 +16,6 @@ use Drupal\taxonomy\VocabularyStorageInterface;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\filter\ManyToOne;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Tags;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -154,7 +153,7 @@ class TaxonomyIndexTid extends ManyToOne {
     $vocabulary = $this->vocabularyStorage->load($this->options['vid']);
     if (empty($vocabulary) && $this->options['limit']) {
       $form['markup'] = array(
-        '#markup' => '<div class="form-item">' . $this->t('An invalid vocabulary is selected. Please change it in the options.') . '</div>',
+        '#markup' => '<div class="js-form-item form-item">' . $this->t('An invalid vocabulary is selected. Please change it in the options.') . '</div>',
       );
       return;
     }
@@ -177,13 +176,13 @@ class TaxonomyIndexTid extends ManyToOne {
     }
     else {
       if (!empty($this->options['hierarchy']) && $this->options['limit']) {
-        $tree = taxonomy_get_tree($vocabulary->id(), 0, NULL, TRUE);
+        $tree = $this->termStorage->loadTree($vocabulary->id(), 0, NULL, TRUE);
         $options = array();
 
         if ($tree) {
           foreach ($tree as $term) {
             $choice = new \stdClass();
-            $choice->option = array($term->id() => str_repeat('-', $term->depth) . SafeMarkup::checkPlain(\Drupal::entityManager()->getTranslationFromContext($term)->label()));
+            $choice->option = array($term->id() => str_repeat('-', $term->depth) . \Drupal::entityManager()->getTranslationFromContext($term)->label());
             $options[] = $choice;
           }
         }
@@ -191,7 +190,8 @@ class TaxonomyIndexTid extends ManyToOne {
       else {
         $options = array();
         $query = \Drupal::entityQuery('taxonomy_term')
-          // @todo Sorting on vocabulary properties http://drupal.org/node/1821274
+          // @todo Sorting on vocabulary properties -
+          //   https://www.drupal.org/node/1821274.
           ->sort('weight')
           ->sort('name')
           ->addTag('term_access');
@@ -200,7 +200,7 @@ class TaxonomyIndexTid extends ManyToOne {
         }
         $terms = Term::loadMultiple($query->execute());
         foreach ($terms as $term) {
-          $options[$term->id()] = SafeMarkup::checkPlain(\Drupal::entityManager()->getTranslationFromContext($term)->label());
+          $options[$term->id()] = \Drupal::entityManager()->getTranslationFromContext($term)->label();
         }
       }
 
@@ -275,11 +275,23 @@ class TaxonomyIndexTid extends ManyToOne {
     if (empty($this->options['exposed'])) {
       return TRUE;
     }
+    // We need to know the operator, which is normally set in
+    // \Drupal\views\Plugin\views\filter\FilterPluginBase::acceptExposedInput(),
+    // before we actually call the parent version of ourselves.
+    if (!empty($this->options['expose']['use_operator']) && !empty($this->options['expose']['operator_id']) && isset($input[$this->options['expose']['operator_id']])) {
+      $this->operator = $input[$this->options['expose']['operator_id']];
+    }
 
     // If view is an attachment and is inheriting exposed filters, then assume
     // exposed input has already been validated
     if (!empty($this->view->is_attachment) && $this->view->display_handler->usesExposed()) {
       $this->validated_exposed_input = (array) $this->view->exposed_raw_input[$this->options['expose']['identifier']];
+    }
+
+    // If we're checking for EMPTY or NOT, we don't need any input, and we can
+    // say that our input conditions are met by just having the right operator.
+    if ($this->operator == 'empty' || $this->operator == 'not empty') {
+      return TRUE;
     }
 
     // If it's non-required and there's no value don't bother filtering.
@@ -346,7 +358,7 @@ class TaxonomyIndexTid extends ManyToOne {
       $this->value = array_filter($this->value);
       $terms = Term::loadMultiple($this->value);
       foreach ($terms as $term) {
-        $this->valueOptions[$term->id()] = SafeMarkup::checkPlain(\Drupal::entityManager()->getTranslationFromContext($term)->label());
+        $this->valueOptions[$term->id()] = \Drupal::entityManager()->getTranslationFromContext($term)->label();
       }
     }
     return parent::adminSummary();
@@ -359,7 +371,7 @@ class TaxonomyIndexTid extends ManyToOne {
     $contexts = parent::getCacheContexts();
     // The result potentially depends on term access and so is just cacheable
     // per user.
-    // @todo https://www.drupal.org/node/2352175
+    // @todo See https://www.drupal.org/node/2352175.
     $contexts[] = 'user';
 
     return $contexts;

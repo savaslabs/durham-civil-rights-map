@@ -2,11 +2,12 @@
 
 /**
  * @file
- * Contains Drupal\Core\PathProcessor\PathProcessorManager.
+ * Contains \Drupal\Core\PathProcessor\PathProcessorManager.
  */
 
 namespace Drupal\Core\PathProcessor;
 
+use Drupal\Core\Render\BubbleableMetadata;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -107,10 +108,10 @@ class PathProcessorManager implements InboundPathProcessorInterface, OutboundPat
   /**
    * Implements Drupal\Core\PathProcessor\OutboundPathProcessorInterface::processOutbound().
    */
-  public function processOutbound($path, &$options = array(), Request $request = NULL) {
+  public function processOutbound($path, &$options = array(), Request $request = NULL, BubbleableMetadata $bubbleable_metadata = NULL) {
     $processors = $this->getOutbound();
     foreach ($processors as $processor) {
-      $path = $processor->processOutbound($path, $options, $request);
+      $path = $processor->processOutbound($path, $options, $request, $bubbleable_metadata);
     }
     return $path;
   }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Batch\PageTest.
+ * Contains \Drupal\system\Tests\Batch\PageTest.
  */
 
 namespace Drupal\system\Tests\Batch;
@@ -59,6 +59,21 @@ class PageTest extends WebTestBase {
     // The stack should contain the title shown on the progress page.
     $this->assertEqual(batch_test_stack(), ['Batch Test'], 'The batch title is shown on the batch page.');
     $this->assertText('Redirection successful.', 'Redirection after batch execution is correct.');
+  }
+
+  /**
+   * Tests that the progress messages are correct.
+   */
+  function testBatchProgressMessages() {
+    // Go to the initial step only.
+    $this->maximumMetaRefreshCount = 0;
+    $this->drupalGet('batch-test/test-title');
+    $this->assertRaw('<div class="progress__description">Initializing.<br />&nbsp;</div>', 'Initial progress message appears correctly.');
+    $this->assertNoRaw('&amp;nbsp;', 'Initial progress message is not double escaped.');
+    // Now also go to the next step.
+    $this->maximumMetaRefreshCount = 1;
+    $this->drupalGet('batch-test/test-title');
+    $this->assertRaw('<div class="progress__description">Completed 1 of 1.</div>', 'Progress message for second step appears correctly.');
   }
 
 }

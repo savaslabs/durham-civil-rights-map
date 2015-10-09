@@ -8,7 +8,7 @@
 namespace Drupal\contact;
 
 use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Core\Datetime\DateFormatter;
+use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Flood\FloodInterface;
@@ -53,7 +53,7 @@ class MessageForm extends ContentEntityForm {
   /**
    * The date formatter service.
    *
-   * @var \Drupal\Core\Datetime\DateFormatter
+   * @var \Drupal\Core\Datetime\DateFormatterInterface
    */
   protected $dateFormatter;
 
@@ -68,10 +68,10 @@ class MessageForm extends ContentEntityForm {
    *   The language manager service.
    * @param \Drupal\contact\MailHandlerInterface $mail_handler
    *   The contact mail handler service.
-   * @param \Drupal\Core\Datetime\DateFormatter $date_formatter
+   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date service.
    */
-  public function __construct(EntityManagerInterface $entity_manager, FloodInterface $flood, LanguageManagerInterface $language_manager, MailHandlerInterface $mail_handler, DateFormatter $date_formatter) {
+  public function __construct(EntityManagerInterface $entity_manager, FloodInterface $flood, LanguageManagerInterface $language_manager, MailHandlerInterface $mail_handler, DateFormatterInterface $date_formatter) {
     parent::__construct($entity_manager);
     $this->flood = $flood;
     $this->languageManager = $language_manager;
@@ -130,12 +130,12 @@ class MessageForm extends ContentEntityForm {
       $form['name']['#type'] = 'item';
       $form['name']['#value'] = $user->getUsername();
       $form['name']['#required'] = FALSE;
-      $form['name']['#markup'] = SafeMarkup::checkPlain($user->getUsername());
+      $form['name']['#plain_text'] = $user->getUsername();
 
       $form['mail']['#type'] = 'item';
       $form['mail']['#value'] = $user->getEmail();
       $form['mail']['#required'] = FALSE;
-      $form['mail']['#markup'] = SafeMarkup::checkPlain($user->getEmail());
+      $form['mail']['#plain_text'] = $user->getEmail();
     }
 
     // The user contact form has a preset recipient.
@@ -168,8 +168,8 @@ class MessageForm extends ContentEntityForm {
     $elements = parent::actions($form, $form_state);
     $elements['submit']['#value'] = $this->t('Send message');
     $elements['preview'] = array(
+      '#type' => 'submit',
       '#value' => $this->t('Preview'),
-      '#validate' => array('::validate'),
       '#submit' => array('::submitForm', '::preview'),
     );
     return $elements;
@@ -187,10 +187,8 @@ class MessageForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function validate(array $form, FormStateInterface $form_state) {
-    parent::validate($form, $form_state);
-
-    $message = $this->entity;
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $message = parent::validateForm($form, $form_state);
 
     // Check if flood control has been activated for sending emails.
     if (!$this->currentUser()->hasPermission('administer contact forms') && (!$message->isPersonal() || !$this->currentUser()->hasPermission('administer users'))) {
@@ -204,6 +202,8 @@ class MessageForm extends ContentEntityForm {
         )));
       }
     }
+
+    return $message;
   }
 
   /**
@@ -229,22 +229,6 @@ class MessageForm extends ContentEntityForm {
     // implement message storage, this will make the task of swapping in a real
     // storage controller straight-forward.
     $message->save();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function init(FormStateInterface $form_state) {
-    $message = $this->entity;
-
-    // Make the message inherit the current content language unless specifically
-    // set.
-    if ($message->isNew() && !$message->langcode->value) {
-      $language_content = $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT);
-      $message->langcode->value = $language_content->getId();
-    }
-
-    parent::init($form_state);
   }
 
 }

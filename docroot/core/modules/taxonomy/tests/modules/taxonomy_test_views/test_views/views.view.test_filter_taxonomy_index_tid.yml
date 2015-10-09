@@ -25,7 +25,7 @@ display:
         options:
           perm: 'access content'
       cache:
-        type: none
+        type: tag
         options: {  }
       query:
         type: views_query
@@ -61,10 +61,10 @@ display:
             offset: false
             offset_label: Offset
           tags:
-            previous: '‹ previous'
-            next: 'next ›'
-            first: '« first'
-            last: 'last »'
+            previous: '‹ Previous'
+            next: 'Next ›'
+            first: '« First'
+            last: 'Last »'
           quantity: 9
       style:
         type: default
@@ -176,3 +176,11 @@ display:
       empty: {  }
       relationships: {  }
       arguments: {  }
+  page_1:
+    display_plugin: page
+    id: page_1
+    display_title: Page
+    position: 2
+    display_options:
+      display_extenders: {  }
+      path: test-filter-taxonomy-index-tid

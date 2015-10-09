@@ -23,7 +23,7 @@ display:
         options:
           perm: 'administer users'
       cache:
-        type: none
+        type: tag
       query:
         type: views_query
         options:
@@ -50,10 +50,10 @@ display:
           id: 0
           total_pages: 0
           tags:
-            previous: '‹ previous'
-            next: 'next ›'
-            first: '« first'
-            last: 'last »'
+            previous: '‹ Previous'
+            next: 'Next ›'
+            first: '« First'
+            last: 'Last »'
           expose:
             items_per_page: false
             items_per_page_label: 'Items per page'
@@ -293,8 +293,8 @@ display:
           type: boolean
           settings:
             format: custom
-            format_custom_true: 'Active'
-            format_custom_false: 'Blocked'
+            format_custom_true: Active
+            format_custom_false: Blocked
           entity_type: user
           entity_field: status
         roles_target_id:
@@ -396,10 +396,12 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          date_format: 'raw time ago'
-          custom_date_format: ''
-          timezone: ''
-          plugin_id: date
+          type: timestamp_ago
+          settings:
+            future_format: '@interval'
+            past_format: '@interval'
+            granularity: 2
+          plugin_id: field
           entity_type: user
           entity_field: created
         access:
@@ -450,10 +452,12 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          date_format: 'time ago'
-          custom_date_format: ''
-          timezone: ''
-          plugin_id: date
+          type: timestamp_ago
+          settings:
+            future_format: '@interval hence'
+            past_format: '@interval ago'
+            granularity: 2
+          plugin_id: field
           entity_type: user
           entity_field: access
         operations:
@@ -567,7 +571,7 @@ display:
           delta_first_last: false
           multi_type: separator
           separator: ', '
-          field_api_classes: 0
+          field_api_classes: false
           plugin_id: field
           entity_type: user
           entity_field: mail
@@ -741,6 +745,44 @@ display:
           plugin_id: boolean
           entity_type: user
           entity_field: status
+        default_langcode:
+          id: default_langcode
+          table: users_field_data
+          field: default_langcode
+          relationship: none
+          group_type: group
+          admin_label: ''
+          operator: '='
+          value: true
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          entity_type: user
+          entity_field: default_langcode
+          plugin_id: boolean
         uid_raw:
           id: uid_raw
           table: users_field_data
@@ -826,6 +868,15 @@ display:
         groups:
           1: AND
       display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.permissions
+      max-age: 0
+      tags: {  }
   page_1:
     display_plugin: page
     id: page_1
@@ -850,3 +901,12 @@ display:
       defaults:
         show_admin_links: false
       display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.permissions
+      max-age: 0
+      tags: {  }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\update_test\MockFileTransfer.
+ * Contains \Drupal\update_test\MockFileTransfer.
  */
 
 namespace Drupal\update_test;
@@ -27,7 +27,7 @@ class MockFileTransfer {
    */
   public function getSettingsForm() {
     $form = array();
-    $form['udpate_test_username'] = array(
+    $form['update_test_username'] = array(
       '#type' => 'textfield',
       '#title' => t('Update Test Username'),
     );

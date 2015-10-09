@@ -7,7 +7,6 @@
 
 namespace Drupal\field\Entity;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
@@ -30,6 +29,20 @@ use Drupal\field\FieldStorageConfigInterface;
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "id"
+ *   },
+ *   config_export = {
+ *     "id",
+ *     "field_name",
+ *     "entity_type",
+ *     "type",
+ *     "settings",
+ *     "module",
+ *     "locked",
+ *     "cardinality",
+ *     "translatable",
+ *     "indexes",
+ *     "persist_with_no_fields",
+ *     "custom_storage",
  *   }
  * )
  */
@@ -149,6 +162,13 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
   protected $persist_with_no_fields = FALSE;
 
   /**
+   * A boolean indicating whether or not the field item uses custom storage.
+   *
+   * @var bool
+   */
+  public $custom_storage = FALSE;
+
+  /**
    * The custom storage indexes for the field data storage.
    *
    * This set of indexes is merged with the "default" indexes specified by the
@@ -229,13 +249,13 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
       throw new FieldException('Attempt to create a field storage without a field name.');
     }
     if (!preg_match('/^[_a-z]+[_a-z0-9]*$/', $values['field_name'])) {
-      throw new FieldException(SafeMarkup::format('Attempt to create a field storage @field_name with invalid characters. Only lowercase alphanumeric characters and underscores are allowed, and only lowercase letters and underscore are allowed as the first character', array('@field_name' => $values['field_name'])));
+      throw new FieldException("Attempt to create a field storage {$values['field_name']} with invalid characters. Only lowercase alphanumeric characters and underscores are allowed, and only lowercase letters and underscore are allowed as the first character");
     }
     if (empty($values['type'])) {
-      throw new FieldException(SafeMarkup::format('Attempt to create a field storage @field_name with no type.', array('@field_name' => $values['field_name'])));
+      throw new FieldException("Attempt to create a field storage {$values['field_name']} with no type.");
     }
     if (empty($values['entity_type'])) {
-      throw new FieldException(SafeMarkup::format('Attempt to create a field storage @field_name with no entity_type.', array('@field_name' => $values['field_name'])));
+      throw new FieldException("Attempt to create a field storage {$values['field_name']} with no entity_type.");
     }
 
     parent::__construct($values, $entity_type);
@@ -296,24 +316,19 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
     // We use Unicode::strlen() because the DB layer assumes that column widths
     // are given in characters rather than bytes.
     if (Unicode::strlen($this->getName()) > static::NAME_MAX_LENGTH) {
-      throw new FieldException(SafeMarkup::format(
-        'Attempt to create a field storage with an name longer than @max characters: %name', array(
-          '@max' => static::NAME_MAX_LENGTH,
-          '%name' => $this->getName(),
-        )
-      ));
+      throw new FieldException('Attempt to create a field storage with an name longer than ' . static::NAME_MAX_LENGTH . ' characters: ' . $this->getName());
     }
 
     // Disallow reserved field names.
     $disallowed_field_names = array_keys($entity_manager->getBaseFieldDefinitions($this->getTargetEntityTypeId()));
     if (in_array($this->getName(), $disallowed_field_names)) {
-      throw new FieldException(SafeMarkup::format('Attempt to create field storage %name which is reserved by entity type %type.', array('%name' => $this->getName(), '%type' => $this->getTargetEntityTypeId())));
+      throw new FieldException("Attempt to create field storage {$this->getName()} which is reserved by entity type {$this->getTargetEntityTypeId()}.");
     }
 
     // Check that the field type is known.
     $field_type = $field_type_manager->getDefinition($this->getType(), FALSE);
     if (!$field_type) {
-      throw new FieldException(SafeMarkup::format('Attempt to create a field storage of unknown type %type.', array('%type' => $this->getType())));
+      throw new FieldException("Attempt to create a field storage of unknown type {$this->getType()}.");
     }
     $this->module = $field_type['provider'];
 
@@ -328,10 +343,15 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
     parent::calculateDependencies();
     // Ensure the field is dependent on the providing module.
     $this->addDependency('module', $this->getTypeProvider());
+    // Ask the field type for any additional storage dependencies.
+    // @see \Drupal\Core\Field\FieldItemInterface::calculateStorageDependencies()
+    $definition = \Drupal::service('plugin.manager.field.field_type')->getDefinition($this->getType(), FALSE);
+    $this->addDependencies($definition['class']::calculateStorageDependencies($this));
+
     // Ensure the field is dependent on the provider of the entity type.
     $entity_type = \Drupal::entityManager()->getDefinition($this->entity_type);
     $this->addDependency('module', $entity_type->getProvider());
-    return $this->dependencies;
+    return $this;
   }
 
   /**
@@ -429,6 +449,7 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
       $schema = $class::schema($this);
       // Fill in default values for optional entries.
       $schema += array(
+        'columns' => array(),
         'unique keys' => array(),
         'indexes' => array(),
         'foreign keys' => array(),
@@ -448,7 +469,7 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
    * {@inheritdoc}
    */
   public function hasCustomStorage() {
-    return FALSE;
+    return $this->custom_storage;
   }
 
   /**
@@ -558,7 +579,7 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
    * {@inheritdoc}
    */
   public function setSettings(array $settings) {
-    $this->settings = $settings;
+    $this->settings = $settings + $this->settings;
     return $this;
   }
 
@@ -688,7 +709,7 @@ class FieldStorageConfig extends ConfigEntityBase implements FieldStorageConfigI
    *
    * Using the Serialize interface and serialize() / unserialize() methods
    * breaks entity forms in PHP 5.4.
-   * @todo Investigate in https://drupal.org/node/2074253.
+   * @todo Investigate in https://www.drupal.org/node/2074253.
    */
   public function __sleep() {
     // Only serialize necessary properties, excluding those that can be

@@ -8,6 +8,7 @@
 namespace Drupal\editor\Tests;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\EventSubscriber\AjaxResponseSubscriber;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\quickedit\EditorSelector;
 use Drupal\quickedit\MetadataGenerator;
@@ -16,6 +17,8 @@ use Drupal\quickedit\Tests\QuickEditTestBase;
 use Drupal\quickedit_test\MockEditEntityFieldAccessCheck;
 use Drupal\editor\EditorController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
  * Tests Edit module integration (Editor module's inline editing support).
@@ -114,7 +117,7 @@ class QuickEditIntegrationTest extends QuickEditTestBase {
    */
   protected function getSelectedEditor($entity_id, $field_name, $view_mode = 'default') {
     $entity = entity_load('entity_test', $entity_id, TRUE);
-    $items = $entity->getTranslation(LanguageInterface::LANGCODE_NOT_SPECIFIED)->get($field_name);
+    $items = $entity->get($field_name);
     $options = entity_get_display('entity_test', 'entity_test', $view_mode)->getComponent($field_name);
     return $this->editorSelector->getEditor($options['type'], $items);
   }
@@ -167,13 +170,12 @@ class QuickEditIntegrationTest extends QuickEditTestBase {
     $entity = entity_load('entity_test', $entity->id());
 
     // Verify metadata.
-    $items = $entity->getTranslation(LanguageInterface::LANGCODE_NOT_SPECIFIED)->get($this->fieldName);
+    $items = $entity->get($this->fieldName);
     $metadata = $this->metadataGenerator->generateFieldMetadata($items, 'default');
     $expected = array(
       'access' => TRUE,
       'label' => 'Long text field',
       'editor' => 'editor',
-      'aria' => 'Entity entity_test 1, field Long text field',
       'custom' => array(
         'format' => 'full_html',
         'formatHasTransformations' => FALSE,
@@ -207,14 +209,25 @@ class QuickEditIntegrationTest extends QuickEditTestBase {
     // Verify AJAX response.
     $controller = new EditorController();
     $request = new Request();
-    $response = $controller->getUntransformedText($entity, $this->fieldName, LanguageInterface::LANGCODE_NOT_SPECIFIED, 'default');
+    $response = $controller->getUntransformedText($entity, $this->fieldName, LanguageInterface::LANGCODE_DEFAULT, 'default');
     $expected = array(
       array(
         'command' => 'editorGetUntransformedText',
         'data' => 'Test',
       )
     );
-    $this->assertEqual(Json::encode($expected), $response->prepare($request)->getContent(), 'The GetUntransformedTextCommand AJAX command works correctly.');
+
+    $ajax_response_attachments_processor = \Drupal::service('ajax_response.attachments_processor');
+    $subscriber = new AjaxResponseSubscriber($ajax_response_attachments_processor);
+    $event = new FilterResponseEvent(
+      \Drupal::service('http_kernel'),
+      $request,
+      HttpKernelInterface::MASTER_REQUEST,
+      $response
+    );
+    $subscriber->onResponse($event);
+
+    $this->assertEqual(Json::encode($expected), $response->getContent(), 'The GetUntransformedTextCommand AJAX command works correctly.');
   }
 
 }

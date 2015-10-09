@@ -57,7 +57,7 @@ class TextareaWithSummaryWidget extends TextareaWidget {
   public function settingsSummary() {
     $summary = parent::settingsSummary();
 
-    $summary[] = t('Number of summary rows: !rows', array('!rows' => $this->getSetting('summary_rows')));
+    $summary[] = t('Number of summary rows: @rows', array('@rows' => $this->getSetting('summary_rows')));
 
     return $summary;
   }
@@ -78,8 +78,8 @@ class TextareaWithSummaryWidget extends TextareaWidget {
       '#attached' => array(
         'library' => array('text/drupal.text'),
       ),
-      '#attributes' => array('class' => array('text-summary')),
-      '#prefix' => '<div class="text-summary-wrapper">',
+      '#attributes' => array('class' => array('js-text-summary', 'text-summary')),
+      '#prefix' => '<div class="js-text-summary-wrapper text-summary-wrapper">',
       '#suffix' => '</div>',
       '#weight' => -10,
     );
@@ -92,7 +92,15 @@ class TextareaWithSummaryWidget extends TextareaWidget {
    */
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, FormStateInterface $form_state) {
     $element = parent::errorElement($element, $violation, $form, $form_state);
-    return ($element === FALSE) ? FALSE : $element[$violation->arrayPropertyPath[0]];
+    if ($element === FALSE) {
+      return FALSE;
+    }
+    elseif (isset($violation->arrayPropertyPath[0])) {
+      return $element[$violation->arrayPropertyPath[0]];
+    }
+    else {
+      return $element;
+    }
   }
 
 }

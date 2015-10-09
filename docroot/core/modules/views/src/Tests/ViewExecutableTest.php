@@ -8,6 +8,7 @@
 namespace Drupal\views\Tests;
 
 use Drupal\comment\Tests\CommentTestTrait;
+use Drupal\Component\Utility\Xss;
 use Drupal\views\Entity\View;
 use Drupal\views\Views;
 use Drupal\views\ViewExecutable;
@@ -30,11 +31,11 @@ use Symfony\Component\HttpFoundation\Response;
  * @group views
  * @see \Drupal\views\ViewExecutable
  */
-class ViewExecutableTest extends ViewUnitTestBase {
+class ViewExecutableTest extends ViewKernelTestBase {
 
   use CommentTestTrait;
 
-  public static $modules = array('system', 'node', 'comment', 'user', 'filter', 'field', 'text', 'entity_reference');
+  public static $modules = ['system', 'node', 'comment', 'user', 'filter', 'field', 'text'];
 
   /**
    * Views used by this test.
@@ -326,7 +327,7 @@ class ViewExecutableTest extends ViewUnitTestBase {
     // Test the title methods.
     $title = $this->randomString();
     $view->setTitle($title);
-    $this->assertEqual($view->getTitle(), $title);
+    $this->assertEqual($view->getTitle(), Xss::filterAdmin($title));
   }
 
   /**

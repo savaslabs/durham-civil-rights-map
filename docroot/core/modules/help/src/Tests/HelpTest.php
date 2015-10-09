@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\help\Tests\HelpTest.
+ * Contains \Drupal\help\Tests\HelpTest.
  */
 
 namespace Drupal\help\Tests;
@@ -19,11 +19,16 @@ class HelpTest extends WebTestBase {
   /**
    * Modules to enable.
    *
+   * The help_test module implements hook_help() but does not provide a module
+   * overview page.
+   *
    * @var array.
    */
-  public static $modules = array('shortcut');
+  public static $modules = array('help_test');
 
-  // Tests help implementations of many arbitrary core modules.
+  /**
+   * Use the Standard profile to test help implementations of many core modules.
+   */
   protected $profile = 'standard';
 
   /**
@@ -50,8 +55,9 @@ class HelpTest extends WebTestBase {
    * Logs in users, creates dblog events, and tests dblog functionality.
    */
   public function testHelp() {
-    // Login the admin user.
-    $this->drupalLogin($this->adminUser);
+    // Login the root user to ensure as many admin links appear as possible on
+    // the module overview pages.
+    $this->drupalLogin($this->rootUser);
     $this->verifyHelp();
 
     // Login the regular user.
@@ -61,7 +67,7 @@ class HelpTest extends WebTestBase {
     // Verify that introductory help text exists, goes for 100% module coverage.
     $this->drupalLogin($this->adminUser);
     $this->drupalGet('admin/help');
-    $this->assertRaw(t('For more information, refer to the subjects listed in the Help Topics section or to the <a href="!docs">online documentation</a> and <a href="!support">support</a> pages at <a href="!drupal">drupal.org</a>.', array('!docs' => 'https://drupal.org/documentation', '!support' => 'https://drupal.org/support', '!drupal' => 'https://drupal.org')), 'Help intro text correctly appears.');
+    $this->assertRaw(t('For more information, refer to the subjects listed in the Help Topics section or to the <a href=":docs">online documentation</a> and <a href=":support">support</a> pages at <a href=":drupal">drupal.org</a>.', array(':docs' => 'https://www.drupal.org/documentation', ':support' => 'https://www.drupal.org/support', ':drupal' => 'https://www.drupal.org')), 'Help intro text correctly appears.');
 
     // Verify that help topics text appears.
     $this->assertRaw('<h2>' . t('Help topics') . '</h2><p>' . t('Help is available on the following items:') . '</p>', 'Help topics text correctly appears.');
@@ -70,6 +76,11 @@ class HelpTest extends WebTestBase {
     foreach ($this->getModuleList() as $module => $name) {
       $this->assertLink($name, 0, format_string('Link properly added to @name (admin/help/@module)', array('@module' => $module, '@name' => $name)));
     }
+
+    // Ensure that module which does not provide an module overview page is
+    // handled correctly.
+    $this->clickLink(\Drupal::moduleHandler()->getName('help_test'));
+    $this->assertRaw(t('No help is available for module %module.', array('%module' => \Drupal::moduleHandler()->getName('help_test'))));
   }
 
   /**
@@ -94,7 +105,24 @@ class HelpTest extends WebTestBase {
       $this->assertResponse($response);
       if ($response == 200) {
         $this->assertTitle($name . ' | Drupal', format_string('%module title was displayed', array('%module' => $module)));
-        $this->assertRaw('<h1 class="page-title">' . t($name) . '</h1>', format_string('%module heading was displayed', array('%module' => $module)));
+        $this->assertEqual($this->cssSelect('h1.page-title')[0], t($name), format_string('%module heading was displayed', array('%module' => $module)));
+        $admin_tasks = system_get_module_admin_tasks($module, system_get_info('module', $module));
+        if (!empty($admin_tasks)) {
+          $this->assertText(t('@module administration pages', array('@module' => $name)));
+        }
+        foreach ($admin_tasks as $task) {
+          $this->assertLink($task['title']);
+          // Ensure there are no double escaped '&' or '<' characters.
+          $this->assertNoEscaped('&amp;', 'The help text does not have double escaped &amp;.');
+          $this->assertNoEscaped('&lt;', 'The help text does not have double escaped &lt;.');
+          // Ensure there are no escaped '<' characters.
+          $this->assertNoEscaped('<', 'The help text does not have single escaped &lt;.');
+        }
+        // Ensure there are no double escaped '&' or '<' characters.
+        $this->assertNoEscaped('&amp;');
+        $this->assertNoEscaped('&lt;');
+        // Ensure there are no escaped '<' characters.
+        $this->assertNoEscaped('<');
       }
     }
   }

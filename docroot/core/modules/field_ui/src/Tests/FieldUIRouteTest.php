@@ -7,6 +7,8 @@
 
 namespace Drupal\field_ui\Tests;
 
+use Drupal\Core\Entity\Entity\EntityFormMode;
+use Drupal\Core\Entity\Entity\EntityViewMode;
 use Drupal\simpletest\WebTestBase;
 
 /**
@@ -21,7 +23,7 @@ class FieldUIRouteTest extends WebTestBase {
    *
    * @var string[]
    */
-  public static $modules = array('entity_test', 'field_ui');
+  public static $modules = ['block', 'entity_test', 'field_ui'];
 
   /**
    * {@inheritdoc}
@@ -30,6 +32,7 @@ class FieldUIRouteTest extends WebTestBase {
     parent::setUp();
 
     $this->drupalLogin($this->rootUser);
+    $this->drupalPlaceBlock('local_tasks_block');
   }
 
   /**
@@ -75,7 +78,7 @@ class FieldUIRouteTest extends WebTestBase {
 
     // Create new view mode and verify it's available on the Manage Display
     // screen after enabling it.
-    entity_create('entity_view_mode' ,array(
+    EntityViewMode::create(array(
       'id' => 'user.test',
       'label' => 'Test',
       'targetEntityType' => 'user',
@@ -88,7 +91,7 @@ class FieldUIRouteTest extends WebTestBase {
 
     // Create new form mode and verify it's available on the Manage Form
     // Display screen after enabling it.
-    entity_create('entity_form_mode' ,array(
+    EntityFormMode::create(array(
       'id' => 'user.test',
       'label' => 'Test',
       'targetEntityType' => 'user',
@@ -108,6 +111,15 @@ class FieldUIRouteTest extends WebTestBase {
     $this->assertLink('Manage fields');
     $this->assertLink('Manage display');
     $this->assertLink('Manage form display');
+  }
+
+  /**
+   * Asserts that admin routes are correctly marked as such.
+   */
+  public function testAdminRoute() {
+    $route = \Drupal::service('router.route_provider')->getRouteByName('entity.entity_test.field_ui_fields');
+    $is_admin = \Drupal::service('router.admin_context')->isAdminRoute($route);
+    $this->assertTrue($is_admin, 'Admin route correctly marked for "Manage fields" page.');
   }
 
 }

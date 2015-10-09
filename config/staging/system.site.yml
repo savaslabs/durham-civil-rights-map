@@ -1,11 +1,11 @@
-uuid: 2ab1ce5f-3896-46a1-b200-b3f366f70d07
+uuid: cc50b8ca-af46-49d2-8405-5a3b66b3e10a
 name: 'Durham Civil and Human Rights Map'
 mail: chris@savaslabs.com
 slogan: ''
 page:
   403: ''
   404: ''
-  front: node/6
+  front: /node/3
 admin_compact_mode: false
 weight_select_max: 100
 langcode: en

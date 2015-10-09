@@ -7,10 +7,10 @@
 
 namespace Drupal\Core\Theme;
 
+use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\Extension;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Extension\ThemeHandlerInterface;
-use Drupal\Core\State\StateInterface;
 
 /**
  * Provides the theme initialization logic.
@@ -25,11 +25,11 @@ class ThemeInitialization implements ThemeInitializationInterface {
   protected $themeHandler;
 
   /**
-   * The state.
+   * The cache backend to use for the active theme.
    *
-   * @var \Drupal\Core\State\StateInterface
+   * @var \Drupal\Core\Cache\CacheBackendInterface
    */
-  protected $state;
+  protected $cache;
 
   /**
    * The app root.
@@ -52,15 +52,15 @@ class ThemeInitialization implements ThemeInitializationInterface {
    *   The app root.
    * @param \Drupal\Core\Extension\ThemeHandlerInterface $theme_handler
    *   The theme handler.
-   * @param \Drupal\Core\State\StateInterface $state
-   *   The state.
+   * @param \Drupal\Core\Cache\CacheBackendInterface $cache
+   *   The cache backend.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler to use to load modules.
    */
-  public function __construct($root, ThemeHandlerInterface $theme_handler, StateInterface $state, ModuleHandlerInterface $module_handler) {
+  public function __construct($root, ThemeHandlerInterface $theme_handler, CacheBackendInterface $cache, ModuleHandlerInterface $module_handler) {
     $this->root = $root;
     $this->themeHandler = $theme_handler;
-    $this->state = $state;
+    $this->cache = $cache;
     $this->moduleHandler = $module_handler;
   }
 
@@ -78,8 +78,8 @@ class ThemeInitialization implements ThemeInitializationInterface {
    * {@inheritdoc}
    */
   public function getActiveThemeByName($theme_name) {
-    if ($active_theme = $this->state->get('theme.active_theme.' . $theme_name)) {
-      return $active_theme;
+    if ($cached = $this->cache->get('theme.active_theme.' . $theme_name)) {
+      return $cached->data;
     }
     $themes = $this->themeHandler->listInfo();
 
@@ -114,7 +114,7 @@ class ThemeInitialization implements ThemeInitializationInterface {
 
     $active_theme = $this->getActiveTheme($themes[$theme_name], $base_themes);
 
-    $this->state->set('theme.active_theme.' . $theme_name, $active_theme);
+    $this->cache->set('theme.active_theme.' . $theme_name, $active_theme);
     return $active_theme;
   }
 
@@ -161,27 +161,56 @@ class ThemeInitialization implements ThemeInitializationInterface {
     $values['path'] = $theme_path;
     $values['name'] = $theme->getName();
 
-    // Prepare stylesheets from this theme as well as all ancestor themes.
-    // We work it this way so that we can have child themes remove CSS files
-    // easily from parent.
-    $values['stylesheets_remove'] = array();
+    // @todo Remove in Drupal 9.0.x.
+    $values['stylesheets_remove'] = $this->prepareStylesheetsRemove($theme, $base_themes);
 
-    // Grab stylesheets from base theme.
+    // Prepare libraries overrides from this theme and ancestor themes. This
+    // allows child themes to easily remove CSS files from base themes and
+    // modules.
+    $values['libraries_override'] = [];
+
+    // Get libraries overrides declared by base themes.
     foreach ($base_themes as $base) {
-      $base_theme_path = $base->getPath();
-      if (!empty($base->info['stylesheets-remove'])) {
-        foreach ($base->info['stylesheets-remove'] as $css_file) {
-          $css_file = $this->resolveStyleSheetPlaceholders($css_file);
-          $values['stylesheets_remove'][$css_file] = $css_file;
+      if (!empty($base->info['libraries-override'])) {
+        foreach ($base->info['libraries-override'] as $library => $override) {
+          $values['libraries_override'][$base->getPath()][$library] = $override;
         }
       }
     }
 
-    // Add stylesheets used by this theme.
-    if (!empty($theme->info['stylesheets-remove'])) {
-      foreach ($theme->info['stylesheets-remove'] as $css_file) {
-        $css_file = $this->resolveStyleSheetPlaceholders($css_file);
-        $values['stylesheets_remove'][$css_file] = $css_file;
+    // Add libraries overrides declared by this theme.
+    if (!empty($theme->info['libraries-override'])) {
+      foreach ($theme->info['libraries-override'] as $library => $override) {
+        $values['libraries_override'][$theme->getPath()][$library] = $override;
+      }
+    }
+
+    // Get libraries extensions declared by base themes.
+    foreach ($base_themes as $base) {
+      if (!empty($base->info['libraries-extend'])) {
+        foreach ($base->info['libraries-extend'] as $library => $extend) {
+          if (isset($values['libraries_extend'][$library])) {
+            // Merge if libraries-extend has already been defined for this
+            // library.
+            $values['libraries_extend'][$library] = array_merge($values['libraries_extend'][$library], $extend);
+          }
+          else {
+            $values['libraries_extend'][$library] = $extend;
+          }
+        }
+      }
+    }
+    // Add libraries extensions declared by this theme.
+    if (!empty($theme->info['libraries-extend'])) {
+      foreach ($theme->info['libraries-extend'] as $library => $extend) {
+        if (isset($values['libraries_extend'][$library])) {
+          // Merge if libraries-extend has already been defined for this
+          // library.
+          $values['libraries_extend'][$library] = array_merge($values['libraries_extend'][$library], $extend);
+        }
+        else {
+          $values['libraries_extend'][$library] = $extend;
+        }
       }
     }
 
@@ -214,6 +243,9 @@ class ThemeInitialization implements ThemeInitializationInterface {
     }
 
     $values['base_themes'] = $base_active_themes;
+    if (!empty($theme->info['regions'])) {
+      $values['regions'] = $theme->info['regions'];
+    }
 
     return new ActiveTheme($values);
   }
@@ -238,6 +270,8 @@ class ThemeInitialization implements ThemeInitializationInterface {
    *
    * @return string
    *   CSS file where placeholders are replaced.
+   *
+   * @todo Remove in Drupal 9.0.x.
    */
   protected function resolveStyleSheetPlaceholders($css_file) {
     $token_candidate = explode('/', $css_file)[0];
@@ -253,4 +287,44 @@ class ThemeInitialization implements ThemeInitializationInterface {
       return str_replace($token_candidate, $extensions[$token]->getPath(), $css_file);
     }
   }
+
+  /**
+   * Prepares stylesheets-remove specified in the *.info.yml file.
+   *
+   * @param \Drupal\Core\Extension\Extension $theme
+   *   The theme extension object.
+   * @param \Drupal\Core\Extension\Extension[] $base_themes
+   *   An array of base themes.
+   *
+   * @return string[]
+   *   The list of stylesheets-remove specified in the *.info.yml file.
+   *
+   * @todo Remove in Drupal 9.0.x.
+   */
+  protected function prepareStylesheetsRemove(Extension $theme, $base_themes) {
+    // Prepare stylesheets from this theme as well as all ancestor themes.
+    // We work it this way so that we can have child themes remove CSS files
+    // easily from parent.
+    $stylesheets_remove = array();
+    // Grab stylesheets from base theme.
+    foreach ($base_themes as $base) {
+      $base_theme_path = $base->getPath();
+      if (!empty($base->info['stylesheets-remove'])) {
+        foreach ($base->info['stylesheets-remove'] as $css_file) {
+          $css_file = $this->resolveStyleSheetPlaceholders($css_file);
+          $stylesheets_remove[$css_file] = $css_file;
+        }
+      }
+    }
+
+    // Add stylesheets used by this theme.
+    if (!empty($theme->info['stylesheets-remove'])) {
+      foreach ($theme->info['stylesheets-remove'] as $css_file) {
+        $css_file = $this->resolveStyleSheetPlaceholders($css_file);
+        $stylesheets_remove[$css_file] = $css_file;
+      }
+    }
+    return $stylesheets_remove;
+  }
+
 }

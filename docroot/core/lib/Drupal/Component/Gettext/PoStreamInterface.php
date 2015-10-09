@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Component\Gettext\PoStreamInterface.
+ * Contains \Drupal\Component\Gettext\PoStreamInterface.
  */
 
 namespace Drupal\Component\Gettext;
@@ -26,7 +26,7 @@ interface PoStreamInterface {
   public function close();
 
   /**
-   * Get the URI of the PO stream that is being read or written.
+   * Gets the URI of the PO stream that is being read or written.
    *
    * @return
    *   URI string for this stream.

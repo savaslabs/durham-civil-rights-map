@@ -24,6 +24,14 @@ use Drupal\Core\Entity\EntityDisplayBase;
  *   entity_keys = {
  *     "id" = "id",
  *     "status" = "status"
+ *   },
+ *   config_export = {
+ *     "id",
+ *     "targetEntityType",
+ *     "bundle",
+ *     "mode",
+ *     "content",
+ *     "hidden",
  *   }
  * )
  */
@@ -38,8 +46,8 @@ class EntityViewDisplay extends EntityDisplayBase implements EntityViewDisplayIn
    * Returns the display objects used to render a set of entities.
    *
    * Depending on the configuration of the view mode for each bundle, this can
-   * be either the display object associated to the view mode, or the 'default'
-   * display.
+   * be either the display object associated with the view mode, or the
+   * 'default' display.
    *
    * This method should only be used internally when rendering an entity. When
    * assigning suggested display options for a component in a given view mode,
@@ -173,6 +181,7 @@ class EntityViewDisplay extends EntityDisplayBase implements EntityViewDisplayIn
    */
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     // Reset the render cache for the target entity type.
+    parent::postSave($storage, $update);
     if (\Drupal::entityManager()->hasHandler($this->targetEntityType, 'view_builder')) {
       \Drupal::entityManager()->getViewBuilder($this->targetEntityType)->resetCache();
     }
@@ -240,7 +249,7 @@ class EntityViewDisplay extends EntityDisplayBase implements EntityViewDisplayIn
           $items = $grouped_items[$id];
           /** @var \Drupal\Core\Access\AccessResultInterface $field_access */
           $field_access = $items->access('view', NULL, TRUE);
-          $build_list[$id][$name] = $field_access->isAllowed() ? $formatter->view($items) : [];
+          $build_list[$id][$name] = $field_access->isAllowed() ? $formatter->view($items, $entity->language()->getId()) : [];
           // Apply the field access cacheability metadata to the render array.
           $this->renderer->addCacheableDependency($build_list[$id][$name], $field_access);
         }

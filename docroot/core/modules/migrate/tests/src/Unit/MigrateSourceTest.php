@@ -2,11 +2,12 @@
 
 /**
  * @file
- * Contains \Drupal\migrate\Unit\MigrateSourceTest
+ * Contains \Drupal\Tests\migrate\Unit\MigrateSourceTest.
  */
 
 namespace Drupal\Tests\migrate\Unit;
 
+use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\migrate\MigrateExecutable;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
@@ -83,7 +84,7 @@ class MigrateSourceTest extends MigrateTestCase {
       ->willReturn($id_map_array);
 
     $constructor_args = [$configuration, 'd6_action', [], $this->migration];
-    $methods = ['getModuleHandler', 'fields', 'getIds', '__toString', 'getIterator', 'prepareRow', 'initializeIterator'];
+    $methods = ['getModuleHandler', 'fields', 'getIds', '__toString', 'getIterator', 'prepareRow', 'initializeIterator', 'calculateDependencies'];
     $source_plugin = $this->getMock('\Drupal\migrate\Plugin\migrate\source\SourcePluginBase', $methods, $constructor_args);
 
     $source_plugin
@@ -139,10 +140,12 @@ class MigrateSourceTest extends MigrateTestCase {
    * Test that the source count is correct.
    */
   public function testCount() {
-
+    // Mock the cache to validate set() receives appropriate arguments.
     $container = new ContainerBuilder();
-    $container->register('cache.migrate', 'Drupal\Core\Cache\NullBackend')
-      ->setArguments(['migrate']);
+    $cache = $this->getMock(CacheBackendInterface::class);
+    $cache->expects($this->any())->method('set')
+        ->with($this->isType('string'), $this->isType('int'), $this->isType('int'));
+    $container->set('cache.migrate', $cache);
     \Drupal::setContainer($container);
 
     // Test that the basic count works.
@@ -166,16 +169,6 @@ class MigrateSourceTest extends MigrateTestCase {
 
     $source->rewind();
     $this->assertNull($source->current(), 'No row is available when prepareRow() is false.');
-  }
-
-  /**
-   * Test that the when a source id is in the idList, we don't get a row.
-   */
-  public function testIdInList() {
-    $source = $this->getSource([], ['idlist' => ['test_sourceid1']]);
-    $source->rewind();
-
-    $this->assertNull($source->current(), 'No row is available because id was in idList.');
   }
 
   /**
@@ -238,8 +231,11 @@ class MigrateSourceTest extends MigrateTestCase {
    *   The migrate executable.
    */
   protected function getMigrateExecutable($migration) {
+    /** @var \Drupal\migrate\MigrateMessageInterface $message */
     $message = $this->getMock('Drupal\migrate\MigrateMessageInterface');
-    return new MigrateExecutable($migration, $message);
+    /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
+    $event_dispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
+    return new MigrateExecutable($migration, $message, $event_dispatcher);
   }
 
 }

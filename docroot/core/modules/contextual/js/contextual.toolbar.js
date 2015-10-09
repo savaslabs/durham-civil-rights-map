@@ -14,9 +14,9 @@
   };
 
   /**
-   * Initializes a contextual link: updates its DOM, sets up model and views
+   * Initializes a contextual link: updates its DOM, sets up model and views.
    *
-   * @param DOM links
+   * @param {HTMLElement} context
    *   A contextual links DOM element as rendered by the server.
    */
   function initContextualToolbar(context) {
@@ -28,7 +28,7 @@
     var model = contextualToolbar.model = new contextualToolbar.StateModel({
       // Checks whether localStorage indicates we should start in edit mode
       // rather than view mode.
-      // @see Drupal.contextualToolbar.VisualView.persist()
+      // @see Drupal.contextualToolbar.VisualView.persist
       isViewing: localStorage.getItem('Drupal.contextualToolbar.isViewing') !== 'false'
     }, {
       contextualCollection: Drupal.contextual.collection
@@ -45,6 +45,11 @@
 
   /**
    * Attaches contextual's edit toolbar tab behavior.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches contextual toolbar behavior on a contextualToolbar-init event.
    */
   Drupal.behaviors.contextualToolbar = {
     attach: function (context) {
@@ -54,8 +59,18 @@
     }
   };
 
+  /**
+   * Namespace for the contextual toolbar.
+   *
+   * @namespace
+   */
   Drupal.contextualToolbar = {
-    // The Drupal.contextualToolbar.Model instance.
+
+    /**
+     * The {@link Drupal.contextualToolbar.StateModel} instance.
+     *
+     * @type {?Drupal.contextualToolbar.StateModel}
+     */
     model: null
   };
 

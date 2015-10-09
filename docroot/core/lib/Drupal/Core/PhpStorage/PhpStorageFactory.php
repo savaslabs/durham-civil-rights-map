@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Component\PhpStorage\PhpStorageFactory.
+ * Contains \Drupal\Core\PhpStorage\PhpStorageFactory.
  */
 
 namespace Drupal\Core\PhpStorage;
@@ -52,7 +52,7 @@ class PhpStorageFactory {
       $configuration['bin'] = $name;
     }
     if (!isset($configuration['directory'])) {
-      $configuration['directory'] = DRUPAL_ROOT . '/' . PublicStream::basePath() . '/php';
+      $configuration['directory'] = PublicStream::basePath() . '/php';
     }
     return new $class($configuration);
   }

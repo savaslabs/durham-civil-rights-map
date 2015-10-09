@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\taxonomy\Form\OverviewTerms
+ * Contains \Drupal\taxonomy\Form\OverviewTerms.
  */
 
 namespace Drupal\taxonomy\Form;
@@ -80,7 +80,8 @@ class OverviewTerms extends FormBase {
    *   The form structure.
    */
   public function buildForm(array $form, FormStateInterface $form_state, VocabularyInterface $taxonomy_vocabulary = NULL) {
-    // @todo Remove global variables when http://drupal.org/node/2044435 is in.
+    // @todo Remove global variables when https://www.drupal.org/node/2044435 is
+    //   in.
     global $pager_page_array, $pager_total, $pager_total_items;
 
     $form_state->set(['taxonomy', 'vocabulary'], $taxonomy_vocabulary);
@@ -206,7 +207,7 @@ class OverviewTerms extends FormBase {
     $form['terms'] = array(
       '#type' => 'table',
       '#header' => array($this->t('Name'), $this->t('Weight'), $this->t('Operations')),
-      '#empty' => $this->t('No terms available. <a href="@link">Add term</a>.', array('@link' => $this->url('entity.taxonomy_term.add_form', array('taxonomy_vocabulary' => $taxonomy_vocabulary->id())))),
+      '#empty' => $this->t('No terms available. <a href=":link">Add term</a>.', array(':link' => $this->url('entity.taxonomy_term.add_form', array('taxonomy_vocabulary' => $taxonomy_vocabulary->id())))),
       '#attributes' => array(
         'id' => 'taxonomy',
       ),
@@ -389,9 +390,7 @@ class OverviewTerms extends FormBase {
     $hierarchy = TAXONOMY_HIERARCHY_DISABLED;
 
     $changed_terms = array();
-    // @todo taxonomy_get_tree needs to be converted to a service and injected.
-    //   Will be fixed in http://drupal.org/node/1976298.
-    $tree = taxonomy_get_tree($vocabulary->id(), 0, NULL, TRUE);
+    $tree = $this->storageController->loadTree($vocabulary->id(), 0, NULL, TRUE);
 
     if (empty($tree)) {
       return;

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Plugin\views\style\Mapping.
+ * Contains \Drupal\views\Plugin\views\style\Mapping.
  */
 
 namespace Drupal\views\Plugin\views\style;
@@ -103,7 +103,8 @@ abstract class Mapping extends StylePluginBase {
       // Optionally filter the available fields.
       if (isset($mapping[$key]['#filter'])) {
         $this->view->initHandlers();
-        $this::$mapping[$key]['#filter']($field_options);
+        $filter = $mapping[$key]['#filter'];
+        $this::$filter($field_options);
         unset($mapping[$key]['#filter']);
       }
 

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\Tests\Core\Cache\CacheTest.
+ * Contains \Drupal\Tests\Core\Cache\CacheTagsInvalidatorTest.
  */
 
 namespace Drupal\Tests\Core\Cache;
@@ -20,8 +20,7 @@ class CacheTagsInvalidatorTest extends UnitTestCase {
   /**
    * @covers ::invalidateTags
    *
-   * @expectedException \LogicException
-   * @expectedExceptionMessage Cache tags must be strings, array given.
+   * @expectedException \AssertionError
    */
   public function testInvalidateTagsWithInvalidTags() {
     $cache_tags_invalidator = new CacheTagsInvalidator();

@@ -20,14 +20,12 @@
  * @ingroup themeable
  */
 #}
-<div class="item-list">
-  <ul class="views-summary">
+<ul>
   {% for row in rows %}
-    <li><a href="{{ row.url }}"{{ row.attributes.addClass(row.active ? 'is-active') }}>{{ row.link }}</a>
+    <li><a href="{{ row.url }}"{{ row.attributes.addClass(row.active ? 'is-active')|without('href') }}>{{ row.link }}</a>
       {% if options.count %}
         ({{ row.count }})
       {% endif %}
     </li>
   {% endfor %}
-  </ul>
-</div>
+</ul>

@@ -14,6 +14,12 @@ namespace Drupal\taxonomy\Tests;
  */
 class VocabularyPermissionsTest extends TaxonomyTestBase {
 
+  protected function setUp() {
+    parent::setUp();
+
+    $this->drupalPlaceBlock('page_title_block');
+  }
+
   /**
    * Create, edit and delete a taxonomy term via the user interface.
    */
@@ -51,7 +57,7 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
 
     // Delete the vocabulary.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/delete');
-    $this->assertRaw(t('Are you sure you want to delete the term %name?', array('%name' => $edit['name[0][value]'])), 'Delete taxonomy term form opened successfully.');
+    $this->assertRaw(t('Are you sure you want to delete the @entity-type %label?', array('@entity-type' => 'taxonomy term', '%label' => $edit['name[0][value]'])), 'Delete taxonomy term form opened successfully.');
 
     // Confirm deletion.
     $this->drupalPostForm(NULL, NULL, t('Delete'));
@@ -98,7 +104,7 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
 
     // Delete the vocabulary.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/delete');
-    $this->assertRaw(t('Are you sure you want to delete the term %name?', array('%name' => $term->getName())), 'Delete taxonomy term form opened successfully.');
+    $this->assertRaw(t('Are you sure you want to delete the @entity-type %label?', array('@entity-type' => 'taxonomy term', '%label' => $term->getName())), 'Delete taxonomy term form opened successfully.');
 
     // Confirm deletion.
     $this->drupalPostForm(NULL, NULL, t('Delete'));

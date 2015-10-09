@@ -85,7 +85,7 @@ class TermTranslationFieldViewTest extends TaxonomyTestBase {
       'langcode' => $this->baseLangcode,
     ));
     $node->save();
-    $node->addTranslation($this->translateToLangcode, array());
+    $node->addTranslation($this->translateToLangcode, $node->toArray());
     $node->save();
     $this->node = $node;
   }

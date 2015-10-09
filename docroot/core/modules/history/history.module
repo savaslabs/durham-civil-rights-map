@@ -28,7 +28,7 @@ function history_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.history':
       $output  = '<h3>' . t('About') . '</h3>';
-      $output .= '<p>'  . t('The History module keeps track of which content a user has read. It marks content as <em>new</em> or <em>updated</em> depending on the last time the user viewed it. History records that are older than one month are removed during cron, which means that content older than one month is always considered <em>read</em>. The History module does not have a user interface but it provides a filter to <a href="!views-help">Views</a> to show new or updated content. For more information, see the <a href="!url">online documentation for the History module</a>.', array('!views-help' => \Drupal::url('help.page', array ('name' => 'views')), '!url' => 'https://drupal.org/documentation/modules/history')) . '</p>';
+      $output .= '<p>'  . t('The History module keeps track of which content a user has read. It marks content as <em>new</em> or <em>updated</em> depending on the last time the user viewed it. History records that are older than one month are removed during cron, which means that content older than one month is always considered <em>read</em>. The History module does not have a user interface but it provides a filter to <a href=":views-help">Views</a> to show new or updated content. For more information, see the <a href=":url">online documentation for the History module</a>.', array(':views-help' => (\Drupal::moduleHandler()->moduleExists('views')) ? \Drupal::url('help.page', array ('name' => 'views')): '#', ':url' => 'https://www.drupal.org/documentation/modules/history')) . '</p>';
       return $output;
   }
 }
@@ -134,12 +134,15 @@ function history_cron() {
  */
 function history_node_view_alter(array &$build, EntityInterface $node, EntityViewDisplayInterface $display) {
   // Update the history table, stating that this user viewed this node.
-  if (($display->getOriginalMode() === 'full') && \Drupal::currentUser()->isAuthenticated()) {
-    // When the window's "load" event is triggered, mark the node as read.
-    // This still allows for Drupal behaviors (which are triggered on the
-    // "DOMContentReady" event) to add "new" and "updated" indicators.
-    $build['#attached']['library'][] = 'history/mark-as-read';
-    $build['#attached']['drupalSettings']['history']['nodesToMarkAsRead'][$node->id()] = TRUE;
+  if ($display->getOriginalMode() === 'full') {
+    $build['#cache']['contexts'][] = 'user.roles:authenticated';
+    if (\Drupal::currentUser()->isAuthenticated()) {
+      // When the window's "load" event is triggered, mark the node as read.
+      // This still allows for Drupal behaviors (which are triggered on the
+      // "DOMContentReady" event) to add "new" and "updated" indicators.
+      $build['#attached']['library'][] = 'history/mark-as-read';
+      $build['#attached']['drupalSettings']['history']['nodesToMarkAsRead'][$node->id()] = TRUE;
+    }
   }
 
 }
@@ -176,21 +179,16 @@ function history_user_delete($account) {
 }
 
 /**
- * #post_render_cache callback; attaches the last read timestamp for a node.
+ * #lazy_builder callback; attaches the last read timestamp for a node.
  *
- * @param array $element
- *  A render array with the following keys:
- *    - #markup
- *    - #attached
- * @param array $context
- *  An array with the following keys:
- *    - node_id: the node ID for which to attach the last read timestamp.
+ * @param int $node_id
+ *   The node ID for which to attach the last read timestamp.
  *
  * @return array $element
- *   The updated $element.
+ *   A renderable array containing the last read timestamp.
  */
-function history_attach_timestamp(array $element, array $context) {
-  $node_id = $context['node_id'];
+function history_attach_timestamp($node_id) {
+  $element = [];
   $element['#attached']['drupalSettings']['history']['lastReadTimestamps'][$node_id] = (int) history_read($node_id);
   return $element;
 }

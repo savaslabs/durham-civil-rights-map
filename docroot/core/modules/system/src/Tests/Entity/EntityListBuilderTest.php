@@ -67,7 +67,15 @@ class EntityListBuilderTest extends WebTestBase {
     $build = $list_builder->render();
     $this->container->get('renderer')->renderRoot($build);
 
-    $this->assertEqual(['entity_test_view_grants', 'languages:' . LanguageInterface::TYPE_INTERFACE, 'theme', 'url.query_args.pagers:0'], $build['#cache']['contexts']);
+    $this->assertEqual(['entity_test_view_grants', 'languages:' . LanguageInterface::TYPE_INTERFACE, 'theme', 'url.query_args.pagers:0', 'user.permissions'], $build['#cache']['contexts']);
+  }
+
+  /**
+   * Tests if the list cache tags are set.
+   */
+  public function testCacheTags() {
+    $this->drupalGet('entity_test/list');
+    $this->assertCacheTag('entity_test_list');
   }
 
 }

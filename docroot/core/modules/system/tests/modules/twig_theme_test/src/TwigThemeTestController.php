@@ -7,6 +7,7 @@
 
 namespace Drupal\twig_theme_test;
 
+use Drupal\Core\Template\Attribute;
 use Drupal\Core\Url;
 
 /**
@@ -31,6 +32,16 @@ class TwigThemeTestController {
   }
 
   /**
+   * Controller for testing the twig placeholder filter outside of {% trans %}
+   */
+  public function placeholderOutsideTransRender() {
+    return [
+      '#theme' => 'twig_theme_test_placeholder_outside_trans',
+      '#var' => '<script>alert(123);</script>',
+    ];
+  }
+
+  /**
    * Renders for testing url_generator functions in a Twig template.
    */
   public function urlGeneratorRender() {
@@ -43,10 +54,14 @@ class TwigThemeTestController {
    * Renders for testing link_generator functions in a Twig template.
    */
   public function linkGeneratorRender() {
-    return array(
+    return [
       '#theme' => 'twig_theme_test_link_generator',
-      '#test_url' => new Url('user.register'),
-    );
+      '#test_url' => new Url('user.register', [], ['absolute' => TRUE]),
+      '#test_url_attribute' => new Url('user.register', [], ['attributes' => ['foo' => 'bar']]),
+      // Explicitly creating an Attribute object to avoid false positives when
+      // testing Attribute object merging with the twig link() function.
+      '#attributes' => new Attribute(['class' => ['llama', 'kitten', 'panda']]),
+    ];
   }
 
   /**
@@ -82,6 +97,16 @@ class TwigThemeTestController {
    */
   public function registryLoaderRender() {
     return array('#theme' => 'twig_registry_loader_test');
+  }
+
+  /**
+   * Controller for testing a renderable inside a template.
+   */
+  public function renderable() {
+    return [
+      '#theme' => 'twig_theme_test_renderable',
+      '#renderable' => new ExampleRenderable()
+    ];
   }
 
 }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\migrate\Plugin\migrate\destination\EntityBaseContent.
+ * Contains \Drupal\migrate\Plugin\migrate\destination\EntityContentBase.
  */
 
 namespace Drupal\migrate\Plugin\migrate\destination;
@@ -43,8 +43,6 @@ class EntityContentBase extends Entity {
    *   The storage for this entity type.
    * @param array $bundles
    *   The list of bundles this entity type has.
-   * @param \Drupal\migrate\Plugin\MigratePluginManager $plugin_manager
-   *   The plugin manager.
    * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
    *   The entity manager service.
    */

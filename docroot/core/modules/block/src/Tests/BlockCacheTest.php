@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\block\Tests\BlockCacheTest.
+ * Contains \Drupal\block\Tests\BlockCacheTest.
  */
 
 namespace Drupal\block\Tests;
@@ -119,9 +119,11 @@ class BlockCacheTest extends WebTestBase {
   }
 
   /**
-   * Test a cacheable block without any cache context.
+   * Test a cacheable block without any additional cache context.
    */
-  function testCacheGlobal() {
+  function testCachePermissions() {
+    // user.permissions is a required context, so a user with different
+    // permissions will see a different version of the block.
     \Drupal::state()->set('block_test.cache_contexts', []);
 
     $current_content = $this->randomMachineName();
@@ -134,18 +136,19 @@ class BlockCacheTest extends WebTestBase {
     $current_content = $this->randomMachineName();
     \Drupal::state()->set('block_test.content', $current_content);
 
-    $this->drupalLogout();
     $this->drupalGet('user');
     $this->assertText($old_content, 'Block content served from cache.');
+
+    $this->drupalLogout();
+    $this->drupalGet('user');
+    $this->assertText($current_content, 'Block content not served from cache.');
   }
 
   /**
    * Test non-cacheable block.
    */
   function testNoCache() {
-    $this->setBlockCacheConfig(array(
-      'max_age' => 0,
-    ));
+    \Drupal::state()->set('block_test.cache_max_age', 0);
 
     $current_content = $this->randomMachineName();
     \Drupal::state()->set('block_test.content', $current_content);
@@ -212,15 +215,6 @@ class BlockCacheTest extends WebTestBase {
     $this->drupalGet('test-page');
     $this->assertResponse(200);
     $this->assertText($old_content, 'Block content cached for the test page.');
-  }
-
-  /**
-   * Private helper method to set the test block's cache configuration.
-   */
-  private function setBlockCacheConfig($cache_config) {
-    $block = $this->block->getPlugin();
-    $block->setConfigurationValue('cache', $cache_config);
-    $this->block->save();
   }
 
 }

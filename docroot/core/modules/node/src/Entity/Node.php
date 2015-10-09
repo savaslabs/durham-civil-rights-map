@@ -8,6 +8,7 @@
 namespace Drupal\node\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -52,7 +53,9 @@ use Drupal\user\UserInterface;
  *     "bundle" = "type",
  *     "label" = "title",
  *     "langcode" = "langcode",
- *     "uuid" = "uuid"
+ *     "uuid" = "uuid",
+ *     "status" = "status",
+ *     "uid" = "uid",
  *   },
  *   bundle_entity_type = "node_type",
  *   field_ui_base_route = "entity.node_type.edit_form",
@@ -69,16 +72,34 @@ use Drupal\user\UserInterface;
  */
 class Node extends ContentEntityBase implements NodeInterface {
 
+  use EntityChangedTrait;
+
+  /**
+   * Whether the node is being previewed or not.
+   *
+   * The variable is set to public as it will give a considerable performance
+   * improvement. See https://www.drupal.org/node/2498919.
+   *
+   * @var true|null
+   *   TRUE if the node is being previewed and NULL if it is not.
+   */
+  public $in_preview = NULL;
+
   /**
    * {@inheritdoc}
    */
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
 
-    // If no owner has been set explicitly, make the current user the owner.
-    if (!$this->getOwner()) {
-      $this->setOwnerId(\Drupal::currentUser()->id());
+    foreach (array_keys($this->getTranslationLanguages()) as $langcode) {
+      $translation = $this->getTranslation($langcode);
+
+      // If no owner has been set explicitly, make the anonymous user the owner.
+      if (!$translation->getOwner()) {
+        $translation->setOwnerId(0);
+      }
     }
+
     // If no revision author has been set explicitly, make the node owner the
     // revision author.
     if (!$this->getRevisionAuthor()) {
@@ -160,29 +181,8 @@ class Node extends ContentEntityBase implements NodeInterface {
 
     return \Drupal::entityManager()
       ->getAccessControlHandler($this->entityTypeId)
-      ->access($this, $operation, $this->prepareLangcode(), $account, $return_as_object);
+      ->access($this, $operation, $account, $return_as_object);
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function prepareLangcode() {
-    $langcode = $this->language()->getId();
-    // If the Language module is enabled, try to use the language from content
-    // negotiation.
-    if (\Drupal::moduleHandler()->moduleExists('language')) {
-      // Load languages the node exists in.
-      $node_translations = $this->getTranslationLanguages();
-      // Load the language from content negotiation.
-      $content_negotiation_langcode = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
-      // If there is a translation available, use it.
-      if (isset($node_translations[$content_negotiation_langcode])) {
-        $langcode = $content_negotiation_langcode;
-      }
-    }
-    return $langcode;
-  }
-
 
   /**
    * {@inheritdoc}
@@ -218,13 +218,6 @@ class Node extends ContentEntityBase implements NodeInterface {
   /**
    * {@inheritdoc}
    */
-  public function getChangedTime() {
-    return $this->get('changed')->value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function isPromoted() {
     return (bool) $this->get('promote')->value;
   }
@@ -255,7 +248,7 @@ class Node extends ContentEntityBase implements NodeInterface {
    * {@inheritdoc}
    */
   public function isPublished() {
-    return (bool) $this->get('status')->value;
+    return (bool) $this->getEntityKey('status');
   }
 
   /**
@@ -277,7 +270,7 @@ class Node extends ContentEntityBase implements NodeInterface {
    * {@inheritdoc}
    */
   public function getOwnerId() {
-    return $this->get('uid')->target_id;
+    return $this->getEntityKey('uid');
   }
 
   /**
@@ -371,7 +364,6 @@ class Node extends ContentEntityBase implements NodeInterface {
       ->setRequired(TRUE)
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE)
-      ->setDefaultValue('')
       ->setSetting('max_length', 255)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
@@ -389,7 +381,6 @@ class Node extends ContentEntityBase implements NodeInterface {
       ->setDescription(t('The username of the content author.'))
       ->setRevisionable(TRUE)
       ->setSetting('target_type', 'user')
-      ->setSetting('handler', 'default')
       ->setDefaultValueCallback('Drupal\node\Entity\Node::getCurrentUserId')
       ->setTranslatable(TRUE)
       ->setDisplayOptions('view', array(
@@ -482,7 +473,7 @@ class Node extends ContentEntityBase implements NodeInterface {
       ->setLabel(t('Revision log message'))
       ->setDescription(t('Briefly describe the changes you have made.'))
       ->setRevisionable(TRUE)
-      ->setTranslatable(TRUE)
+      ->setDefaultValue('')
       ->setDisplayOptions('form', array(
         'type' => 'string_textarea',
         'weight' => 25,
@@ -490,6 +481,13 @@ class Node extends ContentEntityBase implements NodeInterface {
           'rows' => 4,
         ),
       ));
+
+    $fields['revision_translation_affected'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Revision translation affected'))
+      ->setDescription(t('Indicates if the last edit of a translation belongs to current revision.'))
+      ->setReadOnly(TRUE)
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE);
 
     return $fields;
   }

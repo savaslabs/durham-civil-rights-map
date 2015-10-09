@@ -7,11 +7,14 @@
 
   "use strict";
 
-  /**
-   * Backbone view for the toolbar element. Listens to mouse & touch.
-   */
-  Drupal.toolbar.ToolbarVisualView = Backbone.View.extend({
+  Drupal.toolbar.ToolbarVisualView = Backbone.View.extend(/** @lends Drupal.toolbar.ToolbarVisualView# */{
 
+    /**
+     * Event map for the `ToolbarVisualView`.
+     *
+     * @return {object}
+     *   A map of events.
+     */
     events: function () {
       // Prevents delay and simulated mouse events.
       var touchEndToClick = function (event) {
@@ -28,7 +31,16 @@
     },
 
     /**
-     * {@inheritdoc}
+     * Backbone view for the toolbar element. Listens to mouse & touch.
+     *
+     * @constructs
+     *
+     * @augments Backbone.View
+     *
+     * @param {object} options
+     *   Options for the view object.
+     * @param {object} options.strings
+     *   Various strings to use in the view.
      */
     initialize: function (options) {
       this.strings = options.strings;
@@ -48,7 +60,10 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @return {Drupal.toolbar.ToolbarVisualView}
+     *   The `ToolbarVisualView` instance.
      */
     render: function () {
       this.updateTabs();
@@ -81,7 +96,8 @@
     /**
      * Responds to a toolbar tab click.
      *
-     * @param jQuery.Event event
+     * @param {jQuery.Event} event
+     *   The event triggered.
      */
     onTabClick: function (event) {
       // If this tab has a tray associated with it, it is considered an
@@ -101,7 +117,8 @@
     /**
      * Toggles the orientation of a toolbar tray.
      *
-     * @param jQuery.Event event
+     * @param {jQuery.Event} event
+     *   The event triggered.
      */
     onOrientationToggleClick: function (event) {
       var orientation = this.model.get('orientation');
@@ -229,18 +246,19 @@
     adjustPlacement: function () {
       var $trays = this.$el.find('.toolbar-tray');
       if (!this.model.get('isOriented')) {
-        $trays.css('padding-top', 0);
+        $trays.css('margin-top', 0);
         $trays.removeClass('toolbar-tray-horizontal').addClass('toolbar-tray-vertical');
       }
       else {
         // The toolbar container is invisible. Its placement is used to
         // determine the container for the trays.
-        $trays.css('padding-top', this.$el.find('.toolbar-bar').outerHeight());
+        $trays.css('margin-top', this.$el.find('.toolbar-bar').outerHeight());
       }
     },
 
     /**
-     * Calls the endpoint URI that will return rendered subtrees with JSONP.
+     * Calls the endpoint URI that builds an AJAX command with the rendered
+     * subtrees.
      *
      * The rendered admin menu subtrees HTML is cached on the client in
      * localStorage until the cache of the admin menu subtrees on the server-
@@ -258,10 +276,10 @@
       //   (3) The orientation of the tray is vertical.
       if (!this.model.get('areSubtreesLoaded') && typeof $activeTab.data('drupal-subtrees') !== 'undefined' && orientation === 'vertical') {
         var subtreesHash = drupalSettings.toolbar.subtreesHash;
-        var langcode = drupalSettings.toolbar.langcode;
-        var endpoint = Drupal.url('toolbar/subtrees/' + subtreesHash + '/' + langcode);
-        var cachedSubtreesHash = localStorage.getItem('Drupal.toolbar.subtreesHash');
-        var cachedSubtrees = JSON.parse(localStorage.getItem('Drupal.toolbar.subtrees'));
+        var theme = drupalSettings.ajaxPageState.theme;
+        var endpoint = Drupal.url('toolbar/subtrees/' + subtreesHash);
+        var cachedSubtreesHash = localStorage.getItem('Drupal.toolbar.subtreesHash.' + theme);
+        var cachedSubtrees = JSON.parse(localStorage.getItem('Drupal.toolbar.subtrees.' + theme));
         var isVertical = this.model.get('orientation') === 'vertical';
         // If we have the subtrees in localStorage and the subtree hash has not
         // changed, then use the cached data.
@@ -272,13 +290,13 @@
         // toolbar is vertical.
         else if (isVertical) {
           // Remove the cached menu information.
-          localStorage.removeItem('Drupal.toolbar.subtreesHash');
-          localStorage.removeItem('Drupal.toolbar.subtrees');
-          // The response from the server will call the resolve method of the
+          localStorage.removeItem('Drupal.toolbar.subtreesHash.' + theme);
+          localStorage.removeItem('Drupal.toolbar.subtrees.' + theme);
+          // The AJAX response's command will trigger the resolve method of the
           // Drupal.toolbar.setSubtrees Promise.
-          $.ajax(endpoint);
+          Drupal.ajax({url: endpoint}).execute();
           // Cache the hash for the subtrees locally.
-          localStorage.setItem('Drupal.toolbar.subtreesHash', subtreesHash);
+          localStorage.setItem('Drupal.toolbar.subtreesHash.' + theme, subtreesHash);
         }
       }
     }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\options\Type\ListFloatItem.
+ * Contains \Drupal\options\Plugin\Field\FieldType\ListFloatItem.
  */
 
 namespace Drupal\options\Plugin\Field\FieldType;
@@ -108,6 +108,13 @@ class ListFloatItem extends ListItemBase {
       $values[(string) (float) $item['value']] = $item['label'];
     }
     return $values;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected static function castAllowedValue($value) {
+    return (float) $value;
   }
 
 }

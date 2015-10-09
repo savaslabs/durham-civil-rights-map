@@ -88,7 +88,7 @@ class ImageItemTest extends FieldUnitTestBase {
     $this->assertEqual($entity->image_test->entity->uuid(), $this->image->uuid());
 
     // Make sure the computed entity reflects updates to the referenced file.
-    file_unmanaged_copy(\Drupal::root() . '/core/misc/feed.png', 'public://example-2.jpg');
+    file_unmanaged_copy(\Drupal::root() . '/core/misc/druplicon.png', 'public://example-2.jpg');
     $image2 = entity_create('file', array(
       'uri' => 'public://example-2.jpg',
     ));
@@ -114,6 +114,11 @@ class ImageItemTest extends FieldUnitTestBase {
     $this->image->delete();
     $entity = entity_create('entity_test', array('mame' => $this->randomMachineName()));
     $entity->save();
+
+    // Test image item properties.
+    $expected = array('target_id', 'entity', 'alt', 'title', 'width', 'height');
+    $properties = $entity->getFieldDefinition('image_test')->getFieldStorageDefinition()->getPropertyDefinitions();
+    $this->assertEqual(array_keys($properties), $expected);
 
     // Test the generateSampleValue() method.
     $entity = entity_create('entity_test');

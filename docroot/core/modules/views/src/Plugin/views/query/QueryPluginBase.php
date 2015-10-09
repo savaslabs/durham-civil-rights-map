@@ -2,13 +2,14 @@
 
 /**
  * @file
- * Definition of Drupal\views\Plugin\views\query\QueryPluginBase.
+ * Contains \Drupal\views\Plugin\views\query\QueryPluginBase.
  */
 
 namespace Drupal\views\Plugin\views\query;
 
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\views\Plugin\CacheablePluginInterface;
 use Drupal\views\Plugin\views\PluginBase;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ViewExecutable;
@@ -36,7 +37,7 @@ use Drupal\views\Views;
 /**
  * Base plugin class for Views queries.
  */
-abstract class QueryPluginBase extends PluginBase implements CacheablePluginInterface {
+abstract class QueryPluginBase extends PluginBase implements CacheableDependencyInterface {
 
   /**
    * A pager plugin that should be provided by the display.
@@ -236,12 +237,15 @@ abstract class QueryPluginBase extends PluginBase implements CacheablePluginInte
    *   An appropriate query expression pointing to the date field.
    * @param string $format
    *   A format string for the result, like 'Y-m-d H:i:s'.
+   * @param boolean $string_date
+   *   For certain databases, date format functions vary depending on string or
+   *   numeric storage.
    *
    * @return string
    *   A string representing the field formatted as a date in the format
    *   specified by $format.
    */
-  public function getDateFormat($field, $format) {
+  public function getDateFormat($field, $format, $string_date = FALSE) {
     return $field;
   }
 
@@ -316,9 +320,8 @@ abstract class QueryPluginBase extends PluginBase implements CacheablePluginInte
   /**
    * {@inheritdoc}
    */
-  public function isCacheable() {
-    // This plugin can't really determine that.
-    return TRUE;
+  public function getCacheMaxAge() {
+    return Cache::PERMANENT;
   }
 
   /**

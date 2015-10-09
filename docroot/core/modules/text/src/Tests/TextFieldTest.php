@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\text\TextFieldTest.
+ * Contains \Drupal\text\Tests\TextFieldTest.
  */
 
 namespace Drupal\text\Tests;
@@ -68,6 +68,65 @@ class TextFieldTest extends StringFieldTest {
   }
 
   /**
+   * Test required long text with file upload.
+   */
+  function testRequiredLongTextWithFileUpload() {
+    // Create a text field.
+    $text_field_name = 'text_long';
+    $field_storage = entity_create('field_storage_config', array(
+      'field_name' => $text_field_name,
+      'entity_type' => 'entity_test',
+      'type' => 'text_with_summary',
+    ));
+    $field_storage->save();
+    entity_create('field_config', array(
+      'field_storage' => $field_storage,
+      'bundle' => 'entity_test',
+      'label' => $this->randomMachineName() . '_label',
+      'required' => TRUE,
+    ))->save();
+
+    // Create a file field.
+    $file_field_name = 'file_field';
+    $field_storage = entity_create('field_storage_config', array(
+      'field_name' => $file_field_name,
+      'entity_type' => 'entity_test',
+      'type' => 'file'
+    ));
+    $field_storage->save();
+    entity_create('field_config', array(
+      'field_storage' => $field_storage,
+      'bundle' => 'entity_test',
+      'label' => $this->randomMachineName() . '_label',
+    ))->save();
+
+    entity_get_form_display('entity_test', 'entity_test', 'default')
+      ->setComponent($text_field_name, array(
+        'type' => 'text_textarea_with_summary',
+      ))
+      ->setComponent($file_field_name, array(
+        'type' => 'file_generic',
+      ))
+      ->save();
+    entity_get_display('entity_test', 'entity_test', 'full')
+      ->setComponent($text_field_name)
+      ->setComponent($file_field_name)
+      ->save();
+
+    $test_file = current($this->drupalGetTestFiles('text'));
+    $edit['files[file_field_0]'] = drupal_realpath($test_file->uri);
+    $this->drupalPostForm('entity_test/add', $edit, 'Upload');
+    $this->assertResponse(200);
+    $edit = array(
+      'text_long[0][value]' => 'Long text'
+    );
+    $this->drupalPostForm(NULL, $edit, 'Save');
+    $this->assertResponse(200);
+    $this->drupalGet('entity_test/1');
+    $this->assertText('Long text');
+  }
+
+  /**
    * Test widgets.
    */
   function testTextfieldWidgets() {
@@ -87,6 +146,9 @@ class TextFieldTest extends StringFieldTest {
    * Helper function for testTextfieldWidgetsFormatted().
    */
   function _testTextfieldWidgetsFormatted($field_type, $widget_type) {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = $this->container->get('renderer');
+
     // Create a field.
     $field_name = Unicode::strtolower($this->randomMachineName());
     $field_storage = entity_create('field_storage_config', array(
@@ -138,7 +200,7 @@ class TextFieldTest extends StringFieldTest {
     $entity = entity_load('entity_test', $id);
     $display = entity_get_display($entity->getEntityTypeId(), $entity->bundle(), 'full');
     $content = $display->build($entity);
-    $this->setRawContent(drupal_render($content));
+    $this->setRawContent($renderer->renderRoot($content));
     $this->assertNoRaw($value, 'HTML tags are not displayed.');
     $this->assertEscaped($value, 'Escaped HTML is displayed correctly.');
 
@@ -177,7 +239,7 @@ class TextFieldTest extends StringFieldTest {
     $entity = entity_load('entity_test', $id);
     $display = entity_get_display($entity->getEntityTypeId(), $entity->bundle(), 'full');
     $content = $display->build($entity);
-    $this->setRawContent(drupal_render($content));
+    $this->setRawContent($renderer->renderRoot($content));
     $this->assertRaw($value, 'Value is displayed unfiltered');
   }
 

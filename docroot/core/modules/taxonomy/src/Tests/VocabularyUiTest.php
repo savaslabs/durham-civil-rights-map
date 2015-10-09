@@ -29,6 +29,8 @@ class VocabularyUiTest extends TaxonomyTestBase {
     parent::setUp();
     $this->drupalLogin($this->drupalCreateUser(['administer taxonomy']));
     $this->vocabulary = $this->createVocabulary();
+    $this->drupalPlaceBlock('local_actions_block');
+    $this->drupalPlaceBlock('page_title_block');
   }
 
   /**

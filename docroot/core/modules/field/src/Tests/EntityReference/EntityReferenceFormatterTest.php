@@ -10,7 +10,6 @@ namespace Drupal\field\Tests\EntityReference;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\entity_reference\Tests\EntityReferenceTestTrait;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\filter\Entity\FilterFormat;
 use Drupal\system\Tests\Entity\EntityUnitTestBase;
@@ -62,15 +61,12 @@ class EntityReferenceFormatterTest extends EntityUnitTestBase {
    */
   protected $unsavedReferencedEntity;
 
-  /**
-   * Modules to install.
-   *
-   * @var array
-   */
-  public static $modules = array('entity_reference');
-
   protected function setUp() {
     parent::setUp();
+
+    // Use Classy theme for testing markup output.
+    \Drupal::service('theme_handler')->install(['classy']);
+    $this->config('system.theme')->set('default', 'classy')->save();
 
     // Grant the 'view test entity' permission.
     $this->installConfig(array('user'));
@@ -170,7 +166,7 @@ class EntityReferenceFormatterTest extends EntityUnitTestBase {
     $formatter = 'entity_reference_entity_id';
     $build = $this->buildRenderArray([$this->referencedEntity, $this->unsavedReferencedEntity], $formatter);
 
-    $this->assertEqual($build[0]['#markup'], $this->referencedEntity->id(), sprintf('The markup returned by the %s formatter is correct for an item with a saved entity.', $formatter));
+    $this->assertEqual($build[0]['#plain_text'], $this->referencedEntity->id(), sprintf('The markup returned by the %s formatter is correct for an item with a saved entity.', $formatter));
     $this->assertEqual($build[0]['#cache']['tags'], $this->referencedEntity->getCacheTags(), sprintf('The %s formatter has the expected cache tags.', $formatter));
     $this->assertTrue(!isset($build[1]), sprintf('The markup returned by the %s formatter is correct for an item with a unsaved entity.', $formatter));
   }
@@ -179,34 +175,29 @@ class EntityReferenceFormatterTest extends EntityUnitTestBase {
    * Tests the entity formatter.
    */
   public function testEntityFormatter() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = $this->container->get('renderer');
     $formatter = 'entity_reference_entity_view';
     $build = $this->buildRenderArray([$this->referencedEntity, $this->unsavedReferencedEntity], $formatter);
 
     // Test the first field item.
-    $expected_rendered_name_field_1 = '<div class="field field-entity-test--name field-name-name field-type-string field-label-hidden">
-    <div class="field-items">
-          <div class="field-item">' . $this->referencedEntity->label() . '</div>
-      </div>
-</div>
+    $expected_rendered_name_field_1 = '
+            <div class="field field--name-name field--type-string field--label-hidden field__item">' . $this->referencedEntity->label() . '</div>
+      ';
+    $expected_rendered_body_field_1 = '
+  <div class="clearfix text-formatted field field--name-body field--type-text field--label-above">
+    <div class="field__label">Body</div>
+              <div class="field__item"><p>Hello, world!</p></div>
+          </div>
 ';
-    $expected_rendered_body_field_1 = '<div class="field field-entity-test--body field-name-body field-type-text field-label-above">
-      <div class="field-label">Body</div>
-    <div class="field-items">
-          <div class="field-item"><p>Hello, world!</p></div>
-      </div>
-</div>
-';
-    drupal_render($build[0]);
+    $renderer->renderRoot($build[0]);
     $this->assertEqual($build[0]['#markup'], 'default | ' . $this->referencedEntity->label() .  $expected_rendered_name_field_1 . $expected_rendered_body_field_1, sprintf('The markup returned by the %s formatter is correct for an item with a saved entity.', $formatter));
-    $expected_cache_tags = Cache::mergeTags(
-      \Drupal::entityManager()->getViewBuilder($this->entityType)->getCacheTags(),
-      $this->referencedEntity->getCacheTags(),
-      FilterFormat::load('full_html')->getCacheTags()
-    );
+    $expected_cache_tags = Cache::mergeTags(\Drupal::entityManager()->getViewBuilder($this->entityType)->getCacheTags(), $this->referencedEntity->getCacheTags());
+    $expected_cache_tags = Cache::mergeTags($expected_cache_tags, FilterFormat::load('full_html')->getCacheTags());
     $this->assertEqual($build[0]['#cache']['tags'], $expected_cache_tags, format_string('The @formatter formatter has the expected cache tags.', array('@formatter' => $formatter)));
 
     // Test the second field item.
-    drupal_render($build[1]);
+    $renderer->renderRoot($build[1]);
     $this->assertEqual($build[1]['#markup'], $this->unsavedReferencedEntity->label(), sprintf('The markup returned by the %s formatter is correct for an item with a unsaved entity.', $formatter));
   }
 
@@ -214,6 +205,8 @@ class EntityReferenceFormatterTest extends EntityUnitTestBase {
    * Tests the label formatter.
    */
   public function testLabelFormatter() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = $this->container->get('renderer');
     $formatter = 'entity_reference_label';
 
     // The 'link' settings is TRUE by default.
@@ -237,13 +230,13 @@ class EntityReferenceFormatterTest extends EntityUnitTestBase {
         'tags' => $this->referencedEntity->getCacheTags(),
       ),
     );
-    $this->assertEqual(drupal_render($build[0]), drupal_render($expected_item_1), sprintf('The markup returned by the %s formatter is correct for an item with a saved entity.', $formatter));
+    $this->assertEqual($renderer->renderRoot($build[0]), $renderer->renderRoot($expected_item_1), sprintf('The markup returned by the %s formatter is correct for an item with a saved entity.', $formatter));
     $this->assertEqual(CacheableMetadata::createFromRenderArray($build[0]), CacheableMetadata::createFromRenderArray($expected_item_1));
 
     // The second referenced entity is "autocreated", therefore not saved and
     // lacking any URL info.
     $expected_item_2 = array(
-      '#markup' => $this->unsavedReferencedEntity->label(),
+      '#plain_text' => $this->unsavedReferencedEntity->label(),
       '#cache' => array(
         'contexts' => [
           'user.permissions',
@@ -256,8 +249,8 @@ class EntityReferenceFormatterTest extends EntityUnitTestBase {
 
     // Test with the 'link' setting set to FALSE.
     $build = $this->buildRenderArray([$this->referencedEntity, $this->unsavedReferencedEntity], $formatter, array('link' => FALSE));
-    $this->assertEqual($build[0]['#markup'], $this->referencedEntity->label(), sprintf('The markup returned by the %s formatter is correct for an item with a saved entity.', $formatter));
-    $this->assertEqual($build[1]['#markup'], $this->unsavedReferencedEntity->label(), sprintf('The markup returned by the %s formatter is correct for an item with a unsaved entity.', $formatter));
+    $this->assertEqual($build[0]['#plain_text'], $this->referencedEntity->label(), sprintf('The markup returned by the %s formatter is correct for an item with a saved entity.', $formatter));
+    $this->assertEqual($build[1]['#plain_text'], $this->unsavedReferencedEntity->label(), sprintf('The markup returned by the %s formatter is correct for an item with a unsaved entity.', $formatter));
 
     // Test an entity type that doesn't have any link templates, which means
     // \Drupal\Core\Entity\EntityInterface::urlInfo() will throw an exception
@@ -272,7 +265,7 @@ class EntityReferenceFormatterTest extends EntityUnitTestBase {
     $referenced_entity_with_no_link_template->save();
 
     $build = $this->buildRenderArray([$referenced_entity_with_no_link_template], $formatter, array('link' => TRUE));
-    $this->assertEqual($build[0]['#markup'], $referenced_entity_with_no_link_template->label(), sprintf('The markup returned by the %s formatter is correct for an entity type with no valid link template.', $formatter));
+    $this->assertEqual($build[0]['#plain_text'], $referenced_entity_with_no_link_template->label(), sprintf('The markup returned by the %s formatter is correct for an entity type with no valid link template.', $formatter));
   }
 
   /**

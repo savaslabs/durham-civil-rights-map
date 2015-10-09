@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Handler\ArgumentNullTest.
+ * Contains \Drupal\views\Tests\Handler\ArgumentNullTest.
  */
 
 namespace Drupal\views\Tests\Handler;
 
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 
 /**
@@ -15,7 +15,7 @@ use Drupal\views\Views;
  *
  * @group views
  */
-class ArgumentNullTest extends ViewUnitTestBase {
+class ArgumentNullTest extends ViewKernelTestBase {
 
   /**
    * Views used by this test.

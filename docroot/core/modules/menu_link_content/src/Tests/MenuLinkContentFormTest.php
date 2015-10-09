@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\menu_link_content\Tests\MenuLinkContentUITest.
+ * Contains \Drupal\menu_link_content\Tests\MenuLinkContentFormTest.
  */
 
 namespace Drupal\menu_link_content\Tests;
@@ -22,7 +22,6 @@ class MenuLinkContentFormTest extends WebTestBase {
    */
   public static $modules = array(
     'menu_link_content',
-    'menu_ui',
   );
 
   /**

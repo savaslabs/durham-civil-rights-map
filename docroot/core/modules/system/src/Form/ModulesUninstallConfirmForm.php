@@ -135,7 +135,8 @@ class ModulesUninstallConfirmForm extends ConfirmFormBase {
 
     // Prevent this page from showing when the module list is empty.
     if (empty($this->modules)) {
-      return new RedirectResponse('/admin/modules/uninstall');
+      drupal_set_message($this->t('The selected modules could not be uninstalled, either due to a website problem or due to the uninstall confirmation form timing out. Please try again.'), 'error');
+      return $this->redirect('system.modules_uninstall');
     }
 
     $data = system_rebuild_module_data();

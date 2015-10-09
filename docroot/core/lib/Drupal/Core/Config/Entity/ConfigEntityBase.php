@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Config\Entity\ConfigEntityBase.
+ * Contains \Drupal\Core\Config\Entity\ConfigEntityBase.
  */
 
 namespace Drupal\Core\Config\Entity;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigException;
 use Drupal\Core\Config\Schema\SchemaIncompleteException;
@@ -106,6 +106,13 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
   protected $third_party_settings = array();
 
   /**
+   * Trust supplied data and not use configuration schema on save.
+   *
+   * @var bool
+   */
+  protected $trustedData = FALSE;
+
+  /**
    * Overrides Entity::__construct().
    */
   public function __construct(array $values, $entity_type) {
@@ -185,8 +192,6 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    * {@inheritdoc}
    */
   public function disable() {
-    // An entity was disabled, invalidate its own cache tag.
-    Cache::invalidateTags($this->getCacheTags());
     return $this->setStatus(FALSE);
   }
 
@@ -265,22 +270,31 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    */
   public function toArray() {
     $properties = array();
-    $config_name = $this->getEntityType()->getConfigPrefix() . '.' . $this->id();
-    $definition = $this->getTypedConfig()->getDefinition($config_name);
-    if (!isset($definition['mapping'])) {
-      throw new SchemaIncompleteException(SafeMarkup::format('Incomplete or missing schema for @config_name', array('@config_name' => $config_name)));
+    /** @var \Drupal\Core\Config\Entity\ConfigEntityTypeInterface $entity_type */
+    $entity_type = $this->getEntityType();
+
+    $properties_to_export = $entity_type->getPropertiesToExport();
+    if (empty($properties_to_export)) {
+      $config_name = $entity_type->getConfigPrefix() . '.' . $this->id();
+      $definition = $this->getTypedConfig()->getDefinition($config_name);
+      if (!isset($definition['mapping'])) {
+        throw new SchemaIncompleteException("Incomplete or missing schema for $config_name");
+      }
+      $properties_to_export = array_combine(array_keys($definition['mapping']), array_keys($definition['mapping']));
     }
-    $id_key = $this->getEntityType()->getKey('id');
-    foreach (array_keys($definition['mapping']) as $name) {
+
+    $id_key = $entity_type->getKey('id');
+    foreach ($properties_to_export as $property_name => $export_name) {
       // Special handling for IDs so that computed compound IDs work.
       // @see \Drupal\Core\Entity\EntityDisplayBase::id()
-      if ($name == $id_key) {
-        $properties[$name] = $this->id();
+      if ($property_name == $id_key) {
+        $properties[$export_name] = $this->id();
       }
       else {
-        $properties[$name] = $this->get($name);
+        $properties[$export_name] = $this->get($property_name);
       }
     }
+
     if (empty($this->third_party_settings)) {
       unset($properties['third_party_settings']);
     }
@@ -317,7 +331,7 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
       ->execute();
     $matched_entity = reset($matching_entities);
     if (!empty($matched_entity) && ($matched_entity != $this->id()) && $matched_entity != $this->getOriginalId()) {
-      throw new ConfigDuplicateUUIDException(SafeMarkup::format('Attempt to save a configuration entity %id with UUID %uuid when this UUID is already used for %matched', array('%id' => $this->id(), '%uuid' => $this->uuid(), '%matched' => $matched_entity)));
+      throw new ConfigDuplicateUUIDException("Attempt to save a configuration entity '{$this->id()}' with UUID '{$this->uuid()}' when this UUID is already used for '$matched_entity'");
     }
 
     // If this entity is not new, load the original entity for comparison.
@@ -325,7 +339,7 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
       $original = $storage->loadUnchanged($this->getOriginalId());
       // Ensure that the UUID cannot be changed for an existing entity.
       if ($original && ($original->uuid() != $this->uuid())) {
-        throw new ConfigDuplicateUUIDException(SafeMarkup::format('Attempt to save a configuration entity %id with UUID %uuid when this entity already exists with UUID %original_uuid', array('%id' => $this->id(), '%uuid' => $this->uuid(), '%original_uuid' => $original->uuid())));
+        throw new ConfigDuplicateUUIDException("Attempt to save a configuration entity '{$this->id()}' with UUID '{$this->uuid()}' when this entity already exists with UUID '{$original->uuid()}'");
       }
     }
     if (!$this->isSyncing()) {
@@ -340,16 +354,9 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    * {@inheritdoc}
    */
   public function calculateDependencies() {
-    // Dependencies should be recalculated on every save. This ensures stale
-    // dependencies are never saved.
-    if (isset($this->dependencies['enforced'])) {
-      $dependencies = $this->dependencies['enforced'];
-      $this->dependencies = $dependencies;
-      $this->dependencies['enforced'] = $dependencies;
-    }
-    else {
-      $this->dependencies = array();
-    }
+    // All dependencies should be recalculated on every save apart from enforced
+    // dependencies. This ensures stale dependencies are never saved.
+    $this->dependencies = array_intersect_key($this->dependencies, ['enforced' => '']);
     if ($this instanceof EntityWithPluginCollectionInterface) {
       // Configuration entities need to depend on the providers of any plugins
       // that they store the configuration for.
@@ -366,21 +373,16 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
         $this->addDependency('module', $provider);
       }
     }
-    return $this->dependencies;
+    return $this;
   }
 
   /**
    * {@inheritdoc}
    */
   public function urlInfo($rel = 'edit-form', array $options = []) {
+    // Unless language was already provided, avoid setting an explicit language.
+    $options += ['language' => NULL];
     return parent::urlInfo($rel, $options);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getSystemPath($rel = 'edit-form') {
-    return parent::getSystemPath($rel);
   }
 
   /**
@@ -400,7 +402,7 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
   /**
    * {@inheritdoc}
    */
-  public function getCacheTags() {
+  public function getCacheTagsToInvalidate() {
     // Use cache tags that match the underlying config object's name.
     // @see \Drupal\Core\Config\ConfigBase::getCacheTags()
     return ['config:' . $this->getConfigDependencyName()];
@@ -430,7 +432,14 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    * {@inheritdoc}
    */
   public function getDependencies() {
-    return $this->dependencies;
+    $dependencies = $this->dependencies;
+    if (isset($dependencies['enforced'])) {
+      // Merge the enforced dependencies into the list of dependencies.
+      $enforced_dependencies = $dependencies['enforced'];
+      unset($dependencies['enforced']);
+      $dependencies = NestedArray::mergeDeep($dependencies, $enforced_dependencies);
+    }
+    return $dependencies;
   }
 
   /**
@@ -570,6 +579,30 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    */
   public function isInstallable() {
     return TRUE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function trustData() {
+    $this->trustedData = TRUE;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function hasTrustedData() {
+    return $this->trustedData;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function save() {
+    $return = parent::save();
+    $this->trustedData = FALSE;
+    return $return;
   }
 
 }

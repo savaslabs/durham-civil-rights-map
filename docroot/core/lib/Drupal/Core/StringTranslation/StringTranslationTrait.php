@@ -37,6 +37,10 @@ trait StringTranslationTrait {
    * Translates a string to the current language or to a given language.
    *
    * See the t() documentation for details.
+   *
+   * Never call $this->t($user_text) where $user_text is text that a user
+   * entered; doing so can lead to cross-site scripting and other security
+   * problems.
    */
   protected function t($string, array $args = array(), array $options = array()) {
     return $this->getStringTranslation()->translate($string, $args, $options);
@@ -66,12 +70,17 @@ trait StringTranslationTrait {
   /**
    * Returns the number of plurals supported by a given language.
    *
-   * See the
-   * \Drupal\Core\StringTranslation\TranslationInterface::getNumberOfPlurals()
+   * See the \Drupal\locale\PluralFormulaInterface::getNumberOfPlurals()
    * documentation for details.
+   *
+   * @see \Drupal\locale\PluralFormulaInterface::getNumberOfPlurals()
    */
   protected function getNumberOfPlurals($langcode = NULL) {
-    return $this->getStringTranslation()->getNumberOfPlurals($langcode);
+    if (\Drupal::hasService('locale.plural.formula')) {
+      return \Drupal::service('locale.plural.formula')->getNumberOfPlurals($langcode);
+    }
+    // We assume 2 plurals if Locale's services are not available.
+    return 2;
   }
 
   /**

@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Field\Entity;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Field\FieldConfigBase;
@@ -21,13 +20,27 @@ use Drupal\Core\Field\FieldException;
  * @ConfigEntityType(
  *   id = "base_field_override",
  *   label = @Translation("Base field override"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\Core\Field\BaseFieldOverrideStorage"
  *   },
  *   config_prefix = "base_field_override",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label"
+ *   },
+ *   config_export = {
+ *     "id",
+ *     "field_name",
+ *     "entity_type",
+ *     "bundle",
+ *     "label",
+ *     "description",
+ *     "required",
+ *     "translatable",
+ *     "default_value",
+ *     "default_value_callback",
+ *     "settings",
+ *     "field_type",
  *   }
  * )
  */
@@ -89,10 +102,10 @@ class BaseFieldOverride extends FieldConfigBase {
       throw new FieldException('Attempt to create a base field bundle override of a field without a field_name');
     }
     if (empty($values['entity_type'])) {
-      throw new FieldException(SafeMarkup::format('Attempt to create a base field bundle override of field @field_name without an entity_type', array('@field_name' => $values['field_name'])));
+      throw new FieldException("Attempt to create a base field bundle override of field {$values['field_name']} without an entity_type");
     }
     if (empty($values['bundle'])) {
-      throw new FieldException(SafeMarkup::format('Attempt to create a base field bundle override of field @field_name without a bundle', array('@field_name' => $values['field_name'])));
+      throw new FieldException("Attempt to create a base field bundle override of field {$values['field_name']} without a bundle");
     }
 
     parent::__construct($values, $entity_type);
@@ -150,8 +163,7 @@ class BaseFieldOverride extends FieldConfigBase {
    * {@inheritdoc}
    *
    * @throws \Drupal\Core\Field\FieldException
-   *   If the bundle is being changed and
-   *   BaseFieldOverride::allowBundleRename() has not been called.
+   *   If the bundle is being changed.
    */
   public function preSave(EntityStorageInterface $storage) {
     // Filter out unknown settings and make sure all settings are present, so
@@ -174,10 +186,10 @@ class BaseFieldOverride extends FieldConfigBase {
     else {
       // Some updates are always disallowed.
       if ($this->entity_type != $this->original->entity_type) {
-        throw new FieldException(SafeMarkup::format('Cannot change the entity_type of an existing base field bundle override (entity type:@entity_type, bundle:@bundle, field name: @field_name)', array('@field_name' => $this->field_name, '@entity_type' => $this->entity_type, '@bundle' => $this->original->bundle)));
+        throw new FieldException("Cannot change the entity_type of an existing base field bundle override (entity type:{$this->entity_type}, bundle:{$this->original->bundle}, field name: {$this->field_name})");
       }
-      if ($this->bundle != $this->original->bundle && empty($this->bundleRenameAllowed)) {
-        throw new FieldException(SafeMarkup::format('Cannot change the bundle of an existing base field bundle override (entity type:@entity_type, bundle:@bundle, field name: @field_name)', array('@field_name' => $this->field_name, '@entity_type' => $this->entity_type, '@bundle' => $this->original->bundle)));
+      if ($this->bundle != $this->original->bundle) {
+        throw new FieldException("Cannot change the bundle of an existing base field bundle override (entity type:{$this->entity_type}, bundle:{$this->original->bundle}, field name: {$this->field_name})");
       }
       $previous_definition = $this->original;
     }

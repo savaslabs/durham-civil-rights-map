@@ -21,7 +21,7 @@ class TourTest extends TourTestBasic {
    *
    * @var array
    */
-  public static $modules = array('tour', 'locale', 'language', 'tour_test');
+  public static $modules = ['block', 'tour', 'locale', 'language', 'tour_test'];
 
   /**
    * The permissions required for a logged in user to test tour tips.
@@ -40,6 +40,18 @@ class TourTest extends TourTestBasic {
   protected $tips = array(
     'tour-test-1' => array(),
   );
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    parent::setUp();
+
+    $this->drupalPlaceBlock('local_actions_block', [
+      'theme' => 'seven',
+      'region' => 'content'
+    ]);
+  }
 
   /**
    * Test tour functionality.
@@ -131,7 +143,7 @@ class TourTest extends TourTestBasic {
 
     // Ensure that a tour entity has the expected dependencies based on plugin
     // providers and the module named in the configuration entity.
-    $dependencies = $tour->calculateDependencies();
+    $dependencies = $tour->calculateDependencies()->getDependencies();
     $this->assertEqual($dependencies['module'], array('system', 'tour_test'));
 
     $this->drupalGet('tour-test-1');

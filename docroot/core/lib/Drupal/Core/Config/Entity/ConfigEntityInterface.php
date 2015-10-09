@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Config\Entity\ConfigEntityInterface.
+ * Contains \Drupal\Core\Config\Entity\ConfigEntityInterface.
  */
 
 namespace Drupal\Core\Config\Entity;
@@ -144,8 +144,7 @@ interface ConfigEntityInterface extends EntityInterface, ThirdPartySettingsInter
   /**
    * Calculates dependencies and stores them in the dependency property.
    *
-   * @return array
-   *   An array of dependencies grouped by type (module, theme, entity).
+   * @return $this
    *
    * @see \Drupal\Core\Config\Entity\ConfigDependencyManager
    */
@@ -202,5 +201,28 @@ interface ConfigEntityInterface extends EntityInterface, ThirdPartySettingsInter
    *   TRUE if the entity is installable, FALSE otherwise.
    */
   public function isInstallable();
+
+  /**
+   * Sets that the data should be trusted.
+   *
+   * If the data is trusted then dependencies will not be calculated on save and
+   * schema will not be used to cast the values. Generally this is only used
+   * during module and theme installation. Once the config entity has been saved
+   * the data will no longer be marked as trusted. This is an optimization for
+   * creation of configuration during installation.
+   *
+   * @return $this
+   *
+   * @see \Drupal\Core\Config\ConfigInstaller::createConfiguration()
+   */
+  public function trustData();
+
+  /**
+   * Gets whether on not the data is trusted.
+   *
+   * @return bool
+   *   TRUE if the configuration data is trusted, FALSE if not.
+   */
+  public function hasTrustedData();
 
 }

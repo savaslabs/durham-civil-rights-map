@@ -12,7 +12,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TypedData\DataDefinitionInterface;
 use Drupal\Core\TypedData\Plugin\DataType\Map;
 use Drupal\Core\TypedData\TypedDataInterface;
-use Drupal\user;
 
 /**
  * An entity field item.
@@ -202,12 +201,7 @@ abstract class FieldItemBase extends Map implements FieldItemInterface {
   /**
    * {@inheritdoc}
    */
-  public function insert() { }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function update() { }
+  public function postSave($update) { }
 
   /**
    * {@inheritdoc}
@@ -271,6 +265,13 @@ abstract class FieldItemBase extends Map implements FieldItemInterface {
    */
   public static function calculateDependencies(FieldDefinitionInterface $field_definition) {
     return array();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function calculateStorageDependencies(FieldStorageDefinitionInterface $field_definition) {
+    return [];
   }
 
   /**

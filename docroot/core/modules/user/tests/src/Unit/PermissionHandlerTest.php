@@ -8,6 +8,9 @@
 namespace Drupal\Tests\user\Unit;
 
 use Drupal\Core\Extension\Extension;
+use Drupal\Core\StringTranslation\PluralTranslatableMarkup;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\Tests\UnitTestCase;
 use Drupal\user\PermissionHandler;
 use org\bovigo\vfs\vfsStream;
@@ -40,7 +43,7 @@ class PermissionHandlerTest extends UnitTestCase {
   /**
    * The mocked string translation.
    *
-   * @var \Drupal\Core\StringTranslation\TranslationInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Tests\user\Unit\TestTranslationManager
    */
   protected $stringTranslation;
 
@@ -57,7 +60,7 @@ class PermissionHandlerTest extends UnitTestCase {
   protected function setUp() {
     parent::setUp();
 
-    $this->stringTranslation = $this->getStringTranslationStub();
+    $this->stringTranslation = new TestTranslationManager();
     $this->controllerResolver = $this->getMock('Drupal\Core\Controller\ControllerResolverInterface');
   }
 
@@ -168,35 +171,41 @@ class PermissionHandlerTest extends UnitTestCase {
       ->method('getModuleDirectories')
       ->willReturn([
         'module_a' => vfsStream::url('modules/module_a'),
+        'module_b' => vfsStream::url('modules/module_b'),
+        'module_c' => vfsStream::url('modules/module_c'),
       ]);
+    $this->moduleHandler->expects($this->exactly(3))
+      ->method('getName')
+      ->will($this->returnValueMap([
+        ['module_a', 'Module a'],
+        ['module_b', 'Module b'],
+        ['module_c', 'A Module'],
+      ]));
 
     $url = vfsStream::url('modules');
     mkdir($url . '/module_a');
     file_put_contents($url . '/module_a/module_a.permissions.yml',
-"access_module_a2: single_description
-access_module_a1: single_description"
+"access_module_a2: single_description2
+access_module_a1: single_description1"
     );
-    $modules = ['module_a'];
-    $extensions = [
-      'module_a' => $this->mockModuleExtension('module_a', 'Module a'),
-    ];
-    $this->moduleHandler->expects($this->any())
-      ->method('getImplementations')
-      ->with('permission')
-      ->willReturn([]);
+    mkdir($url . '/module_b');
+    file_put_contents($url . '/module_b/module_b.permissions.yml',
+      "access_module_a3: single_description"
+    );
+    mkdir($url . '/module_c');
+    file_put_contents($url . '/module_c/module_c.permissions.yml',
+      "access_module_a4: single_description"
+    );
 
-    $this->moduleHandler->expects($this->any())
+    $modules = ['module_a', 'module_b', 'module_c'];
+    $this->moduleHandler->expects($this->once())
       ->method('getModuleList')
       ->willReturn(array_flip($modules));
 
-    $this->permissionHandler = new TestPermissionHandler($this->moduleHandler, $this->stringTranslation, $this->controllerResolver);
-
-    // Setup system_rebuild_module_data().
-    $this->permissionHandler->setSystemRebuildModuleData($extensions);
-
-    $actual_permissions = $this->permissionHandler->getPermissions();
-
-    $this->assertEquals(['access_module_a1', 'access_module_a2'], array_keys($actual_permissions));
+    $permissionHandler = new TestPermissionHandler($this->moduleHandler, $this->stringTranslation, $this->controllerResolver);
+    $actual_permissions = $permissionHandler->getPermissions();
+    $this->assertEquals(['access_module_a4', 'access_module_a1', 'access_module_a2', 'access_module_a3'],
+      array_keys($actual_permissions));
   }
 
   /**
@@ -398,6 +407,34 @@ class TestPermissionCallbacks {
         'restrict access' => TRUE,
       ),
     );
+  }
+
+}
+
+/**
+ * Implements a translation manager in tests.
+ */
+class TestTranslationManager implements TranslationInterface {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function translate($string, array $args = array(), array $options = array()) {
+    return new TranslatableMarkup($string, $args, $options, $this);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function translateString(TranslatableMarkup $translated_string) {
+    return $translated_string->getUntranslatedString();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function formatPlural($count, $singular, $plural, array $args = array(), array $options = array()) {
+    return new PluralTranslatableMarkup($count, $singular, $plural, $args, $options, $this);
   }
 
 }

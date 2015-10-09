@@ -7,13 +7,17 @@
 
 namespace Drupal\rest\Plugin\views\display;
 
-use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Core\State\StateInterface;
+use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Cache\CacheableResponse;
+use Drupal\Core\Render\RenderContext;
+use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
+use Drupal\Core\State\StateInterface;
+use Drupal\views\Plugin\views\display\ResponseDisplayPluginInterface;
+use Drupal\views\Render\ViewsRenderPipelineMarkup;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\PathPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouteCollection;
 
 /**
@@ -30,7 +34,7 @@ use Symfony\Component\Routing\RouteCollection;
  *   returns_response = TRUE
  * )
  */
-class RestExport extends PathPluginBase {
+class RestExport extends PathPluginBase implements ResponseDisplayPluginInterface {
 
   /**
    * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::$usesAJAX.
@@ -72,7 +76,14 @@ class RestExport extends PathPluginBase {
   protected $mimeType;
 
   /**
-   * Constructs a Drupal\rest\Plugin\ResourceBase object.
+   * The renderer.
+   *
+   * @var \Drupal\Core\Render\RendererInterface
+   */
+  protected $renderer;
+
+  /**
+   * Constructs a RestExport object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -81,12 +92,16 @@ class RestExport extends PathPluginBase {
    * @param mixed $plugin_definition
    *   The plugin implementation definition.
    * @param \Drupal\Core\Routing\RouteProviderInterface $route_provider
-   *   The route provider
+   *   The route provider.
    * @param \Drupal\Core\State\StateInterface $state
    *   The state key value store.
+   * @param \Drupal\Core\Render\RendererInterface $renderer
+   *   The renderer.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, RouteProviderInterface $route_provider, StateInterface $state) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, RouteProviderInterface $route_provider, StateInterface $state, RendererInterface $renderer) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $route_provider, $state);
+
+    $this->renderer = $renderer;
   }
 
   /**
@@ -98,10 +113,10 @@ class RestExport extends PathPluginBase {
       $plugin_id,
       $plugin_definition,
       $container->get('router.route_provider'),
-      $container->get('state')
+      $container->get('state'),
+      $container->get('renderer')
     );
   }
-
   /**
    * {@inheritdoc}
    */
@@ -115,6 +130,12 @@ class RestExport extends PathPluginBase {
     if ($request_content_type != 'html') {
       $this->setContentType($request_content_type);
     }
+    // If the requested content type is 'html' and the default 'json' is not
+    // selected as a format option in the view display, fallback to the first
+    // format in the array.
+    elseif (!empty($options['style']['options']['formats']) && !isset($options['style']['options']['formats'][$this->getContentType()])) {
+      $this->setContentType(reset($options['style']['options']['formats']));
+    }
 
     $this->setMimeType($this->view->getRequest()->getMimeType($this->contentType));
   }
@@ -122,7 +143,7 @@ class RestExport extends PathPluginBase {
   /**
    * {@inheritdoc}
    */
-  protected function getType() {
+  public function getType() {
     return 'data';
   }
 
@@ -242,14 +263,37 @@ class RestExport extends PathPluginBase {
     if ($route = $collection->get("view.$view_id.$display_id")) {
       $style_plugin = $this->getPlugin('style');
       // REST exports should only respond to get methods.
-      $requirements = array('_method' => 'GET');
+      $route->setMethods(['GET']);
 
       // Format as a string using pipes as a delimiter.
-      $requirements['_format'] = implode('|', $style_plugin->getFormats());
-
-      // Add the new requirements to the route.
-      $route->addRequirements($requirements);
+      if ($formats = $style_plugin->getFormats()) {
+        // Allow a REST Export View to be returned with an HTML-only accept
+        // format. That allows browsers or other non-compliant systems to access
+        // the view, as it is unlikely to have a conflicting HTML representation
+        // anyway.
+        $route->setRequirement('_format', implode('|', $formats + ['html']));
+      }
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function buildResponse($view_id, $display_id, array $args = []) {
+    $build = static::buildBasicRenderable($view_id, $display_id, $args);
+
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = \Drupal::service('renderer');
+
+    $output = $renderer->renderRoot($build);
+
+    $response = new CacheableResponse($output, 200);
+    $cache_metadata = CacheableMetadata::createFromRenderArray($build);
+    $response->addCacheableDependency($cache_metadata);
+
+    $response->headers->set('Content-type', $build['#content_type']);
+
+    return $response;
   }
 
   /**
@@ -258,8 +302,7 @@ class RestExport extends PathPluginBase {
   public function execute() {
     parent::execute();
 
-    $output = $this->view->render();
-    return new Response(drupal_render_root($output), 200, array('Content-type' => $this->getMimeType()));
+    return $this->view->render();
   }
 
   /**
@@ -267,14 +310,35 @@ class RestExport extends PathPluginBase {
    */
   public function render() {
     $build = array();
-    $build['#markup'] = $this->view->style_plugin->render();
+    $build['#markup'] = $this->renderer->executeInRenderContext(new RenderContext(), function() {
+      return $this->view->style_plugin->render();
+    });
 
-    // Wrap the output in a pre tag if this is for a live preview.
+    $this->view->element['#content_type'] = $this->getMimeType();
+    $this->view->element['#cache_properties'][] = '#content_type';
+
+    // Encode and wrap the output in a pre tag if this is for a live preview.
     if (!empty($this->view->live_preview)) {
       $build['#prefix'] = '<pre>';
-      $build['#markup'] = SafeMarkup::checkPlain($build['#markup']);
+      $build['#plain_text'] = $build['#markup'];
       $build['#suffix'] = '</pre>';
+      unset($build['#markup']);
     }
+    elseif ($this->view->getRequest()->getFormat($this->view->element['#content_type']) !== 'html') {
+      // This display plugin is primarily for returning non-HTML formats.
+      // However, we still invoke the renderer to collect cacheability metadata.
+      // Because the renderer is designed for HTML rendering, it filters
+      // #markup for XSS unless it is already known to be safe, but that filter
+      // only works for HTML. Therefore, we mark the contents as safe to bypass
+      // the filter. So long as we are returning this in a non-HTML response
+      // (checked above), this is safe, because an XSS attack only works when
+      // executed by an HTML agent.
+      // @todo Decide how to support non-HTML in the render API in
+      //   https://www.drupal.org/node/2501313.
+      $build['#markup'] = ViewsRenderPipelineMarkup::create($build['#markup']);
+    }
+
+    parent::applyDisplayCachablityMetadata($build);
 
     return $build;
   }

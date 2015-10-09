@@ -33,12 +33,12 @@
   }
 
   /**
-   * Initializes a contextual link: updates its DOM, sets up model and views
+   * Initializes a contextual link: updates its DOM, sets up model and views.
    *
-   * @param jQuery $contextual
+   * @param {jQuery} $contextual
    *   A contextual links placeholder DOM element, containing the actual
    *   contextual links as rendered by the server.
-   * @param string html
+   * @param {string} html
    *   The server-side rendered HTML for this contextual link.
    */
   function initContextual($contextual, html) {
@@ -76,8 +76,8 @@
       $.extend({el: $region, model: model}, options))
     );
 
-    // Add the model to the collection. This must happen after the views have been
-    // associated with it, otherwise collection change event handlers can't
+    // Add the model to the collection. This must happen after the views have
+    // been associated with it, otherwise collection change event handlers can't
     // trigger the model change event handler in its views.
     contextual.collection.add(model);
 
@@ -97,7 +97,7 @@
    *
    * This only deals with two levels of nesting; deeper levels are not touched.
    *
-   * @param jQuery $contextual
+   * @param {jQuery} $contextual
    *   A contextual links placeholder DOM element, containing the actual
    *   contextual links as rendered by the server.
    */
@@ -138,6 +138,11 @@
    * Events
    *   Contextual triggers an event that can be used by other scripts.
    *   - drupalContextualLinkAdded: Triggered when a contextual link is added.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *  Attaches the outline behavior to the right context.
    */
   Drupal.behaviors.contextual = {
     attach: function (context) {
@@ -159,10 +164,10 @@
       var uncachedIDs = _.filter(ids, function initIfCached(contextualID) {
         var html = storage.getItem('Drupal.contextual.' + contextualID);
         if (html !== null) {
-          // Initialize after the current executation cycle, to make the AJAX
+          // Initialize after the current execution cycle, to make the AJAX
           // request for retrieving the uncached contextual links as soon as
-          // possible, but also to ensure that other Drupal behaviors have had the
-          // chance to set up an event listener on the Backbone collection
+          // possible, but also to ensure that other Drupal behaviors have had
+          // the chance to set up an event listener on the Backbone collection
           // Drupal.contextual.collection.
           window.setTimeout(function () {
             initContextual($context.find('[data-contextual-id="' + contextualID + '"]'), html);
@@ -172,8 +177,8 @@
         return true;
       });
 
-      // Perform an AJAX request to let the server render the contextual links for
-      // each of the placeholders.
+      // Perform an AJAX request to let the server render the contextual links
+      // for each of the placeholders.
       if (uncachedIDs.length > 0) {
         $.ajax({
           url: Drupal.url('contextual/render'),
@@ -184,14 +189,15 @@
             _.each(results, function (html, contextualID) {
               // Store the metadata.
               storage.setItem('Drupal.contextual.' + contextualID, html);
-              // If the rendered contextual links are empty, then the current user
-              // does not have permission to access the associated links: don't
-              // render anything.
+              // If the rendered contextual links are empty, then the current
+              // user does not have permission to access the associated links:
+              // don't render anything.
               if (html.length > 0) {
-                // Update the placeholders to contain its rendered contextual links.
-                // Usually there will only be one placeholder, but it's possible for
-                // multiple identical placeholders exist on the page (probably
-                // because the same content appears more than once).
+                // Update the placeholders to contain its rendered contextual
+                // links. Usually there will only be one placeholder, but it's
+                // possible for multiple identical placeholders exist on the
+                // page (probably because the same content appears more than
+                // once).
                 $placeholders = $context.find('[data-contextual-id="' + contextualID + '"]');
 
                 // Initialize the contextual links.
@@ -206,23 +212,41 @@
     }
   };
 
+  /**
+   * Namespace for contextual related functionality.
+   *
+   * @namespace
+   */
   Drupal.contextual = {
-    // The Drupal.contextual.View instances associated with each list element of
-    // contextual links.
+
+    /**
+     * The {@link Drupal.contextual.View} instances associated with each list
+     * element of contextual links.
+     *
+     * @type {Array}
+     */
     views: [],
 
-    // The Drupal.contextual.RegionView instances associated with each contextual
-    // region element.
+    /**
+     * The {@link Drupal.contextual.RegionView} instances associated with each
+     * contextual region element.
+     *
+     * @type {Array}
+     */
     regionViews: []
   };
 
-  // A Backbone.Collection of Drupal.contextual.StateModel instances.
+  /**
+   * A Backbone.Collection of {@link Drupal.contextual.StateModel} instances.
+   *
+   * @type {Backbone.Collection}
+   */
   Drupal.contextual.collection = new Backbone.Collection([], {model: Drupal.contextual.StateModel});
 
   /**
    * A trigger is an interactive element often bound to a click handler.
    *
-   * @return String
+   * @return {string}
    *   A string representing a DOM fragment.
    */
   Drupal.theme.contextualTrigger = function () {

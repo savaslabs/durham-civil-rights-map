@@ -272,7 +272,7 @@ $config_directories = array();
  *   $settings['hash_salt'] = file_get_contents('/home/example/salt.txt');
  * @endcode
  */
-$settings['hash_salt'] = 'jLhju82zgpUFzP_DWqR-Vcvq1phEWYG3LFy45gCDW_mmD5gA9CPwAZW9pfSgVVYXD6TG-a27DA';
+$settings['hash_salt'] = '3oSOy-ZMJluB4cRw7_OY5HCsPb194xtVY_p9_3-RAjbqDsQgHAAhQHejj70gAweaOKz1JsJc3Q';
 
 /**
  * Access control for update.php script.
@@ -649,8 +649,8 @@ $settings['container_yamls'][] = __DIR__ . '/services.yml';
 $settings['install_profile'] = 'standard';
 $config_directories['staging'] = '../config/staging';
 $config_directories['active'] = 'sites/default/files/config/active';
+$config_directories['temp'] = '../config/temp';
 
 if (file_exists(__DIR__ . '/settings.local.php')) {
   include __DIR__ . '/settings.local.php';
 }
-

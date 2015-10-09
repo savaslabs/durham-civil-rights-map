@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\taxonomy\Plugin\views\field\TaxonomyIndexTid.
+ * Contains \Drupal\taxonomy\Plugin\views\field\TaxonomyIndexTid.
  */
 
 namespace Drupal\taxonomy\Plugin\views\field;
@@ -11,7 +11,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\field\PrerenderList;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\taxonomy\VocabularyStorageInterface;
@@ -153,7 +152,7 @@ class TaxonomyIndexTid extends PrerenderList {
           $this->items[$node_nid][$tid]['name'] = \Drupal::entityManager()->getTranslationFromContext($term)->label();
           $this->items[$node_nid][$tid]['tid'] = $tid;
           $this->items[$node_nid][$tid]['vocabulary_vid'] = $term->getVocabularyId();
-          $this->items[$node_nid][$tid]['vocabulary'] = SafeMarkup::checkPlain($vocabularies[$term->getVocabularyId()]->label());
+          $this->items[$node_nid][$tid]['vocabulary'] = $vocabularies[$term->getVocabularyId()]->label();
 
           if (!empty($this->options['link_to_taxonomy'])) {
             $this->items[$node_nid][$tid]['make_link'] = TRUE;
@@ -169,16 +168,15 @@ class TaxonomyIndexTid extends PrerenderList {
   }
 
   protected function documentSelfTokens(&$tokens) {
-    $tokens['[' . $this->options['id'] . '-tid' . ']'] = $this->t('The taxonomy term ID for the term.');
-    $tokens['[' . $this->options['id'] . '-name' . ']'] = $this->t('The taxonomy term name for the term.');
-    $tokens['[' . $this->options['id'] . '-vocabulary-vid' . ']'] = $this->t('The machine name for the vocabulary the term belongs to.');
-    $tokens['[' . $this->options['id'] . '-vocabulary' . ']'] = $this->t('The name for the vocabulary the term belongs to.');
+    $tokens['{{ ' . $this->options['id'] . '__tid' . ' }}'] = $this->t('The taxonomy term ID for the term.');
+    $tokens['{{ ' . $this->options['id'] . '__name' . ' }}'] = $this->t('The taxonomy term name for the term.');
+    $tokens['{{ ' . $this->options['id'] . '__vocabulary_vid' . ' }}'] = $this->t('The machine name for the vocabulary the term belongs to.');
+    $tokens['{{ ' . $this->options['id'] . '__vocabulary' . ' }}'] = $this->t('The name for the vocabulary the term belongs to.');
   }
 
   protected function addSelfTokens(&$tokens, $item) {
     foreach (array('tid', 'name', 'vocabulary_vid', 'vocabulary') as $token) {
-      // Replace _ with - for the vocabulary vid.
-      $tokens['[' . $this->options['id'] . '-' . str_replace('_', '-', $token) . ']'] = isset($item[$token]) ? $item[$token] : '';
+      $tokens['{{ ' . $this->options['id'] . '__' . $token . ' }}'] = isset($item[$token]) ? $item[$token] : '';
     }
   }
 

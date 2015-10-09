@@ -7,7 +7,6 @@
 
 namespace Drupal\locale\Form;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -59,7 +58,7 @@ class TranslationStatusForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'locale_translation_status_form';
   }
 
@@ -82,7 +81,7 @@ class TranslationStatusForm extends FormBase {
 
       // Build data options for the select table.
       foreach ($updates as $langcode => $update) {
-        $title = SafeMarkup::checkPlain($languages[$langcode]->getName());
+        $title = $languages[$langcode]->getName();
         $locale_translation_update_info = array('#theme' => 'locale_translation_update_info');
         foreach (array('updates', 'not_found') as $update_status) {
           if (isset($update[$update_status])) {
@@ -91,15 +90,14 @@ class TranslationStatusForm extends FormBase {
         }
         $options[$langcode] = array(
           'title' => array(
-            'class' => array('label'),
             'data' => array(
               '#title' => $title,
-              '#markup' => $title,
+              '#plain_text' => $title,
             ),
           ),
           'status' => array(
             'class' => array('description', 'priority-low'),
-            'data' => drupal_render($locale_translation_update_info),
+            'data' => $locale_translation_update_info,
           ),
         );
         if (!empty($update['not_found'])) {
@@ -134,16 +132,16 @@ class TranslationStatusForm extends FormBase {
     );
 
     if (!$languages) {
-      $empty = $this->t('No translatable languages available. <a href="@add_language">Add a language</a> first.', array(
-        '@add_language' => $this->url('entity.configurable_language.collection'),
+      $empty = $this->t('No translatable languages available. <a href=":add_language">Add a language</a> first.', array(
+        ':add_language' => $this->url('entity.configurable_language.collection'),
       ));
     }
     elseif ($status) {
       $empty = $this->t('All translations up to date.');
     }
     else {
-      $empty = $this->t('No translation status available. <a href="@check">Check manually</a>.', array(
-        '@check' => $this->url('locale.check_translation'),
+      $empty = $this->t('No translation status available. <a href=":check">Check manually</a>.', array(
+        ':check' => $this->url('locale.check_translation'),
       ));
     }
 
@@ -193,8 +191,9 @@ class TranslationStatusForm extends FormBase {
     $updates = array();
 
     // @todo Calling locale_translation_build_projects() is an expensive way to
-    //   get a module name. In follow-up issue http://drupal.org/node/1842362
-    //   the project name will be stored to display use, like here.
+    //   get a module name. In follow-up issue
+    //   https://www.drupal.org/node/1842362 the project name will be stored to
+    //   display use, like here.
     $this->moduleHandler->loadInclude('locale', 'compare.inc');
     $project_data = locale_translation_build_projects();
 
@@ -233,9 +232,6 @@ class TranslationStatusForm extends FormBase {
    * This method will produce debug information including the respective path(s)
    * based on this setting.
    *
-   * Translations for development versions are never fetched, so the debug info
-   * for that is a fixed message.
-   *
    * @param array $project_info
    *   An array which is the project information of the source.
    *
@@ -246,9 +242,6 @@ class TranslationStatusForm extends FormBase {
     $remote_path = isset($project_info->files['remote']->uri) ? $project_info->files['remote']->uri : FALSE;
     $local_path = isset($project_info->files['local']->uri) ? $project_info->files['local']->uri : FALSE;
 
-    if (strpos($project_info->version, 'dev') !== FALSE) {
-      return $this->t('No translation files are provided for development releases.');
-    }
     if (locale_translation_use_remote_source() && $remote_path && $local_path) {
       return $this->t('File not found at %remote_path nor at %local_path', array(
         '%remote_path' => $remote_path,

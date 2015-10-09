@@ -7,6 +7,7 @@
 
 namespace Drupal\system\Tests\Installer;
 
+use Drupal\Core\Database\Database;
 use Drupal\simpletest\InstallerTestBase;
 use Drupal\user\Entity\User;
 
@@ -46,6 +47,26 @@ class InstallerTranslationTest extends InstallerTestBase {
   }
 
   /**
+   * @{inheritdoc}
+   */
+  protected function setUpSettings() {
+    // We are creating a table here to force an error in the installer because
+    // it will try and create the drupal_install_test table as this is part of
+    // the standard database tests performed by the installer in
+    // Drupal\Core\Database\Install\Tasks.
+    Database::getConnection('default')->query('CREATE TABLE {drupal_install_test} (id int NULL)');
+    parent::setUpSettings();
+
+    // Ensure that the error message translation is working.
+    $this->assertRaw('Beheben Sie alle Probleme unten, um die Installation fortzusetzen. Informationen zur Konfiguration der Datenbankserver finden Sie in der <a href="https://www.drupal.org/getting-started/install">Installationshandbuch</a>, oder kontaktieren Sie Ihren Hosting-Anbieter.');
+    $this->assertRaw('<strong>CREATE</strong> ein Test-Tabelle auf Ihrem Datenbankserver mit dem Befehl <em class="placeholder">CREATE TABLE {drupal_install_test} (id int NULL)</em> fehlgeschlagen.');
+
+    // Now do it successfully.
+    Database::getConnection('default')->query('DROP TABLE {drupal_install_test}');
+    parent::setUpSettings();
+  }
+
+  /**
    * Verifies the expected behaviors of the installation result.
    */
   public function testInstaller() {
@@ -57,6 +78,8 @@ class InstallerTranslationTest extends InstallerTestBase {
     $this->assertText('German');
     $this->assertNoText('English');
 
+    // The current container still has the english as current language, rebuild.
+    $this->rebuildContainer();
     /** @var \Drupal\user\Entity\User $account */
     $account = User::load(0);
     $this->assertEqual($account->language()->getId(), 'en', 'Anonymous user is English.');
@@ -66,14 +89,14 @@ class InstallerTranslationTest extends InstallerTestBase {
     $this->assertEqual($account->language()->getId(), 'de', 'New user is German.');
 
     // Ensure that we can enable basic_auth on a non-english site.
-    $this->drupalPostForm('admin/modules', array('modules[Web services][basic_auth][enable]' => TRUE), t('Save configuration'));
+    $this->drupalPostForm('admin/modules', array('modules[Web services][basic_auth][enable]' => TRUE), t('Install'));
     $this->assertResponse(200);
 
     // Assert that the theme CSS was added to the page.
     $edit = array('preprocess_css' => FALSE);
     $this->drupalPostForm('admin/config/development/performance', $edit, t('Save configuration'));
     $this->drupalGet('<front>');
-    $this->assertRaw('classy/css/layout.css');
+    $this->assertRaw('classy/css/components/action-links.css');
 
     // Verify the strings from the translation files were imported.
     $test_samples = ['Save and continue', 'Anonymous'];
@@ -125,6 +148,12 @@ msgstr "Save and continue $langcode"
 
 msgid "Anonymous"
 msgstr "Anonymous $langcode"
+
+msgid "Resolve all issues below to continue the installation. For help configuring your database server, see the <a href="https://www.drupal.org/getting-started/install">installation handbook</a>, or contact your hosting provider."
+msgstr "Beheben Sie alle Probleme unten, um die Installation fortzusetzen. Informationen zur Konfiguration der Datenbankserver finden Sie in der <a href="https://www.drupal.org/getting-started/install">Installationshandbuch</a>, oder kontaktieren Sie Ihren Hosting-Anbieter."
+
+msgid "Failed to <strong>CREATE</strong> a test table on your database server with the command %query. The server reports the following message: %error.<p>Are you sure the configured username has the necessary permissions to create tables in the database?</p>"
+msgstr "<strong>CREATE</strong> ein Test-Tabelle auf Ihrem Datenbankserver mit dem Befehl %query fehlgeschlagen."
 ENDPO;
   }
 

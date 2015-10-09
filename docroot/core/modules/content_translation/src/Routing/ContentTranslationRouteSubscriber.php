@@ -69,6 +69,7 @@ class ContentTranslationRouteSubscriber extends RouteSubscriberBase {
           'entity_type_id' => $entity_type_id,
         ),
         array(
+          '_entity_access' =>  $entity_type_id . '.view',
           '_access_content_translation_overview' => $entity_type_id,
         ),
         array(
@@ -94,6 +95,7 @@ class ContentTranslationRouteSubscriber extends RouteSubscriberBase {
 
         ),
         array(
+          '_entity_access' =>  $entity_type_id . '.view',
           '_access_content_translation_manage' => 'create',
         ),
         array(
@@ -141,7 +143,7 @@ class ContentTranslationRouteSubscriber extends RouteSubscriberBase {
       $route = new Route(
         $path . '/delete/{language}',
         array(
-          '_form' => '\Drupal\content_translation\Form\ContentTranslationDeleteForm',
+          '_entity_form' => $entity_type_id . '.content_translation_deletion',
           'language' => NULL,
           '_title' => 'Delete',
           'entity_type_id' => $entity_type_id,

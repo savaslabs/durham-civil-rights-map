@@ -7,14 +7,12 @@
 
 namespace Drupal\Core\Field;
 
-use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\TypedData\DataDefinitionInterface;
 use Drupal\Core\TypedData\Plugin\DataType\ItemList;
-use Drupal\Core\TypedData\TypedDataInterface;
 
 /**
  * Represents an entity field; that is, a list of field item objects.
@@ -212,15 +210,9 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
   /**
    * {@inheritdoc}
    */
-  public function insert() {
-    $this->delegateMethod('insert');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function update() {
-    $this->delegateMethod('update');
+  public function postSave($update) {
+    $result = $this->delegateMethod('postSave', $update);
+    return (bool) array_filter($result);
   }
 
   /**
@@ -240,13 +232,23 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
   /**
    * Calls a method on each FieldItem.
    *
+   * Any argument passed will be forwarded to the invoked method.
+   *
    * @param string $method
-   *   The name of the method.
+   *   The name of the method to be invoked.
+   *
+   * @return array
+   *   An array of results keyed by delta.
    */
   protected function delegateMethod($method) {
-    foreach ($this->list as $item) {
-      $item->{$method}();
+    $result = [];
+    $args = array_slice(func_get_args(), 1);
+    foreach ($this->list as $delta => $item) {
+      // call_user_func_array() is way slower than a direct call so we avoid
+      // using it if have no parameters.
+      $result[$delta] = $args ? call_user_func_array([$item, $method], $args) : $item->{$method}();
     }
+    return $result;
   }
 
   /**
@@ -279,7 +281,7 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
     // widgets.
     $cardinality = $this->getFieldDefinition()->getFieldStorageDefinition()->getCardinality();
     if ($cardinality != FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED) {
-      $constraints[] = \Drupal::typedDataManager()
+      $constraints[] = $this->getTypedDataManager()
         ->getValidationConstraintManager()
         ->create('Count', array(
           'max' => $cardinality,
@@ -294,14 +296,17 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
    * {@inheritdoc}
    */
   public function defaultValuesForm(array &$form, FormStateInterface $form_state) {
-    if (empty($this->getFieldDefinition()->default_value_callback)) {
-      // Place the input in a separate place in the submitted values tree.
-      $widget = $this->defaultValueWidget($form_state);
+    if (empty($this->getFieldDefinition()->getDefaultValueCallback())) {
+      if ($widget = $this->defaultValueWidget($form_state)) {
+        // Place the input in a separate place in the submitted values tree.
+        $element = array('#parents' => array('default_value_input'));
+        $element += $widget->form($this, $element, $form_state);
 
-      $element = array('#parents' => array('default_value_input'));
-      $element += $widget->form($this, $element, $form_state);
-
-      return $element;
+        return $element;
+      }
+      else {
+        return ['#markup' => $this->t('No widget available for: %type.', ['%type' => $this->getFieldDefinition()->getType()])];
+      }
     }
   }
 
@@ -310,16 +315,17 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
    */
   public function defaultValuesFormValidate(array $element, array &$form, FormStateInterface $form_state) {
     // Extract the submitted value, and validate it.
-    $widget = $this->defaultValueWidget($form_state);
-    $widget->extractFormValues($this, $element, $form_state);
-    // Force a non-required field definition.
-    // @see self::defaultValueWidget().
-    $this->definition->required = FALSE;
-    $violations = $this->validate();
+    if ($widget = $this->defaultValueWidget($form_state)) {
+      $widget->extractFormValues($this, $element, $form_state);
+      // Force a non-required field definition.
+      // @see self::defaultValueWidget().
+      $this->getFieldDefinition()->setRequired(FALSE);
+      $violations = $this->validate();
 
-    // Assign reported errors to the correct form element.
-    if (count($violations)) {
-      $widget->flagErrors($this, $violations, $element, $form_state);
+      // Assign reported errors to the correct form element.
+      if (count($violations)) {
+        $widget->flagErrors($this, $violations, $element, $form_state);
+      }
     }
   }
 
@@ -328,9 +334,10 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
    */
   public function defaultValuesFormSubmit(array $element, array &$form, FormStateInterface $form_state) {
     // Extract the submitted value, and return it as an array.
-    $widget = $this->defaultValueWidget($form_state);
-    $widget->extractFormValues($this, $element, $form_state);
-    return $this->getValue();
+    if ($widget = $this->defaultValueWidget($form_state)) {
+      $widget->extractFormValues($this, $element, $form_state);
+      return $this->getValue();
+    }
   }
 
   /**
@@ -346,16 +353,17 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state of the (entire) configuration form.
    *
-   * @return \Drupal\Core\Field\WidgetInterface
-   *   A Widget object.
+   * @return \Drupal\Core\Field\WidgetInterface|null
+   *   A Widget object or NULL if no widget is available.
    */
   protected function defaultValueWidget(FormStateInterface $form_state) {
     if (!$form_state->has('default_value_widget')) {
       $entity = $this->getEntity();
 
       // Force a non-required widget.
-      $this->getFieldDefinition()->required = FALSE;
-      $this->getFieldDefinition()->description = '';
+      $definition = $this->getFieldDefinition();
+      $definition->setRequired(FALSE);
+      $definition->setDescription('');
 
       // Use the widget currently configured for the 'default' form mode, or
       // fallback to the default widget for the field type.
@@ -402,7 +410,7 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
     array_walk($value1, $callback);
     array_walk($value2, $callback);
 
-    return $value1 === $value2;
+    return $value1 == $value2;
   }
 
 }

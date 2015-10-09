@@ -15,7 +15,8 @@ use Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationSelected;
 function locale_install() {
   // Create the interface translations directory and ensure it's writable.
   if (!$directory = \Drupal::config('locale.settings')->get('translation.path')) {
-    $directory = conf_path() . '/files/translations';
+    $site_path = \Drupal::service('site.path');
+    $directory = $site_path . '/files/translations';
     \Drupal::configFactory()->getEditable('locale.settings')->set('translation.path', $directory)->save();
   }
   file_prepare_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
@@ -67,14 +68,14 @@ function locale_schema() {
         'description' => 'The original string in English.',
       ),
       'context' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
         'description' => 'The context this string applies to.',
       ),
       'version' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => 20,
         'not null' => TRUE,
         'default' => 'none',
@@ -103,7 +104,7 @@ function locale_schema() {
         'description' => 'Translation string value in this language.',
       ),
       'language' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => 12,
         'not null' => TRUE,
         'default' => '',
@@ -142,7 +143,7 @@ function locale_schema() {
         'description' => 'Unique identifier of this string.',
       ),
       'type' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => 50,
         'not null' => TRUE,
         'default' => '',
@@ -156,7 +157,7 @@ function locale_schema() {
         'description' => 'Type dependent location information (file name, path, etc).',
       ),
       'version' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => 20,
         'not null' => TRUE,
         'default' => 'none',
@@ -180,14 +181,14 @@ function locale_schema() {
     'description' => 'File import status information for interface translation files.',
     'fields' => array(
       'project' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => '255',
         'not null' => TRUE,
         'default' => '',
         'description' => 'A unique short name to identify the project the file belongs to.',
       ),
       'langcode' => array(
-        'type' => 'varchar',
+        'type' => 'varchar_ascii',
         'length' => '12',
         'not null' => TRUE,
         'default' => '',
@@ -263,7 +264,7 @@ function locale_requirements($phase) {
               'title' => 'Translation update status',
               'value' => \Drupal::l(t('Updates available'), new Url('locale.translate_status')),
               'severity' => REQUIREMENT_WARNING,
-              'description' => t('Updates available for: @languages. See the <a href="@updates">Available translation updates</a> page for more information.', array('@languages' => implode(', ', $available_updates), '@updates' => \Drupal::url('locale.translate_status'))),
+              'description' => t('Updates available for: @languages. See the <a href=":updates">Available translation updates</a> page for more information.', array('@languages' => implode(', ', $available_updates), ':updates' => \Drupal::url('locale.translate_status'))),
             );
           }
           else {
@@ -271,7 +272,7 @@ function locale_requirements($phase) {
               'title' => 'Translation update status',
               'value' => t('Missing translations'),
               'severity' => REQUIREMENT_INFO,
-              'description' => t('Missing translations for: @languages. See the <a href="@updates">Available translation updates</a> page for more information.', array('@languages' => implode(', ', $untranslated), '@updates' => \Drupal::url('locale.translate_status'))),
+              'description' => t('Missing translations for: @languages. See the <a href=":updates">Available translation updates</a> page for more information.', array('@languages' => implode(', ', $untranslated), ':updates' => \Drupal::url('locale.translate_status'))),
             );
           }
         }
@@ -288,7 +289,7 @@ function locale_requirements($phase) {
           'title' => 'Translation update status',
           'value' => \Drupal::l(t('Can not determine status'), new Url('locale.translate_status')),
           'severity' => REQUIREMENT_WARNING,
-          'description' => t('No translation status is available. See the <a href="@updates">Available translation updates</a> page for more information.', array('@updates' => \Drupal::url('locale.translate_status'))),
+          'description' => t('No translation status is available. See the <a href=":updates">Available translation updates</a> page for more information.', array(':updates' => \Drupal::url('locale.translate_status'))),
         );
       }
     }

@@ -13,6 +13,36 @@ use Drupal\Core\Render\Element;
 /**
  * Provides a one-line text field form element.
  *
+ * Properties:
+ * - #maxlength: Maximum number of characters of input allowed.
+ * - #size: The size of the input element in characters.
+ * - #autocomplete_route_name: A route to be used as callback URL by the
+ *   autocomplete JavaScript library.
+ * - #autocomplete_route_parameters: An array of parameters to be used in
+ *   conjunction with the route name.
+ *
+ * Usage example:
+ * @code
+ * $form['title'] = array(
+ *   '#type' => 'textfield',
+ *   '#title' => t('Subject'),
+ *   '#default_value' => $node->title,
+ *   '#size' => 60,
+ *   '#maxlength' => 128,
+ * '#required' => TRUE,
+ * );
+ * @endcode
+ *
+ * @see \Drupal\Core\Render\Element\Color
+ * @see \Drupal\Core\Render\Element\Email
+ * @see \Drupal\Core\Render\Element\MachineName
+ * @see \Drupal\Core\Render\Element\Number
+ * @see \Drupal\Core\Render\Element\Password
+ * @see \Drupal\Core\Render\Element\PasswordConfirm
+ * @see \Drupal\Core\Render\Element\Range
+ * @see \Drupal\Core\Render\Element\Tel
+ * @see \Drupal\Core\Render\Element\Url
+ *
  * @FormElement("textfield")
  */
 class Textfield extends FormElement {
@@ -47,10 +77,14 @@ class Textfield extends FormElement {
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if ($input !== FALSE && $input !== NULL) {
-      // Equate $input to the form value to ensure it's marked for
-      // validation.
+      // This should be a string, but allow other scalars since they might be
+      // valid input in programmatic form submissions.
+      if (!is_scalar($input)) {
+        $input = '';
+      }
       return str_replace(array("\r", "\n"), '', $input);
     }
+    return NULL;
   }
 
   /**

@@ -3,7 +3,7 @@
 #
 
 # Protect files and directories from prying eyes.
-<FilesMatch "\.(engine|inc|install|make|module|profile|po|sh|.*sql|theme|twig|tpl(\.php)?|xtmpl|yml)(~|\.sw[op]|\.bak|\.orig|\.save)?$|^(\..*|Entries.*|Repository|Root|Tag|Template)$|^#.*#$|\.php(~|\.sw[op]|\.bak|\.orig\.save)$">
+<FilesMatch "\.(engine|inc|install|make|module|profile|po|sh|.*sql|theme|twig|tpl(\.php)?|xtmpl|yml)(~|\.sw[op]|\.bak|\.orig|\.save)?$|^(\..*|Entries.*|Repository|Root|Tag|Template)$|^#.*#$|\.php(~|\.sw[op]|\.bak|\.orig|\.save)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
@@ -18,9 +18,6 @@ Options -Indexes
 # Follow symbolic links in this directory.
 Options +FollowSymLinks
 
-# Make Drupal handle any 404 errors.
-ErrorDocument 404 /index.php
-
 # Set the default handler.
 DirectoryIndex index.php index.html index.htm
 
@@ -28,17 +25,21 @@ DirectoryIndex index.php index.html index.htm
 AddType image/svg+xml svg svgz
 AddEncoding gzip svgz
 
-# Override PHP settings that cannot be changed at runtime. See
+# Most of the following PHP settings cannot be changed at runtime. See
 # sites/default/default.settings.php and
 # Drupal\Core\DrupalKernel::bootEnvironment() for settings that can be
 # changed at runtime.
 
 # PHP 5, Apache 1 and 2.
 <IfModule mod_php5.c>
+  php_value assert.active                   0
   php_flag session.auto_start               off
   php_value mbstring.http_input             pass
   php_value mbstring.http_output            pass
   php_flag mbstring.encoding_translation    off
+  # PHP 5.6 has deprecated $HTTP_RAW_POST_DATA and produces warnings if this is
+  # not set.
+  php_value always_populate_raw_post_data   -1
 </IfModule>
 
 # Requires mod_expires to be enabled.
@@ -57,6 +58,14 @@ AddEncoding gzip svgz
     # problems if a non-Drupal PHP file is installed in a subdirectory.
     ExpiresActive Off
   </FilesMatch>
+</IfModule>
+
+# Set a fallback resource if mod_rewrite is not enabled. This allows Drupal to
+# work without clean URLs. This requires Apache version >= 2.2.16. If Drupal is
+# not accessed by the top level URL (i.e.: http://example.com/drupal/ instead of
+# http://example.com/), the path to index.php will need to be adjusted.
+<IfModule !mod_rewrite.c>
+  FallbackResource /index.php
 </IfModule>
 
 # Various rewrite rules.
@@ -94,14 +103,14 @@ AddEncoding gzip svgz
   # URL, either WITH or WITHOUT the 'www.' prefix. Choose ONLY one option:
   #
   # To redirect all users to access the site WITH the 'www.' prefix,
-  # (http://example.com/... will be redirected to http://www.example.com/...)
+  # (http://example.com/foo will be redirected to http://www.example.com/foo)
   # uncomment the following:
   # RewriteCond %{HTTP_HOST} .
   # RewriteCond %{HTTP_HOST} !^www\. [NC]
   # RewriteRule ^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
   #
   # To redirect all users to access the site WITHOUT the 'www.' prefix,
-  # (http://www.example.com/... will be redirected to http://example.com/...)
+  # (http://www.example.com/foo will be redirected to http://example.com/foo)
   # uncomment the following:
   # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
   # RewriteRule ^ http%{ENV:protossl}://%1%{REQUEST_URI} [L,R=301]
@@ -122,6 +131,9 @@ AddEncoding gzip svgz
   RewriteCond %{REQUEST_URI} !core
   RewriteRule ^ %1/core/%2 [L,QSA,R=301]
 
+  # Rewrite install.php during installation to see if mod_rewrite is working
+  RewriteRule ^core/install.php core/install.php?rewrite=ok [QSA,L]
+
   # Pass all requests not referring directly to files in the filesystem to
   # index.php.
   RewriteCond %{REQUEST_FILENAME} !-f
@@ -136,14 +148,14 @@ AddEncoding gzip svgz
   # Allow access to PHP files in /core (like authorize.php or install.php):
   RewriteCond %{REQUEST_URI} !/core/[^/]*\.php$
   # Allow access to test-specific PHP files:
-  RewriteCond %{REQUEST_URI} !/core/modules/system/tests/https?.php$
+  RewriteCond %{REQUEST_URI} !/core/modules/system/tests/https?.php
   # Allow access to Statistics module's custom front controller.
   # Copy and adapt this rule to directly execute PHP files in contributed or
   # custom modules or to run another PHP application in the same directory.
   RewriteCond %{REQUEST_URI} !/core/modules/statistics/statistics.php$
   # Deny access to any other PHP files that do not match the rules above.
   # Specifically, disallow autoload.php from being served directly.
-  RewriteRule "^(.+/.*|autoload)\.php$" - [F]
+  RewriteRule "^(.+/.*|autoload)\.php($|/)" - [F]
 
   # Rules to correctly serve gzip compressed CSS and JS files.
   # Requires both mod_rewrite and mod_headers to be enabled.

@@ -65,61 +65,18 @@ function template_preprocess_views_ui_display_tab_bucket(&$variables) {
 }
 
 /**
- * Prepares variables for Views UI View info templates.
+ * Prepares variables for Views UI build group filter form templates.
  *
- * Default template: views-ui-view-info.html.twig.
+ * Default template: views-ui-build-group-filter-form.html.twig.
  *
  * @param array $variables
  *   An associative array containing:
- *   - view: The View object.
+ *   - form: A render element representing the form.
  */
-function template_preprocess_views_ui_view_info(&$variables) {
-  $variables['title'] = $variables['view']->label();
-  if (empty($variables['displays'])) {
-    $displays = t('None');
-  }
-  else {
-    $displays = \Drupal::translation()->formatPlural(count($variables['displays']), 'Display', 'Displays') . ': <em>';
-    $separator = '';
-    foreach ($variables['displays'] as $displays_item) {
-      $displays .= $separator . SafeMarkup::escape($displays_item);
-      $separator = ', ';
-    }
-    $displays = SafeMarkup::set($displays . '</em>');
-  }
-  $variables['displays'] = $displays;
-}
-
-/**
- * Theme the build group filter form.
- *
- * @ingroup themeable
- */
-function theme_views_ui_build_group_filter_form($variables) {
+function template_preprocess_views_ui_build_group_filter_form(&$variables) {
   $form = $variables['form'];
-  $more = drupal_render($form['more']);
 
-  $output = drupal_render($form['form_description']);
-  $output .= drupal_render($form['expose_button']);
-  $output .= drupal_render($form['group_button']);
-  if (isset($form['required'])) {
-    $output .= drupal_render($form['required']);
-  }
-
-  $output .= drupal_render($form['operator']);
-  $output .= drupal_render($form['value']);
-
-  $output .= '<div class="views-left-40">';
-  $output .= drupal_render($form['optional']);
-  $output .= drupal_render($form['remember']);
-  $output .= '</div>';
-
-  $output .= '<div class="views-right-60">';
-  $output .= drupal_render($form['widget']);
-  $output .= drupal_render($form['label']);
-  $output .= drupal_render($form['description']);
-  $output .= '</div>';
-
+  // Prepare table of options.
   $header = array(
     t('Default'),
     t('Weight'),
@@ -129,14 +86,14 @@ function theme_views_ui_build_group_filter_form($variables) {
     t('Operations'),
   );
 
+  // Prepare default selectors.
   $form_state = new FormState();
   $form['default_group'] = Element\Radios::processRadios($form['default_group'], $form_state, $form);
   $form['default_group_multiple'] = Element\Checkboxes::processCheckboxes($form['default_group_multiple'], $form_state, $form);
   $form['default_group']['All']['#title'] = '';
 
-  hide($form['default_group_multiple']['All']);
   $rows[] = array(
-    drupal_render($form['default_group']['All']),
+    ['data' => $form['default_group']['All']],
     '',
     array(
       'data' => \Drupal::config('views.settings')->get('ui.exposed_filter_any_label') == 'old_any' ? t('&lt;Any&gt;') : t('- Any -'),
@@ -144,28 +101,49 @@ function theme_views_ui_build_group_filter_form($variables) {
       'class' => array('class' => 'any-default-radios-row'),
     ),
   );
+  // Remove the 'All' default_group form element because it's added to the
+  // table row.
+  unset($variables['form']['default_group']['All']);
 
   foreach (Element::children($form['group_items']) as $group_id) {
     $form['group_items'][$group_id]['value']['#title'] = '';
+    $default = [
+      $form['default_group'][$group_id],
+      $form['default_group_multiple'][$group_id],
+    ];
+    // Remove these fields from the form since they are moved into the table.
+    unset($variables['form']['default_group'][$group_id]);
+    unset($variables['form']['default_group_multiple'][$group_id]);
+
+    $link = [
+      '#type' => 'link',
+      '#url' => Url::fromRoute('<none>', [], [
+        'attributes' => [
+          'id' => 'views-remove-link-' . $group_id,
+          'class' => [
+            'views-hidden',
+            'views-button-remove',
+            'views-groups-remove-link',
+            'views-remove-link',
+          ],
+          'alt' => t('Remove this item'),
+          'title' => t('Remove this item'),
+        ],
+      ]),
+      '#title' => SafeMarkup::format('<span>@text</span>', ['@text' => t('Remove')]),
+    ];
+    $remove = [$form['group_items'][$group_id]['remove'], $link];
     $data = array(
-      'default' => array(
-        'data' => array(
-          '#markup' => drupal_render($form['default_group'][$group_id]) . drupal_render($form['default_group_multiple'][$group_id]),
-        ),
-      ),
-      'weight' => drupal_render($form['group_items'][$group_id]['weight']),
-      'title' => drupal_render($form['group_items'][$group_id]['title']),
-      'operator' => drupal_render($form['group_items'][$group_id]['operator']),
-      'value' => drupal_render($form['group_items'][$group_id]['value']),
-      'remove' => array(
-        'data' => array(
-          '#markup' => drupal_render($form['group_items'][$group_id]['remove']) . \Drupal::l(SafeMarkup::format('<span>@text</span>', array('@text' => t('Remove'))), Url::fromRoute('<none>', [], array('attributes' => array('id' => 'views-remove-link-' . $group_id, 'class' => array('views-hidden', 'views-button-remove', 'views-groups-remove-link', 'views-remove-link'), 'alt' => t('Remove this item'), 'title' => t('Remove this item'))))),
-        ),
-      ),
+      'default' => ['data' => $default],
+      'weight' => ['data' => $form['group_items'][$group_id]['weight']],
+      'title' => ['data' => $form['group_items'][$group_id]['title']],
+      'operator' => ['data' => $form['group_items'][$group_id]['operator']],
+      'value' => ['data' => $form['group_items'][$group_id]['value']],
+      'remove' => ['data' => $remove],
     );
     $rows[] = array('data' => $data, 'id' => 'views-row-' . $group_id, 'class' => array('draggable'));
   }
-  $table = array(
+  $variables['table'] = array(
     '#type' => 'table',
     '#header' => $header,
     '#rows' => $rows,
@@ -182,11 +160,8 @@ function theme_views_ui_build_group_filter_form($variables) {
     ),
   );
 
-  // Render the "Add another item" button below the table.
-  $add_another = drupal_render($form['add_group']);
-  $render_form = drupal_render_children($form);
-
-  return $output . $render_form . drupal_render($table) . $add_another . $more;
+  // Hide fields used in table.
+  unset($variables['form']['group_items']);
 }
 
 /**

@@ -33,11 +33,14 @@ class SessionTestController extends ControllerBase {
   /**
    * Prints the stored session value to the screen.
    *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The incoming request.
+   *
    * @return string
    *   A notification message.
    */
-  public function getFromSessionObject() {
-    $value = \Drupal::request()->getSession()->get("session_test_key");
+  public function getFromSessionObject(Request $request) {
+    $value = $request->getSession()->get("session_test_key");
     return empty($value)
       ? []
       : ['#markup' => $this->t('The current value of the stored session variable is: %val', array('%val' => $value))];
@@ -46,15 +49,18 @@ class SessionTestController extends ControllerBase {
   /**
    * Print the current session ID.
    *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The incoming request.
+   *
    * @return string
    *   A notification message with session ID.
    */
-  public function getId() {
+  public function getId(Request $request) {
     // Set a value in $_SESSION, so that SessionManager::save() will start
     // a session.
     $_SESSION['test'] = 'test';
 
-    \Drupal::service('session_manager')->save();
+    $request->getSession()->save();
 
     return ['#markup' => 'session_id:' . session_id() . "\n"];
   }
@@ -69,7 +75,7 @@ class SessionTestController extends ControllerBase {
    *   A notification message with session ID.
    */
   public function getIdFromCookie(Request $request) {
-    return ['#markup' => 'session_id:' . $request->cookies->get(session_name()) . "\n"];
+    return ['#markup' => 'session_id:' . $request->cookies->get(session_name()) . "\n", '#cache' => ['contexts' => ['cookies:' . session_name()]]];
   }
 
   /**
@@ -142,19 +148,22 @@ class SessionTestController extends ControllerBase {
   /**
    * Returns the trace recorded by test proxy session handlers as JSON.
    *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The incoming request.
+   *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   The response.
    */
-  public function traceHandler() {
+  public function traceHandler(Request $request) {
     // Start a session if necessary, set a value and then save and close it.
-    \Drupal::service('session_manager')->start();
+    $request->getSession()->start();
     if (empty($_SESSION['trace-handler'])) {
       $_SESSION['trace-handler'] = 1;
     }
     else {
       $_SESSION['trace-handler']++;
     }
-    \Drupal::service('session_manager')->save();
+    $request->getSession()->save();
 
     // Collect traces and return them in JSON format.
     $trace = \Drupal::service('session_test.session_handler_proxy_trace')->getArrayCopy();
@@ -173,6 +182,23 @@ class SessionTestController extends ControllerBase {
    */
   public function getSession(Request $request) {
     return new JsonResponse(['session' => $request->getSession()->all(), 'user' => $this->currentUser()->id()]);
+  }
+
+  /**
+   * Sets a test value on the session.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   * @param string $test_value
+   *   A value to set on the session.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A response object containing the session values and the user ID.
+   */
+  public function setSession(Request $request, $test_value) {
+    $session = $request->getSession();
+    $session->set('test_value', $test_value);
+    return new JsonResponse(['session' => $session->all(), 'user' => $this->currentUser()->id()]);
   }
 
 }

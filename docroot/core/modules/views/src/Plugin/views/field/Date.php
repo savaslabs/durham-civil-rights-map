@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Plugin\views\field\Date.
+ * Contains \Drupal\views\Plugin\views\field\Date.
  */
 
 namespace Drupal\views\Plugin\views\field;
@@ -11,7 +11,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\ResultRow;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Datetime\DateFormatter;
+use Drupal\Core\Datetime\DateFormatterInterface;
 
 /**
  * A handler to provide proper displays for dates.
@@ -25,7 +25,7 @@ class Date extends FieldPluginBase {
   /**
    * The date formatter service.
    *
-   * @var \Drupal\Core\Datetime\DateFormatter
+   * @var \Drupal\Core\Datetime\DateFormatterInterface
    */
   protected $dateFormatter;
 
@@ -45,12 +45,12 @@ class Date extends FieldPluginBase {
    *   The plugin ID for the plugin instance.
    * @param mixed $plugin_definition
    *   The plugin implementation definition.
-   * @param \Drupal\Core\Datetime\DateFormatter $date_formatter
+   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    * @param \Drupal\Core\Entity\EntityStorageInterface $date_format_storage
    *   The date format storage.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, DateFormatter $date_formatter, EntityStorageInterface $date_format_storage) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, DateFormatterInterface $date_formatter, EntityStorageInterface $date_format_storage) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->dateFormatter = $date_formatter;
@@ -151,24 +151,33 @@ class Date extends FieldPluginBase {
       $time_diff = REQUEST_TIME - $value; // will be positive for a datetime in the past (ago), and negative for a datetime in the future (hence)
       switch ($format) {
         case 'raw time ago':
-          return $this->dateFormatter->formatInterval($time_diff, is_numeric($custom_format) ? $custom_format : 2);
+          return $this->dateFormatter->formatTimeDiffSince($value, array('granularity' => is_numeric($custom_format) ? $custom_format : 2));
+
         case 'time ago':
-          return $this->t('%time ago', array('%time' => $this->dateFormatter->formatInterval($time_diff, is_numeric($custom_format) ? $custom_format : 2)));
+          return $this->t('%time ago', array('%time' => $this->dateFormatter->formatTimeDiffSince($value, array('granularity' => is_numeric($custom_format) ? $custom_format : 2))));
+
         case 'raw time hence':
-          return $this->dateFormatter->formatInterval(-$time_diff, is_numeric($custom_format) ? $custom_format : 2);
+          return $this->dateFormatter->formatTimeDiffUntil($value, array('granularity' => is_numeric($custom_format) ? $custom_format : 2));
+
         case 'time hence':
-          return $this->t('%time hence', array('%time' => $this->dateFormatter->formatInterval(-$time_diff, is_numeric($custom_format) ? $custom_format : 2)));
+          return $this->t('%time hence', array('%time' => $this->dateFormatter->formatTimeDiffUntil($value, array('granularity' => is_numeric($custom_format) ? $custom_format : 2))));
+
         case 'raw time span':
-          return ($time_diff < 0 ? '-' : '') . $this->dateFormatter->formatInterval(abs($time_diff), is_numeric($custom_format) ? $custom_format : 2);
+          return ($time_diff < 0 ? '-' : '') . $this->dateFormatter->formatTimeDiffSince($value, array('strict' => FALSE, 'granularity' => is_numeric($custom_format) ? $custom_format : 2));
+
         case 'inverse time span':
-          return ($time_diff > 0 ? '-' : '') . $this->dateFormatter->formatInterval(abs($time_diff), is_numeric($custom_format) ? $custom_format : 2);
+          return ($time_diff > 0 ? '-' : '') . $this->dateFormatter->formatTimeDiffSince($value, array('strict' => FALSE, 'granularity' => is_numeric($custom_format) ? $custom_format : 2));
+
         case 'time span':
-          return $this->t(($time_diff < 0 ? '%time hence' : '%time ago'), array('%time' => $this->dateFormatter->formatInterval(abs($time_diff), is_numeric($custom_format) ? $custom_format : 2)));
+          $time = $this->dateFormatter->formatTimeDiffSince($value, array('strict' => FALSE, 'granularity' => is_numeric($custom_format) ? $custom_format : 2));
+          return ($time_diff < 0) ? $this->t('%time hence', array('%time' => $time)) : $this->t('%time ago', array('%time' => $time));
+
         case 'custom':
           if ($custom_format == 'r') {
             return format_date($value, $format, $custom_format, $timezone, 'en');
           }
           return format_date($value, $format, $custom_format, $timezone);
+
         default:
           return format_date($value, $format, '', $timezone);
       }

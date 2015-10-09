@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Component\PhpStorage\MTimeProtectedFileStorage.
+ * Contains \Drupal\Component\PhpStorage\MTimeProtectedFileStorage.
  */
 namespace Drupal\Component\PhpStorage;
 
@@ -58,7 +58,8 @@ class MTimeProtectedFileStorage extends MTimeProtectedFastFileStorage {
    *
    * @param string $name
    *   The virtual file name. Can be a relative path.
-   * return string
+   *
+   * @return string|false
    *   The full path where the file is if it is valid, FALSE otherwise.
    */
   protected function checkFile($name) {

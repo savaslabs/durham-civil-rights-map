@@ -50,6 +50,7 @@ class CommentNonNodeTest extends WebTestBase {
   protected function setUp() {
     parent::setUp();
     $this->drupalPlaceBlock('system_breadcrumb_block');
+    $this->drupalPlaceBlock('page_title_block');
 
     // Create a bundle for entity_test.
     entity_test_create_bundle('entity_test', 'Entity Test', 'entity_test');
@@ -100,13 +101,16 @@ class CommentNonNodeTest extends WebTestBase {
    *
    * @param \Drupal\Core\Entity\EntityInterface|null $entity
    *   Entity to post comment on or NULL to post to the previously loaded page.
-   * @param $comment
+   * @param string $comment
    *   Comment body.
-   * @param $subject
+   * @param string $subject
    *   Comment subject.
-   * @param $contact
+   * @param mixed $contact
    *   Set to NULL for no contact info, TRUE to ignore success checking, and
    *   array of values to set contact info.
+   *
+   * @return \Drupal\comment\CommentInterface
+   *   The new comment entity.
    */
   function postComment(EntityInterface $entity, $comment, $subject = '', $contact = NULL) {
     $edit = array();
@@ -177,7 +181,7 @@ class CommentNonNodeTest extends WebTestBase {
    * @param bool $reply
    *   Boolean indicating whether the comment is a reply to another comment.
    *
-   * @return boolean
+   * @return bool
    *   Boolean indicating whether the comment was found.
    */
   function commentExists(CommentInterface $comment = NULL, $reply = FALSE) {
@@ -198,7 +202,7 @@ class CommentNonNodeTest extends WebTestBase {
   /**
    * Checks whether the commenter's contact information is displayed.
    *
-   * @return boolean
+   * @return bool
    *   Contact info is available.
    */
   function commentContactInfoAvailable() {
@@ -344,7 +348,7 @@ class CommentNonNodeTest extends WebTestBase {
 
     // Attempt to view test entity comment form while disallowed.
     $this->drupalGet('comment/reply/entity_test/' . $this->entity->id() . '/comment');
-    $this->assertText('You are not authorized to post comments', 'Error attempting to post comment.');
+    $this->assertResponse(403);
     $this->assertNoFieldByName('subject[0][value]', '', 'Subject field not found.');
     $this->assertNoFieldByName('comment_body[0][value]', '', 'Comment field not found.');
 
@@ -376,7 +380,7 @@ class CommentNonNodeTest extends WebTestBase {
     $this->assertFieldByName('comment_body[0][value]', '', 'Comment field found.');
 
     $this->drupalGet('comment/reply/entity_test/' . $this->entity->id() . '/comment/' . $comment1->id());
-    $this->assertText('You are not authorized to view comments');
+    $this->assertResponse(403);
     $this->assertNoText($comment1->getSubject(), 'Comment not displayed.');
 
     // Test comment field widget changes.
@@ -436,9 +440,28 @@ class CommentNonNodeTest extends WebTestBase {
     $this->assertFieldChecked('edit-field-foobar-0-status-2');
     $this->assertNoField('edit-field-foobar-0-status-0');
 
+    // @todo Check proper url and form https://www.drupal.org/node/2458323
     $this->drupalGet('comment/reply/entity_test/comment/' . $new_entity->id());
     $this->assertNoFieldByName('subject[0][value]', '', 'Subject field found.');
     $this->assertNoFieldByName('comment_body[0][value]', '', 'Comment field found.');
+
+    // Test removal of comment_body field.
+    $limited_user = $this->drupalCreateUser(array(
+      'administer entity_test fields',
+      'post comments',
+      'administer comment fields',
+      'administer comment types',
+    ));
+    $this->drupalLogin($limited_user);
+
+    $this->drupalGet('comment/reply/entity_test/' . $this->entity->id() . '/comment');
+    $this->assertFieldByName('comment_body[0][value]', '', 'Comment body field found.');
+    $this->fieldUIDeleteField('admin/structure/comment/manage/comment', 'comment.comment.comment_body', 'Comment', 'Comment settings');
+    $this->drupalGet('comment/reply/entity_test/' . $this->entity->id() . '/comment');
+    $this->assertNoFieldByName('comment_body[0][value]', '', 'Comment body field not found.');
+    // Set subject field to autogenerate it.
+    $edit = ['subject[0][value]' => ''];
+    $this->drupalPostForm(NULL, $edit, t('Save'));
   }
 
   /**

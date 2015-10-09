@@ -5,6 +5,7 @@
  * This script runs Drupal tests from command line.
  */
 
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Timer;
 use Drupal\Component\Uuid\Php;
 use Drupal\Core\Database\Database;
@@ -175,6 +176,8 @@ All arguments are long options.
               Specify the path and the extension
               (i.e. 'core/modules/user/user.test').
 
+  --directory Run all tests found within the specified file directory.
+
   --xml       <path>
 
               If provided, test results will be written as xml files to this path.
@@ -200,6 +203,9 @@ All arguments are long options.
   --browser   Opens the results in the browser. This enforces --keep-results and
               if you want to also view any pages rendered in the simpletest
               browser you need to add --verbose to the command line.
+
+  --non-html  Removes escaping from output. Useful for reading results on the
+              CLI.
 
   <test1>[,<test2>[,<test3> ...]]
 
@@ -253,6 +259,7 @@ function simpletest_script_parse_args() {
     'module' => NULL,
     'class' => FALSE,
     'file' => FALSE,
+    'directory' => NULL,
     'color' => FALSE,
     'verbose' => FALSE,
     'keep-results' => FALSE,
@@ -264,6 +271,7 @@ function simpletest_script_parse_args() {
     'test-id' => 0,
     'execute-test' => '',
     'xml' => '',
+    'non-html' => FALSE,
   );
 
   // Override with set values.
@@ -581,6 +589,12 @@ function simpletest_script_execute_batch($test_classes) {
  * Run a group of phpunit tests.
  */
 function simpletest_script_run_phpunit($test_id, $class) {
+
+  $reflection = new \ReflectionClass($class);
+  if ($reflection->hasProperty('runLimit')) {
+    set_time_limit($reflection->getStaticPropertyValue('runLimit'));
+  }
+
   $results = simpletest_run_phpunit_tests($test_id, array($class));
   simpletest_process_phpunit_results($results);
 
@@ -709,7 +723,7 @@ function simpletest_script_command($test_id, $test_class) {
  * @see simpletest_script_run_one_test()
  */
 function simpletest_script_cleanup($test_id, $test_class, $exitcode) {
-  if (strpos($test_class, 'Drupal\\Tests\\') === 0) {
+  if (is_subclass_of($test_class, '\PHPUnit_Framework_TestCase')) {
     // PHPUnit test, move on.
     return;
   }
@@ -814,6 +828,60 @@ function simpletest_script_get_test_list() {
           simpletest_script_print_error('File not found: ' . $file);
           exit;
         }
+        $content = file_get_contents($file);
+        // Extract a potential namespace.
+        $namespace = FALSE;
+        if (preg_match('@^namespace ([^ ;]+)@m', $content, $matches)) {
+          $namespace = $matches[1];
+        }
+        // Extract all class names.
+        // Abstract classes are excluded on purpose.
+        preg_match_all('@^class ([^ ]+)@m', $content, $matches);
+        if (!$namespace) {
+          $test_list = array_merge($test_list, $matches[1]);
+        }
+        else {
+          foreach ($matches[1] as $class_name) {
+            $namespace_class = $namespace . '\\' . $class_name;
+            if (is_subclass_of($namespace_class, '\Drupal\simpletest\TestBase') || is_subclass_of($namespace_class, '\PHPUnit_Framework_TestCase')) {
+              $test_list[] = $namespace_class;
+            }
+          }
+        }
+      }
+    }
+    elseif ($args['directory']) {
+      // Extract test case class names from specified directory.
+      // Find all tests in the PSR-X structure; Drupal\$extension\Tests\*.php
+      // Since we do not want to hard-code too many structural file/directory
+      // assumptions about PSR-0/4 files and directories, we check for the
+      // minimal conditions only; i.e., a '*.php' file that has '/Tests/' in
+      // its path.
+      // Ignore anything from third party vendors.
+      $ignore = array('.', '..', 'vendor');
+      $files = [];
+      if ($args['directory'][0] === '/') {
+        $directory = $args['directory'];
+      }
+      else {
+        $directory = DRUPAL_ROOT . "/" . $args['directory'];
+      }
+      foreach (file_scan_directory($directory, '/\.php$/', $ignore) as $file) {
+        // '/Tests/' can be contained anywhere in the file's path (there can be
+        // sub-directories below /Tests), but must be contained literally.
+        // Case-insensitive to match all Simpletest and PHPUnit tests:
+        //   ./lib/Drupal/foo/Tests/Bar/Baz.php
+        //   ./foo/src/Tests/Bar/Baz.php
+        //   ./foo/tests/Drupal/foo/Tests/FooTest.php
+        //   ./foo/tests/src/FooTest.php
+        // $file->filename doesn't give us a directory, so we use $file->uri
+        // Strip the drupal root directory and trailing slash off the URI
+        $filename = substr($file->uri, strlen(DRUPAL_ROOT)+1);
+        if (stripos($filename, '/Tests/')) {
+          $files[$filename] = $filename;
+        }
+      }
+      foreach ($files as $file) {
         $content = file_get_contents($file);
         // Extract a potential namespace.
         $namespace = FALSE;
@@ -1044,14 +1112,18 @@ function simpletest_script_reporter_display_results() {
  * @param $result The result object to format.
  */
 function simpletest_script_format_result($result) {
-  global $results_map, $color;
+  global $args, $results_map, $color;
 
   $summary = sprintf("%-9.9s %-10.10s %-17.17s %4.4s %-35.35s\n",
     $results_map[$result->status], $result->message_group, basename($result->file), $result->line, $result->function);
 
   simpletest_script_print($summary, simpletest_script_color_code($result->status));
 
-  $lines = explode("\n", wordwrap(trim(strip_tags($result->message)), 76));
+  $message = trim(strip_tags($result->message));
+  if ($args['non-html']) {
+    $message = Html::decodeEntities($message, ENT_QUOTES, 'UTF-8');
+  }
+  $lines = explode("\n", wordwrap($message), 76);
   foreach ($lines as $line) {
     echo "    $line\n";
   }
@@ -1204,7 +1276,8 @@ function simpletest_script_open_browser() {
   $css_assets = \Drupal::service('asset.css.collection_renderer')->render($resolver->getCssAssets($assets, FALSE));
 
   // Make the html page to write to disk.
-  $html = '<head>' . drupal_render($js_assets_header) . drupal_render($css_assets) . '</head><body>' . drupal_render($form) . drupal_render($js_assets_footer) .'</body>';
+  $render_service = \Drupal::service('renderer');
+  $html = '<head>' . $render_service->renderPlain($js_assets_header) . $render_service->renderPlain($css_assets) . '</head><body>' . $render_service->renderPlain($form) . $render_service->renderPlain($js_assets_footer) .'</body>';
 
   // Ensure we have assets verbose directory - tests with no verbose output will not
   // have created one.

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\update\Tests\UpdateContribTest.
+ * Contains \Drupal\update\Tests\UpdateContribTest.
  */
 
 namespace Drupal\update\Tests;
@@ -66,6 +66,7 @@ class UpdateContribTest extends UpdateTestBase {
    * Tests the basic functionality of a contrib module on the status report.
    */
   function testUpdateContribBasic() {
+    $project_link = \Drupal::l(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test'));
     $system_info = array(
       '#all' => array(
         'version' => '8.0.0',
@@ -87,7 +88,30 @@ class UpdateContribTest extends UpdateTestBase {
     $this->assertText(t('Up to date'));
     $this->assertRaw('<h3>' . t('Modules') . '</h3>');
     $this->assertNoText(t('Update available'));
-    $this->assertRaw(\Drupal::l(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test')), 'Link to aaa_update_test project appears.');
+    $this->assertRaw($project_link, 'Link to aaa_update_test project appears.');
+
+    // Since aaa_update_test is installed the fact it is hidden and in the
+    // Testing package means it should not appear.
+    $system_info['aaa_update_test']['hidden'] = TRUE;
+    $this->config('update_test.settings')->set('system_info', $system_info)->save();
+    $this->refreshUpdateStatus(
+      array(
+        'drupal' => '0.0',
+        'aaa_update_test' => '1_0',
+      )
+    );
+    $this->assertNoRaw($project_link, 'Link to aaa_update_test project does not appear.');
+
+    // A hidden and installed project not in the Testing package should appear.
+    $system_info['aaa_update_test']['package'] = 'aaa_update_test';
+    $this->config('update_test.settings')->set('system_info', $system_info)->save();
+    $this->refreshUpdateStatus(
+      array(
+        'drupal' => '0.0',
+        'aaa_update_test' => '1_0',
+      )
+    );
+    $this->assertRaw($project_link, 'Link to aaa_update_test project appears.');
   }
 
   /**
@@ -257,12 +281,12 @@ class UpdateContribTest extends UpdateTestBase {
       // themes.
       $this->assertNoText(t('Themes'));
       if ($check_disabled) {
-        $this->assertText(t('Disabled themes'));
+        $this->assertText(t('Uninstalled themes'));
         $this->assertRaw($base_theme_project_link, 'Link to the Update test base theme project appears.');
         $this->assertRaw($sub_theme_project_link, 'Link to the Update test subtheme project appears.');
       }
       else {
-        $this->assertNoText(t('Disabled themes'));
+        $this->assertNoText(t('Uninstalled themes'));
         $this->assertNoRaw($base_theme_project_link, 'Link to the Update test base theme project does not appear.');
         $this->assertNoRaw($sub_theme_project_link, 'Link to the Update test subtheme project does not appear.');
       }
@@ -292,7 +316,7 @@ class UpdateContribTest extends UpdateTestBase {
       ),
     );
     $this->config('update_test.settings')->set('system_info', $system_info)->save();
-    $projects = update_get_projects();
+    $projects = \Drupal::service('update.manager')->getProjects();
     $theme_data = \Drupal::service('theme_handler')->rebuildThemeData();
     $project_info = new ProjectInfo();
     $project_info->processInfoList($projects, $theme_data, 'theme', TRUE);
@@ -341,9 +365,9 @@ class UpdateContribTest extends UpdateTestBase {
     // It should say we failed to get data, not that we're missing an update.
     $this->assertNoText(t('Update available'));
 
-    // We need to check that this string is found as part of a project row,
-    // not just in the "Failed to get available update data for ..." message
-    // at the top of the page.
+    // We need to check that this string is found as part of a project row, not
+    // just in the "Failed to get available update data" message at the top of
+    // the page.
     $this->assertRaw('<div class="project-update__status">' . t('Failed to get available update data'));
 
     // We should see the output messages from fetching manually.

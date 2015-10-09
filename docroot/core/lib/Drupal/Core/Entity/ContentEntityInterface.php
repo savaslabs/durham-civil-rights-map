@@ -28,14 +28,34 @@ use Drupal\Core\TypedData\TranslatableInterface;
 interface ContentEntityInterface extends \Traversable, FieldableEntityInterface, RevisionableInterface, TranslatableInterface {
 
   /**
-   * Marks the translation identified by the given language code as existing.
+   * Determines if the current translation of the entity has unsaved changes.
    *
-   * @param string $langcode
-   *   The language code identifying the translation to be initialized.
+   * If the entity is translatable only translatable fields will be checked for
+   * changes.
    *
-   * @todo Remove this as soon as translation metadata have been converted to
-   *    regular fields.
+   * @return bool
+   *   TRUE if the current translation of the entity has changes.
    */
-  public function initTranslation($langcode);
+  public function hasTranslationChanges();
+
+  /**
+   * Marks the current revision translation as affected.
+   *
+   * @param bool|null $affected
+   *   The flag value. A NULL value can be specified to reset the current value
+   *   and make sure a new value will be computed by the system.
+   *
+   * @return $this
+   */
+  public function setRevisionTranslationAffected($affected);
+
+  /**
+   * Checks whether the current translation is affected by the current revision.
+   *
+   * @return bool
+   *   TRUE if the entity object is affected by the current revision, FALSE
+   *   otherwise.
+   */
+  public function isRevisionTranslationAffected();
 
 }

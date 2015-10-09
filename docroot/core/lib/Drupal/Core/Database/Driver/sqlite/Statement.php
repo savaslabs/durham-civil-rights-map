@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Database\Driver\sqlite\Statement
+ * Contains \Drupal\Core\Database\Driver\sqlite\Statement.
  */
 
 namespace Drupal\Core\Database\Driver\sqlite;
@@ -22,7 +22,7 @@ use Drupal\Core\Database\StatementInterface;
 class Statement extends StatementPrefetch implements StatementInterface {
 
   /**
-   * SQLite specific implementation of getStatement().
+   * {@inheritdoc}
    *
    * The PDO SQLite layer doesn't replace numeric placeholders in queries
    * correctly, and this makes numeric expressions (such as COUNT(*) >= :count)
@@ -84,9 +84,12 @@ class Statement extends StatementPrefetch implements StatementInterface {
       }
     }
 
-    return $this->dbh->prepare($query);
+    return $this->pdoConnection->prepare($query);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function execute($args = array(), $options = array()) {
     try {
       $return = parent::execute($args, $options);

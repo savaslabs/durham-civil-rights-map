@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\block\Tests\NonDefaultBlockAdminTest.
+ * Contains \Drupal\block\Tests\NonDefaultBlockAdminTest.
  */
 
 namespace Drupal\block\Tests;
@@ -22,6 +22,15 @@ class NonDefaultBlockAdminTest extends WebTestBase {
    * @var array
    */
   public static $modules = array('block');
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    parent::setUp();
+
+    $this->drupalPlaceBlock('local_tasks_block');
+  }
 
   /**
    * Test non-default theme admin.

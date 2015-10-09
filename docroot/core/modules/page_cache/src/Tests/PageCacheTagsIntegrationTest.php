@@ -64,21 +64,20 @@ class PageCacheTagsIntegrationTest extends WebTestBase {
     $block = $this->drupalPlaceBlock('views_block:comments_recent-block_1', array(
       'visibility' => array(
         'request_path' => array(
-          'pages' => 'node/' . $node_2->id(),
+          'pages' => '/node/' . $node_2->id(),
         ),
       ),
     ));
 
     $cache_contexts = [
       'languages:' . LanguageInterface::TYPE_INTERFACE,
-      'route.menu_active_trails:account',
-      'route.menu_active_trails:footer',
-      'route.menu_active_trails:main',
-      'route.menu_active_trails:tools',
+      'route',
       'theme',
       'timezone',
-      'user.permissions',
-      'user.roles',
+      'user',
+      // The placed block is only visible on certain URLs through a visibility
+      // condition.
+      'url',
     ];
 
     // Full node page 1.
@@ -86,19 +85,27 @@ class PageCacheTagsIntegrationTest extends WebTestBase {
       'rendered',
       'block_view',
       'config:block_list',
+      'config:block.block.bartik_branding',
       'config:block.block.bartik_breadcrumbs',
       'config:block.block.bartik_content',
       'config:block.block.bartik_tools',
-      'config:block.block.bartik_login',
       'config:block.block.bartik_footer',
+      'config:block.block.bartik_help',
+      'config:block.block.bartik_search',
+      'config:block.block.' . $block->id(),
       'config:block.block.bartik_powered',
       'config:block.block.bartik_main_menu',
       'config:block.block.bartik_account_menu',
       'config:block.block.bartik_messages',
+      'config:block.block.bartik_local_actions',
+      'config:block.block.bartik_local_tasks',
+      'config:block.block.bartik_page_title',
       'node_view',
       'node:' . $node_1->id(),
+      'user:0',
       'user:' . $author_1->id(),
       'config:filter.format.basic_html',
+      'config:search.settings',
       'config:system.menu.account',
       'config:system.menu.tools',
       'config:system.menu.footer',
@@ -117,20 +124,26 @@ class PageCacheTagsIntegrationTest extends WebTestBase {
       'rendered',
       'block_view',
       'config:block_list',
+      'config:block.block.bartik_branding',
       'config:block.block.bartik_breadcrumbs',
       'config:block.block.bartik_content',
       'config:block.block.bartik_tools',
-      'config:block.block.bartik_login',
+      'config:block.block.bartik_help',
+      'config:block.block.bartik_search',
       'config:block.block.' . $block->id(),
       'config:block.block.bartik_footer',
       'config:block.block.bartik_powered',
       'config:block.block.bartik_main_menu',
       'config:block.block.bartik_account_menu',
       'config:block.block.bartik_messages',
+      'config:block.block.bartik_local_actions',
+      'config:block.block.bartik_local_tasks',
+      'config:block.block.bartik_page_title',
       'node_view',
       'node:' . $node_2->id(),
       'user:' . $author_2->id(),
       'config:filter.format.full_html',
+      'config:search.settings',
       'config:system.menu.account',
       'config:system.menu.tools',
       'config:system.menu.footer',
@@ -142,6 +155,7 @@ class PageCacheTagsIntegrationTest extends WebTestBase {
       // FinishResponseSubscriber adds this cache tag to responses that have the
       // 'user.permissions' cache context for anonymous users.
       'config:user.role.anonymous',
+      'user:0',
     ));
   }
 

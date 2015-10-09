@@ -2,12 +2,10 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Database\StatementPrefetch
+ * Contains \Drupal\Core\Database\StatementPrefetch.
  */
 
 namespace Drupal\Core\Database;
-
-use Drupal\Core\Database\Connection;
 
 /**
  * An implementation of StatementInterface that prefetches all data.
@@ -32,20 +30,18 @@ class StatementPrefetch implements \Iterator, StatementInterface {
   protected $driverOptions;
 
   /**
-   * Reference to the database connection object for this statement.
-   *
-   * This is part of the public interface of \PDOStatement.
-   *
-   * @var \PDO
-   */
-  public $dbh;
-
-  /**
    * Reference to the Drupal database connection object for this statement.
    *
    * @var \Drupal\Core\Database\Connection
    */
-  protected $connection;
+  public $dbh;
+
+  /**
+   * Reference to the PDO connection object for this statement.
+   *
+   * @var \PDO
+   */
+  protected $pdoConnection;
 
   /**
    * Main data store.
@@ -135,29 +131,22 @@ class StatementPrefetch implements \Iterator, StatementInterface {
    */
   public $allowRowCount = FALSE;
 
-  public function __construct(\PDO $dbh, Connection $connection, $query, array $driver_options = array()) {
-    $this->dbh = $dbh;
-    $this->connection = $connection;
+  public function __construct(\PDO $pdo_connection, Connection $connection, $query, array $driver_options = array()) {
+    $this->pdoConnection = $pdo_connection;
+    $this->dbh = $connection;
     $this->queryString = $query;
     $this->driverOptions = $driver_options;
   }
 
   /**
-   * Executes a prepared statement.
-   *
-   * @param $args
-   *   An array of values with as many elements as there are bound parameters in the SQL statement being executed.
-   * @param $options
-   *   An array of options for this query.
-   * @return
-   *   TRUE on success, or FALSE on failure.
+   * {@inheritdoc}
    */
   public function execute($args = array(), $options = array()) {
     if (isset($options['fetch'])) {
       if (is_string($options['fetch'])) {
         // Default to an object. Note: db fields will be added to the object
         // before the constructor is run. If you need to assign fields after
-        // the constructor is run, see http://drupal.org/node/315092.
+        // the constructor is run. See https://www.drupal.org/node/315092.
         $this->setFetchMode(\PDO::FETCH_CLASS, $options['fetch']);
       }
       else {
@@ -165,7 +154,7 @@ class StatementPrefetch implements \Iterator, StatementInterface {
       }
     }
 
-    $logger = $this->connection->getLogger();
+    $logger = $this->dbh->getLogger();
     if (!empty($logger)) {
       $query_start = microtime(TRUE);
     }
@@ -240,29 +229,29 @@ class StatementPrefetch implements \Iterator, StatementInterface {
   }
 
   /**
-   * Return the object's SQL query string.
+   * {@inheritdoc}
    */
   public function getQueryString() {
     return $this->queryString;
   }
 
   /**
-   * @see \PDOStatement::setFetchMode()
+   * {@inheritdoc}
    */
-  public function setFetchMode($fetchStyle, $a2 = NULL, $a3 = NULL) {
-    $this->defaultFetchStyle = $fetchStyle;
-    switch ($fetchStyle) {
+  public function setFetchMode($mode, $a1 = NULL, $a2 = array()) {
+    $this->defaultFetchStyle = $mode;
+    switch ($mode) {
       case \PDO::FETCH_CLASS:
-        $this->defaultFetchOptions['class'] = $a2;
-        if ($a3) {
-          $this->defaultFetchOptions['constructor_args'] = $a3;
+        $this->defaultFetchOptions['class'] = $a1;
+        if ($a2) {
+          $this->defaultFetchOptions['constructor_args'] = $a2;
         }
         break;
       case \PDO::FETCH_COLUMN:
-        $this->defaultFetchOptions['column'] = $a2;
+        $this->defaultFetchOptions['column'] = $a1;
         break;
       case \PDO::FETCH_INTO:
-        $this->defaultFetchOptions['object'] = $a2;
+        $this->defaultFetchOptions['object'] = $a1;
         break;
     }
 
@@ -278,8 +267,8 @@ class StatementPrefetch implements \Iterator, StatementInterface {
    * array position in $this->data and format it according to $this->fetchStyle
    * and $this->fetchMode.
    *
-   * @return
-   *  The current row formatted as requested.
+   * @return mixed
+   *   The current row formatted as requested.
    */
   public function current() {
     if (isset($this->currentRow)) {
@@ -331,16 +320,23 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     }
   }
 
-  /* Implementations of Iterator. */
-
+  /**
+   * {@inheritdoc}
+   */
   public function key() {
     return $this->currentKey;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function rewind() {
     // Nothing to do: our DatabaseStatement can't be rewound.
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function next() {
     if (!empty($this->data)) {
       $this->currentRow = reset($this->data);
@@ -352,6 +348,9 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function valid() {
     return isset($this->currentRow);
   }
@@ -369,6 +368,9 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fetch($fetch_style = NULL, $cursor_orientation = \PDO::FETCH_ORI_NEXT, $cursor_offset = NULL) {
     if (isset($this->currentRow)) {
       // Set the fetch parameter.
@@ -402,10 +404,16 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fetchField($index = 0) {
     return $this->fetchColumn($index);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fetchObject($class_name = NULL, $constructor_args = array()) {
     if (isset($this->currentRow)) {
       if (!isset($class_name)) {
@@ -431,6 +439,9 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fetchAssoc() {
     if (isset($this->currentRow)) {
       $result = $this->currentRow;
@@ -442,14 +453,17 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     }
   }
 
-  public function fetchAll($fetch_style = NULL, $fetch_column = NULL, $constructor_args = NULL) {
-    $this->fetchStyle = isset($fetch_style) ? $fetch_style : $this->defaultFetchStyle;
+  /**
+   * {@inheritdoc}
+   */
+  public function fetchAll($mode = NULL, $column_index = NULL, $constructor_arguments = NULL) {
+    $this->fetchStyle = isset($mode) ? $mode : $this->defaultFetchStyle;
     $this->fetchOptions = $this->defaultFetchOptions;
-    if (isset($fetch_column)) {
-      $this->fetchOptions['column'] = $fetch_column;
+    if (isset($column_index)) {
+      $this->fetchOptions['column'] = $column_index;
     }
-    if (isset($constructor_args)) {
-      $this->fetchOptions['constructor_args'] = $constructor_args;
+    if (isset($constructor_arguments)) {
+      $this->fetchOptions['constructor_args'] = $constructor_arguments;
     }
 
     $result = array();
@@ -466,6 +480,9 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     return $result;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fetchCol($index = 0) {
     if (isset($this->columnNames[$index])) {
       $result = array();
@@ -481,6 +498,9 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fetchAllKeyed($key_index = 0, $value_index = 1) {
     if (!isset($this->columnNames[$key_index]) || !isset($this->columnNames[$value_index]))
       return array();
@@ -497,6 +517,9 @@ class StatementPrefetch implements \Iterator, StatementInterface {
     return $result;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fetchAllAssoc($key, $fetch_style = NULL) {
     $this->fetchStyle = isset($fetch_style) ? $fetch_style : $this->defaultFetchStyle;
     $this->fetchOptions = $this->defaultFetchOptions;

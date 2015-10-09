@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\migrate\Plugin\migrate\process\MultipleColumnsMap.
+ * Contains \Drupal\migrate\Plugin\migrate\process\StaticMap.
  */
 
 namespace Drupal\migrate\Plugin\migrate\process;
@@ -17,7 +17,7 @@ use Drupal\migrate\MigrateSkipRowException;
 /**
  * This plugin changes the current value based on a static lookup map.
  *
- * @see https://drupal.org/node/2143521
+ * @see https://www.drupal.org/node/2143521
  *
  * @MigrateProcessPlugin(
  *   id = "static_map"

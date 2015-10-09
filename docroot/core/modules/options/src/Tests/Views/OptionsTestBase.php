@@ -13,12 +13,12 @@ use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 use Drupal\views\Tests\ViewTestBase;
 use Drupal\views\Tests\ViewTestData;
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 
 /**
  * Base class for options views tests.
  */
-abstract class OptionsTestBase extends ViewUnitTestBase {
+abstract class OptionsTestBase extends ViewKernelTestBase {
 
   /**
    * Modules to enable.
@@ -56,6 +56,7 @@ abstract class OptionsTestBase extends ViewUnitTestBase {
 
     $settings = [];
     $settings['type'] = 'article';
+    $settings['title'] = $this->randomString();
     $settings['field_test_list_string'][]['value'] = $this->fieldValues[0];
     $settings['field_test_list_integer'][]['value'] = 0;
 
@@ -71,7 +72,7 @@ abstract class OptionsTestBase extends ViewUnitTestBase {
   /**
    * Provides a workaround for the inability to use the standard profile.
    *
-   * @see http://drupal.org/node/1708692
+   * @see https://www.drupal.org/node/1708692
    */
   protected function mockStandardInstall() {
     $this->installEntitySchema('user');

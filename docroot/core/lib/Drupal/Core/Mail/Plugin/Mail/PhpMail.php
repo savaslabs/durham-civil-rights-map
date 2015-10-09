@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\Core\Mail\Plugin\Mail\PhpMail.
+ * Contains \Drupal\Core\Mail\Plugin\Mail\PhpMail.
  */
 
 namespace Drupal\Core\Mail\Plugin\Mail;
@@ -35,6 +35,7 @@ class PhpMail implements MailInterface {
   public function format(array $message) {
     // Join the body array into one string.
     $message['body'] = implode("\n\n", $message['body']);
+
     // Convert any HTML to plain-text.
     $message['body'] = MailFormatHelper::htmlToText($message['body']);
     // Wrap the mail body for sending.

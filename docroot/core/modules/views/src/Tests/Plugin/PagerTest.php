@@ -2,11 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Plugin\PagerTest.
+ * Contains \Drupal\views\Tests\Plugin\PagerTest.
  */
 
 namespace Drupal\views\Tests\Plugin;
 
+use Drupal\system\Tests\Cache\AssertPageCacheContextsAndTagsTrait;
 use Drupal\views\Views;
 use Drupal\language\Entity\ConfigurableLanguage;
 
@@ -16,6 +17,8 @@ use Drupal\language\Entity\ConfigurableLanguage;
  * @group views
  */
 class PagerTest extends PluginTestBase {
+
+  use AssertPageCacheContextsAndTagsTrait;
 
   /**
    * Views used by this test.
@@ -41,12 +44,13 @@ class PagerTest extends PluginTestBase {
   /**
    * Pagers was sometimes not stored.
    *
-   * @see http://drupal.org/node/652712
+   * @see https://www.drupal.org/node/652712
    */
   public function testStorePagerSettings() {
     $admin_user = $this->drupalCreateUser(array('administer views', 'administer site configuration'));
     $this->drupalLogin($admin_user);
-    // Test behavior described in http://drupal.org/node/652712#comment-2354918.
+    // Test behavior described in
+    //   https://www.drupal.org/node/652712#comment-2354918.
 
     $this->drupalGet('admin/structure/views/view/test_view/edit');
 
@@ -68,7 +72,8 @@ class PagerTest extends PluginTestBase {
     $this->drupalGet('admin/structure/views/view/test_view/edit');
     $this->assertText('Mini', 'Changed pager plugin, should change some text');
 
-    // Test behavior described in http://drupal.org/node/652712#comment-2354400
+    // Test behavior described in
+    //   https://www.drupal.org/node/652712#comment-2354400.
     $view = Views::getView('test_store_pager_settings');
     // Make it editable in the admin interface.
     $view->save();
@@ -253,6 +258,10 @@ class PagerTest extends PluginTestBase {
     $this->executeView($view);
     $this->assertEqual($view->pager->getItemsPerPage(), 0);
     $this->assertEqual(count($view->result), 11);
+
+    // Test pager cache contexts.
+    $this->drupalGet('test_pager_full');
+    $this->assertCacheContexts(['languages:language_interface', 'theme', 'timezone', 'url.query_args', 'user.node_grants:view']);
   }
 
   /**
@@ -271,7 +280,7 @@ class PagerTest extends PluginTestBase {
     $view->setAjaxEnabled(TRUE);
     $view->pager = NULL;
     $output = $view->render();
-    $output = drupal_render($output);
+    $output = \Drupal::service('renderer')->renderRoot($output);
     $this->assertEqual(preg_match('/<ul class="pager">/', $output), 0, 'The pager is not rendered.');
   }
 
@@ -356,10 +365,10 @@ class PagerTest extends PluginTestBase {
     ConfigurableLanguage::createFromLangcode($langcode)->save();
 
     $edit = array(
-      'translation[config_names][views.view.content][display][default][display_options][pager][options][tags][first]' => '« eerste',
-      'translation[config_names][views.view.content][display][default][display_options][pager][options][tags][previous]' => '‹ vorige',
-      'translation[config_names][views.view.content][display][default][display_options][pager][options][tags][next]' => 'volgende ›',
-      'translation[config_names][views.view.content][display][default][display_options][pager][options][tags][last]' => 'laatste »',
+      'translation[config_names][views.view.content][display][default][display_options][pager][options][tags][first]' => '« Eerste',
+      'translation[config_names][views.view.content][display][default][display_options][pager][options][tags][previous]' => '‹ Vorige',
+      'translation[config_names][views.view.content][display][default][display_options][pager][options][tags][next]' => 'Volgende ›',
+      'translation[config_names][views.view.content][display][default][display_options][pager][options][tags][last]' => 'Laatste »',
     );
     $this->drupalPostForm('admin/structure/views/view/content/translate/nl/edit', $edit, t('Save translation'));
 
@@ -373,10 +382,10 @@ class PagerTest extends PluginTestBase {
     $this->drupalGet('nl/admin/content', array('query' => array('page' => 1)));
     // Translation mapping..
     $labels = array(
-      '« first' => '« eerste',
-      '‹ previous' => '‹ vorige',
-      'next ›' => 'volgende ›',
-      'last »' => 'laatste »',
+      '« First' => '« Eerste',
+      '‹ Previous' => '‹ Vorige',
+      'Next ›' => 'Volgende ›',
+      'Last »' => 'Laatste »',
     );
     foreach ($labels as $label => $translation) {
       // Check if we can find the translation.
@@ -401,10 +410,10 @@ class PagerTest extends PluginTestBase {
 
     // Labels that need translations.
     $labels = array(
-      '« first' => '« eerste',
-      '‹ previous' => '‹ vorige',
-      'next ›' => 'volgende ›',
-      'last »' => 'laatste »',
+      '« First' => '« Eerste',
+      '‹ Previous' => '‹ Vorige',
+      'Next ›' => 'Volgende ›',
+      'Last »' => 'Laatste »',
     );
     foreach ($labels as $label => $translation) {
       // Create source string.

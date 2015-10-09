@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\Tests\Core\Config\ConfigFactoryTest.
+ */
+
 namespace Drupal\Tests\Core\Config;
 
 use Drupal\Core\Config\Config;
@@ -9,6 +14,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
  * @group Config
+ * @coversDefaultClass \Drupal\Core\Config\ConfigFactory
  */
 class ConfigFactoryTest extends UnitTestCase {
 

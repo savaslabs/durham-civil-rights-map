@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Database\DatabaseTestBase.
+ * Contains \Drupal\system\Tests\Database\DatabaseTestBase.
  */
 
 namespace Drupal\system\Tests\Database;
@@ -30,6 +30,8 @@ abstract class DatabaseTestBase extends KernelTestBase {
       'test_task',
       'test_null',
       'test_serialized',
+      'test_special_columns',
+      'TEST_UPPERCASE',
     ));
     self::addSampleData();
   }
@@ -136,6 +138,13 @@ abstract class DatabaseTestBase extends KernelTestBase {
         'pid' => $paul,
         'task' => 'perform at superbowl',
         'priority' => 3,
+      ))
+      ->execute();
+
+    db_insert('test_special_columns')
+      ->fields(array(
+        'id' => 1,
+        'offset' => 'Offset value 1',
       ))
       ->execute();
   }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\config\Tests\ConfigCRUDTest.
+ * Contains \Drupal\config\Tests\ConfigCRUDTest.
  */
 
 namespace Drupal\config\Tests;
@@ -274,6 +274,14 @@ class ConfigCRUDTest extends KernelTestBase {
     $config->setData($data)->save();
     $this->assertIdentical($config->get(), $data);
     $this->assertIdentical($storage->read($name), $data);
+
+    // Test that schema type enforcement can be overridden by trusting the data.
+    $this->assertIdentical(99, $config->get('int'));
+    $config->set('int', '99')->save(TRUE);
+    $this->assertIdentical('99', $config->get('int'));
+    // Test that re-saving without testing the data enforces the schema type.
+    $config->save();
+    $this->assertIdentical($data, $config->get());
 
     // Test that setting an unsupported type for a config object with a schema
     // fails.

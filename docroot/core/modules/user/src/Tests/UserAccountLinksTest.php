@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains of Drupal\user\Tests\UserAccountLinksTest.
+ * Contains \Drupal\user\Tests\UserAccountLinksTest.
  */
 
 namespace Drupal\user\Tests;
@@ -31,7 +31,7 @@ class UserAccountLinksTest extends WebTestBase {
     parent::setUp();
     $this->drupalPlaceBlock('system_menu_block:account');
     // Make test-page default.
-    $this->config('system.site')->set('page.front', 'test-page')->save();
+    $this->config('system.site')->set('page.front', '/test-page')->save();
   }
 
   /**
@@ -65,14 +65,13 @@ class UserAccountLinksTest extends WebTestBase {
     $this->drupalLogout();
     $this->drupalGet('<front>');
 
-    // For a logged-out user, expect no secondary links.
-    $menu_tree = \Drupal::menuTree();
-    $tree = $menu_tree->load('account', new MenuTreeParameters());
-    $manipulators = array(
-      array('callable' => 'menu.default_tree_manipulators:checkAccess'),
-    );
-    $tree = $menu_tree->transform($tree, $manipulators);
-    $this->assertEqual(count($tree), 0, 'The secondary links menu contains no menu link.');
+    // For a logged-out user, expect the secondary menu to have a "Log in" link.
+    $link = $this->xpath('//ul[@class=:menu_class]/li/a[contains(@href, :href) and text()=:text]', array(
+      ':menu_class' => 'menu',
+      ':href' => 'user/login',
+      ':text' => 'Log in',
+    ));
+    $this->assertEqual(count($link), 1, 'Log in link is in secondary menu.');
   }
 
   /**

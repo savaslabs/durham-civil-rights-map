@@ -7,10 +7,16 @@
 
   "use strict";
 
-  Drupal.quickedit.FieldDecorationView = Backbone.View.extend({
+  Drupal.quickedit.FieldDecorationView = Backbone.View.extend(/** @lends Drupal.quickedit.FieldDecorationView# */{
 
+    /**
+     * @type {null}
+     */
     _widthAttributeIsEmpty: null,
 
+    /**
+     * @type {object}
+     */
     events: {
       'mouseenter.quickedit': 'onMouseEnter',
       'mouseleave.quickedit': 'onMouseLeave',
@@ -20,11 +26,14 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @constructs
      *
-     * @param Object options
+     * @augments Backbone.View
+     *
+     * @param {object} options
      *   An object with the following keys:
-     *   - Drupal.quickedit.EditorView editorView: the editor object view.
+     * @param {Drupal.quickedit.EditorView} options.editorView
+     *   The editor object view.
      */
     initialize: function (options) {
       this.editorView = options.editorView;
@@ -34,7 +43,7 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     remove: function () {
       // The el property is the field, which should not be removed. Remove the
@@ -46,9 +55,11 @@
     /**
      * Determines the actions to take given a change of state.
      *
-     * @param Drupal.quickedit.FieldModel model
-     * @param String state
-     *   The state of the associated field. One of Drupal.quickedit.FieldModel.states.
+     * @param {Drupal.quickedit.FieldModel} model
+     *   The `FieldModel` model.
+     * @param {string} state
+     *   The state of the associated field. One of
+     *   {@link Drupal.quickedit.FieldModel.states}.
      */
     stateChange: function (model, state) {
       var from = model.previous('state');
@@ -57,6 +68,7 @@
         case 'inactive':
           this.undecorate();
           break;
+
         case 'candidate':
           this.decorate();
           if (from !== 'inactive') {
@@ -68,14 +80,17 @@
           }
           this._unpad();
           break;
+
         case 'highlighted':
           this.startHighlight();
           break;
+
         case 'activating':
-          // NOTE: this state is not used by every editor! It's only used by those
-          // that need to interact with the server.
+          // NOTE: this state is not used by every editor! It's only used by
+          // those that need to interact with the server.
           this.prepareEdit();
           break;
+
         case 'active':
           if (from !== 'activating') {
             this.prepareEdit();
@@ -84,13 +99,17 @@
             this._pad();
           }
           break;
+
         case 'changed':
           this.model.set('isChanged', true);
           break;
+
         case 'saving':
           break;
+
         case 'saved':
           break;
+
         case 'invalid':
           break;
       }
@@ -109,7 +128,8 @@
     /**
      * Starts hover; transitions to 'highlight' state.
      *
-     * @param jQuery event
+     * @param {jQuery.Event} event
+     *   The mouse event.
      */
     onMouseEnter: function (event) {
       var that = this;
@@ -120,7 +140,8 @@
     /**
      * Stops hover; transitions to 'candidate' state.
      *
-     * @param jQuery event
+     * @param {jQuery.Event} event
+     *   The mouse event.
      */
     onMouseLeave: function (event) {
       var that = this;
@@ -131,7 +152,8 @@
     /**
      * Transition to 'activating' stage.
      *
-     * @param jQuery event
+     * @param {jQuery.Event} event
+     *   The click event.
      */
     onClick: function (event) {
       this.model.set('state', 'activating');
@@ -202,7 +224,7 @@
     },
 
     /**
-     * Adds padding around the editable element in order to make it pop visually.
+     * Adds padding around the editable element to make it pop visually.
      */
     _pad: function () {
       // Early return if the element has already been padded.
@@ -212,8 +234,8 @@
       var self = this;
 
       // Add 5px padding for readability. This means we'll freeze the current
-      // width and *then* add 5px padding, hence ensuring the padding is added "on
-      // the outside".
+      // width and *then* add 5px padding, hence ensuring the padding is added
+      // "on the outside".
       // 1) Freeze the width (if it's not already set); don't use animations.
       if (this.$el[0].style.width === "") {
         this._widthAttributeIsEmpty = true;
@@ -294,7 +316,11 @@
      * Convert extraneous values and information into numbers ready for
      * subtraction.
      *
-     * @param DOM $e
+     * @param {jQuery} $e
+     *   The element to get position properties from.
+     *
+     * @return {object}
+     *   An object containing css values for the needed properties.
      */
     _getPositionProperties: function ($e) {
       var p;
@@ -314,10 +340,13 @@
     },
 
     /**
-     * Replaces blank or 'auto' CSS "position: <value>" values with "0px".
+     * Replaces blank or 'auto' CSS `position: <value>` values with "0px".
      *
-     * @param String pos
-     *   (optional) The value for a CSS position declaration.
+     * @param {string} [pos]
+     *   The value for a CSS position declaration.
+     *
+     * @return {string}
+     *   A CSS value that is valid for `position`.
      */
     _replaceBlankPosition: function (pos) {
       if (pos === 'auto' || !pos) {

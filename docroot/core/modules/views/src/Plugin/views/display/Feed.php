@@ -7,7 +7,8 @@
 
 namespace Drupal\views\Plugin\views\display;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Cache\CacheableResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Views;
@@ -28,7 +29,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *   returns_response = TRUE
  * )
  */
-class Feed extends PathPluginBase {
+class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
 
   /**
    * Whether the display allows the use of AJAX or not.
@@ -45,45 +46,47 @@ class Feed extends PathPluginBase {
   protected $usesPager = FALSE;
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::initDisplay().
-   */
-  public function initDisplay(ViewExecutable $view, array &$display, array &$options = NULL) {
-    parent::initDisplay($view, $display, $options);
-
-    // Set the default row style. Ideally this would be part of the option
-    // definition, but in this case it's dependent on the view's base table,
-    // which we don't know until init().
-    $row_plugins = Views::fetchPluginNames('row', $this->getType(), array($view->storage->get('base_table')));
-    $default_row_plugin = key($row_plugins);
-    if (empty($this->options['row']['type'])) {
-      $this->options['row']['type'] = $default_row_plugin;
-    }
-  }
-
-  /**
    * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::getType().
    */
-  protected function getType() {
+  public function getType() {
     return 'feed';
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\PathPluginBase::execute().
+   * {@inheritdoc}
    */
-  public function execute() {
-    parent::execute();
+  public static function buildResponse($view_id, $display_id, array $args = []) {
+    $build = static::buildBasicRenderable($view_id, $display_id, $args);
 
-    $output = $this->view->render();
+    // Set up an empty response, so for example RSS can set the proper
+    // Content-Type header.
+    $response = new CacheableResponse('', 200);
+    $build['#response'] = $response;
+
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = \Drupal::service('renderer');
+
+    $output = (string) $renderer->renderRoot($build);
 
     if (empty($output)) {
       throw new NotFoundHttpException();
     }
 
-    $response = $this->view->getResponse();
-
-    $response->setContent(drupal_render_root($output));
+    $response->setContent($output);
+    $cache_metadata = CacheableMetadata::createFromRenderArray($build);
+    $response->addCacheableDependency($cache_metadata);
 
     return $response;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function execute() {
+    parent::execute();
+
+    return $this->view->render();
   }
 
   /**
@@ -95,7 +98,7 @@ class Feed extends PathPluginBase {
     if (!empty($this->view->live_preview)) {
       $output = array(
         '#prefix' => '<pre>',
-        '#markup' => SafeMarkup::checkPlain(drupal_render_root($output)),
+        '#plain_text' => drupal_render_root($output),
         '#suffix' => '</pre>',
       );
     }
@@ -107,7 +110,11 @@ class Feed extends PathPluginBase {
    * Overrides \Drupal\views\Plugin\views\display\PathPluginBase::render().
    */
   public function render() {
-    return $this->view->style_plugin->render($this->view->result);
+    $build = $this->view->style_plugin->render($this->view->result);
+
+    $this->applyDisplayCachablityMetadata($build);
+
+    return $build;
   }
 
   /**
@@ -142,11 +149,30 @@ class Feed extends PathPluginBase {
     $options['style']['contains']['type']['default'] = 'rss';
     $options['style']['contains']['options']['default']  = array('description' => '');
     $options['sitename_title']['default'] = FALSE;
-    $options['row']['contains']['type']['default'] = '';
+    $options['row']['contains']['type']['default'] = 'rss_fields';
     $options['defaults']['default']['style'] = FALSE;
     $options['defaults']['default']['row'] = FALSE;
 
     return $options;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function newDisplay() {
+    parent::newDisplay();
+
+    // Set the default row style. Ideally this would be part of the option
+    // definition, but in this case it's dependent on the view's base table,
+    // which we don't know until init().
+    if (empty($this->options['row']['type']) || $this->options['row']['type'] === 'rss_fields') {
+      $row_plugins = Views::fetchPluginNames('row', $this->getType(), array($this->view->storage->get('base_table')));
+      $default_row_plugin = key($row_plugins);
+
+      $options = $this->getOption('row');
+      $options['type'] = $default_row_plugin;
+      $this->setOption('row', $options);
+    }
   }
 
   /**
@@ -177,7 +203,7 @@ class Feed extends PathPluginBase {
       $display = array_shift($displays);
       $displays = $this->view->storage->get('display');
       if (!empty($displays[$display])) {
-        $attach_to = SafeMarkup::checkPlain($displays[$display]['display_title']);
+        $attach_to = $displays[$display]['display_title'];
       }
     }
 
@@ -229,7 +255,7 @@ class Feed extends PathPluginBase {
           '#title' => $this->t('Displays'),
           '#type' => 'checkboxes',
           '#description' => $this->t('The feed icon will be available only to the selected displays.'),
-          '#options' => $displays,
+          '#options' => array_map('\Drupal\Component\Utility\Html::escape', $displays),
           '#default_value' => $this->getOption('displays'),
         );
         break;
@@ -265,6 +291,7 @@ class Feed extends PathPluginBase {
 
     // Defer to the feed style; it may put in meta information, and/or
     // attach a feed icon.
+    $clone->setArguments($this->view->args);
     $clone->setDisplay($this->display['id']);
     $clone->buildTitle();
     if ($plugin = $clone->display_handler->getPlugin('style')) {

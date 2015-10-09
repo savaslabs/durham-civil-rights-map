@@ -7,13 +7,17 @@
 
 namespace Drupal\Core;
 
+use Drupal\Core\Render\RenderableInterface;
 use Drupal\Core\Routing\LinkGeneratorTrait;
 
 /**
  * Defines an object that holds information about a link.
  */
-class Link {
+class Link implements RenderableInterface {
 
+  /**
+   * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0.
+   */
   use LinkGeneratorTrait;
 
   /**
@@ -44,7 +48,7 @@ class Link {
   }
 
   /**
-   * Creates a link object from a given route name and parameters.
+   * Creates a Link object from a given route name and parameters.
    *
    * @param string $text
    *   The text of the link.
@@ -73,6 +77,20 @@ class Link {
    */
   public static function createFromRoute($text, $route_name, $route_parameters = array(), $options = array()) {
     return new static($text, new Url($route_name, $route_parameters, $options));
+  }
+
+  /**
+   * Creates a Link object from a given Url object.
+   *
+   * @param string $text
+   *   The text of the link.
+   * @param \Drupal\Core\Url $url
+   *   The Url to create the link for.
+   *
+   * @return static
+   */
+  public static function fromTextAndUrl($text, Url $url) {
+    return new static($text, $url);
   }
 
   /**
@@ -121,9 +139,26 @@ class Link {
 
   /**
    * Generates the HTML for this Link object.
+   *
+   * @return \Drupal\Core\GeneratedLink
+   *   The link HTML markup.
+   *
+   * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0. Use
+   *   self::toRenderable() instead.
    */
   public function toString() {
     return $this->getLinkGenerator()->generateFromLink($this);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function toRenderable() {
+    return [
+      '#type' => 'link',
+      '#url' => $this->url,
+      '#title' => $this->text,
+    ];
   }
 
 }

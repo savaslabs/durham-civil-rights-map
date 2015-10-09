@@ -19,8 +19,8 @@ settings:
   label: 'Main navigation'
   provider: system
   label_display: '0'
-  cache:
-    max_age: -1
   level: 1
   depth: 1
+  cache:
+    max_age: -1
 visibility: {  }

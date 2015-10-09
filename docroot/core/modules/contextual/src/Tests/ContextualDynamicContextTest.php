@@ -8,6 +8,8 @@
 namespace Drupal\contextual\Tests;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Url;
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\simpletest\WebTestBase;
 use Drupal\Core\Template\Attribute;
 
@@ -45,13 +47,16 @@ class ContextualDynamicContextTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('contextual', 'node', 'views', 'views_ui');
+  public static $modules = array('contextual', 'node', 'views', 'views_ui', 'language', 'menu_test');
 
   protected function setUp() {
     parent::setUp();
 
     $this->drupalCreateContentType(array('type' => 'page', 'name' => 'Basic page'));
     $this->drupalCreateContentType(array('type' => 'article', 'name' => 'Article'));
+
+    ConfigurableLanguage::createFromLangcode('it')->save();
+    $this->rebuildContainer();
 
     $this->editorUser = $this->drupalCreateUser(array('access content', 'access contextual links', 'edit any article content'));
     $this->authenticatedUser = $this->drupalCreateUser(array('access content', 'access contextual links'));
@@ -77,12 +82,12 @@ class ContextualDynamicContextTest extends WebTestBase {
 
     // Now, on the front page, all article nodes should have contextual links
     // placeholders, as should the view that contains them.
-    $ids = array(
-      'node:node=' . $node1->id() . ':changed=' . $node1->getChangedTime(),
-      'node:node=' . $node2->id() . ':changed=' . $node2->getChangedTime(),
-      'node:node=' . $node3->id() . ':changed=' . $node3->getChangedTime(),
-      'entity.view.edit_form:view=frontpage:location=page&name=frontpage&display_id=page_1',
-    );
+    $ids = [
+      'node:node=' . $node1->id() . ':changed=' . $node1->getChangedTime() . '&langcode=en',
+      'node:node=' . $node2->id() . ':changed=' . $node2->getChangedTime() . '&langcode=en',
+      'node:node=' . $node3->id() . ':changed=' . $node3->getChangedTime() . '&langcode=en',
+      'entity.view.edit_form:view=frontpage:location=page&name=frontpage&display_id=page_1&langcode=en',
+    ];
 
     // Editor user: can access contextual links and can edit articles.
     $this->drupalGet('node');
@@ -127,6 +132,17 @@ class ContextualDynamicContextTest extends WebTestBase {
     $this->assertResponse(403);
     $this->renderContextualLinks($ids, 'node');
     $this->assertResponse(403);
+
+    // Verify that link language is properly handled.
+    $node3->addTranslation('it')->set('title', $this->randomString())->save();
+    $id = 'node:node=' . $node3->id() . ':changed=' . $node3->getChangedTime() . '&langcode=it';
+    $this->drupalGet('node', ['language' => ConfigurableLanguage::createFromLangcode('it')]);
+    $this->assertContextualLinkPlaceHolder($id);
+
+    // Get a page where contextual links are directly rendered.
+    $this->drupalGet(Url::fromRoute('menu_test.contextual_test'));
+    $this->assertEscaped("<script>alert('Welcome to the jungle!')</script>");
+    $this->assertLink('Edit menu - contextual');
   }
 
   /**
@@ -136,9 +152,10 @@ class ContextualDynamicContextTest extends WebTestBase {
    *   A contextual link id.
    *
    * @return bool
+   *   The result of the assertion.
    */
   protected function assertContextualLinkPlaceHolder($id) {
-    $this->assertRaw('<div' . new Attribute(array('data-contextual-id' => $id)) . '></div>', format_string('Contextual link placeholder with id @id exists.', array('@id' => $id)));
+    return $this->assertRaw('<div' . new Attribute(array('data-contextual-id' => $id)) . '></div>', format_string('Contextual link placeholder with id @id exists.', array('@id' => $id)));
   }
 
   /**
@@ -148,9 +165,10 @@ class ContextualDynamicContextTest extends WebTestBase {
    *   A contextual link id.
    *
    * @return bool
+   *   The result of the assertion.
    */
   protected function assertNoContextualLinkPlaceHolder($id) {
-    $this->assertNoRaw('<div' . new Attribute(array('data-contextual-id' => $id)) . '></div>', format_string('Contextual link placeholder with id @id does not exist.', array('@id' => $id)));
+    return $this->assertNoRaw('<div' . new Attribute(array('data-contextual-id' => $id)) . '></div>', format_string('Contextual link placeholder with id @id does not exist.', array('@id' => $id)));
   }
 
   /**
@@ -169,6 +187,6 @@ class ContextualDynamicContextTest extends WebTestBase {
     for ($i = 0; $i < count($ids); $i++) {
       $post['ids[' . $i . ']'] = $ids[$i];
     }
-    return $this->drupalPost('contextual/render', 'application/json', $post, array('query' => array('destination' => $current_path)));
+    return $this->drupalPostWithFormat('contextual/render', 'json', $post, array('query' => array('destination' => $current_path)));
   }
 }

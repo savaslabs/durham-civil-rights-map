@@ -4,7 +4,7 @@ entity.entity_test.canonical:
     _entity_view: 'entity_test.full'
     _title: 'Test full view mode'
   requirements:
-    _access: 'TRUE'
+    _entity_access: 'entity_test.view'
 
 entity.entity_test.render_options:
   path: '/entity_test_converter/{foo}'
@@ -15,7 +15,7 @@ entity.entity_test.render_options:
   defaults:
     _entity_view: 'entity_test.full'
   requirements:
-    _access: 'TRUE'
+    _entity_access: 'foo.view'
 
 entity.entity_test.render_no_view_mode:
   path: '/entity_test_no_view_mode/{entity_test}'
@@ -73,6 +73,13 @@ entity.user_role.test_operation:
   path: '/admin/people/roles/manage/{user_role}/test_operation'
   defaults:
     _entity_view: 'entity_test'
+  requirements:
+    _access: 'TRUE'
+
+entity.entity_test_view_builder.canonical:
+  path: '/entity_test_view_builder/{entity_test_view_builder}'
+  defaults:
+    _entity_view: 'entity_test_view_builder'
   requirements:
     _access: 'TRUE'
 

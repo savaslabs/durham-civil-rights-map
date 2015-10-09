@@ -8,7 +8,7 @@
 namespace Drupal\system\Tests\Entity;
 
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\entity_reference\Tests\EntityReferenceTestTrait;
+use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\Core\Cache\Cache;
 use Drupal\user\Entity\Role;
 use Drupal\user\RoleInterface;
@@ -21,13 +21,6 @@ use Drupal\user\RoleInterface;
 class EntityViewBuilderTest extends EntityUnitTestBase {
 
   use EntityReferenceTestTrait;
-
-  /**
-   * Modules to enable.
-   *
-   * @var array
-   */
-  public static $modules = array('entity_reference');
 
   /**
    * {@inheritdoc}
@@ -46,7 +39,10 @@ class EntityViewBuilderTest extends EntityUnitTestBase {
    * Tests entity render cache handling.
    */
   public function testEntityViewBuilderCache() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = $this->container->get('renderer');
     $cache_contexts_manager = \Drupal::service("cache_contexts_manager");
+    $cache = \Drupal::cache();
 
     // Force a request via GET so we can get drupal_render() cache working.
     $request = \Drupal::request();
@@ -63,7 +59,7 @@ class EntityViewBuilderTest extends EntityUnitTestBase {
     // Get a fully built entity view render array.
     $entity_test->save();
     $build = $this->container->get('entity.manager')->getViewBuilder('entity_test')->view($entity_test, 'full');
-    $cid_parts = array_merge($build['#cache']['keys'], $cache_contexts_manager->convertTokensToKeys(['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme']));
+    $cid_parts = array_merge($build['#cache']['keys'], $cache_contexts_manager->convertTokensToKeys(['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme', 'user.permissions'])->getKeys());
     $cid = implode(':', $cid_parts);
     $bin = $build['#cache']['bin'];
 
@@ -72,17 +68,19 @@ class EntityViewBuilderTest extends EntityUnitTestBase {
     $build['#markup'] = 'entity_render_test';
 
     // Test that a cache entry is created.
-    drupal_render($build);
+    $renderer->renderRoot($build);
     $this->assertTrue($this->container->get('cache.' . $bin)->get($cid), 'The entity render element has been cached.');
 
     // Re-save the entity and check that the cache entry has been deleted.
+    $cache->set('kittens', 'Kitten data', Cache::PERMANENT, $build['#cache']['tags']);
     $entity_test->save();
     $this->assertFalse($this->container->get('cache.' . $bin)->get($cid), 'The entity render cache has been cleared when the entity was saved.');
+    $this->assertFalse($cache->get('kittens'), 'The entity saving has invalidated cache tags.');
 
     // Rebuild the render array (creating a new cache entry in the process) and
     // delete the entity to check the cache entry is deleted.
     unset($build['#printed']);
-    drupal_render($build);
+    $renderer->renderRoot($build);
     $this->assertTrue($this->container->get('cache.' . $bin)->get($cid), 'The entity render element has been cached.');
     $entity_test->delete();
     $this->assertFalse($this->container->get('cache.' . $bin)->get($cid), 'The entity render cache has been cleared when the entity was deleted.');
@@ -95,6 +93,8 @@ class EntityViewBuilderTest extends EntityUnitTestBase {
    * Tests entity render cache with references.
    */
   public function testEntityViewBuilderCacheWithReferences() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = $this->container->get('renderer');
     $cache_contexts_manager = \Drupal::service("cache_contexts_manager");
 
     // Force a request via GET so we can get drupal_render() cache working.
@@ -113,14 +113,14 @@ class EntityViewBuilderTest extends EntityUnitTestBase {
 
     // Get a fully built entity view render array for the referenced entity.
     $build = $this->container->get('entity.manager')->getViewBuilder('entity_test')->view($entity_test_reference, 'full');
-    $cid_parts = array_merge($build['#cache']['keys'], $cache_contexts_manager->convertTokensToKeys(['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme']));
+    $cid_parts = array_merge($build['#cache']['keys'], $cache_contexts_manager->convertTokensToKeys(['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme', 'user.permissions'])->getKeys());
     $cid_reference = implode(':', $cid_parts);
     $bin_reference = $build['#cache']['bin'];
 
     // Mock the build array to not require the theme registry.
     unset($build['#theme']);
     $build['#markup'] = 'entity_render_test';
-    drupal_render($build);
+    $renderer->renderRoot($build);
 
     // Test that a cache entry was created for the referenced entity.
     $this->assertTrue($this->container->get('cache.' . $bin_reference)->get($cid_reference), 'The entity render element for the referenced entity has been cached.');
@@ -132,14 +132,14 @@ class EntityViewBuilderTest extends EntityUnitTestBase {
 
     // Get a fully built entity view render array.
     $build = $this->container->get('entity.manager')->getViewBuilder('entity_test')->view($entity_test, 'full');
-    $cid_parts = array_merge($build['#cache']['keys'], $cache_contexts_manager->convertTokensToKeys(['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme']));
+    $cid_parts = array_merge($build['#cache']['keys'], $cache_contexts_manager->convertTokensToKeys(['languages:' . LanguageInterface::TYPE_INTERFACE, 'theme', 'user.permissions'])->getKeys());
     $cid = implode(':', $cid_parts);
     $bin = $build['#cache']['bin'];
 
     // Mock the build array to not require the theme registry.
     unset($build['#theme']);
     $build['#markup'] = 'entity_render_test';
-    drupal_render($build);
+    $renderer->renderRoot($build);
 
     // Test that a cache entry is created.
     $this->assertTrue($this->container->get('cache.' . $bin)->get($cid), 'The entity render element has been cached.');
@@ -180,6 +180,9 @@ class EntityViewBuilderTest extends EntityUnitTestBase {
    * Tests weighting of display components.
    */
   public function testEntityViewBuilderWeight() {
+    /** @var \Drupal\Core\Render\RendererInterface $renderer */
+    $renderer = $this->container->get('renderer');
+
     // Set a weight for the label component.
     entity_get_display('entity_test', 'entity_test', 'full')
       ->setComponent('label', array('weight' => 20))
@@ -188,7 +191,7 @@ class EntityViewBuilderTest extends EntityUnitTestBase {
     // Create and build a test entity.
     $entity_test = $this->createTestEntity('entity_test');
     $view =  $this->container->get('entity.manager')->getViewBuilder('entity_test')->view($entity_test, 'full');
-    drupal_render($view);
+    $renderer->renderRoot($view);
 
     // Check that the weight is respected.
     $this->assertEqual($view['label']['#weight'], 20, 'The weight of a display component is respected.');

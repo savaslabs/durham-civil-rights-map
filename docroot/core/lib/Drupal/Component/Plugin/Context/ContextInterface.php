@@ -13,16 +13,6 @@ namespace Drupal\Component\Plugin\Context;
 interface ContextInterface {
 
   /**
-   * Sets the context value.
-   *
-   * @param mixed $value
-   *   The value of this context, matching the context definition.
-   *
-   * @see \Drupal\Component\Plugin\Context\ContextInterface::setContextDefinition().
-   */
-  public function setContextValue($value);
-
-  /**
    * Gets the context value.
    *
    * @return mixed
@@ -31,13 +21,12 @@ interface ContextInterface {
   public function getContextValue();
 
   /**
-   * Sets the definition that the context must conform to.
+   * Returns whether the context has a value.
    *
-   * @param \Drupal\Component\Plugin\Context\ContextDefinitionInterface $context_definition
-   *   A defining characteristic representation of the context against which
-   *   that context can be validated.
+   * @return bool
+   *   TRUE if the context has a value, FALSE otherwise.
    */
-  public function setContextDefinition(ContextDefinitionInterface $context_definition);
+  public function hasContextValue();
 
   /**
    * Gets the provided definition that the context must conform to.

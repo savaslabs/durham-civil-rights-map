@@ -8,14 +8,14 @@
 namespace Drupal\block_content\Tests;
 
 use Drupal\Component\Utility\Unicode;
-use Drupal\content_translation\Tests\ContentTranslationUITest;
+use Drupal\content_translation\Tests\ContentTranslationUITestBase;
 
 /**
  * Tests the block content translation UI.
  *
  * @group block_content
  */
-class BlockContentTranslationUITest extends ContentTranslationUITest {
+class BlockContentTranslationUITest extends ContentTranslationUITestBase {
 
   /**
    * Modules to enable.
@@ -31,6 +31,19 @@ class BlockContentTranslationUITest extends ContentTranslationUITest {
   );
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultCacheContexts = [
+    'languages:language_interface',
+    'session',
+    'theme',
+    'url.path',
+    'url.query_args',
+    'user.permissions',
+    'user.roles:authenticated',
+  ];
+
+  /**
    * Overrides \Drupal\simpletest\WebTestBase::setUp().
    */
   protected function setUp() {
@@ -38,6 +51,8 @@ class BlockContentTranslationUITest extends ContentTranslationUITest {
     $this->bundle = 'basic';
     $this->testLanguageSelector = FALSE;
     parent::setUp();
+
+    $this->drupalPlaceBlock('page_title_block');
   }
 
   /**
@@ -54,7 +69,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITest {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getTranslatorPermission().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getTranslatorPermission().
    */
   public function getTranslatorPermissions() {
     return array_merge(parent::getTranslatorPermissions(), array(
@@ -91,7 +106,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITest {
   }
 
   /**
-   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITest::getNewEntityValues().
+   * Overrides \Drupal\content_translation\Tests\ContentTranslationUITestBase::getNewEntityValues().
    */
   protected function getNewEntityValues($langcode) {
     return array('info' => Unicode::strtolower($this->randomMachineName())) + parent::getNewEntityValues($langcode);

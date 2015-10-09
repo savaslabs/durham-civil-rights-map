@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\system\Tests\Database\SelectSubqueryTest.
+ * Contains \Drupal\system\Tests\Database\SelectSubqueryTest.
  */
 
 namespace Drupal\system\Tests\Database;
@@ -32,7 +32,7 @@ class SelectSubqueryTest extends DatabaseTestBase {
       $select->addField('t', 'name');
       if ($i) {
         // Use a different number of conditions here to confuse the subquery
-        // placeholder counter, testing http://drupal.org/node/1112854.
+        // placeholder counter, testing https://www.drupal.org/node/1112854.
         $select->condition('name', 'John');
       }
       $select->condition('task', 'code');

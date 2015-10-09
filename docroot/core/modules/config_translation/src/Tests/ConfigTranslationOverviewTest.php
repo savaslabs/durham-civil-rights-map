@@ -7,7 +7,7 @@
 
 namespace Drupal\config_translation\Tests;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\simpletest\WebTestBase;
 
@@ -23,7 +23,17 @@ class ConfigTranslationOverviewTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('contact', 'config_translation', 'views', 'views_ui', 'contextual', 'config_test', 'config_translation_test');
+  public static $modules = [
+    'block',
+    'config_test',
+    'config_translation',
+    'config_translation_test',
+    'contact',
+    'contextual',
+    'entity_test_operation',
+    'views',
+    'views_ui',
+  ];
 
   /**
    * Languages to enable.
@@ -58,6 +68,8 @@ class ConfigTranslationOverviewTest extends WebTestBase {
       ConfigurableLanguage::createFromLangcode($langcode)->save();
     }
     $this->localeStorage = $this->container->get('locale.storage');
+    $this->drupalPlaceBlock('local_tasks_block');
+    $this->drupalPlaceBlock('page_title_block');
   }
 
   /**
@@ -67,6 +79,14 @@ class ConfigTranslationOverviewTest extends WebTestBase {
     $this->drupalGet('admin/config/regional/config-translation');
     $this->assertLinkByHref('admin/config/regional/config-translation/config_test');
     $this->assertLinkByHref('admin/config/people/accounts/translate');
+    // Make sure there is only a single operation for each dropbutton, either
+    // 'List' or 'Translate'.
+    foreach ($this->cssSelect('ul.dropbutton') as $i => $dropbutton) {
+      $this->assertIdentical(1, $dropbutton->count());
+      foreach ($dropbutton->li as $link) {
+        $this->assertTrue(((string) $link->a === 'Translate') || ((string) $link->a === 'List'));
+      }
+    }
 
     $labels = array(
       '&$nxd~i0',
@@ -84,13 +104,22 @@ class ConfigTranslationOverviewTest extends WebTestBase {
       $base_url = 'admin/structure/config_test/manage/' . $test_entity->id();
       $this->drupalGet('admin/config/regional/config-translation/config_test');
       $this->assertLinkByHref($base_url . '/translate');
-      $this->assertText(SafeMarkup::checkPlain($test_entity->label()));
+      $this->assertEscaped($test_entity->label());
+
+      // Make sure there is only a single 'Translate' operation for each
+      // dropbutton.
+      foreach ($this->cssSelect('ul.dropbutton') as $i => $dropbutton) {
+        $this->assertIdentical(1, $dropbutton->count());
+        foreach ($dropbutton->li as $link) {
+          $this->assertIdentical('Translate', (string) $link->a);
+        }
+      }
 
       $entity_type = \Drupal::entityManager()->getDefinition($test_entity->getEntityTypeId());
       $this->drupalGet($base_url . '/translate');
 
-      $title = t('!label !entity_type', array('!label' => $test_entity->label(), '!entity_type' => $entity_type->getLowercaseLabel()));
-      $title = t('Translations for %label', array('%label' => $title));
+      $title = $test_entity->label() . ' ' . $entity_type->getLowercaseLabel();
+      $title = 'Translations for <em class="placeholder">' . Html::escape($title) . '</em>';
       $this->assertRaw($title);
       $this->assertRaw('<th>' . t('Language') . '</th>');
 
@@ -127,6 +156,8 @@ class ConfigTranslationOverviewTest extends WebTestBase {
     $original_label = 'Default';
     $overridden_label = 'Overridden label';
 
+    $config_test_storage = $this->container->get('entity.manager')->getStorage('config_test');
+
     // Set up an override.
     $settings['config']['config_test.dynamic.dotted.default']['label'] = (object) array(
       'value' => $overridden_label,
@@ -135,7 +166,7 @@ class ConfigTranslationOverviewTest extends WebTestBase {
     $this->writeSettings($settings);
 
     // Test that the overridden label is loaded with the entity.
-    $this->assertEqual(config_test_load('dotted.default')->label(), $overridden_label);
+    $this->assertEqual($config_test_storage->load('dotted.default')->label(), $overridden_label);
 
     // Test that the original label on the listing page is intact.
     $this->drupalGet('admin/config/regional/config-translation/config_test');

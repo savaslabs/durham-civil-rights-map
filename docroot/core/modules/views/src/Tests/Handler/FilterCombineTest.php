@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Handler\FilterCombineTest.
+ * Contains \Drupal\views\Tests\Handler\FilterCombineTest.
  */
 
 namespace Drupal\views\Tests\Handler;
 
-use Drupal\views\Tests\ViewUnitTestBase;
+use Drupal\views\Tests\ViewKernelTestBase;
 use Drupal\views\Views;
 
 /**
@@ -15,7 +15,7 @@ use Drupal\views\Views;
  *
  * @group views
  */
-class FilterCombineTest extends ViewUnitTestBase {
+class FilterCombineTest extends ViewKernelTestBase {
 
   /**
    * Views used by this test.

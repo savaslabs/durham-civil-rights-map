@@ -12,7 +12,6 @@ use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Controller routines for help routes.
@@ -68,9 +67,7 @@ class HelpController extends ControllerBase {
   protected function helpLinksAsList() {
     $modules = array();
     foreach ($this->moduleHandler()->getImplementations('help') as $module) {
-      if ($this->moduleHandler()->invoke($module, 'help', array("help.page.$module", $this->routeMatch))) {
-        $modules[$module] = $this->moduleHandler->getName($module);
-      }
+      $modules[$module] = $this->moduleHandler->getName($module);
     }
     asort($modules);
 
@@ -80,7 +77,7 @@ class HelpController extends ControllerBase {
     $column = array(
       '#type' => 'container',
       'links' => array('#theme' => 'item_list'),
-      '#attributes' => array('class' => array('layout-column', 'quarter')),
+      '#attributes' => array('class' => array('layout-column', 'layout-column--quarter')),
     );
     $output = array(
       '#prefix' => '<div class="clearfix">',
@@ -117,7 +114,7 @@ class HelpController extends ControllerBase {
     $build = array();
     if ($this->moduleHandler()->implementsHook($name, 'help')) {
       $module_name =  $this->moduleHandler()->getName($name);
-      $build['#title'] = SafeMarkup::checkPlain($module_name);
+      $build['#title'] = $module_name;
 
       $temp = $this->moduleHandler()->invoke($name, 'help', array("help.page.$name", $this->routeMatch));
       if (empty($temp)) {
@@ -128,7 +125,7 @@ class HelpController extends ControllerBase {
       }
 
       // Only print list of administration pages if the module in question has
-      // any such pages associated to it.
+      // any such pages associated with it.
       $admin_tasks = system_get_module_admin_tasks($name, system_get_info('module', $name));
       if (!empty($admin_tasks)) {
         $links = array();
@@ -137,7 +134,8 @@ class HelpController extends ControllerBase {
           $link['title'] = $task['title'];
           $links[] = $link;
         }
-        $build['links']['#links'] = array(
+        $build['links'] = array(
+          '#theme' => 'links__help',
           '#heading' => array(
             'level' => 'h3',
             'text' => $this->t('@module administration pages', array('@module' => $module_name)),

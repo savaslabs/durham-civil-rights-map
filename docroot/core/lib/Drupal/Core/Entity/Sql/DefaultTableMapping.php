@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Entity\Sql;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 
@@ -178,7 +177,7 @@ class DefaultTableMapping implements TableMappingInterface {
     }
 
     if (!isset($result)) {
-      throw new SqlContentEntityStorageException(SafeMarkup::format('Table information not available for the "@field_name" field.', array('@field_name' => $field_name)));
+      throw new SqlContentEntityStorageException("Table information not available for the '$field_name' field.");
     }
 
     return $result;
@@ -190,9 +189,10 @@ class DefaultTableMapping implements TableMappingInterface {
   public function getColumnNames($field_name) {
     if (!isset($this->columnMapping[$field_name])) {
       $this->columnMapping[$field_name] = array();
-      $storage_definition = $this->fieldStorageDefinitions[$field_name];
-      foreach (array_keys($this->fieldStorageDefinitions[$field_name]->getColumns()) as $property_name) {
-        $this->columnMapping[$field_name][$property_name] = $this->getFieldColumnName($storage_definition, $property_name);
+      if (isset($this->fieldStorageDefinitions[$field_name])) {
+        foreach (array_keys($this->fieldStorageDefinitions[$field_name]->getColumns()) as $property_name) {
+          $this->columnMapping[$field_name][$property_name] = $this->getFieldColumnName($this->fieldStorageDefinitions[$field_name], $property_name);
+        }
       }
     }
     return $this->columnMapping[$field_name];
@@ -211,7 +211,7 @@ class DefaultTableMapping implements TableMappingInterface {
       $column_name = !in_array($property_name, $this->getReservedColumns()) ? $field_name . '_' . $property_name : $property_name;
     }
     else {
-      throw new SqlContentEntityStorageException(SafeMarkup::format('Column information not available for the "@field_name" field.', array('@field_name' => $field_name)));
+      throw new SqlContentEntityStorageException("Column information not available for the '$field_name' field.");
     }
 
     return $column_name;
@@ -288,7 +288,7 @@ class DefaultTableMapping implements TableMappingInterface {
   }
 
   /**
-   * Returns a list of dedicated table names for this mapping.
+   * Gets a list of dedicated table names for this mapping.
    *
    * @return string[]
    *   An array of table names.

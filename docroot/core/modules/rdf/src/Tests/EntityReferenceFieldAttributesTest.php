@@ -103,7 +103,7 @@ class EntityReferenceFieldAttributesTest extends TaxonomyTestBase {
 
     // Render the node.
     $node_render_array = entity_view_multiple(array($node), 'teaser');
-    $html = drupal_render($node_render_array);
+    $html = \Drupal::service('renderer')->renderRoot($node_render_array);
 
     // Parse the teaser.
     $parser = new \EasyRdf_Parser_Rdfa();
@@ -129,7 +129,7 @@ class EntityReferenceFieldAttributesTest extends TaxonomyTestBase {
       'type' => 'uri',
       'value' => 'http://www.w3.org/2004/02/skos/core#Concept',
     );
-    // @todo enable with https://drupal.org/node/2072791
+    // @todo Enable with https://www.drupal.org/node/2072791.
     //$this->assertTrue($graph->hasProperty($taxonomy_term_1_uri, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', $expected_value), 'Taxonomy term type found in RDF output (skos:Concept).');
     $expected_value = array(
       'type' => 'literal',

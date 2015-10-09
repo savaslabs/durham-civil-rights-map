@@ -2,12 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\form_test\Form\FormTestStorageForm.
+ * Contains \Drupal\form_test\Form\FormTestStoragePageCacheForm.
  */
 
 namespace Drupal\form_test\Form;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -48,7 +47,6 @@ class FormTestStoragePageCacheForm extends FormBase {
     );
 
     $form['#after_build'] = array(array($this, 'form_test_storage_page_cache_old_build_id'));
-    $form_state->setCached();
 
     return $form;
   }
@@ -58,7 +56,7 @@ class FormTestStoragePageCacheForm extends FormBase {
    */
   function form_test_storage_page_cache_old_build_id($form) {
     if (isset($form['#build_id_old'])) {
-      $form['test_build_id_old']['#markup'] = SafeMarkup::checkPlain($form['#build_id_old']);
+      $form['test_build_id_old']['#plain_text'] = $form['#build_id_old'];
     }
     return $form;
   }
@@ -68,6 +66,17 @@ class FormTestStoragePageCacheForm extends FormBase {
    */
   function form_test_storage_page_cache_rebuild($form, FormStateInterface $form_state) {
     $form_state->setRebuild();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    // Test using form cache when re-displaying a form due to validation
+    // errors.
+    if ($form_state->hasAnyErrors()) {
+      $form_state->setCached();
+    }
   }
 
   /**

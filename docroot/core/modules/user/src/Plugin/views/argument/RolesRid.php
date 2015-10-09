@@ -7,7 +7,6 @@
 
 namespace Drupal\user\Plugin\views\argument;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\views\Plugin\views\argument\ManyToOne;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -50,17 +49,17 @@ class RolesRid extends ManyToOne {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return parent::create($container, $configuration, $plugin_id, $plugin_definition, $container->get('entity.manager'));
+    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity.manager'));
   }
 
   /**
    * {@inheritdoc}
    */
-  public function title_query() {
+  public function titleQuery() {
     $entities = $this->roleStorage->loadMultiple($this->value);
     $titles = array();
     foreach ($entities as $entity) {
-      $titles[] = SafeMarkup::checkPlain($entity->label());
+      $titles[] = $entity->label();
     }
     return $titles;
   }

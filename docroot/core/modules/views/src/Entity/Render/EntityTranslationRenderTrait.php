@@ -7,28 +7,31 @@
 
 namespace Drupal\views\Entity\Render;
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\views\Plugin\views\PluginBase;
+use Drupal\views\ResultRow;
 
 /**
- * Trait used to instantiate the view's entity language render.
+ * Trait used to instantiate the view's entity translation renderer.
  */
 trait EntityTranslationRenderTrait {
 
   /**
    * The renderer to be used to render the entity row.
    *
-   * @var \Drupal\views\Entity\Render\RendererBase
+   * @var \Drupal\views\Entity\Render\EntityTranslationRendererBase
    */
-  protected $entityLanguageRenderer;
+  protected $entityTranslationRenderer;
 
   /**
    * Returns the current renderer.
    *
-   * @return \Drupal\views\Entity\Render\RendererBase
+   * @return \Drupal\views\Entity\Render\EntityTranslationRendererBase
    *   The configured renderer.
    */
   protected function getEntityTranslationRenderer() {
-    if (!isset($this->entityLanguageRenderer)) {
+    if (!isset($this->entityTranslationRenderer)) {
       $view = $this->getView();
       $rendering_language = $view->display_handler->getOption('rendering_language');
       $langcode = NULL;
@@ -52,9 +55,33 @@ trait EntityTranslationRenderTrait {
       }
       $class = '\Drupal\views\Entity\Render\\' . $renderer;
       $entity_type = $this->getEntityManager()->getDefinition($this->getEntityTypeId());
-      $this->entityLanguageRenderer = new $class($view, $this->getLanguageManager(), $entity_type, $langcode);
+      $this->entityTranslationRenderer = new $class($view, $this->getLanguageManager(), $entity_type, $langcode);
     }
-    return $this->entityLanguageRenderer;
+    return $this->entityTranslationRenderer;
+  }
+
+  /**
+   * Returns the entity translation matching the configured row language.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity object the field value being processed is attached to.
+   * @param \Drupal\views\ResultRow $row
+   *   The result row the field value being processed belongs to.
+   *
+   * @return \Drupal\Core\Entity\FieldableEntityInterface
+   *   The entity translation object for the specified row.
+   */
+  public function getEntityTranslation(EntityInterface $entity, ResultRow $row) {
+    // We assume the same language should be used for all entity fields
+    // belonging to a single row, even if they are attached to different entity
+    // types. Below we apply language fallback to ensure a valid value is always
+    // picked.
+    $translation = $entity;
+    if ($entity instanceof TranslatableInterface && count($entity->getTranslationLanguages()) > 1) {
+      $langcode = $this->getEntityTranslationRenderer()->getLangcode($row);
+      $translation = $this->getEntityManager()->getTranslationFromContext($entity, $langcode);
+    }
+    return $translation;
   }
 
   /**

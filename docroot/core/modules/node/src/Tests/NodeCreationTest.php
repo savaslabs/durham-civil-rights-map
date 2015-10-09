@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\node\Tests\NodeCreationTest.
+ * Contains \Drupal\node\Tests\NodeCreationTest.
  */
 
 namespace Drupal\node\Tests;
@@ -52,7 +52,7 @@ class NodeCreationTest extends NodeTestBase {
     $this->drupalPostForm('node/add/page', $edit, t('Save'));
 
     // Check that the Basic page has been created.
-    $this->assertRaw(t('!post %title has been created.', array('!post' => 'Basic page', '%title' => $edit['title[0][value]'])), 'Basic page created.');
+    $this->assertRaw(t('@post %title has been created.', array('@post' => 'Basic page', '%title' => $edit['title[0][value]'])), 'Basic page created.');
 
     // Check that the node exists in the database.
     $node = $this->drupalGetNodeByTitle($edit['title[0][value]']);
@@ -122,7 +122,7 @@ class NodeCreationTest extends NodeTestBase {
    */
   function testUnpublishedNodeCreation() {
     // Set the front page to the test page.
-    $this->config('system.site')->set('page.front', 'test-page')->save();
+    $this->config('system.site')->set('page.front', '/test-page')->save();
 
     // Set "Basic page" content type to be unpublished by default.
     $fields = \Drupal::entityManager()->getFieldDefinitions('node', 'page');
@@ -141,7 +141,7 @@ class NodeCreationTest extends NodeTestBase {
     $this->assertText(t('Test page text'));
 
     // Confirm that the node was created.
-    $this->assertRaw(t('!post %title has been created.', array('!post' => 'Basic page', '%title' => $edit['title[0][value]'])));
+    $this->assertRaw(t('@post %title has been created.', array('@post' => 'Basic page', '%title' => $edit['title[0][value]'])));
   }
 
   /**
@@ -190,9 +190,11 @@ class NodeCreationTest extends NodeTestBase {
   }
 
   /**
-   * Returns log records with the rollback exception message.
+   * Gets the watchdog IDs of the records with the rollback exception message.
    *
-   * @return array
+   * @return int[]
+   *   Array containing the IDs of the log records with the rollback exception
+   *   message.
    */
   protected static function getWatchdogIdsForTestExceptionRollback() {
     // PostgreSQL doesn't support bytea LIKE queries, so we need to unserialize
@@ -201,7 +203,7 @@ class NodeCreationTest extends NodeTestBase {
     $query = db_query("SELECT wid, variables FROM {watchdog}");
     foreach ($query as $row) {
       $variables = (array) unserialize($row->variables);
-      if (isset($variables['!message']) && $variables['!message'] === 'Test exception for rollback.') {
+      if (isset($variables['@message']) && $variables['@message'] === 'Test exception for rollback.') {
         $matches[] = $row->wid;
       }
     }
@@ -209,9 +211,11 @@ class NodeCreationTest extends NodeTestBase {
   }
 
   /**
-   * Returns log records with the explicit rollback failed exception message.
+   * Gets the log records with the explicit rollback failed exception message.
    *
-   * @return array
+   * @return \Drupal\Core\Database\StatementInterface
+   *   A prepared statement object (already executed), which contains the log
+   *   records with the explicit rollback failed exception message.
    */
   protected static function getWatchdogIdsForFailedExplicitRollback() {
     return db_query("SELECT wid FROM {watchdog} WHERE message LIKE 'Explicit rollback failed%'")->fetchAll();

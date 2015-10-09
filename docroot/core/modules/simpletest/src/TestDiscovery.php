@@ -14,7 +14,6 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ExtensionDiscovery;
 use Drupal\simpletest\Exception\MissingGroupException;
-use Drupal\simpletest\Exception\MissingSummaryLineException;
 use PHPUnit_Util_Test;
 
 /**
@@ -82,6 +81,7 @@ class TestDiscovery {
 
     // Add PHPUnit test namespaces of Drupal core.
     $this->testNamespaces['Drupal\\Tests\\'] = [DRUPAL_ROOT . '/core/tests/Drupal/Tests'];
+    $this->testNamespaces['Drupal\\KernelTests\\'] = [DRUPAL_ROOT . '/core/tests/Drupal/KernelTests'];
     $this->testNamespaces['Drupal\\FunctionalTests\\'] = [DRUPAL_ROOT . '/core/tests/Drupal/FunctionalTests'];
 
     $this->availableExtensions = array();
@@ -99,6 +99,7 @@ class TestDiscovery {
 
       // Add PHPUnit test namespaces.
       $this->testNamespaces["Drupal\\Tests\\$name\\Unit\\"][] = "$base_path/tests/src/Unit";
+      $this->testNamespaces["Drupal\\Tests\\$name\\Kernel\\"][] = "$base_path/tests/src/Kernel";
       $this->testNamespaces["Drupal\\Tests\\$name\\Functional\\"][] = "$base_path/tests/src/Functional";
     }
 
@@ -160,9 +161,13 @@ class TestDiscovery {
       try {
         $info = static::getTestInfo($classname, $parser->getDocComment());
       }
-      catch (\LogicException $e) {
-        // If the class is missing a summary line or an @group annotation just
-        // skip it. Most likely it is an abstract class, trait or test fixture.
+      catch (MissingGroupException $e) {
+        // If the class name ends in Test and is not a migrate table dump.
+        if (preg_match('/Test$/', $classname) && strpos($classname, 'migrate_drupal\Tests\Table') === FALSE) {
+          throw $e;
+        }
+        // If the class is @group annotation just skip it. Most likely it is an
+        // abstract class, trait or test fixture.
         continue;
       }
       // Skip this test class if it requires unavailable modules.
@@ -293,9 +298,6 @@ class TestDiscovery {
    *     PHPDoc annotations:
    *     - module: List of Drupal module extension names the test depends on.
    *
-   * @throws \Drupal\simpletest\Exception\MissingSummaryLineException
-   *   If the class does not have a PHPDoc summary line or @coversDefaultClass
-   *   annotation.
    * @throws \Drupal\simpletest\Exception\MissingGroupException
    *   If the class does not have a @group annotation.
    */
@@ -308,7 +310,9 @@ class TestDiscovery {
       'name' => $classname,
     );
     $annotations = array();
-    preg_match_all('/^ \* \@([^\s]*) (.*$)/m', $doc_comment, $matches);
+    // Look for annotations, allow an arbitrary amount of spaces before the
+    // * but nothing else.
+    preg_match_all('/^[ ]*\* \@([^\s]*) (.*$)/m', $doc_comment, $matches);
     if (isset($matches[1])) {
       foreach ($matches[1] as $key => $annotation) {
         if (!empty($annotations[$annotation])) {
@@ -337,9 +341,6 @@ class TestDiscovery {
     }
     else {
       $info['description'] = static::parseTestClassSummary($doc_comment);
-      if (empty($info['description'])) {
-        throw new MissingSummaryLineException(sprintf('Missing PHPDoc summary line in %s', $classname));
-      }
     }
     if (isset($annotations['dependencies'])) {
       $info['requires']['module'] = array_map('trim', explode(',', $annotations['dependencies']));
@@ -365,8 +366,10 @@ class TestDiscovery {
 
     $lines = explode("\n", $doc_comment);
     $summary = [];
+    // Add every line to the summary until the first empty line or annotation
+    // is found.
     foreach ($lines as $line) {
-      if ($line == ' *' || preg_match('/^ \* \@/', $line)) {
+      if (preg_match('/^[ ]*\*$/', $line) || preg_match('/^[ ]*\* \@/', $line)) {
         break;
       }
       $summary[] = trim($line, ' *');

@@ -7,16 +7,24 @@
 
   "use strict";
 
-  /**
-   * Renders the aural view of the edit mode toggle (i.e.screen reader support).
-   */
-  Drupal.contextualToolbar.AuralView = Backbone.View.extend({
+  Drupal.contextualToolbar.AuralView = Backbone.View.extend(/** @lends Drupal.contextualToolbar.AuralView# */{
 
-    // Tracks whether the tabbing constraint announcement has been read once yet.
+    /**
+     * Tracks whether the tabbing constraint announcement has been read once.
+     *
+     * @type {bool}
+     */
     announcedOnce: false,
 
-    /*
-     * {@inheritdoc}
+    /**
+     * Renders the aural view of the edit mode toggle (screen reader support).
+     *
+     * @constructs
+     *
+     * @augments Backbone.View
+     *
+     * @param {object} options
+     *   Options for the view.
      */
     initialize: function (options) {
       this.options = options;
@@ -28,7 +36,10 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @return {Drupal.contextualToolbar.AuralView}
+     *   The current contextual toolbar aural view.
      */
     render: function () {
       // Render the state.
@@ -39,11 +50,6 @@
 
     /**
      * Limits tabbing to the contextual links and edit mode toolbar tab.
-     *
-     * @param Drupal.contextualToolbar.StateModel model
-     *   A Drupal.contextualToolbar.StateModel model.
-     * @param bool isViewing
-     *   The value of the isViewing attribute in the model.
      */
     manageTabbing: function () {
       var tabbingContext = this.model.get('tabbingContext');
@@ -75,7 +81,8 @@
     /**
      * Responds to esc and tab key press events.
      *
-     * @param jQuery.Event event
+     * @param {jQuery.Event} event
+     *   The keypress event.
      */
     onKeypress: function (event) {
       // The first tab key press is tracked so that an annoucement about tabbing

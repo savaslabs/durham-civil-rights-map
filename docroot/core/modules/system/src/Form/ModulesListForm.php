@@ -7,13 +7,11 @@
 
 namespace Drupal\system\Form;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\PreExistingConfigException;
 use Drupal\Core\Config\UnmetDependenciesException;
 use Drupal\Core\Controller\TitleResolverInterface;
 use Drupal\Core\Access\AccessManagerInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Extension\Extension;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Extension\ModuleInstallerInterface;
@@ -25,6 +23,7 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\user\PermissionHandlerInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -61,46 +60,18 @@ class ModulesListForm extends FormBase {
   protected $keyValueExpirable;
 
   /**
-   * The entity manager.
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
-   */
-  protected $entityManager;
-
-  /**
-   * The title resolver.
-   *
-   * @var \Drupal\Core\Controller\TitleResolverInterface
-   */
-  protected $titleResolver;
-
-  /**
-   * The route provider.
-   *
-   * @var \Drupal\Core\Routing\RouteProviderInterface
-   */
-  protected $routeProvider;
-
-  /**
-   * The current route match.
-   *
-   * @var \Drupal\Core\Routing\RouteMatchInterface
-   */
-  protected $routeMatch;
-
-  /**
-   * The menu link manager.
-   *
-   * @var \Drupal\Core\Menu\MenuLinkManagerInterface
-   */
-  protected $menuLinkManager;
-
-  /**
    * The module installer.
    *
    * @var \Drupal\Core\Extension\ModuleInstallerInterface
    */
   protected $moduleInstaller;
+
+  /**
+   * The permission handler.
+   *
+   * @var \Drupal\user\PermissionHandlerInterface
+   */
+  protected $permissionHandler;
 
   /**
    * {@inheritdoc}
@@ -111,12 +82,8 @@ class ModulesListForm extends FormBase {
       $container->get('module_installer'),
       $container->get('keyvalue.expirable')->get('module_list'),
       $container->get('access_manager'),
-      $container->get('entity.manager'),
       $container->get('current_user'),
-      $container->get('current_route_match'),
-      $container->get('title_resolver'),
-      $container->get('router.route_provider'),
-      $container->get('plugin.manager.menu.link')
+      $container->get('user.permissions')
     );
   }
 
@@ -131,30 +98,18 @@ class ModulesListForm extends FormBase {
    *   The key value expirable factory.
    * @param \Drupal\Core\Access\AccessManagerInterface $access_manager
    *   Access manager.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
    * @param \Drupal\Core\Session\AccountInterface $current_user
    *   The current user.
-   * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
-   *   The current route match.
-   * @param \Drupal\Core\Controller\TitleResolverInterface $title_resolver
-   *   The title resolver.
-   * @param \Drupal\Core\Routing\RouteProviderInterface $route_provider
-   *   The route provider.
-   * @param \Drupal\Core\Menu\MenuLinkManagerInterface $menu_link_manager
-   *   The menu link manager.
+   * @param \Drupal\user\PermissionHandlerInterface $permission_handler
+   *   The permission handler.
    */
-  public function __construct(ModuleHandlerInterface $module_handler, ModuleInstallerInterface $module_installer, KeyValueStoreExpirableInterface $key_value_expirable, AccessManagerInterface $access_manager, EntityManagerInterface $entity_manager, AccountInterface $current_user,  RouteMatchInterface $route_match, TitleResolverInterface $title_resolver, RouteProviderInterface $route_provider, MenuLinkManagerInterface $menu_link_manager) {
+  public function __construct(ModuleHandlerInterface $module_handler, ModuleInstallerInterface $module_installer, KeyValueStoreExpirableInterface $key_value_expirable, AccessManagerInterface $access_manager, AccountInterface $current_user, PermissionHandlerInterface $permission_handler) {
     $this->moduleHandler = $module_handler;
     $this->moduleInstaller = $module_installer;
     $this->keyValueExpirable = $key_value_expirable;
     $this->accessManager = $access_manager;
-    $this->entityManager = $entity_manager;
     $this->currentUser = $current_user;
-    $this->routeMatch = $route_match;
-    $this->titleResolver = $title_resolver;
-    $this->routeProvider = $route_provider;
-    $this->menuLinkManager = $menu_link_manager;
+    $this->permissionHandler = $permission_handler;
   }
 
   /**
@@ -169,7 +124,7 @@ class ModulesListForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     require_once DRUPAL_ROOT . '/core/includes/install.inc';
-    $distribution = SafeMarkup::checkPlain(drupal_install_profile_distribution_name());
+    $distribution = drupal_install_profile_distribution_name();
 
     // Include system.admin.inc so we can use the sort callbacks.
     $this->moduleHandler->loadInclude('system', 'inc', 'system.admin');
@@ -183,14 +138,15 @@ class ModulesListForm extends FormBase {
 
     $form['filters']['text'] = array(
       '#type' => 'search',
-      '#title' => $this->t('Search'),
+      '#title' => $this->t('Filter modules'),
+      '#title_display' => 'invisible',
       '#size' => 30,
-      '#placeholder' => $this->t('Enter module name'),
+      '#placeholder' => $this->t('Filter by name or description'),
+      '#description' => $this->t('Enter a part of the module name or description'),
       '#attributes' => array(
         'class' => array('table-filter-text'),
         'data-table' => '#system-modules',
         'autocomplete' => 'off',
-        'title' => $this->t('Enter a part of the module name or description to filter by.'),
       ),
     );
 
@@ -214,11 +170,6 @@ class ModulesListForm extends FormBase {
         '#title' => $this->t($package),
         '#open' => TRUE,
         '#theme' => 'system_modules_details',
-        '#header' => array(
-          array('data' => $this->t('Installed'), 'class' => array('checkbox', 'visually-hidden')),
-          array('data' => $this->t('Name'), 'class' => array('name', 'visually-hidden')),
-          array('data' => $this->t('Description'), 'class' => array('description', 'visually-hidden', RESPONSIVE_PRIORITY_LOW)),
-        ),
         '#attributes' => array('class' => array('package-listing')),
         // Ensure that the "Core" package comes first.
         '#weight' => $package == 'Core' ? -10 : NULL,
@@ -238,7 +189,7 @@ class ModulesListForm extends FormBase {
     $form['actions'] = array('#type' => 'actions');
     $form['actions']['submit'] = array(
       '#type' => 'submit',
-      '#value' => $this->t('Save configuration'),
+      '#value' => $this->t('Install'),
       '#button_type' => 'primary',
     );
 
@@ -267,22 +218,20 @@ class ModulesListForm extends FormBase {
     $row['description']['#markup'] = $this->t($module->info['description']);
     $row['version']['#markup'] = $module->info['version'];
 
-    // Generate link for module's help page, if there is one.
-    $row['links']['help'] = array();
+    // Generate link for module's help page. Assume that if a hook_help()
+    // implementation exists then the module provides an overview page, rather
+    // than checking to see if the page exists, which is costly.
     if ($this->moduleHandler->moduleExists('help') && $module->status && in_array($module->getName(), $this->moduleHandler->getImplementations('help'))) {
-      if ($this->moduleHandler->invoke($module->getName(), 'help', array('help.page.' . $module->getName(), $this->routeMatch))) {
-        $row['links']['help'] = array(
-          '#type' => 'link',
-          '#title' => $this->t('Help'),
-          '#url' => Url::fromRoute('help.page', ['name' => $module->getName()]),
-          '#options' => array('attributes' => array('class' =>  array('module-link', 'module-link-help'), 'title' => $this->t('Help'))),
-        );
-      }
+      $row['links']['help'] = array(
+        '#type' => 'link',
+        '#title' => $this->t('Help'),
+        '#url' => Url::fromRoute('help.page', ['name' => $module->getName()]),
+        '#options' => array('attributes' => array('class' =>  array('module-link', 'module-link-help'), 'title' => $this->t('Help'))),
+      );
     }
 
     // Generate link for module's permission, if the user has access to it.
-    $row['links']['permissions'] = array();
-    if ($module->status && \Drupal::currentUser()->hasPermission('administer permissions') && in_array($module->getName(), $this->moduleHandler->getImplementations('permission'))) {
+    if ($module->status && $this->currentUser->hasPermission('administer permissions') && $this->permissionHandler->moduleProvidesPermissions($module->getName())) {
       $row['links']['permissions'] = array(
         '#type' => 'link',
         '#title' => $this->t('Permissions'),
@@ -292,36 +241,16 @@ class ModulesListForm extends FormBase {
     }
 
     // Generate link for module's configuration page, if it has one.
-    $row['links']['configure'] = array();
     if ($module->status && isset($module->info['configure'])) {
       $route_parameters = isset($module->info['configure_parameters']) ? $module->info['configure_parameters'] : array();
       if ($this->accessManager->checkNamedRoute($module->info['configure'], $route_parameters, $this->currentUser)) {
-
-        $links = $this->menuLinkManager->loadLinksByRoute($module->info['configure']);
-        /** @var \Drupal\Core\Menu\MenuLinkInterface $link */
-        $link = reset($links);
-        // Most configure links have a corresponding menu link, though some just
-        // have a route.
-        if ($link) {
-          $description = $link->getDescription();
-        }
-        else {
-          $request = new Request();
-          $request->attributes->set('_route_name', $module->info['configure']);
-          $route_object = $this->routeProvider->getRouteByName($module->info['configure']);
-          $request->attributes->set('_route', $route_object);
-          $request->attributes->add($route_parameters);
-          $description = $this->titleResolver->getTitle($request, $route_object);
-        }
-
         $row['links']['configure'] = array(
           '#type' => 'link',
-          '#title' => $this->t('Configure'),
+          '#title' => $this->t('Configure <span class="visually-hidden">the @module module</span>', ['@module' => $module->info['name']]),
           '#url' => Url::fromRoute($module->info['configure'], $route_parameters),
           '#options' => array(
             'attributes' => array(
               'class' => array('module-link', 'module-link-configure'),
-              'title' => $description,
             ),
           ),
         );
@@ -353,8 +282,8 @@ class ModulesListForm extends FormBase {
     // Check the core compatibility.
     if ($module->info['core'] != \Drupal::CORE_COMPATIBILITY) {
       $compatible = FALSE;
-      $reasons[] = $this->t('This version is not compatible with Drupal !core_version and should be replaced.', array(
-        '!core_version' => \Drupal::CORE_COMPATIBILITY,
+      $reasons[] = $this->t('This version is not compatible with Drupal @core_version and should be replaced.', array(
+        '@core_version' => \Drupal::CORE_COMPATIBILITY,
       ));
     }
 
@@ -362,9 +291,9 @@ class ModulesListForm extends FormBase {
     if (version_compare(phpversion(), $module->info['php']) < 0) {
       $compatible = FALSE;
       $required = $module->info['php'] . (substr_count($module->info['php'], '.') < 2 ? '.*' : '');
-      $reasons[] = $this->t('This module requires PHP version @php_required and is incompatible with PHP version !php_version.', array(
+      $reasons[] = $this->t('This module requires PHP version @php_required and is incompatible with PHP version @php_version.', array(
         '@php_required' => $required,
-        '!php_version' => phpversion(),
+        '@php_version' => phpversion(),
       ));
     }
 
@@ -515,13 +444,15 @@ class ModulesListForm extends FormBase {
       return;
     }
 
-    // Gets list of modules prior to install process.
-    $before = $this->moduleHandler->getModuleList();
-
-    // There seem to be no dependencies that would need approval.
+    // Install the given modules.
     if (!empty($modules['install'])) {
       try {
         $this->moduleInstaller->install(array_keys($modules['install']));
+        $module_names = array_values($modules['install']);
+        drupal_set_message($this->formatPlural(count($module_names), 'Module %name has been enabled.', '@count modules have been enabled: %names.', array(
+          '%name' => $module_names[0],
+          '%names' => implode(', ', $module_names),
+        )));
       }
       catch (PreExistingConfigException $e) {
         $config_objects = $e->flattenConfigObjects($e->getConfigObjects());
@@ -545,12 +476,6 @@ class ModulesListForm extends FormBase {
         );
         return;
       }
-    }
-
-    // Gets module list after install process, flushes caches and displays a
-    // message if there are changes.
-    if ($before != $this->moduleHandler->getModuleList()) {
-      drupal_set_message(t('The configuration options have been saved.'));
     }
   }
 

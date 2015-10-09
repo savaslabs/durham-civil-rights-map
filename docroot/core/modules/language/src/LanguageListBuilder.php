@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\language\Form\LanguageListBuilder.
+ * Contains \Drupal\language\LanguageListBuilder.
  */
 
 namespace Drupal\language;
@@ -56,7 +56,7 @@ class LanguageListBuilder extends DraggableListBuilder {
   }
 
   /**
-   * Constructs a new EntityListController object.
+   * Constructs a new LanguageListBuilder object.
    *
    * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
    *   The entity type definition.
@@ -107,7 +107,7 @@ class LanguageListBuilder extends DraggableListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    $row['label'] = $this->getLabel($entity);
+    $row['label'] = $entity->label();
     $row['default'] = array(
       '#type' => 'radio',
       '#parents' => array('site_default_language'),

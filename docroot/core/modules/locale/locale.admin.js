@@ -1,9 +1,21 @@
+/**
+ * @file
+ * Locale admin behavior.
+ */
+
 (function ($, Drupal) {
 
   "use strict";
 
   /**
-   * Marks changes of translations
+   * Marks changes of translations.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches behavior to show the user if translations has changed.
+   * @prop {Drupal~behaviorDetach} detach
+   *   Detach behavior to show the user if translations has changed.
    */
   Drupal.behaviors.localeTranslateDirty = {
     attach: function () {
@@ -24,7 +36,7 @@
           $row.addClass('changed');
           // Add an asterisk only once if row changed.
           if ($rowToMark.length) {
-            $rowToMark.find('td:first-child .form-item').append(marker);
+            $rowToMark.find('td:first-child .js-form-item').append(marker);
           }
         });
       }
@@ -41,6 +53,11 @@
 
   /**
    * Show/hide the description details on Available translation updates page.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches behavior for toggling details on the translation update page.
    */
   Drupal.behaviors.hideUpdateInformation = {
     attach: function (context, settings) {
@@ -73,10 +90,24 @@
     }
   };
 
-  $.extend(Drupal.theme, {
+  $.extend(Drupal.theme, /** @lends Drupal.theme */{
+
+    /**
+     * Creates markup for a changed translation marker.
+     *
+     * @return {string}
+     *   Markup for the marker.
+     */
     localeTranslateChangedMarker: function () {
       return '<abbr class="warning ajax-changed" title="' + Drupal.t('Changed') + '">*</abbr>';
     },
+
+    /**
+     * Creates markup for the translation changed warning.
+     *
+     * @return {string}
+     *   Markup for the warning.
+     */
     localeTranslateChangedWarning: function () {
       return '<div class="clearfix messages messages--warning">' + Drupal.theme('localeTranslateChangedMarker') + ' ' + Drupal.t('Changes made in this table will not be saved until the form is submitted.') + '</div>';
     }

@@ -52,7 +52,7 @@ class GeofieldProximity extends SortPluginBase {
     }
   }
 
-  function buildOptionsForm(&$form, &$form_state) {
+  function buildOptionsForm(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
 
     $form['source'] = array(
@@ -71,7 +71,7 @@ class GeofieldProximity extends SortPluginBase {
     }
   }
 
-  function validateOptionsForm(&$form, &$form_state) {
+  function validateOptionsForm(&$form, FormStateInterface $form_state) {
     $proximityPlugin = geofield_proximity_load_plugin($form_state['values']['options']['source']);
     $proximityPlugin->options_validate($form, $form_state, $this);
   }

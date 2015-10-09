@@ -101,7 +101,7 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
 
     $definition = $this->getPluginDefinition();
     $canonical_path = isset($definition['uri_paths']['canonical']) ? $definition['uri_paths']['canonical'] : '/' . strtr($this->pluginId, ':', '/') . '/{id}';
-    $create_path = isset($definition['uri_paths']['http://drupal.org/link-relations/create']) ? $definition['uri_paths']['http://drupal.org/link-relations/create'] : '/' . strtr($this->pluginId, ':', '/');
+    $create_path = isset($definition['uri_paths']['https://www.drupal.org/link-relations/create']) ? $definition['uri_paths']['https://www.drupal.org/link-relations/create'] : '/' . strtr($this->pluginId, ':', '/');
 
     $route_name = strtr($this->pluginId, ':', '.');
 
@@ -111,7 +111,7 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
 
       switch ($method) {
         case 'POST':
-          $route->setPattern($create_path);
+          $route->setPath($create_path);
           // Restrict the incoming HTTP Content-type header to the known
           // serialization formats.
           $route->addRequirements(array('_content_type_format' => implode('|', $this->serializerFormats)));
@@ -203,10 +203,14 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
       // Pass the resource plugin ID along as default property.
       '_plugin' => $this->pluginId,
     ), array(
-      // The HTTP method is a requirement for this route.
-      '_method' => $method,
       '_permission' => "restful $lower_method $this->pluginId",
-    ));
+    ),
+      array(),
+      '',
+      array(),
+      // The HTTP method is a requirement for this route.
+      array($method)
+    );
     return $route;
   }
 

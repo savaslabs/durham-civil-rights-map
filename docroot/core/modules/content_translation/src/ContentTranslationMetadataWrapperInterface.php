@@ -2,13 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\content_translation\ContentTranslationMetadataInterface.
+ * Contains \Drupal\content_translation\ContentTranslationMetadataWrapperInterface.
  */
 
 namespace Drupal\content_translation;
 
-use Drupal\Core\Entity\EntityChangedInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\user\UserInterface;
 
 /**
@@ -17,7 +15,7 @@ use Drupal\user\UserInterface;
  * This acts as a wrapper for an entity translation object, encapsulating the
  * logic needed to retrieve translation metadata.
  */
-interface ContentTranslationMetadataWrapperInterface extends EntityChangedInterface {
+interface ContentTranslationMetadataWrapperInterface {
 
   /**
    * Retrieves the source language for this translation.
@@ -66,6 +64,8 @@ interface ContentTranslationMetadataWrapperInterface extends EntityChangedInterf
   /**
    * Sets the translation author.
    *
+   * The metadata field will be updated, only if it's translatable.
+   *
    * @param \Drupal\user\UserInterface $account
    *   The translation author user entity.
    *
@@ -83,6 +83,8 @@ interface ContentTranslationMetadataWrapperInterface extends EntityChangedInterf
 
   /**
    * Sets the translation published status.
+   *
+   * The metadata field will be updated, only if it's translatable.
    *
    * @param bool $published
    *   TRUE if the translation is published, FALSE otherwise.
@@ -102,6 +104,8 @@ interface ContentTranslationMetadataWrapperInterface extends EntityChangedInterf
   /**
    * Sets the translation creation timestamp.
    *
+   * The metadata field will be updated, only if it's translatable.
+   *
    * @param int $timestamp
    *   The UNIX timestamp of when the translation was created.
    *
@@ -110,7 +114,17 @@ interface ContentTranslationMetadataWrapperInterface extends EntityChangedInterf
   public function setCreatedTime($timestamp);
 
   /**
+   * Returns the timestamp of the last entity change from current translation.
+   *
+   * @return int
+   *   The timestamp of the last entity save operation.
+   */
+  public function getChangedTime();
+
+  /**
    * Sets the translation modification timestamp.
+   *
+   * The metadata field will be updated, only if it's translatable.
    *
    * @param int $timestamp
    *   The UNIX timestamp of when the translation was last modified.

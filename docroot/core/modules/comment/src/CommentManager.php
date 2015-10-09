@@ -175,15 +175,15 @@ class CommentManager implements CommentManagerInterface {
 
       if ($this->userConfig->get('register') != USER_REGISTER_ADMINISTRATORS_ONLY) {
         // Users can register themselves.
-        return $this->t('<a href="@login">Log in</a> or <a href="@register">register</a> to post comments', array(
-          '@login' => $this->urlGenerator->generateFromRoute('user.login', array(), array('query' => $destination)),
-          '@register' => $this->urlGenerator->generateFromRoute('user.register', array(), array('query' => $destination)),
+        return $this->t('<a href=":login">Log in</a> or <a href=":register">register</a> to post comments', array(
+          ':login' => $this->urlGenerator->generateFromRoute('user.login', array(), array('query' => $destination)),
+          ':register' => $this->urlGenerator->generateFromRoute('user.register', array(), array('query' => $destination)),
         ));
       }
       else {
         // Only admins can add new users, no public registration.
-        return $this->t('<a href="@login">Log in</a> to post comments', array(
-          '@login' => $this->urlGenerator->generateFromRoute('user.login', array(), array('query' => $destination)),
+        return $this->t('<a href=":login">Log in</a> to post comments', array(
+          ':login' => $this->urlGenerator->generateFromRoute('user.login', array(), array('query' => $destination)),
         ));
       }
     }
@@ -195,7 +195,7 @@ class CommentManager implements CommentManagerInterface {
    */
   public function getCountNewComments(EntityInterface $entity, $field_name = NULL, $timestamp = 0) {
     // @todo Replace module handler with optional history service injection
-    //   after http://drupal.org/node/2081585
+    //   after https://www.drupal.org/node/2081585.
     if ($this->currentUser->isAuthenticated() && $this->moduleHandler->moduleExists('history')) {
       // Retrieve the timestamp at which the current user last viewed this entity.
       if (!$timestamp) {
@@ -209,7 +209,7 @@ class CommentManager implements CommentManagerInterface {
           }
           else {
             // Default to 30 days ago.
-            // @todo Remove once http://drupal.org/node/1029708 lands.
+            // @todo Remove once https://www.drupal.org/node/1029708 lands.
             $timestamp = COMMENT_NEW_LIMIT;
           }
         }

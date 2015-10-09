@@ -23,7 +23,6 @@ class View extends RenderElement {
   public function getInfo() {
     $class = get_class($this);
     return array(
-      '#theme_wrappers' => array('container'),
       '#pre_render' => array(
         array($class, 'preRenderViewElement'),
       ),
@@ -31,6 +30,7 @@ class View extends RenderElement {
       '#display_id' => 'default',
       '#arguments' => array(),
       '#embed' => TRUE,
+      '#cache' => [],
     );
   }
 
@@ -38,7 +38,11 @@ class View extends RenderElement {
    * View element pre render callback.
    */
   public static function preRenderViewElement($element) {
-    $element['#attributes']['class'][] = 'views-element-container';
+    // Allow specific Views displays to explicitly perform pre-rendering, for
+    // those displays that need to be able to know the fully built render array.
+    if (!empty($element['#pre_rendered'])) {
+      return $element;
+    }
 
     if (!isset($element['#view'])) {
       $view = Views::getView($element['#name']);
@@ -47,9 +51,21 @@ class View extends RenderElement {
       $view = $element['#view'];
     }
 
+    $element += $view->element;
+    $view->element = &$element;
+    // Mark the element as being prerendered, so other code like
+    // \Drupal\views\ViewExecutable::setCurrentPage knows that its no longer
+    // possible to manipulate the $element.
+    $view->element['#pre_rendered'] = TRUE;
+
+
+    if (isset($element['#response'])) {
+      $view->setResponse($element['#response']);
+    }
+
     if ($view && $view->access($element['#display_id'])) {
       if (!empty($element['#embed'])) {
-        $element += $view->preview($element['#display_id'], $element['#arguments']);
+        $element['view_build'] = $view->preview($element['#display_id'], $element['#arguments']);
       }
       else {
         // Add contextual links to the view. We need to attach them to the dummy
@@ -70,7 +86,18 @@ class View extends RenderElement {
           $element['#title'] = &$element['view_build']['#title'];
         }
 
-        views_add_contextual_links($element, 'view', $view, $view->current_display);
+        if (empty($view->display_handler->getPluginDefinition()['returns_response'])) {
+          // views_add_contextual_links() needs the following information in
+          // order to be attached to the view.
+          $element['#view_id'] = $view->storage->id();
+          $element['#view_display_show_admin_links'] = $view->getShowAdminLinks();
+          $element['#view_display_plugin_id'] = $view->display_handler->getPluginId();
+          views_add_contextual_links($element, 'view', $view->current_display);
+        }
+      }
+      if (empty($view->display_handler->getPluginDefinition()['returns_response'])) {
+        $element['#attributes']['class'][] = 'views-element-container';
+        $element['#theme_wrappers'] = array('container');
       }
     }
 

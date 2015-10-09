@@ -7,10 +7,17 @@
 
   "use strict";
 
-  Drupal.quickedit.EntityToolbarView = Backbone.View.extend({
+  Drupal.quickedit.EntityToolbarView = Backbone.View.extend(/** @lends Drupal.quickedit.EntityToolbarView# */{
 
+    /**
+     * @type {jQuery}
+     */
     _fieldToolbarRoot: null,
 
+    /**
+     * @return {object}
+     *   A map of events.
+     */
     events: function () {
       var map = {
         'click button.action-save': 'onClickSave',
@@ -21,7 +28,14 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @constructs
+     *
+     * @augments Backbone.View
+     *
+     * @param {object} options
+     *   Options to construct the view.
+     * @param {Drupal.quickedit.AppModel} options.appModel
+     *   A quickedit `AppModel` to use in the view.
      */
     initialize: function (options) {
       var that = this;
@@ -35,8 +49,8 @@
       // Rerender when a field of the entity changes state.
       this.listenTo(this.model.get('fields'), 'change:state', this.fieldStateChange);
 
-      // Reposition the entity toolbar as the viewport and the position within the
-      // viewport changes.
+      // Reposition the entity toolbar as the viewport and the position within
+      // the viewport changes.
       $(window).on('resize.quickedit scroll.quickedit', debounce($.proxy(this.windowChangeHandler, this), 150));
 
       // Adjust the fence placement within which the entity toolbar may be
@@ -57,7 +71,10 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @return {Drupal.quickedit.EntityToolbarView}
+     *   The entity toolbar view.
      */
     render: function () {
       if (this.model.get('isActive')) {
@@ -83,7 +100,8 @@
         this.position();
       }
 
-      // The save button text and state varies with the state of the entity model.
+      // The save button text and state varies with the state of the entity
+      // model.
       var $button = this.$el.find('.quickedit-button.action-save');
       var isDirty = this.model.get('isDirty');
       // Adjust the save button according to the state of the model.
@@ -98,6 +116,7 @@
             .removeAttr('disabled')
             .attr('aria-hidden', !isDirty);
           break;
+
         // The changes to the fields of the entity are being committed.
         case 'committing':
           $button
@@ -105,6 +124,7 @@
             .text(Drupal.t('Saving'))
             .attr('disabled', 'disabled');
           break;
+
         default:
           $button.attr('aria-hidden', true);
           break;
@@ -114,7 +134,7 @@
     },
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     remove: function () {
       // Remove additional DOM elements controlled by this View.
@@ -130,7 +150,8 @@
     /**
      * Repositions the entity toolbar on window scroll and resize.
      *
-     * @param jQuery.Eevent event
+     * @param {jQuery.Event} event
+     *   The scroll or resize event.
      */
     windowChangeHandler: function (event) {
       this.position();
@@ -139,15 +160,18 @@
     /**
      * Determines the actions to take given a change of state.
      *
-     * @param Drupal.quickedit.FieldModel model
-     * @param String state
-     *   The state of the associated field. One of Drupal.quickedit.FieldModel.states.
+     * @param {Drupal.quickedit.FieldModel} model
+     *   The `FieldModel` model.
+     * @param {string} state
+     *   The state of the associated field. One of
+     *   {@link Drupal.quickedit.FieldModel.states}.
      */
     fieldStateChange: function (model, state) {
       switch (state) {
         case 'active':
           this.render();
           break;
+
         case 'invalid':
           this.render();
           break;
@@ -157,8 +181,8 @@
     /**
      * Uses the jQuery.ui.position() method to position the entity toolbar.
      *
-     * @param jQuery|DOM element
-     *   (optional) The element against which the entity toolbar is positioned.
+     * @param {HTMLElement} [element]
+     *   The element against which the entity toolbar is positioned.
      */
     position: function (element) {
       clearTimeout(this.timer);
@@ -169,7 +193,8 @@
       var edge = (document.documentElement.dir === 'rtl') ? 'right' : 'left';
       // A time unit to wait until the entity toolbar is repositioned.
       var delay = 0;
-      // Determines what check in the series of checks below should be evaluated
+      // Determines what check in the series of checks below should be
+      // evaluated.
       var check = 0;
       // When positioned against an active field that has padding, we should
       // ignore that padding when positioning the toolbar, to not unnecessarily
@@ -186,11 +211,13 @@
             // Position against a specific element.
             of = element;
             break;
+
           case 1:
             // Position against a form container.
             activeField = Drupal.quickedit.app.model.get('activeField');
             of = activeField && activeField.editorView && activeField.editorView.$formContainer && activeField.editorView.$formContainer.find('.quickedit-form');
             break;
+
           case 2:
             // Position against an active field.
             of = activeField && activeField.editorView && activeField.editorView.getEditedElement();
@@ -198,12 +225,14 @@
               horizontalPadding = 5;
             }
             break;
+
           case 3:
             // Position against a highlighted field.
             highlightedField = Drupal.quickedit.app.model.get('highlightedField');
             of = highlightedField && highlightedField.editorView && highlightedField.editorView.getEditedElement();
             delay = 250;
             break;
+
           default:
             var fieldModels = this.model.get('fields').models;
             var topMostPosition = 1000000;
@@ -230,18 +259,22 @@
        * Invoked as the 'using' callback of jquery.ui.position() in
        * positionToolbar().
        *
-       * @param Object suggested
+       * @param {*} view
+       *   The view the positions will be calculated from.
+       * @param {object} suggested
        *   A hash of top and left values for the position that should be set. It
        *   can be forwarded to .css() or .animate().
-       * @param Object info
+       * @param {object} info
        *   The position and dimensions of both the 'my' element and the 'of'
        *   elements, as well as calculations to their relative position. This
        *   object contains the following properties:
-       *     - Object element: A hash that contains information about the HTML
-       *     element that will be positioned. Also known as the 'my' element.
-       *     - Object target: A hash that contains information about the HTML
-       *     element that the 'my' element will be positioned against. Also known
-       *     as the 'of' element.
+       * @param {object} info.element
+       *   A hash that contains information about the HTML element that will be
+       *   positioned. Also known as the 'my' element.
+       * @param {object} info.target
+       *   A hash that contains information about the HTML element that the
+       *   'my' element will be positioned against. Also known as the 'of'
+       *   element.
        */
       function refinePosition(view, suggested, info) {
         // Determine if the pointer should be on the top or bottom.
@@ -250,8 +283,8 @@
         // Don't position the toolbar past the first or last editable field if
         // the entity is the target.
         if (view.$entity[0] === info.target.element[0]) {
-          // Get the first or last field according to whether the toolbar is above
-          // or below the entity.
+          // Get the first or last field according to whether the toolbar is
+          // above or below the entity.
           var $field = view.$entity.find('.quickedit-editable').eq((isBelow) ? -1 : 0);
           if ($field.length > 0) {
             suggested.top = (isBelow) ? ($field.offset().top + $field.outerHeight(true)) : $field.offset().top - info.element.element.outerHeight(true);
@@ -282,8 +315,9 @@
           .position({
             my: edge + ' bottom',
             // Move the toolbar 1px towards the start edge of the 'of' element,
-            // plus any horizontal padding that may have been added to the element
-            // that is being added, to prevent unwanted horizontal movement.
+            // plus any horizontal padding that may have been added to the
+            // element that is being added, to prevent unwanted horizontal
+            // movement.
             at: edge + '+' + (1 + horizontalPadding) + ' top',
             of: of,
             collision: 'flipfit',
@@ -306,10 +340,10 @@
       // only after the user has focused on an editable for 250ms. This prevents
       // the toolbar from jumping around the screen.
       this.timer = setTimeout(function () {
-        // Render the position in the next execution cycle, so that animations on
-        // the field have time to process. This is not strictly speaking, a
-        // guarantee that all animations will be finished, but it's a simple way
-        // to get better positioning without too much additional code.
+        // Render the position in the next execution cycle, so that animations
+        // on the field have time to process. This is not strictly speaking, a
+        // guarantee that all animations will be finished, but it's a simple
+        // way to get better positioning without too much additional code.
         _.defer(positionToolbar);
       }, delay);
     },
@@ -317,7 +351,8 @@
     /**
      * Set the model state to 'saving' when the save button is clicked.
      *
-     * @param jQuery event
+     * @param {jQuery.Event} event
+     *   The click event.
      */
     onClickSave: function (event) {
       event.stopPropagation();
@@ -329,7 +364,8 @@
     /**
      * Sets the model state to candidate when the cancel button is clicked.
      *
-     * @param jQuery event
+     * @param {jQuery.Event} event
+     *   The click event.
      */
     onClickCancel: function (event) {
       event.preventDefault();
@@ -341,7 +377,8 @@
      *
      * Without this, it may reposition itself, away from the user's cursor!
      *
-     * @param jQuery event
+     * @param {jQuery.Event} event
+     *   The mouse event.
      */
     onMouseenter: function (event) {
       clearTimeout(this.timer);
@@ -349,6 +386,9 @@
 
     /**
      * Builds the entity toolbar HTML; attaches to DOM; sets starting position.
+     *
+     * @return {jQuery}
+     *   The toolbar element.
      */
     buildToolbarEl: function () {
       var $toolbar = $(Drupal.theme('quickeditEntityToolbar', {
@@ -376,8 +416,8 @@
           ]
         }));
 
-      // Give the toolbar a sensible starting position so that it doesn't animate
-      // on to the screen from a far off corner.
+      // Give the toolbar a sensible starting position so that it doesn't
+      // animate on to the screen from a far off corner.
       $toolbar
         .css({
           left: this.$entity.offset().left,
@@ -390,7 +430,7 @@
     /**
      * Returns the DOM element that fields will attach their toolbars to.
      *
-     * @return jQuery
+     * @return {jQuery}
      *   The DOM element that fields will attach their toolbars to.
      */
     getToolbarRoot: function () {
@@ -425,7 +465,8 @@
         });
       }
       else {
-        label = entityLabel;
+        // @todo Add XSS regression test coverage in https://www.drupal.org/node/2547437
+        label = Drupal.checkPlain(entityLabel);
       }
 
       this.$el
@@ -436,9 +477,9 @@
     /**
      * Adds classes to a toolgroup.
      *
-     * @param String toolgroup
+     * @param {string} toolgroup
      *   A toolgroup name.
-     * @param String classes
+     * @param {string} classes
      *   A string of space-delimited class names that will be applied to the
      *   wrapping element of the toolbar group.
      */
@@ -449,9 +490,9 @@
     /**
      * Removes classes from a toolgroup.
      *
-     * @param String toolgroup
+     * @param {string} toolgroup
      *   A toolgroup name.
-     * @param String classes
+     * @param {string} classes
      *   A string of space-delimited class names that will be removed from the
      *   wrapping element of the toolbar group.
      */
@@ -462,9 +503,10 @@
     /**
      * Finds a toolgroup.
      *
-     * @param String toolgroup
+     * @param {string} toolgroup
      *   A toolgroup name.
-     * @return jQuery
+     *
+     * @return {jQuery}
      *   The toolgroup DOM element.
      */
     _find: function (toolgroup) {
@@ -474,7 +516,7 @@
     /**
      * Shows a toolgroup.
      *
-     * @param String toolgroup
+     * @param {string} toolgroup
      *   A toolgroup name.
      */
     show: function (toolgroup) {

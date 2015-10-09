@@ -7,6 +7,8 @@
 
 namespace Drupal\test_page_test\Controller;
 
+use Drupal\Component\Utility\Html;
+
 /**
  * Defines a test controller for page titles.
  */
@@ -47,6 +49,20 @@ class Test {
    */
   public function dynamicTitle() {
     return 'Dynamic title';
+  }
+
+  /**
+   * Defines a controller with a cached render array.
+   *
+   * @return array
+   *   A render array
+   */
+  public function controllerWithCache() {
+    $build = [];
+    $build['#title'] = '<span>Cached title</span>';
+    $build['#cache']['keys'] = ['test_controller', 'with_title'];
+
+    return $build;
   }
 
   /**

@@ -8,6 +8,7 @@
 namespace Drupal\views\Plugin\views\field;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\PluralTranslatableMarkup;
 use Drupal\views\ResultRow;
 
 /**
@@ -102,6 +103,7 @@ class NumericField extends FieldPluginBase {
     for ($i = 0; $i < $plurals; $i++) {
       $form['format_plural_values'][$i] = array(
         '#type' => 'textfield',
+        // @todo Should use better labels https://www.drupal.org/node/2499639
         '#title' => ($i == 0 ? $this->t('Singular form') : $this->formatPlural($i, 'First plural form', '@count. plural form')),
         '#default_value' => isset($plural_array[$i]) ? $plural_array[$i] : '',
         '#description' => $this->t('Text to use for this variant, @count will be replaced with the value.'),
@@ -113,7 +115,7 @@ class NumericField extends FieldPluginBase {
       );
     }
     if ($plurals == 2) {
-      // Simplify user interface text for the most common case.
+      // Simplify interface text for the most common case.
       $form['format_plural_values'][0]['#description'] = $this->t('Text to use for the singular form, @count will be replaced with the value.');
       $form['format_plural_values'][1]['#title'] = $this->t('Plural form');
       $form['format_plural_values'][1]['#description'] = $this->t('Text to use for the plural form, @count will be replaced with the value.');
@@ -173,7 +175,7 @@ class NumericField extends FieldPluginBase {
     // If we should format as plural, take the (possibly) translated plural
     // setting and format with the current language.
     if (!empty($this->options['format_plural'])) {
-      $value = $this->formatPluralTranslated($value, $this->options['format_plural_string']);
+      $value = PluralTranslatableMarkup::createFromTranslatedString($value, $this->options['format_plural_string']);
     }
 
     return $this->sanitizeValue($this->options['prefix'], 'xss')

@@ -2,12 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\edit\Tests\MetadataGeneratorTest.
+ * Contains \Drupal\quickedit\Tests\MetadataGeneratorTest.
  */
 
 namespace Drupal\quickedit\Tests;
 
-use Drupal\Core\Language\LanguageInterface;
 use Drupal\quickedit\EditorSelector;
 use Drupal\quickedit\MetadataGenerator;
 use Drupal\quickedit\Plugin\InPlaceEditorManager;
@@ -101,24 +100,22 @@ class MetadataGeneratorTest extends QuickEditTestBase {
     $entity = entity_load('entity_test', $entity->id());
 
     // Verify metadata for field 1.
-    $items_1 = $entity->getTranslation(LanguageInterface::LANGCODE_NOT_SPECIFIED)->get($field_1_name);
+    $items_1 = $entity->get($field_1_name);
     $metadata_1 = $this->metadataGenerator->generateFieldMetadata($items_1, 'default');
     $expected_1 = array(
       'access' => TRUE,
       'label' => 'Plain text field',
       'editor' => 'plain_text',
-      'aria' => 'Entity entity_test 1, field Plain text field',
     );
     $this->assertEqual($expected_1, $metadata_1, 'The correct metadata is generated for the first field.');
 
     // Verify metadata for field 2.
-    $items_2 = $entity->getTranslation(LanguageInterface::LANGCODE_NOT_SPECIFIED)->get($field_2_name);
+    $items_2 = $entity->get($field_2_name);
     $metadata_2 = $this->metadataGenerator->generateFieldMetadata($items_2, 'default');
     $expected_2 = array(
       'access' => TRUE,
       'label' => 'Simple number field',
       'editor' => 'form',
-      'aria' => 'Entity entity_test 1, field Simple number field',
     );
     $this->assertEqual($expected_2, $metadata_2, 'The correct metadata is generated for the second field.');
   }
@@ -171,13 +168,12 @@ class MetadataGeneratorTest extends QuickEditTestBase {
     $entity = entity_load('entity_test', $entity->id());
 
     // Verify metadata.
-    $items = $entity->getTranslation(LanguageInterface::LANGCODE_NOT_SPECIFIED)->get($field_name);
+    $items = $entity->get($field_name);
     $metadata = $this->metadataGenerator->generateFieldMetadata($items, 'default');
     $expected = array(
       'access' => TRUE,
       'label' => 'Rich text field',
       'editor' => 'wysiwyg',
-      'aria' => 'Entity entity_test 1, field Rich text field',
       'custom' => array(
         'format' => 'full_html'
       ),

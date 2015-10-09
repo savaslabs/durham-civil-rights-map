@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Cache\ArrayBackend.
+ * Contains \Drupal\Core\Cache\MemoryBackend.
  */
 
 namespace Drupal\Core\Cache;
@@ -107,7 +107,7 @@ class MemoryBackend implements CacheBackendInterface, CacheTagsInvalidatorInterf
    * Implements Drupal\Core\Cache\CacheBackendInterface::set().
    */
   public function set($cid, $data, $expire = Cache::PERMANENT, array $tags = array()) {
-    Cache::validateTags($tags);
+    assert('\Drupal\Component\Assertion\Inspector::assertAllStrings($tags)', 'Cache Tags must be strings.');
     $tags = array_unique($tags);
     // Sort the cache tags so that they are stored consistently in the database.
     sort($tags);
@@ -215,6 +215,15 @@ class MemoryBackend implements CacheBackendInterface, CacheTagsInvalidatorInterf
    */
   public function __sleep() {
     return [];
+  }
+
+  /**
+   * Reset statically cached variables.
+   *
+   * This is only used by tests.
+   */
+  public function reset() {
+    $this->cache = [];
   }
 
 }

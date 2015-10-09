@@ -11,16 +11,6 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 require_once dirname(__FILE__) . '/config_test.hooks.inc';
 
 /**
- * Loads a ConfigTest object.
- *
- * @param string $id
- *   The ID of the ConfigTest object to load.
- */
-function config_test_load($id) {
-  return entity_load('config_test', $id);
-}
-
-/**
  * Implements hook_cache_flush().
  */
 function config_test_cache_flush() {
@@ -58,4 +48,7 @@ function config_test_entity_type_alter(array &$entity_types) {
   $config_test_no_status->set('id', 'config_test_no_status');
   $config_test_no_status->set('entity_keys', $keys);
   $config_test_no_status->set('config_prefix', 'no_status');
+  if (\Drupal::service('state')->get('config_test.lookup_keys', FALSE)) {
+    $entity_types['config_test']->set('lookup_keys', ['uuid', 'style']);
+  }
 }

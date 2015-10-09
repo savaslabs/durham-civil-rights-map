@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Plugin\Context;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\TypedData\TypedDataTrait;
 
 /**
@@ -57,6 +56,13 @@ class ContextDefinition implements ContextDefinitionInterface {
   protected $isRequired = TRUE;
 
   /**
+   * The default value.
+   *
+   * @var mixed
+   */
+  protected $defaultValue;
+
+  /**
    * An array of constraints.
    *
    * @var array[]
@@ -90,15 +96,18 @@ class ContextDefinition implements ContextDefinitionInterface {
    *   Whether the context definition is required.
    * @param bool $multiple
    *   Whether the context definition is multivalue.
-   * @param mixed string|null $description
+   * @param string|null $description
    *   The description of this context definition for the UI.
+   * @param mixed $default_value
+   *   The default value of this definition.
    */
-  public function __construct($data_type = 'any', $label = NULL, $required = TRUE, $multiple = FALSE, $description = NULL) {
+  public function __construct($data_type = 'any', $label = NULL, $required = TRUE, $multiple = FALSE, $description = NULL, $default_value = NULL) {
     $this->dataType = $data_type;
     $this->label = $label;
     $this->isRequired = $required;
     $this->isMultiple = $multiple;
     $this->description = $description;
+    $this->defaultValue = $default_value;
   }
 
   /**
@@ -179,6 +188,21 @@ class ContextDefinition implements ContextDefinitionInterface {
   /**
    * {@inheritdoc}
    */
+  public function getDefaultValue() {
+    return $this->defaultValue;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setDefaultValue($default_value) {
+    $this->defaultValue = $default_value;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getConstraints() {
     // @todo Apply defaults.
     return $this->constraints;
@@ -220,7 +244,7 @@ class ContextDefinition implements ContextDefinitionInterface {
     }
 
     if (!$definition) {
-      throw new \Exception(SafeMarkup::format('The data type "@type" is invalid', array('@type' => $this->getDataType())));
+      throw new \Exception("The data type '{$this->getDataType()}' is invalid");
     }
     $definition->setLabel($this->getLabel())
       ->setDescription($this->getDescription())

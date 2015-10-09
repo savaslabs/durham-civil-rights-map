@@ -85,7 +85,7 @@ class DenormalizeTest extends NormalizerTestBase {
   public function testMarkFieldForDeletion() {
     // Add a default value for a field.
     $field = FieldConfig::loadByName('entity_test', 'entity_test', 'field_test_text');
-    $field->default_value = array(array('value' => 'Llama'));
+    $field->setDefaultValue(array(array('value' => 'Llama')));
     $field->save();
 
     // Denormalize data that contains no entry for the field, and check that
@@ -188,7 +188,7 @@ class DenormalizeTest extends NormalizerTestBase {
   /**
    * Verifies that the denormalized entity is correct in the PATCH context.
    */
-  public function testPatchDenormailzation() {
+  public function testPatchDenormalization() {
     $data = array(
       '_links' => array(
         'type' => array(

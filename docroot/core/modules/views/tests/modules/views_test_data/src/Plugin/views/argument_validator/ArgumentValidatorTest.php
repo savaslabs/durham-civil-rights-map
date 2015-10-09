@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\views_test_data\Plugin\views\argument_validator\ArgumentValidatorTest.
+ * Contains \Drupal\views_test_data\Plugin\views\argument_validator\ArgumentValidatorTest.
  */
 
 namespace Drupal\views_test_data\Plugin\views\argument_validator;
@@ -25,6 +25,23 @@ class ArgumentValidatorTest extends ArgumentValidatorPluginBase {
     return [
       'content' => ['ArgumentValidatorTest'],
     ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function defineOptions() {
+    $options = parent::defineOptions();
+    $options['test_value'] = ['default' => ''];
+
+    return $options;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateArgument($arg) {
+    return $arg == $this->options['test_value'];
   }
 
 }

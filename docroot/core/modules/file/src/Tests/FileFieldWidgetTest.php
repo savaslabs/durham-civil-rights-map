@@ -2,17 +2,19 @@
 
 /**
  * @file
- * Definition of Drupal\file\Tests\FileFieldWidgetTest.
+ * Contains \Drupal\file\Tests\FileFieldWidgetTest.
  */
 
 namespace Drupal\file\Tests;
 
 use Drupal\comment\Entity\Comment;
 use Drupal\comment\Tests\CommentTestTrait;
-use Drupal\Component\Utility\Html;
+use Drupal\Component\Utility\Unicode;
 use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field_ui\Tests\FieldUiTestTrait;
 use Drupal\user\RoleInterface;
+use Drupal\file\Entity\File;
 
 /**
  * Tests the file field widget, single and multi-valued, with and without AJAX,
@@ -59,7 +61,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
       $nid = $this->uploadNodeFile($test_file, $field_name, $type_name);
       $node_storage->resetCache(array($nid));
       $node = $node_storage->load($nid);
-      $node_file = file_load($node->{$field_name}->target_id);
+      $node_file = File::load($node->{$field_name}->target_id);
       $this->assertFileExists($node_file, 'New file saved to disk on node creation.');
 
       // Ensure the file can be downloaded.
@@ -86,7 +88,8 @@ class FileFieldWidgetTest extends FileFieldTestBase {
       $this->assertNoFieldByXPath('//input[@type="submit"]', t('Remove'), 'After clicking the "Remove" button, it is no longer displayed.');
       $this->assertFieldByXpath('//input[@type="submit"]', t('Upload'), 'After clicking the "Remove" button, the "Upload" button is displayed.');
       // Test label has correct 'for' attribute.
-      $label = $this->xpath("//label[@for='edit-" . Html::cleanCssIdentifier($field_name) . "-0-upload']");
+      $input = $this->xpath('//input[@name="files[' . $field_name . '_0]"]');
+      $label = $this->xpath('//label[@for="' . (string) $input[0]['id'] . '"]');
       $this->assertTrue(isset($label[0]), 'Label for upload found.');
 
       // Save the node and ensure it does not have the file.
@@ -111,8 +114,9 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     // names).
     $field_name = 'test_file_field_1';
     $field_name2 = 'test_file_field_2';
-    $this->createFileField($field_name, 'node', $type_name, array('cardinality' => 3));
-    $this->createFileField($field_name2, 'node', $type_name, array('cardinality' => 3));
+    $cardinality = 3;
+    $this->createFileField($field_name, 'node', $type_name, array('cardinality' => $cardinality));
+    $this->createFileField($field_name2, 'node', $type_name, array('cardinality' => $cardinality));
 
     $test_file = $this->getTestFile('text');
 
@@ -214,6 +218,49 @@ class FileFieldWidgetTest extends FileFieldTestBase {
       $node = $node_storage->load($nid);
       $this->assertTrue(empty($node->{$field_name}->target_id), 'Node was successfully saved without any files.');
     }
+
+    $upload_files = array($test_file, $test_file);
+    // Try to upload multiple files, but fewer than the maximum.
+    $nid = $this->uploadNodeFiles($upload_files, $field_name, $type_name);
+    $node_storage->resetCache(array($nid));
+    $node = $node_storage->load($nid);
+    $this->assertEqual(count($node->{$field_name}), count($upload_files), 'Node was successfully saved with mulitple files.');
+
+    // Try to upload more files than allowed on revision.
+    $this->uploadNodeFiles($upload_files, $field_name, $nid, 1);
+    $args = array(
+      '%field' => $field_name,
+      '@count' => $cardinality
+    );
+    $this->assertRaw(t('%field: this field cannot hold more than @count values.', $args));
+    $node_storage->resetCache(array($nid));
+    $node = $node_storage->load($nid);
+    $this->assertEqual(count($node->{$field_name}), count($upload_files), 'More files than allowed could not be saved to node.');
+
+    // Try to upload exactly the allowed number of files on revision.
+    $this->uploadNodeFile($test_file, $field_name, $nid, 1);
+    $node_storage->resetCache(array($nid));
+    $node = $node_storage->load($nid);
+    $this->assertEqual(count($node->{$field_name}), $cardinality, 'Node was successfully revised to maximum number of files.');
+
+    // Try to upload exactly the allowed number of files, new node.
+    $upload_files[] = $test_file;
+    $nid = $this->uploadNodeFiles($upload_files, $field_name, $type_name);
+    $node_storage->resetCache(array($nid));
+    $node = $node_storage->load($nid);
+    $this->assertEqual(count($node->{$field_name}), $cardinality, 'Node was successfully saved with maximum number of files.');
+
+    // Try to upload more files than allowed, new node.
+    $upload_files[] = $test_file;
+    $this->uploadNodeFiles($upload_files, $field_name, $type_name);
+
+    $args = [
+      '%field' => $field_name,
+      '@max' => $cardinality,
+      '@count' => count($upload_files),
+      '%list' => $test_file->getFileName(),
+    ];
+    $this->assertRaw(t('Field %field can only hold @max values but there were @count uploaded. The following files have been omitted as a result: %list.', $args));
   }
 
   /**
@@ -228,16 +275,17 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     $field_name = strtolower($this->randomMachineName());
     $this->createFileField($field_name, 'node', $type_name);
     $field = FieldConfig::loadByName('node', $type_name, $field_name);
+    $field_id = $field->id();
 
     $test_file = $this->getTestFile('text');
 
     // Change the field setting to make its files private, and upload a file.
     $edit = array('settings[uri_scheme]' => 'private');
-    $this->drupalPostForm("admin/structure/types/manage/$type_name/fields/$field->id/storage", $edit, t('Save field settings'));
+    $this->drupalPostForm("admin/structure/types/manage/$type_name/fields/$field_id/storage", $edit, t('Save field settings'));
     $nid = $this->uploadNodeFile($test_file, $field_name, $type_name);
     $node_storage->resetCache(array($nid));
     $node = $node_storage->load($nid);
-    $node_file = file_load($node->{$field_name}->target_id);
+    $node_file = File::load($node->{$field_name}->target_id);
     $this->assertFileExists($node_file, 'New file saved to disk on node creation.');
 
     // Ensure the private file is available to the user who uploaded it.
@@ -246,12 +294,12 @@ class FileFieldWidgetTest extends FileFieldTestBase {
 
     // Ensure we can't change 'uri_scheme' field settings while there are some
     // entities with uploaded files.
-    $this->drupalGet("admin/structure/types/manage/$type_name/fields/$field->id/storage");
+    $this->drupalGet("admin/structure/types/manage/$type_name/fields/$field_id/storage");
     $this->assertFieldByXpath('//input[@id="edit-settings-uri-scheme-public" and @disabled="disabled"]', 'public', 'Upload destination setting disabled.');
 
     // Delete node and confirm that setting could be changed.
     $node->delete();
-    $this->drupalGet("admin/structure/types/manage/$type_name/fields/$field->id/storage");
+    $this->drupalGet("admin/structure/types/manage/$type_name/fields/$field_id/storage");
     $this->assertFieldByXpath('//input[@id="edit-settings-uri-scheme-public" and not(@disabled)]', 'public', 'Upload destination setting enabled.');
   }
 
@@ -373,4 +421,32 @@ class FileFieldWidgetTest extends FileFieldTestBase {
       $this->assertNoRaw($error_message, t('Validation error removed when file with correct extension uploaded (JSMode=%type).', array('%type' => $type)));
     }
   }
+
+  /**
+   * Tests file widget element.
+   */
+  public function testWidgetElement() {
+    $field_name = Unicode::strtolower($this->randomMachineName());
+    $html_name = str_replace('_', '-', $field_name);
+    $this->createFileField($field_name, 'node', 'article', ['cardinality' => FieldStorageConfig::CARDINALITY_UNLIMITED]);
+    $file = $this->getTestFile('text');
+    $xpath = "//details[@data-drupal-selector='edit-$html_name']/div[@class='details-wrapper']/table";
+
+    $this->drupalGet('node/add/article');
+
+    $elements = $this->xpath($xpath);
+
+    // If the field has no item, the table should not be visible.
+    $this->assertIdentical(count($elements), 0);
+
+    // Upload a file.
+    $edit['files[' . $field_name . '_0][]'] = $this->container->get('file_system')->realpath($file->getFileUri());
+    $this->drupalPostAjaxForm(NULL, $edit, "{$field_name}_0_upload_button");
+
+    $elements = $this->xpath($xpath);
+
+    // If the field has at least a item, the table should be visible.
+    $this->assertIdentical(count($elements), 1);
+  }
+
 }

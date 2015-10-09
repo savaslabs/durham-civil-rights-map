@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\Core\Database\Driver\pgsql\Insert
+ * Contains \Drupal\Core\Database\Driver\pgsql\Insert.
  */
 
 namespace Drupal\Core\Database\Driver\pgsql;
@@ -117,6 +117,8 @@ class Insert extends QueryInsert {
     // Default fields are always placed first for consistency.
     $insert_fields = array_merge($this->defaultFields, $this->insertFields);
 
+    $insert_fields = array_map(function($f) { return $this->connection->escapeField($f); }, $insert_fields);
+
     // If we're selecting from a SelectQuery, finish building the query and
     // pass it back, as any remaining options are irrelevant.
     if (!empty($this->fromQuery)) {
@@ -126,32 +128,10 @@ class Insert extends QueryInsert {
 
     $query = $comments . 'INSERT INTO {' . $this->table . '} (' . implode(', ', $insert_fields) . ') VALUES ';
 
-    $max_placeholder = 0;
-    $values = array();
-      if (count($this->insertValues)) {
-      foreach ($this->insertValues as $insert_values) {
-        $placeholders = array();
-
-        // Default fields aren't really placeholders, but this is the most convenient
-        // way to handle them.
-        $placeholders = array_pad($placeholders, count($this->defaultFields), 'default');
-
-        $new_placeholder = $max_placeholder + count($insert_values);
-        for ($i = $max_placeholder; $i < $new_placeholder; ++$i) {
-          $placeholders[] = ':db_insert_placeholder_' . $i;
-        }
-        $max_placeholder = $new_placeholder;
-        $values[] = '(' . implode(', ', $placeholders) . ')';
-      }
-    }
-    else {
-      // If there are no values, then this is a default-only query. We still need to handle that.
-      $placeholders = array_fill(0, count($this->defaultFields), 'default');
-      $values[] = '(' . implode(', ', $placeholders) . ')';
-    }
-
+    $values = $this->getInsertPlaceholderFragment($this->insertValues, $this->defaultFields);
     $query .= implode(', ', $values);
 
     return $query;
   }
+
 }

@@ -7,25 +7,18 @@
 
 namespace Drupal\aggregator\Plugin\Validation\Constraint;
 
-use Symfony\Component\Validator\Constraint;
+use Drupal\Core\Validation\Plugin\Validation\Constraint\UniqueFieldConstraint;
 
 /**
  * Supports validating feed URLs.
  *
- * @Plugin(
+ * @Constraint(
  *   id = "FeedUrl",
  *   label = @Translation("Feed URL", context = "Validation")
  * )
  */
-class FeedUrlConstraint extends Constraint {
+class FeedUrlConstraint extends UniqueFieldConstraint {
 
   public $message = 'A feed with this URL %value already exists. Enter a unique URL.';
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validatedBy() {
-    return '\Drupal\Core\Validation\Plugin\Validation\Constraint\UniqueFieldValueValidator';
-  }
 
 }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\field_test\Plugin\field\formatter\TestFieldPrepareViewFormatter.
+ * Contains \Drupal\field_test\Plugin\Field\FieldFormatter\TestFieldPrepareViewFormatter.
  */
 
 namespace Drupal\field_test\Plugin\Field\FieldFormatter;
@@ -75,7 +75,7 @@ class TestFieldPrepareViewFormatter extends FormatterBase {
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $elements = array();
 
     foreach ($items as $delta => $item) {

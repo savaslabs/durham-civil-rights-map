@@ -9,7 +9,7 @@ namespace Drupal\user;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Extension\ModuleHandler;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -22,7 +22,7 @@ class AccountSettingsForm extends ConfigFormBase {
   /**
    * The module handler.
    *
-   * @var \Drupal\Core\Extension\ModuleHandler
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
   protected $moduleHandler;
 
@@ -38,12 +38,12 @@ class AccountSettingsForm extends ConfigFormBase {
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
-   * @param \Drupal\Core\Extension\ModuleHandler $module_handler
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
    * @param \Drupal\user\RoleStorageInterface $role_storage
    *   The role storage.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ModuleHandler $module_handler, RoleStorageInterface $role_storage) {
+  public function __construct(ConfigFactoryInterface $config_factory, ModuleHandlerInterface $module_handler, RoleStorageInterface $role_storage) {
     parent::__construct($config_factory);
     $this->moduleHandler = $module_handler;
     $this->roleStorage = $role_storage;
@@ -174,7 +174,7 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'radios',
       '#title' => $this->t('When cancelling a user account'),
       '#default_value' => $config->get('cancel_method'),
-      '#description' => $this->t('Users with the %select-cancel-method or %administer-users <a href="@permissions-url">permissions</a> can override this default method.', array('%select-cancel-method' => $this->t('Select method for cancelling account'), '%administer-users' => $this->t('Administer users'), '@permissions-url' => $this->url('user.admin_permissions'))),
+      '#description' => $this->t('Users with the %select-cancel-method or %administer-users <a href=":permissions-url">permissions</a> can override this default method.', array('%select-cancel-method' => $this->t('Select method for cancelling account'), '%administer-users' => $this->t('Administer users'), ':permissions-url' => $this->url('user.admin_permissions'))),
     );
     $form['registration_cancellation']['user_cancel_method'] += user_cancel_methods();
     foreach (Element::children($form['registration_cancellation']['user_cancel_method']) as $key) {
@@ -185,15 +185,6 @@ class AccountSettingsForm extends ConfigFormBase {
         $form['registration_cancellation']['user_cancel_method'][$key]['#access'] = FALSE;
       }
     }
-
-    // Account settings.
-    $filter_exists = $this->moduleHandler->moduleExists('filter');
-    $form['personalization'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('Personalization'),
-      '#open' => TRUE,
-      '#access' => $filter_exists,
-    );
 
     // Default notifications address.
     $form['mail_notification_address'] = array(
@@ -210,7 +201,7 @@ class AccountSettingsForm extends ConfigFormBase {
     );
     // These email tokens are shared for all settings, so just define
     // the list once to help ensure they stay in sync.
-    $email_token_help = $this->t('Available variables are: [site:name], [site:url], [user:name], [user:mail], [site:login-url], [site:url-brief], [user:edit-url], [user:one-time-login-url], [user:cancel-url].');
+    $email_token_help = $this->t('Available variables are: [site:name], [site:url], [user:display-name], [user:account-name], [user:mail], [site:login-url], [site:url-brief], [user:edit-url], [user:one-time-login-url], [user:cancel-url].');
 
     $form['email_admin_created'] = array(
       '#type' => 'details',

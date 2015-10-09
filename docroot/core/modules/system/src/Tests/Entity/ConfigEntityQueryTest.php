@@ -2,11 +2,12 @@
 
 /**
  * @file
- * Contains \Drupal\system\Tests\ConfigEntityQueryTest.
+ * Contains \Drupal\system\Tests\Entity\ConfigEntityQueryTest.
  */
 
 namespace Drupal\system\Tests\Entity;
 
+use Drupal\Core\Config\Entity\Query\QueryFactory;
 use Drupal\simpletest\KernelTestBase;
 
 /**
@@ -343,6 +344,62 @@ class ConfigEntityQueryTest extends KernelTestBase {
   }
 
   /**
+   * Tests ID conditions.
+   */
+  public function testStringIdConditions() {
+    // We need an entity with a non-numeric ID.
+    $entity = entity_create('config_query_test', array(
+      'label' => $this->randomMachineName(),
+      'id' => 'foo.bar',
+    ));
+    $this->entities[] = $entity;
+    $entity->enforceIsNew();
+    $entity->save();
+
+    // Test 'STARTS_WITH' condition.
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'foo.bar', 'STARTS_WITH')
+      ->execute();
+    $this->assertResults(array('foo.bar'));
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'f', 'STARTS_WITH')
+      ->execute();
+    $this->assertResults(array('foo.bar'));
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'miss', 'STARTS_WITH')
+      ->execute();
+    $this->assertResults(array());
+
+    // Test 'CONTAINS' condition.
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'foo.bar', 'CONTAINS')
+      ->execute();
+    $this->assertResults(array('foo.bar'));
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'oo.ba', 'CONTAINS')
+      ->execute();
+    $this->assertResults(array('foo.bar'));
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'miss', 'CONTAINS')
+      ->execute();
+    $this->assertResults(array());
+
+    // Test 'ENDS_WITH' condition.
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'foo.bar', 'ENDS_WITH')
+      ->execute();
+    $this->assertResults(array('foo.bar'));
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'r', 'ENDS_WITH')
+      ->execute();
+    $this->assertResults(array('foo.bar'));
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->condition('id', 'miss', 'ENDS_WITH')
+      ->execute();
+    $this->assertResults(array());
+  }
+
+  /**
    * Tests count query.
    */
   public function testCount() {
@@ -425,6 +482,74 @@ class ConfigEntityQueryTest extends KernelTestBase {
   }
 
   /**
+   * Tests sorting with tableSort on config entity queries.
+   */
+  public function testTableSort() {
+    $header = array(
+      array('data' => t('ID'), 'specifier' => 'id'),
+      array('data' => t('Number'), 'specifier' => 'number'),
+    );
+
+    // Sort key: id
+    // Sorting with 'DESC' upper case
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->tableSort($header)
+      ->sort('id', 'DESC')
+      ->execute();
+    $this->assertIdentical(array_values($this->queryResults), array('5', '4', '3', '2', '1'));
+
+    // Sorting with 'ASC' upper case
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->tableSort($header)
+      ->sort('id', 'ASC')
+      ->execute();
+    $this->assertIdentical(array_values($this->queryResults), array('1', '2', '3', '4', '5'));
+
+    // Sorting with 'desc' lower case
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->tableSort($header)
+      ->sort('id', 'desc')
+      ->execute();
+    $this->assertIdentical(array_values($this->queryResults), array('5', '4', '3', '2', '1'));
+
+    // Sorting with 'asc' lower case
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->tableSort($header)
+      ->sort('id', 'asc')
+      ->execute();
+    $this->assertIdentical(array_values($this->queryResults), array('1', '2', '3', '4', '5'));
+
+    // Sort key: number
+    // Sorting with 'DeSc' mixed upper and lower case
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->tableSort($header)
+      ->sort('number', 'DeSc')
+      ->execute();
+    $this->assertIdentical(array_values($this->queryResults), array('3', '5', '2', '1', '4'));
+
+    // Sorting with 'AsC' mixed upper and lower case
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->tableSort($header)
+      ->sort('number', 'AsC')
+      ->execute();
+    $this->assertIdentical(array_values($this->queryResults), array('4', '1', '2', '5', '3'));
+
+    // Sorting with 'dEsC' mixed upper and lower case
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->tableSort($header)
+      ->sort('number', 'dEsC')
+      ->execute();
+    $this->assertIdentical(array_values($this->queryResults), array('3', '5', '2', '1', '4'));
+
+    // Sorting with 'aSc' mixed upper and lower case
+    $this->queryResults = $this->factory->get('config_query_test')
+      ->tableSort($header)
+      ->sort('number', 'aSc')
+      ->execute();
+    $this->assertIdentical(array_values($this->queryResults), array('4', '1', '2', '5', '3'));
+  }
+
+  /**
    * Tests dotted path matching.
    */
   public function testDotted() {
@@ -467,6 +592,64 @@ class ConfigEntityQueryTest extends KernelTestBase {
       ->condition('label', 'test', 'CONTAINS')
       ->execute();
     $this->assertResults(array('3', '4', '5'));
+  }
+
+  /**
+   * Tests lookup keys are added to the key value store.
+   */
+  public function testLookupKeys() {
+    \Drupal::service('state')->set('config_test.lookup_keys', TRUE);
+    \Drupal::entityManager()->clearCachedDefinitions();
+    $key_value = $this->container->get('keyvalue')->get(QueryFactory::CONFIG_LOOKUP_PREFIX . 'config_test');
+
+    $test_entities = [];
+    $entity = entity_create('config_test', array(
+      'label' => $this->randomMachineName(),
+      'id' => '1',
+      'style' => 'test',
+    ));
+    $test_entities[$entity->getConfigDependencyName()] = $entity;
+    $entity->enforceIsNew();
+    $entity->save();
+
+
+    $expected[] = $entity->getConfigDependencyName();
+    $this->assertEqual($expected, $key_value->get('style:test'));
+
+    $entity = entity_create('config_test', array(
+      'label' => $this->randomMachineName(),
+      'id' => '2',
+      'style' => 'test',
+    ));
+    $test_entities[$entity->getConfigDependencyName()] = $entity;
+    $entity->enforceIsNew();
+    $entity->save();
+    $expected[] = $entity->getConfigDependencyName();
+    $this->assertEqual($expected, $key_value->get('style:test'));
+
+    $entity = entity_create('config_test', array(
+      'label' => $this->randomMachineName(),
+      'id' => '3',
+      'style' => 'blah',
+    ));
+    $entity->enforceIsNew();
+    $entity->save();
+    // Do not add this entity to the list of expected result as it has a
+    // different value.
+    $this->assertEqual($expected, $key_value->get('style:test'));
+    $this->assertEqual([$entity->getConfigDependencyName()], $key_value->get('style:blah'));
+
+    // Ensure that a delete clears a key.
+    $entity->delete();
+    $this->assertEqual([], $key_value->get('style:blah'));
+
+    // Ensure that delete only clears one key.
+    $entity_id = array_pop($expected);
+    $test_entities[$entity_id]->delete();
+    $this->assertEqual($expected, $key_value->get('style:test'));
+    $entity_id = array_pop($expected);
+    $test_entities[$entity_id]->delete();
+    $this->assertEqual($expected, $key_value->get('style:test'));
   }
 
   /**

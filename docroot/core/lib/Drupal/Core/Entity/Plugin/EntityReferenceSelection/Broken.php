@@ -2,14 +2,13 @@
 
 /**
  * @file
- * Contains \Drupal\Core\Entity\Plugin\EntityReferenceSelection\SelectionBroken.
+ * Contains \Drupal\Core\Entity\Plugin\EntityReferenceSelection\Broken.
  */
 
 namespace Drupal\Core\Entity\Plugin\EntityReferenceSelection;
 
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Entity\EntityReferenceSelection\SelectionInterface;
-use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -62,11 +61,6 @@ class Broken implements SelectionInterface {
   public function validateReferenceableEntities(array $ids) {
     return array();
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateAutocompleteInput($input, &$element, FormStateInterface $form_state, $form, $strict = TRUE) { }
 
   /**
    * {@inheritdoc}
