@@ -19,7 +19,10 @@
       margin-bottom: .5em;
       text-align: center;
 
-      .field-label {
+      .field__label,
+      .field__item {
+        display: inline-block;
+        float: none;
         font-weight: normal;
       }
 

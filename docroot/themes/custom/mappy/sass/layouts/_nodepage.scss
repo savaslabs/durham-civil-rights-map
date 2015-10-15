@@ -51,6 +51,7 @@
 
         .node-body {
           @include span-columns(6 of 10);
+          margin-right: 0;
         }
 
         p {
@@ -68,7 +69,7 @@
         @include shift(1 of 8);
       }
 
-      .field-node--address-text {
+      .field--name-address-text {
         padding-bottom: 1.5em;
       }
     }
@@ -93,6 +94,10 @@
       @include media ($wide) {
         @include span-columns(8 of 8);
       }
+    }
+
+    img {
+      display: block;
     }
   }
 }
