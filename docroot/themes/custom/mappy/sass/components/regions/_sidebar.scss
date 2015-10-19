@@ -55,10 +55,10 @@
         @include box-shadow;
         display: block;
         // Maintain aspect ratio.
-        height: 100%;
+        height: auto;
         margin: 0 auto;
-        max-height: 300px;
-        max-width: 100%;
+        max-width: 360px;
+        width: 100%;
 
       }
     }
