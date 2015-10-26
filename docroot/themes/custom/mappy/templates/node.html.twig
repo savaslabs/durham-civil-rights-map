@@ -79,6 +79,7 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
 {% endif %}
 <article{{ attributes.addClass(classes) }}>
 
+  {{ title_prefix }}
   <div class="node-title-box">
     {% if label %}
       <h2>{{ label }}</h2>
@@ -88,6 +89,7 @@ view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
     {{ content.address_text }}
     {% endif %}
   </div>
+  {{ title_suffix }}
 
   <div{{ content_attributes.addClass('node__content') }}>
     {% if node.bundle == 'place' %}
