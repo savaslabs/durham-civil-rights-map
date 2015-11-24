@@ -21,7 +21,7 @@ class DevelControllerTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('devel', 'node', 'entity_test', 'devel_test');
+  public static $modules = array('devel', 'node', 'entity_test', 'devel_entity_test', 'block');
 
   /**
    * {@inheritdoc}
@@ -53,6 +53,8 @@ class DevelControllerTest extends WebTestBase {
     $this->entity_no_links = entity_create('devel_entity_test_no_links', $data);
     $this->entity_no_links->save();
 
+    $this->drupalPlaceBlock('local_tasks_block');
+
     $web_user = $this->drupalCreateUser(array(
       'view test entity',
       'administer entity_test content',
@@ -69,7 +71,7 @@ class DevelControllerTest extends WebTestBase {
     // definitions.
     $this->drupalGet('entity_test/' . $this->entity->id());
     $this->assertText('Devel', 'Devel tab is present');
-    $this->drupalGet('entity_test/manage/' . $this->entity->id() . '/devel');
+    $this->drupalGet('entity_test/manage/' . $this->entity->id() . '/edit/devel');
     $this->assertResponse(200);
     $this->assertText('Load', 'Devel load tab is present');
     $this->assertText('Render', 'Devel load tab is present');

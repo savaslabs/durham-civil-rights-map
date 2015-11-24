@@ -1,2 +1,0 @@
-route_callbacks:
-  - '\Drupal\devel_test\Routing\DevelEntityTestRoutes::routes'

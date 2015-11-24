@@ -7,11 +7,9 @@
 
 namespace Drupal\filter\Element;
 
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Render\Element\RenderElement;
-use Drupal\Core\Render\Renderer;
 use Drupal\filter\Entity\FilterFormat;
 use Drupal\filter\Plugin\FilterInterface;
 use Drupal\filter\Render\FilteredMarkup;
@@ -140,7 +138,11 @@ class ProcessedText extends RenderElement {
   /**
    * Wraps a logger channel.
    *
+   * @param string $channel
+   *   The name of the channel.
+   *
    * @return \Psr\Log\LoggerInterface
+   *   The logger for this channel.
    */
   protected static function logger($channel) {
     return \Drupal::logger($channel);

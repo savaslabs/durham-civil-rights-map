@@ -6,13 +6,10 @@
 
 namespace Drupal\devel_node_access\Plugin\Block;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\devel_node_access\DnaBlockBase;
-use Drupal\Component\Annotation\Plugin;
-use Drupal\Core\Annotation\Translation;
-use Drupal\Core\Language\Language;
 
 /**
  * Provides the "Devel Node Access" block.
@@ -820,7 +817,7 @@ class DnaNode extends DnaBlockBase {
     if (isset($node)) {
       $nid = $node->id();
       if ($node_title = $node->title->value) {
-        $node_title = SafeMarkup::checkPlain($node_title);
+        $node_title = Html::escape($node_title);
         if ($clip_and_decorate) {
           if (drupal_strlen($node_title) > 20) {
             $node_title = "<span title='node/$nid: $node_title'>" . drupal_substr($node_title, 0, 15) . '...</span>';

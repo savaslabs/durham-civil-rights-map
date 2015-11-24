@@ -10,7 +10,6 @@ namespace Drupal\migrate\Plugin\migrate\source;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\migrate\Entity\MigrationInterface;
 use Drupal\migrate\MigrateException;
-use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\MigrateSkipRowException;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigrateSourceInterface;
@@ -137,6 +136,7 @@ abstract class SourcePluginBase extends PluginBase implements MigrateSourceInter
     $this->skipCount = !empty($configuration['skip_count']);
     $this->cacheKey = !empty($configuration['cache_key']) ? !empty($configuration['cache_key']) : NULL;
     $this->trackChanges = !empty($configuration['track_changes']) ? $configuration['track_changes'] : FALSE;
+    $this->idMap = $this->migration->getIdMap();
 
     // Pull out the current highwater mark if we have a highwater property.
     if ($this->highWaterProperty = $this->migration->get('highWaterProperty')) {
@@ -257,7 +257,6 @@ abstract class SourcePluginBase extends PluginBase implements MigrateSourceInter
    * source records.
    */
   public function rewind() {
-    $this->idMap = $this->migration->getIdMap();
     $this->getIterator()->rewind();
     $this->next();
   }

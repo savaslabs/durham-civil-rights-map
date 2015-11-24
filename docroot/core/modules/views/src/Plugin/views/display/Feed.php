@@ -12,7 +12,6 @@ use Drupal\Core\Cache\CacheableResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Views;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -46,7 +45,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   protected $usesPager = FALSE;
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::getType().
+   * {@inheritdoc}
    */
   public function getType() {
     return 'feed';
@@ -90,7 +89,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\PathPluginBase::preview().
+   * {@inheritdoc}
    */
   public function preview() {
     $output = $this->view->render();
@@ -107,7 +106,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\PathPluginBase::render().
+   * {@inheritdoc}
    */
   public function render() {
     $build = $this->view->style_plugin->render($this->view->result);
@@ -118,7 +117,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\displays\DisplayPluginBase::defaultableSections().
+   * {@inheritdoc}
    */
   public function defaultableSections($section = NULL) {
     $sections = parent::defaultableSections($section);
@@ -138,7 +137,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\PathPluginBase::defineOptions().
+   * {@inheritdoc}
    */
   protected function defineOptions() {
     $options = parent::defineOptions();
@@ -176,7 +175,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::optionsSummary().
+   * {@inheritdoc}
    */
   public function optionsSummary(&$categories, &$options) {
     parent::optionsSummary($categories, $options);
@@ -219,7 +218,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\PathPluginBase::buildOptionsForm().
+   * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     // It is very important to call the parent function here.
@@ -265,7 +264,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::submitOptionsForm().
+   * {@inheritdoc}
    */
   public function submitOptionsForm(&$form, FormStateInterface $form_state) {
     parent::submitOptionsForm($form, $form_state);
@@ -307,7 +306,7 @@ class Feed extends PathPluginBase implements ResponseDisplayPluginInterface {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::usesLinkDisplay().
+   * {@inheritdoc}
    */
   public function usesLinkDisplay() {
     return TRUE;

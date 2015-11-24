@@ -10,7 +10,6 @@ namespace Drupal\aggregator\Entity;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
-use Symfony\Component\DependencyInjection\Container;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\aggregator\FeedInterface;
 
@@ -30,7 +29,10 @@ use Drupal\aggregator\FeedInterface;
  *       "default" = "Drupal\aggregator\FeedForm",
  *       "delete" = "Drupal\aggregator\Form\FeedDeleteForm",
  *       "delete_items" = "Drupal\aggregator\Form\FeedItemsDeleteForm",
- *     }
+ *     },
+ *     "route_provider" = {
+ *       "html" = "Drupal\aggregator\FeedHtmlRouteProvider",
+ *     },
  *   },
  *   links = {
  *     "canonical" = "/aggregator/sources/{aggregator_feed}",
@@ -51,7 +53,7 @@ use Drupal\aggregator\FeedInterface;
 class Feed extends ContentEntityBase implements FeedInterface {
 
   /**
-   * Implements Drupal\Core\Entity\EntityInterface::label().
+   * {@inheritdoc}
    */
   public function label() {
     return $this->get('title')->value;

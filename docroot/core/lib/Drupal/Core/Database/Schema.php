@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Database;
 
-use Drupal\Core\Database\SchemaObjectExistsException;
 use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Database\Query\PlaceholderInterface;
 
@@ -57,14 +56,14 @@ abstract class Schema implements PlaceholderInterface {
   }
 
   /**
-   * Implements PlaceHolderInterface::uniqueIdentifier().
+   * {@inheritdoc}
    */
   public function uniqueIdentifier() {
     return $this->uniqueIdentifier;
   }
 
   /**
-   * Implements PlaceHolderInterface::nextPlaceholder().
+   * {@inheritdoc}
    */
   public function nextPlaceholder() {
     return $this->placeholder++;

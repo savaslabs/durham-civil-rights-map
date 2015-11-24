@@ -50,8 +50,8 @@ function devel_generate_entity_insert(EntityInterface $entity) {
   // Add an url alias. Cannot happen before save because we don't know the nid.
   if (!empty($results['add_alias'])) {
     $path = array(
-      'source' => 'node/' . $entity->id(),
-      'alias' => 'node-' . $entity->id() . '-' . $entity->bundle(),
+      'source' => '/node/' . $entity->id(),
+      'alias' => '/node-' . $entity->id() . '-' . $entity->bundle(),
     );
     \Drupal::service('path.alias_storage')->save($path['source'], $path['alias']);
   }

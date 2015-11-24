@@ -10,6 +10,8 @@ namespace Drupal\devel\Form;
 use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -22,7 +24,7 @@ class SwitchUserForm extends FormBase {
    *
    * @var \Drupal\Core\Access\CsrfTokenGenerator
    */
-  protected $csrfTokenGenerator;
+  protected $csrfToken;
 
   /**
    * Constructs a new SwitchUserForm object.
@@ -30,7 +32,7 @@ class SwitchUserForm extends FormBase {
    * @param \Drupal\Core\Access\CsrfTokenGenerator $csrf_token_generator
    */
   public function __construct(CsrfTokenGenerator $csrf_token_generator) {
-    $this->csrfTokenGenerator = $csrf_token_generator;
+    $this->csrfToken = $csrf_token_generator;
   }
 
   /**
@@ -53,19 +55,33 @@ class SwitchUserForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form['username'] = array(
-      '#type' => 'textfield',
-      '#description' => t('Enter username'),
-      '#autocomplete_route_name' => 'user.autocomplete',
+    $form['autocomplete'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['container-inline'],
+      ],
+    ];
+    $form['autocomplete']['userid'] = [
+      '#type' => 'entity_autocomplete',
+      '#title' => $this->t('Username'),
+      '#placeholder' => $this->t('Enter username'),
+      '#target_type' => 'user',
+      '#selection_settings' => [
+        'include_anonymous' => FALSE
+      ],
+      '#process_default_value' => FALSE,
       '#maxlength' => USERNAME_MAX_LENGTH,
-      '#size' => 16,
-    );
-    $form['submit'] = array(
+      '#title_display' => 'invisible',
+      '#required' => TRUE,
+      '#size' => '28',
+    ];
+
+    $form['autocomplete']['actions'] = ['#type' => 'actions'];
+    $form['autocomplete']['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => t('Switch'),
-      '#button_type' => 'primary',
-    );
-    $form['#attributes'] = array('class' => array('clearfix'));
+      '#value' => $this->t('Switch'),
+    ];
+
     return $form;
   }
 
@@ -73,8 +89,11 @@ class SwitchUserForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    if (!$account = user_load_by_name($form_state->getValue('username'))) {
-      $form_state->setErrorByName('username', t('Username not found'));
+    if (!$account = User::load($form_state->getValue('userid'))) {
+      $form_state->setErrorByName('userid', $this->t('Username not found'));
+    }
+    else {
+      $form_state->setValue('username', $account->getAccountName());
     }
   }
 
@@ -82,8 +101,13 @@ class SwitchUserForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $name = $form_state->getValue('username');
-    $path = 'devel/switch/' . $name;
-    $form_state->setRedirect('devel.switch', array('name' => $name), array('query' => array( 'destination' => '', 'token' => $this->csrfTokenGenerator->get($path))));
+    // We cannot rely on automatic token creation, since the csrf seed changes
+    // after the redirect and the generated token is not more valid.
+    // TODO find another way to do this.
+    $url = Url::fromRoute('devel.switch', ['name' => $form_state->getValue('username')]);
+    $url->setOption('query', ['token' => $this->csrfToken->get($url->getInternalPath())]);
+
+    $form_state->setRedirectUrl($url);
   }
+
 }

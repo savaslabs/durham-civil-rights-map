@@ -128,7 +128,7 @@
                     });
                 }
 
-                if (typeof JSON != 'undefined') {
+                if (typeof JSON != 'undefined' && typeof settings.advanced_options != 'undefined') {
                     var advancedOptions = JSON.parse(settings.advanced_options);
                     for (var option in advancedOptions) {
                         switch(option) {

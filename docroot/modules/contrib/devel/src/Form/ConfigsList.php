@@ -7,7 +7,7 @@
 
 namespace Drupal\devel\Form;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -84,7 +84,7 @@ class ConfigsList extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $filter = $form_state->getValue('name');
-    $form_state->setRedirectUrl(Url::FromRoute('devel.configs_list', array('filter' => SafeMarkup::checkPlain($filter))));
+    $form_state->setRedirectUrl(Url::FromRoute('devel.configs_list', array('filter' => Html::escape($filter))));
   }
 
 }

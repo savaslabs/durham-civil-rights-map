@@ -11,7 +11,8 @@ use Drupal\comment\Tests\CommentTestTrait;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Language\Language;
-use Drupal\entity_reference\Tests\EntityReferenceTestTrait;
+use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
+use Drupal\node\Entity\Node;
 use Drupal\simpletest\WebTestBase;
 
 /**
@@ -36,7 +37,7 @@ class DevelGenerateTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('menu_ui', 'node', 'comment', 'taxonomy', 'devel_generate');
+  public static $modules = array('menu_ui', 'node', 'comment', 'taxonomy', 'path', 'devel_generate');
 
   /**
    * Prepares the testing environment
@@ -111,11 +112,24 @@ class DevelGenerateTest extends WebTestBase {
       'time_range' => 604800,
       'max_comments' => 3,
       'title_length' => 4,
+      'add_alias' => 1,
     );
     $this->drupalPostForm('admin/config/development/generate/content', $edit, t('Generate'));
     $this->assertText(t('Deleted 1 nodes.'));
     $this->assertText(t('Finished creating 4 nodes'));
     $this->assertText(t('Generate process complete.'));
+
+    // Tests that nodes have been created in the generation process.
+    $nodes = Node::loadMultiple();
+    $this->assert(count($nodes) == 4, 'Nodes generated successfully.');
+
+    // Tests url alias for the generated nodes.
+    foreach ($nodes as $node) {
+      $alias = 'node-' . $node->id() . '-' . $node->bundle();
+      $this->drupalGet($alias);
+      $this->assertResponse('200');
+      $this->assertText($node->getTitle(), 'Generated url alias for the node works.');
+    }
 
     // Creating terms.
     $edit = array(

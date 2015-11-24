@@ -45,7 +45,7 @@ function hook_node_access_explain($row) {
   if ($row->realm == 'mymodule_myrealm') {
     if ($row->grant_view) {
       $role = user_role_load($row->gid);
-      return 'Role ' . \Drupal\Component\Utility\SafeMarkup::placeholder($role->name) . ' may view this node.';
+      return t('Role %role may view this node.', array('%role' => $role->name)) ;
     }
     else {
       return 'No access.';

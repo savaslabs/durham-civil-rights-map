@@ -2,12 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\system\Tests\Update\LocalActionsAndTasksConvertedIntoBlocksUpdateTest.
+ * Contains \Drupal\system\Tests\Update\SiteBrandingConvertedIntoBlockUpdateTest.
  */
 
 namespace Drupal\system\Tests\Update;
-
-use Drupal\node\Entity\Node;
 
 /**
  * Tests the upgrade path for local actions/tasks being converted into blocks.

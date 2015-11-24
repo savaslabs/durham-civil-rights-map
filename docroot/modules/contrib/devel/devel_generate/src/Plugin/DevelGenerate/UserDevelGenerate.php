@@ -7,7 +7,7 @@
 
 namespace Drupal\devel_generate\Plugin\DevelGenerate;
 
-use Drupal\Core\Datetime\DateFormatter;
+use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -42,7 +42,7 @@ class UserDevelGenerate extends DevelGenerateBase implements ContainerFactoryPlu
   /**
    * The date formatter service.
    *
-   * @var \Drupal\Core\Datetime\DateFormatter
+   * @var \Drupal\Core\Datetime\DateFormatterInterface
    */
   protected $dateFormatter;
 
@@ -57,10 +57,10 @@ class UserDevelGenerate extends DevelGenerateBase implements ContainerFactoryPlu
    *   The plugin implementation definition.
    * @param \Drupal\Core\Entity\EntityStorageInterface $entity_storage
    *   The user storage.
-   * @param \Drupal\Core\Datetime\DateFormatter $date_formatter
+   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityStorageInterface $entity_storage, DateFormatter $date_formatter) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityStorageInterface $entity_storage, DateFormatterInterface $date_formatter) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->userStorage = $entity_storage;
@@ -136,7 +136,7 @@ class UserDevelGenerate extends DevelGenerateBase implements ContainerFactoryPlu
     $kill = $values['kill'];
     $pass = $values['pass'];
     $age = $values['time_range'];
-    $roles = $values['roles'];
+    $roles = array_filter($values['roles']);
 
     if ($kill) {
       $uids = $this->userStorage->getQuery()
@@ -176,7 +176,7 @@ class UserDevelGenerate extends DevelGenerateBase implements ContainerFactoryPlu
         $account->save();
       }
     }
-    $this->setMessage($this->t('!num_users created.', array('!num_users' => $this->formatPlural($num, '1 user', '@count users'))));
+    $this->setMessage($this->t('@num_users created.', array('@num_users' => $this->formatPlural($num, '1 user', '@count users'))));
   }
 
   /**

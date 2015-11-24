@@ -7,8 +7,6 @@
 
 namespace Drupal\serialization\Normalizer;
 
-use Symfony\Component\Serializer\Exception\RuntimeException;
-
 /**
  * Converts the Drupal entity object structures to a normalized array.
  *
@@ -29,7 +27,7 @@ class ComplexDataNormalizer extends NormalizerBase {
   protected $supportedInterfaceOrClass = 'Drupal\Core\TypedData\ComplexDataInterface';
 
   /**
-   * Implements \Symfony\Component\Serializer\Normalizer\NormalizerInterface::normalize().
+   * {@inheritdoc}
    */
   public function normalize($object, $format = NULL, array $context = array()) {
     $attributes = array();

@@ -2,13 +2,13 @@ name: Views Slideshow Cycle
 type: module
 description: 'Adds a Rotating slideshow mode to Views Slideshow.'
 package: Views
-# version: 8.1
+# version: 8.4
 # core: 8.x
 dependencies:
   - views_slideshow
 
-# Information added by Drupal.org packaging script on 2015-08-25
-version: '8.x-3.0-beta1'
+# Information added by Drupal.org packaging script on 2015-11-13
+version: '8.x-4.0-alpha4'
 core: '8.x'
 project: 'views_slideshow'
-datestamp: 1440494640
+datestamp: 1447385952

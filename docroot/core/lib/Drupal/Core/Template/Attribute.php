@@ -90,7 +90,7 @@ class Attribute implements \ArrayAccess, \IteratorAggregate, MarkupInterface {
   }
 
   /**
-   * Implements ArrayAccess::offsetGet().
+   * {@inheritdoc}
    */
   public function offsetGet($name) {
     if (isset($this->storage[$name])) {
@@ -99,7 +99,7 @@ class Attribute implements \ArrayAccess, \IteratorAggregate, MarkupInterface {
   }
 
   /**
-   * Implements ArrayAccess::offsetSet().
+   * {@inheritdoc}
    */
   public function offsetSet($name, $value) {
     $this->storage[$name] = $this->createAttributeValue($name, $value);
@@ -117,10 +117,11 @@ class Attribute implements \ArrayAccess, \IteratorAggregate, MarkupInterface {
    *   An AttributeValueBase representation of the attribute's value.
    */
   protected function createAttributeValue($name, $value) {
-    // If the value is already an AttributeValueBase object, return it
-    // straight away.
-    if ($value instanceOf AttributeValueBase) {
-      return $value;
+    // If the value is already an AttributeValueBase object,
+    // return a new instance of the same class, but with the new name.
+    if ($value instanceof AttributeValueBase) {
+      $class = get_class($value);
+      return new $class($name, $value->value());
     }
     // An array value or 'class' attribute name are forced to always be an
     // AttributeArray value for consistency.
@@ -151,14 +152,14 @@ class Attribute implements \ArrayAccess, \IteratorAggregate, MarkupInterface {
   }
 
   /**
-   * Implements ArrayAccess::offsetUnset().
+   * {@inheritdoc}
    */
   public function offsetUnset($name) {
     unset($this->storage[$name]);
   }
 
   /**
-   * Implements ArrayAccess::offsetExists().
+   * {@inheritdoc}
    */
   public function offsetExists($name) {
     return isset($this->storage[$name]);
@@ -184,7 +185,7 @@ class Attribute implements \ArrayAccess, \IteratorAggregate, MarkupInterface {
       }
 
       // Merge if there are values, just add them otherwise.
-      if (isset($this->storage['class']) && $this->storage['class'] instanceOf AttributeArray) {
+      if (isset($this->storage['class']) && $this->storage['class'] instanceof AttributeArray) {
         // Merge the values passed in from the class value array.
         $classes = array_merge($this->storage['class']->value(), $classes);
         $this->storage['class']->exchangeArray($classes);
@@ -248,7 +249,7 @@ class Attribute implements \ArrayAccess, \IteratorAggregate, MarkupInterface {
    */
   public function removeClass() {
     // With no class attribute, there is no need to remove.
-    if (isset($this->storage['class']) && $this->storage['class'] instanceOf AttributeArray) {
+    if (isset($this->storage['class']) && $this->storage['class'] instanceof AttributeArray) {
       $args = func_get_args();
       $classes = array();
       foreach ($args as $arg) {
@@ -276,7 +277,7 @@ class Attribute implements \ArrayAccess, \IteratorAggregate, MarkupInterface {
    *   Returns TRUE if the class exists, or FALSE otherwise.
    */
   public function hasClass($class) {
-    if (isset($this->storage['class']) && $this->storage['class'] instanceOf AttributeArray) {
+    if (isset($this->storage['class']) && $this->storage['class'] instanceof AttributeArray) {
       return in_array($class, $this->storage['class']->value());
     }
     else {
@@ -324,7 +325,7 @@ class Attribute implements \ArrayAccess, \IteratorAggregate, MarkupInterface {
   }
 
   /**
-   * Implements IteratorAggregate::getIterator().
+   * {@inheritdoc}
    */
   public function getIterator() {
     return new \ArrayIterator($this->storage);

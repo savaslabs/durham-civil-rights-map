@@ -127,7 +127,11 @@ abstract class DevelGenerateBase extends PluginBase implements DevelGenerateBase
    *  The message type, as defined by drupal_set_message().
    */
   protected function setMessage($msg, $type = 'status') {
-    $function = function_exists('drush_log') ? 'drush_log' : 'drupal_set_message';
+    $function = 'drupal_set_message';
+    if (function_exists('drush_log')) {
+      $function = 'drush_log';
+      $msg = strip_tags($msg);
+    }
     $function($msg, $type);
   }
 

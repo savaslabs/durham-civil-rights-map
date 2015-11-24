@@ -13,8 +13,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -120,7 +118,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\PathPluginBase::defineOptions().
+   * {@inheritdoc}
    */
   protected function defineOptions() {
     $options = parent::defineOptions();
@@ -134,6 +132,7 @@ class Page extends PathPluginBase {
         'menu_name' => array('default' => 'main'),
         'parent' => array('default' => ''),
         'context' => array('default' => ''),
+        'expanded' => array('default' => FALSE),
       ),
     );
     $options['tab_options'] = array(
@@ -167,7 +166,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\PathPluginBase::execute().
+   * {@inheritdoc}
    */
   public function execute() {
     parent::execute();
@@ -188,7 +187,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::optionsSummary().
+   * {@inheritdoc}
    */
   public function optionsSummary(&$categories, &$options) {
     parent::optionsSummary($categories, $options);
@@ -226,7 +225,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\callbackPluginBase::buildOptionsForm().
+   * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
@@ -241,7 +240,7 @@ class Page extends PathPluginBase {
         );
         $menu = $this->getOption('menu');
         if (empty($menu)) {
-          $menu = array('type' => 'none', 'title' => '', 'weight' => 0);
+          $menu = array('type' => 'none', 'title' => '', 'weight' => 0, 'expanded' => FALSE);
         }
         $form['menu']['type'] = array(
           '#prefix' => '<div class="views-left-30">',
@@ -295,6 +294,12 @@ class Page extends PathPluginBase {
             ),
           ),
         );
+        $form['menu']['expanded'] = [
+          '#title' => $this->t('Show as expanded'),
+          '#type' => 'checkbox',
+          '#default_value' => !empty($menu['expanded']),
+          '#description' => $this->t('If selected and this menu link has children, the menu will always appear expanded. '),
+        ];
 
         // Only display the parent selector if Menu UI module is enabled.
         $menu_parent = $menu['menu_name'] . ':' . $menu['parent'];
@@ -433,7 +438,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\callbackPluginBase::validateOptionsForm().
+   * {@inheritdoc}
    */
   public function validateOptionsForm(&$form, FormStateInterface $form_state) {
     parent::validateOptionsForm($form, $form_state);
@@ -460,7 +465,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\callbackPluginBase::submitOptionsForm().
+   * {@inheritdoc}
    */
   public function submitOptionsForm(&$form, FormStateInterface $form_state) {
     parent::submitOptionsForm($form, $form_state);
@@ -482,7 +487,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::validate().
+   * {@inheritdoc}
    */
   public function validate() {
     $errors = parent::validate();
@@ -503,7 +508,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::getArgumentText().
+   * {@inheritdoc}
    */
   public function getArgumentText() {
     return array(
@@ -514,7 +519,7 @@ class Page extends PathPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::getPagerText().
+   * {@inheritdoc}
    */
   public function getPagerText() {
     return array(

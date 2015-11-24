@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Template;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Render\Markup;
 
@@ -58,6 +57,10 @@ class TwigEnvironment extends \Twig_Environment {
     );
     // Ensure autoescaping is always on.
     $options['autoescape'] = 'html';
+
+    $policy = new TwigSandboxPolicy();
+    $sandbox = new \Twig_Extension_Sandbox($policy, TRUE);
+    $this->addExtension($sandbox);
 
     if ($options['cache'] === TRUE) {
       $options['cache'] = new TwigPhpStorageCache($cache, $twig_extension_hash);

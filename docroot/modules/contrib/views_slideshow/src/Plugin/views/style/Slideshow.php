@@ -12,7 +12,7 @@ use Drupal\views\Plugin\views\style\StylePluginBase;
 use Drupal\Core\Url;
 
 /**
- * Style plugin to render each item in a grid cell.
+ * Style plugin to render each item in a slideshow.
  *
  * @ingroup views_style_plugins
  *
@@ -64,8 +64,24 @@ class Slideshow extends StylePluginBase {
     $options = parent::defineOptions();
     $options['row_class_custom'] = array('default' => '');
     $options['row_class_default'] = array('default' => TRUE);
+    $options['slideshow_type'] = array('default' => 'views_slideshow_cycle');
+    $options['slideshow_skin'] = array('default' => 'default');
 
-    return array_merge($options, \Drupal::moduleHandler()->invokeAll('views_slideshow_option_definition'));
+    $typeManager = \Drupal::service('plugin.manager.views_slideshow.slideshow_type');
+    foreach ($typeManager->getDefinitions() as $id => $definition) {
+      $instance = $typeManager->createInstance($id, []);
+      $options[$id] = $instance->defaultConfiguration();
+    }
+
+    $widgetTypeManager = \Drupal::service('plugin.manager.views_slideshow.widget_type');
+    $widgetTypes = $widgetTypeManager->getDefinitions();
+    foreach (array('top', 'bottom') as $location) {
+      foreach ($widgetTypes as $widgetTypeId => $widgetTypeDefinition) {
+        $options['widgets']['contains'][$location]['contains'][$widgetTypeId]['contains'] = $widgetTypeManager->createInstance($widgetTypeId, [])->defaultConfiguration();
+      }
+    }
+
+    return $options;
   }
 
   /**
@@ -79,17 +95,18 @@ class Slideshow extends StylePluginBase {
       '#markup' => '<div id="views-slideshow-form-wrapper">',
     );
 
-    /**
-     * Style.
-     */
+    // Skins.
     $form['slideshow_skin_header'] = array(
       '#markup' => '<h2>' . t('Style') . '</h2>',
     );
 
-    // Get a list of all available skins.
-    $skin_info = $this->getSkins();
-    foreach ($skin_info as $skin => $info) {
-      $skins[$skin] = $info['name'];
+    /** @var \Drupal\Component\Plugin\PluginManagerInterface */
+    $skinManager = \Drupal::service('plugin.manager.views_slideshow.slideshow_skin');
+
+    // Get all skins to create the option list.
+    $skins = [];
+    foreach ($skinManager->getDefinitions() as $id => $definition) {
+      $skins[$id] = $definition['label'];
     }
     asort($skins);
 
@@ -102,22 +119,21 @@ class Slideshow extends StylePluginBase {
       '#description' => t('Select the skin to use for this display.  Skins allow for easily swappable layouts of things like next/prev links and thumbnails.  Note that not all skins support all widgets, so a combination of skins and widgets may lead to unpredictable results in layout.'),
     );
 
-    /**
-     * Slides
-     */
+    // Slides.
     $form['slides_header'] = array(
       '#markup' => '<h2>' . t('Slides') . '</h2>',
     );
 
     // Get all slideshow types.
-    $slideshows = \Drupal::moduleHandler()->invokeAll('views_slideshow_slideshow_info');
+    $typeManager = \Drupal::service('plugin.manager.views_slideshow.slideshow_type');
+    $types = $typeManager->getDefinitions();
 
-    if ($slideshows) {
+    if ($types) {
 
       // Build our slideshow options for the form.
       $slideshow_options = array();
-      foreach ($slideshows as $slideshow_id => $slideshow_info) {
-        $slideshow_options[$slideshow_id] = $slideshow_info['name'];
+      foreach ($types as $id => $definition) {
+        $slideshow_options[$id] = $definition['label'];
       }
 
       $form['slideshow_type'] = array(
@@ -127,58 +143,60 @@ class Slideshow extends StylePluginBase {
         '#default_value' => $this->options['slideshow_type'],
       );
 
-      $arguments = array(
-        &$form,
-        &$form_state,
-        &$this,
-      );
+      // @todo: check if default values are properly passed to the buildConfigurationForm().
+      foreach ($types as $id => $definition) {
+        $configuration = [];
+        if (!empty($this->options[$id])) {
+          $configuration = $this->options[$id];
+        }
+        $instance = $typeManager->createInstance($id, $configuration);
 
-      foreach (\Drupal::moduleHandler()->getImplementations('views_slideshow_slideshow_type_form') as $module) {
-        $form[$module] = array(
+        $form[$id] = array(
           '#type' => 'fieldset',
-          '#title' => t('!module options', array('!module' => $slideshows[$module]['name'])),
+          '#title' => t('@module options', array('@module' => $definition['label'])),
           '#collapsible' => TRUE,
-          '#attributes' => array('class' => array($module)),
+          '#attributes' => array('class' => array($id)),
           '#states' => array(
             'visible' => array(
-              ':input[name="style_options[slideshow_type]"]' => array('value' => $module),
+              ':input[name="style_options[slideshow_type]"]' => array('value' => $id),
             ),
           ),
         );
 
-        $function = $module . '_views_slideshow_slideshow_type_form';
-        call_user_func_array($function, $arguments);
+        $form = $instance->buildConfigurationForm($form, $form_state);
       }
     }
     else {
       $form['enable_module'] = array(
-        '#markup' => t('There is no Views Slideshow plugin enabled. Go to the !modules and enable a Views Slideshow plugin module. For example Views Slideshow Singleframe.', array('!modules' => \Drupal::l(t('Modules Page'), Url::fromRoute('system.modules_list')))),
+        '#markup' => t('There is no Views Slideshow plugin enabled. Go to the @modules and enable a Views Slideshow plugin module. For example Views Slideshow Singleframe.', array('@modules' => \Drupal::l(t('Modules Page'), Url::fromRoute('system.modules_list')))),
       );
     }
 
-    /**
-     * Widgets
-     */
+    // Widgets.
+    // @todo: Improve the UX by using Ajax.
     $form['widgets_header'] = array(
       '#markup' => '<h2>' . t('Widgets') . '</h2>',
     );
 
-    // Loop through all locations so we can add header for each location.
+    // Define the available locations.
     $location = array('top' => t('Top'), 'bottom' => t('Bottom'));
+
+    // Loop through all locations so we can add header for each location.
     foreach ($location as $location_id => $location_name) {
-      // Widget Header
       $form['widgets'][$location_id]['header'] = array(
-        '#markup' => '<h3>' . t('!location Widgets', array('!location' => $location_name)) . '</h3>',
+        '#markup' => '<h3>' . t('@location Widgets', array('@location' => $location_name)) . '</h3>',
       );
     }
 
-    // Get all widgets that are registered.
-    // If we have widgets then build it's form fields.
-    $widgets = \Drupal::moduleHandler()->invokeAll('views_slideshow_widget_info');
+    /** @var \Drupal\Component\Plugin\PluginManagerInterface */
+    $widgetTypeManager = \Drupal::service('plugin.manager.views_slideshow.widget_type');
+
+    // Get all widgets types that are registered.
+    $widgets = $widgetTypeManager->getDefinitions();
     if (!empty($widgets)) {
 
       // Build our weight values by number of widgets
-      $weights = array();
+      $weights = [];
       for ($i = 1; $i <= count($widgets); $i++) {
         $weights[$i] = $i;
       }
@@ -186,118 +204,113 @@ class Slideshow extends StylePluginBase {
       // Loop through our widgets and locations to build our form values for
       // each widget.
       foreach ($widgets as $widget_id => $widget_info) {
-        foreach ($location as $location_id => $location_name) {
-          $widget_dependency = 'style_options[widgets][' . $location_id . '][' . $widget_id . ']';
 
-          // Determine if a widget is compatible with a slideshow.
-          $compatible_slideshows = array();
-          foreach ($slideshows as $slideshow_id => $slideshow_info) {
-            $is_compatible = 1;
-            // Check if every required accept value in the widget has a
-            // corresponding calls value in the slideshow.
-            foreach($widget_info['accepts'] as $accept_key => $accept_value) {
-              if (is_array($accept_value) && !empty($accept_value['required']) && !in_array($accept_key, $slideshow_info['calls'])) {
-                $is_compatible = 0;
-                break;
-              }
-            }
-
-            // No need to go through this if it's not compatible.
-            if ($is_compatible) {
-              // Check if every required calls value in the widget has a
-              // corresponding accepts call.
-              foreach($widget_info['calls'] as $calls_key => $calls_value) {
-                if (is_array($calls_value) && !empty($calls_value['required']) && !in_array($calls_key, $slideshow_info['accepts'])) {
-                  $is_compatible = 0;
-                  break;
-                }
-              }
-            }
-
-            // If it passed all those tests then they are compatible.
-            if ($is_compatible) {
-              $compatible_slideshows[] = $slideshow_id;
-            }
+        // Determine if this widget type is compatible with any slideshow type.
+        $compatible_slideshows = [];
+        foreach ($types as $slideshow_id => $slideshow_info) {
+          if ($widgetTypeManager->createInstance($widget_id, [])->checkCompatiblity($slideshow_info)) {
+            $compatible_slideshows[] = $slideshow_id;
           }
+        }
 
-          // Use Widget Checkbox
-          $form['widgets'][$location_id][$widget_id]['enable'] = array(
-            '#type' => 'checkbox',
-            '#title' => t($widget_info['name']),
-            '#default_value' => $this->options['widgets'][$location_id][$widget_id]['enable'],
-            '#description' => t('Should !name be rendered at the !location of the slides.', array('!name' => $widget_info['name'], '!location' => $location_name)),
-          );
-
-          $form['widgets'][$location_id][$widget_id]['enable']['#dependency']['edit-style-options-slideshow-type'] = !empty($compatible_slideshows) ? $compatible_slideshows : array('none');
-
-          // Need to wrap this so it indents correctly.
-          $form['widgets'][$location_id][$widget_id]['wrapper'] = array(
-            '#markup' => '<div class="vs-dependent">',
-          );
-
-          // Widget weight
-          // We check to see if the default value is greater than the number of
-          // widgets just in case a widget has been removed and the form hasn't
-          // been saved again.
-          $weight = (isset($this->options['widgets'][$location_id][$widget_id]['weight'])) ? $this->options['widgets'][$location_id][$widget_id]['weight'] : 0;
-          if ($weight > count($widgets)) {
-            $weight = count($widgets);
-          }
-          $form['widgets'][$location_id][$widget_id]['weight'] = array(
-            '#type' => 'select',
-            '#title' => t('Weight of the !name', array('!name' => $widget_info['name'])),
-            '#default_value' => $weight,
-            '#options' => $weights,
-            '#description' => t('Determines in what order the !name appears.  A lower weight will cause the !name to be above higher weight items.', array('!name' => $widget_info['name'])),
-            '#prefix' => '<div class="vs-dependent">',
-            '#suffix' => '</div>',
-            '#states' => array(
-              'visible' => array(
-                ':input[name="style_options[widgets][' . $location_id . '][' . $widget_id . '][enable]"]' => array('checked' => TRUE),
+        // Display the widget config form only if the widget type is compatible
+        // with at least one slideshow type.
+        if (!empty($compatible_slideshows)) {
+          foreach ($location as $location_id => $location_name) {
+            // Use Widget Checkbox.
+            $form['widgets'][$location_id][$widget_id]['enable'] = array(
+              '#type' => 'checkbox',
+              '#title' => $widget_info['label'],
+              '#default_value' => $this->options['widgets'][$location_id][$widget_id]['enable'],
+              '#description' => t('Should @name be rendered at the @location of the slides.', array('@name' => $widget_info['label'], '@location' => $location_name)),
+              '#dependency' => array(
+                'edit-style-options-slideshow-type' => $compatible_slideshows,
               ),
-            ),
-          );
-
-          // Add all the widget settings.
-          if (function_exists($widget_id . '_views_slideshow_widget_form_options')) {
-            $arguments = array(
-              &$form['widgets'][$location_id][$widget_id],
-              &$form_state,
-              &$this,
-              $this->options['widgets'][$location_id][$widget_id],
-              $widget_dependency,
             );
-            call_user_func_array($widget_id . '_views_slideshow_widget_form_options', $arguments);
-          }
 
-          $form['widgets'][$location_id][$widget_id]['wrapper_close'] = array(
-            '#markup' => '</div>',
-          );
+            // Need to wrap this so it indents correctly.
+            $form['widgets'][$location_id][$widget_id]['wrapper'] = [
+              '#markup' => '<div class="vs-dependent">',
+            ];
+
+            // Widget weight.
+            // We check to see if the default value is greater than the number
+            // of widgets just in case a widget has been removed and the form
+            // hasn't been saved again.
+            $weight = (isset($this->options['widgets'][$location_id][$widget_id]['weight'])) ? $this->options['widgets'][$location_id][$widget_id]['weight'] : 0;
+            if ($weight > count($widgets)) {
+              $weight = count($widgets);
+            }
+            $form['widgets'][$location_id][$widget_id]['weight'] = [
+              '#type' => 'select',
+              '#title' => t('Weight of the @name', ['@name' => $widget_info['label']]),
+              '#default_value' => $weight,
+              '#options' => $weights,
+              '#description' => t('Determines in what order the @name appears. A lower weight will cause the @name to be above higher weight items.', ['@name' => $widget_info['label']]),
+              '#prefix' => '<div class="vs-dependent">',
+              '#suffix' => '</div>',
+              '#states' => [
+                'visible' => [
+                  ':input[name="style_options[widgets][' . $location_id . '][' . $widget_id . '][enable]"]' => ['checked' => TRUE],
+                ],
+              ],
+            ];
+
+            // Build the appropriate array for the states API.
+            $widget_dependency = 'style_options[widgets][' . $location_id . '][' . $widget_id . ']';
+
+            // Get the current configuration of this widget type.
+            $configuration = [];
+            if (!empty($this->options['widgets'][$location_id][$widget_id])) {
+              $configuration = $this->options['widgets'][$location_id][$widget_id];
+            }
+            $configuration['dependency'] = $widget_dependency;
+            $instance = $widgetTypeManager->createInstance($widget_id, $configuration);
+
+            // Get the configuration form of this widget type.
+            $form['widgets'][$location_id][$widget_id] = $instance->buildConfigurationForm($form['widgets'][$location_id][$widget_id], $form_state);
+
+            // Close the vs-dependent wrapper.
+            $form['widgets'][$location_id][$widget_id]['wrapper_close'] = [
+              '#markup' => '</div>',
+            ];
+          }
         }
       }
     }
 
-    $form['views_slideshow_wrapper_close'] = array(
-      '#markup' => '</div>',
-    );
 
-    $form['#attached']['library'] = array('views_slideshow/form');
+    // Browse locations and remove the header if no widget is available.
+    foreach ($location as $location_id => $location_name) {
+      // If no widget is available, the only key is "header".
+      if (count(array_keys($form['widgets'][$location_id])) == 1) {
+        unset($form['widgets'][$location_id]);
+      }
+    }
+
+    // Remove the widget section header if there is no widget available.
+    if (empty($form['widgets'])) {
+      unset($form['widgets']);
+      unset($form['widgets_header']);
+    }
+
+    $form['views_slideshow_wrapper_close'] = [
+      '#markup' => '</div>',
+    ];
+
+    // Add a library to style the form.
+    $form['#attached']['library'] = ['views_slideshow/form'];
   }
 
   /**
    * {@inheritdoc}
    */
   public function validateOptionsForm(&$form, FormStateInterface $form_state) {
-    $arguments = array(
-      &$form,
-      &$form_state,
-      &$this,
-    );
-
-    // Call all modules that use hook_views_slideshow_options_form_validate
-    foreach (\Drupal::moduleHandler()->getImplementations('views_slideshow_options_form_validate') as $module) {
-      $function = $module . '_views_slideshow_options_form_validate';
-      call_user_func_array($function, $arguments);
+    // Validate all slideshow type plugins values.
+    $typeManager = \Drupal::service('plugin.manager.views_slideshow.slideshow_type');
+    foreach ($typeManager->getDefinitions() as $id => $definition) {
+      $type = $typeManager->createInstance($id);
+      $type->validateConfigurationForm($form, $form_state);
     }
   }
 
@@ -305,52 +318,12 @@ class Slideshow extends StylePluginBase {
    * {@inheritdoc}
    */
   public function submitOptionsForm(&$form, FormStateInterface $form_state) {
-    $arguments = array(
-      $form,
-      &$form_state,
-    );
-
-    // Call all modules that use hook_views_slideshow_options_form_submit
-    foreach (\Drupal::moduleHandler()->getImplementations('views_slideshow_options_form_submit') as $module) {
-      $function = $module . '_views_slideshow_options_form_submit';
-      call_user_func_array($function, $arguments);
+    // Submit all slideshow type plugins values.
+    $typeManager = \Drupal::service('plugin.manager.views_slideshow.slideshow_type');
+    foreach ($typeManager->getDefinitions() as $id => $definition) {
+      $type = $typeManager->createInstance($id);
+      $type->submitConfigurationForm($form, $form_state);
     }
-
-    // In addition to the skin, we also pre-save the definition that
-    // correspond to it.  That lets us avoid a hook lookup on every page.
-    $skins = $this->getSkins();
-    $form_state->setValue(array('style_options', 'skin_info'), $skins[$form_state->getValue(array('style_options', 'slideshow_skin'))]);
-  }
-
-  /**
-   * Retrieve a list of all available skins in the system.
-   */
-  public function getSkins() {
-    static $skins;
-
-    if (empty($skins)) {
-      $skins = array();
-
-      // Call all modules that use hook_views_slideshow_skin_info.
-      foreach (\Drupal::moduleHandler()->getImplementations('views_slideshow_skin_info') as $module) {
-        $skin_items = call_user_func($module . '_views_slideshow_skin_info');
-        if (isset($skin_items) && is_array($skin_items)) {
-          foreach (array_keys($skin_items) as $skin) {
-            // Ensure that the definition is complete, so we don't need lots
-            // of error checking later.
-            $skin_items[$skin] += array(
-              'class' => 'default',
-              'name' => t('Untitled skin'),
-              'module' => $module,
-              'libraries' => array(),
-            );
-          }
-          $skins = array_merge($skins, $skin_items);
-        }
-      }
-    }
-
-    return $skins;
   }
 
 }

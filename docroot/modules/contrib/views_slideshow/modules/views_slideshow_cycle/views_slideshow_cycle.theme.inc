@@ -70,19 +70,11 @@ function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
   }
 
   // Load the json2 library.
-  // @todo Check if there is a better way to detect optional libraries.
-  $json2 = \Drupal::service('library.discovery')->getLibraryByName('views_slideshow_cycle', 'json2');
-  if (isset($json2['js'][0]['data']) && file_exists($json2['js'][0]['data'])) {
-    $vars['#attached']['library'][] = 'views_slideshow_cycle/json2';
-  }
+  $vars['#attached']['library'][] = 'views_slideshow_cycle/json2';
 
-  // Load the pause library
-  // @todo Check if there is a better way to detect optional libraries.
+  // Load the pause library.
   if (!empty($settings['pause_in_middle'])) {
-    $pause = \Drupal::service('library.discovery')->getLibraryByName('views_slideshow_cycle', 'jquery_pause');
-    if (isset($pause['js'][0]['data']) && file_exists($pause['js'][0]['data'])) {
-      $vars['#attached']['library'][] = 'views_slideshow_cycle/jquery_pause';
-    }
+    $vars['#attached']['library'][] = 'views_slideshow_cycle/jquery_pause';
   }
 
   // Load jQuery Cycle library.
@@ -95,46 +87,21 @@ function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
   $processedCycles['#views_slideshow_cycle_main_' . $vss_id] = '#views_slideshow_cycle_main_' . $vss_id;
 
   // Add hover intent library.
-  // @todo Check if there is a better way to detect optional libraries.
   if ($settings['pause']) {
-    $hoverIntent = \Drupal::service('library.discovery')->getLibraryByName('views_slideshow', 'jquery_hoverIntent');
-    if (isset($hoverIntent['js'][0]['data']) && file_exists($hoverIntent['js'][0]['data'])) {
-      $vars['#attached']['library'][] = 'views_slideshow/jquery_hoverIntent';
-    }
+    $vars['#attached']['library'][] = 'views_slideshow/jquery_hoverIntent';
   }
 
   // Add the slideshow elements.
   $vars['attributes']['class'][] = 'views_slideshow_cycle_teaser_section';
 
-  $styles = '';
-  if (isset($view->display_handler->display->display_options['style_options']['views_slideshow_cycle'])) {
-    $styles = $view->display_handler->display->display_options['style_options']['views_slideshow_cycle'];
-  }
-
-  $styles_default = '';
-  if (isset($view->display['default']->display_options['style_options']['views_slideshow_cycle'])) {
-    $styles_default = $view->display['default']->display_options['style_options']['views_slideshow_cycle'];
-  }
-
-  // Retrieve the number of items per frame.
-  if (isset($styles['items_per_slide']) && $styles['items_per_slide'] > 0) {
-    $items_per_slide = $styles['items_per_slide'];
-  }
-  elseif (isset($styles_default['items_per_slide']) && $styles_default['items_per_slide'] > 0) {
-    $items_per_slide = $styles_default['items_per_slide'];
-  }
-  else {
-    $items_per_slide = 1;
-  }
-
-  $vars['items_per_slide'] = $items_per_slide;
+  $vars['items_per_slide'] = $settings['items_per_slide'];
 
   $items = array();
   $index = 0;
   $vars['rendered_rows'] = '';
   foreach ($rows as $count => $item) {
     $items[] = $item;
-    if (count($items) == $items_per_slide || $count == (count($rows) - 1)) {
+    if (count($items) == $settings['items_per_slide'] || $count == (count($rows) - 1)) {
       $vars['rendered_rows'][] = array(
         '#theme' => $vars['view']->buildThemeFunctions('views_slideshow_cycle_main_frame_row'),
         '#vss_id' => $vss_id,
@@ -215,7 +182,7 @@ function _views_slideshow_cycle_preprocess_views_slideshow_pager_fields(&$vars) 
     foreach ($vars['view']->result as $count => $node) {
       if ($count < $slide_count) {
         $rendered_fields = '';
-        foreach ($vars['settings']['views_slideshow_pager_fields_fields'] as $field => $use) {
+        foreach ($vars['settings']['views_slideshow_pager_fields']['views_slideshow_pager_fields_fields'] as $field => $use) {
           if ($use !== 0 && is_object($vars['view']->field[$field])) {
             $rendered_fields[] = array(
               '#theme' => $vars['view']->buildThemeFunctions('views_slideshow_pager_field_field'),

@@ -7,7 +7,7 @@
 
 namespace Drupal\user;
 
-use Drupal\Component\Utility\Unicode;
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityConstraintViolationListInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
@@ -15,7 +15,6 @@ use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Url;
 use Drupal\language\ConfigurableLanguageManagerInterface;
 use Drupal\user\Plugin\LanguageNegotiation\LanguageNegotiationUser;
 use Drupal\user\Plugin\LanguageNegotiation\LanguageNegotiationUserAdmin;
@@ -129,7 +128,7 @@ abstract class AccountForm extends ContentEntityForm {
       // one-time link and have the token in the URL. Store this in $form_state
       // so it persists even on subsequent Ajax requests.
       if (!$form_state->get('user_pass_reset')) {
-        $user_pass_reset = $pass_reset = isset($_SESSION['pass_reset_' . $account->id()]) && (\Drupal::request()->query->get('pass-reset-token') == $_SESSION['pass_reset_' . $account->id()]);
+        $user_pass_reset = isset($_SESSION['pass_reset_' . $account->id()]) && Crypt::hashEquals($_SESSION['pass_reset_' . $account->id()], \Drupal::request()->query->get('pass-reset-token'));
         $form_state->set('user_pass_reset', $user_pass_reset);
       }
 

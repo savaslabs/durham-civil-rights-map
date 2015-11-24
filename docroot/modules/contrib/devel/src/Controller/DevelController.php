@@ -7,19 +7,13 @@
 
 namespace Drupal\devel\Controller;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Database\Database;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Session\UserSession;
 use Drupal\Core\Url;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Returns responses for devel module routes.
@@ -131,38 +125,72 @@ class DevelController extends ControllerBase {
    *   Array of page elements to render.
    */
   public function stateSystemPage() {
+    $output['#attached']['library'][] = 'system/drupal.system.modules';
+
+    $output['filters'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('table-filter', 'js-show'),
+      ),
+    );
+
+    $output['filters']['text'] = array(
+      '#type' => 'search',
+      '#title' => $this->t('Search'),
+      '#size' => 30,
+      '#placeholder' => $this->t('Enter state name'),
+      '#attributes' => array(
+        'class' => array('table-filter-text'),
+        'data-table' => '.devel-state-list',
+        'autocomplete' => 'off',
+        'title' => $this->t('Enter a part of the state name to filter by.'),
+      ),
+    );
+
+    $can_edit = $this->currentUser()->hasPermission('administer site configuration');
 
     $header = array(
-      'name' => array('data' => t('Name')),
-      'value' => array('data' => t('Value')),
-      'edit' => array('data' => t('Operations')),
+      'name' => $this->t('Name'),
+      'value' => $this->t('Value'),
     );
+
+    if ($can_edit) {
+      $header['edit'] = $this->t('Operations');
+    }
 
     $rows = array();
     // State class doesn't have getAll method so we get all states from the
-    // KeyValueStorage and put them in the table.
+    // KeyValueStorage.
     foreach ($this->keyValue('state')->getAll() as $state_name => $state) {
-      $operations['edit'] = array(
-        'title' => $this->t('Edit'),
-        'url' => Url::fromRoute('devel.system_state_edit', array('state_name' => $state_name)),
-      );
       $rows[$state_name] = array(
-        'name' => $state_name,
-        'value' => kprint_r($state, TRUE),
-        'edit' => array(
-          'data' => array(
-            '#type' => 'operations',
-            '#links' => $operations,
-          )
+        'name' => array(
+          'data' => $state_name,
+          'class' => 'table-filter-text-source',
+        ),
+        'value' => array(
+          'data' => kprint_r($state, TRUE),
         ),
       );
+
+      if ($can_edit) {
+        $operations['edit'] = array(
+          'title' => $this->t('Edit'),
+          'url' => Url::fromRoute('devel.system_state_edit', array('state_name' => $state_name)),
+        );
+        $rows[$state_name]['edit'] = array(
+          'data' => array('#type' => 'operations', '#links' => $operations),
+        );
+      }
     }
 
     $output['states'] = array(
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $rows,
-      '#empty' => $this->t('No state variables.'),
+      '#empty' => $this->t('No state variables found.'),
+      '#attributes' => array(
+        'class' => array('devel-state-list'),
+      ),
     );
 
     return $output;
@@ -246,117 +274,6 @@ class DevelController extends ControllerBase {
     }
 
     return $output;
-  }
-
-  /**
-   * Switches to a different user.
-   *
-   * We don't call session_save_session() because we really want to change users.
-   * Usually unsafe!
-   *
-   * @param string $name
-   *   The username to switch to, or NULL to log out.
-   *
-   * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   */
-  public function switchUser($name = NULL) {
-    // global $user;
-
-    // $module_handler = $this->moduleHandler();
-    // $session_manager = \Drupal::service('session_manager');
-
-    if ($uid = $this->currentUser()->id()) {
-      // @todo Is this needed?
-      // user_logout();
-    }
-    if (isset($name) && $account = user_load_by_name($name)) {
-      // See https://www.drupal.org/node/218104
-      $accountSwitcher = Drupal::service('account_switcher');
-      $accountSwitcher->switchTo(new UserSession(array('uid' => $account->getId())));
-
-      // Send her on her way.
-      $destination = $this->getDestinationArray();
-      $url = $this->getUrlGenerator()
-        ->generateFromPath($destination['destination'], array('absolute' => TRUE));
-      return new RedirectResponse($url);
-    }
-  }
-
-  /**
-   * Explain query callback called by the AJAX link in the query log.
-   */
-  function queryLogExplain($request_id = NULL, $qid = NULL) {
-    if (!is_numeric($request_id)) {
-      throw new AccessDeniedHttpException();
-    }
-
-    $path = "temporary://devel_querylog/$request_id.txt";
-    $path = file_stream_wrapper_uri_normalize($path);
-
-    $header = $rows = array();
-
-    if (file_exists($path)) {
-      $queries = Json::decode(file_get_contents($path));
-
-      if ($queries !== FALSE && isset($queries[$qid])) {
-        $query = $queries[$qid];
-        $result = db_query('EXPLAIN ' . $query['query'], (array)$query['args'])->fetchAllAssoc('table');
-
-        $i = 1;
-        foreach ($result as $row) {
-          $row = (array)$row;
-          if ($i == 1) {
-            $header = array_keys($row);
-          }
-          $rows[] = array_values($row);
-          $i++;
-        }
-      }
-    }
-
-    $build['explain'] = array(
-      '#type' => 'table',
-      '#header' => $header,
-      '#rows' => $rows,
-      '#empty' => $this->t('No explain log found.'),
-    );
-
-    $GLOBALS['devel_shutdown'] = FALSE;
-
-    return new Response(drupal_render($build));
-  }
-
-  /**
-   * Show query arguments, called by the AJAX link in the query log.
-   */
-  function queryLogArguments($request_id = NULL, $qid = NULL) {
-    if (!is_numeric($request_id)) {
-      throw new AccessDeniedHttpException();
-    }
-
-    $path = "temporary://devel_querylog/$request_id.txt";
-    $path = file_stream_wrapper_uri_normalize($path);
-
-    $output = $this->t('No arguments log found.');
-
-    if (file_exists($path)) {
-      $queries = Json::decode(file_get_contents($path));
-
-      if ($queries !== FALSE && isset($queries[$qid])) {
-        $query = $queries[$qid];
-        $conn = Database::getConnection();
-
-        $quoted = array();
-        foreach ((array)$query['args'] as $key => $val) {
-          $quoted[$key] = is_null($val) ? 'NULL' : $conn->quote($val);
-        }
-        $output = strtr($query['query'], $quoted);
-      }
-    }
-
-    $GLOBALS['devel_shutdown'] = FALSE;
-
-    return new Response($output);
   }
 
 }

@@ -2,13 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\forum\Tests\d7\MigrateForumSettingsTest.
+ * Contains \Drupal\forum\Tests\Migrate\d7\MigrateForumSettingsTest.
  */
 
 namespace Drupal\forum\Tests\Migrate\d7;
 
-use Drupal\migrate\Entity\Migration;
-use Drupal\migrate\MigrateExecutable;
 use Drupal\migrate_drupal\Tests\d7\MigrateDrupal7TestBase;
 
 /**

@@ -10,9 +10,7 @@ namespace Drupal\Core\Menu;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Cache\CacheableMetadata;
-use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Controller\ControllerResolverInterface;
-use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\Template\Attribute;
 
@@ -179,6 +177,7 @@ class MenuLinkTree implements MenuLinkTreeInterface {
       // Add the theme wrapper for outer markup.
       // Allow menu-specific theme overrides.
       $build['#theme'] = 'menu__' . strtr($menu_name, '-', '_');
+      $build['#menu_name'] = $menu_name;
       $build['#items'] = $items;
       // Set cache tag.
       $build['#cache']['tags'][] = 'config:system.menu.' . $menu_name;

@@ -2,12 +2,11 @@
 
 /**
  * @file
- * Contains \Drupal\Tests\link\Plugin\Validation\Constraint\LinkNotExistingInternalConstraintValidatorTest.
+ * Contains \Drupal\Tests\link\Unit\Plugin\Validation\Constraint\LinkNotExistingInternalConstraintValidatorTest.
  */
 
 namespace Drupal\Tests\link\Unit\Plugin\Validation\Constraint;
 
-use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Url;
 use Drupal\link\Plugin\Validation\Constraint\LinkNotExistingInternalConstraint;
 use Drupal\link\Plugin\Validation\Constraint\LinkNotExistingInternalConstraintValidator;

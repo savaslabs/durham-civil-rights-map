@@ -7,7 +7,6 @@
 
 namespace Drupal\Core\Field;
 
-use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -252,9 +251,12 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    * {@inheritdoc}
    */
   public function onDependencyRemoval(array $dependencies) {
+    $changed = parent::onDependencyRemoval($dependencies);
     $field_type_manager = \Drupal::service('plugin.manager.field.field_type');
     $definition = $field_type_manager->getDefinition($this->getType());
-    $changed = $definition['class']::onDependencyRemoval($this, $dependencies);
+    if ($definition['class']::onDependencyRemoval($this, $dependencies)) {
+      $changed = TRUE;
+    }
     return $changed;
   }
 
@@ -364,6 +366,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    */
   public function setSetting($setting_name, $value) {
     $this->settings[$setting_name] = $value;
+    return $this;
   }
 
   /**
@@ -533,6 +536,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    */
   public function setConstraints(array $constraints) {
     $this->constraints = $constraints;
+    return $this;
   }
 
   /**
@@ -540,6 +544,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    */
   public function addConstraint($constraint_name, $options = NULL) {
     $this->constraints[$constraint_name] = $options;
+    return $this;
   }
 
   /**
