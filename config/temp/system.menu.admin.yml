@@ -1,0 +1,8 @@
+uuid: ab9d75c2-d781-4274-9227-39878aa4481c
+langcode: en
+status: true
+dependencies: {  }
+id: admin
+label: Administration
+description: 'Administrative task links'
+locked: true

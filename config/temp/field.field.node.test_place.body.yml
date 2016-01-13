@@ -1,0 +1,22 @@
+uuid: 0cd43809-49c7-432c-8145-695743cbc710
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.body
+    - node.type.test_place
+  module:
+    - text
+id: node.test_place.body
+field_name: body
+entity_type: node
+bundle: test_place
+label: Body
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  display_summary: true
+field_type: text_with_summary

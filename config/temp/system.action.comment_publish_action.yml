@@ -1,0 +1,11 @@
+uuid: 66d8f2b6-7cad-406b-a02a-424695a46839
+langcode: en
+status: true
+dependencies:
+  module:
+    - comment
+id: comment_publish_action
+label: 'Publish comment'
+type: comment
+plugin: comment_publish_action
+configuration: {  }
