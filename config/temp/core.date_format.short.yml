@@ -1,8 +1,0 @@
-uuid: 73698ec9-5a56-4a51-a904-4a3a262b218d
-langcode: en
-status: true
-dependencies: {  }
-id: short
-label: 'Default short date'
-locked: false
-pattern: 'm/d/Y - H:i'
