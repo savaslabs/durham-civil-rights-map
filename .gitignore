@@ -52,3 +52,7 @@ docroot/themes/custom/mappy/css/*
 ehthumbs.db
 Icon\?
 Thumbs.db
+
+# Temp config files #
+#####################
+config/temp
