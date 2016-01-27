@@ -29,7 +29,7 @@
 
   // For Place nodes.
   // 10 columns on all screens. Switch to 2-column layout on x-wide screens.
-  &.node--type-place {
+  &.page-node-type-place {
 
     article {
       @include span-columns(10 of 10);
@@ -85,7 +85,7 @@
   }
 
   // For Basic Page nodes (e.g. About).
-  &.node--type-page {
+  &.page-node-type-page {
 
     // Title box: 10 columns on mobile and narrow, 8 on wide and up.
     .node-title-box {
