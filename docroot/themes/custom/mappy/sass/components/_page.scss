@@ -4,6 +4,12 @@
  * Theme styles for basic pages.
  */
 
+// Styles for all pages.
+.page-title-box h1 {
+  font-size: 1em;
+  margin: 0;
+}
+
 // Styles for user page (login, recover password, etc).
 .path-user {
   .tabs {
