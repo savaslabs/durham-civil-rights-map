@@ -1,0 +1,48 @@
+uuid: ab1a2558-efd3-4875-9f0e-147eeb758077
+langcode: en
+status: true
+dependencies: {  }
+id: editor
+label: Editor
+weight: 3
+is_admin: null
+permissions:
+  - 'administer comments'
+  - 'edit own comments'
+  - 'post comments'
+  - 'skip comment approval'
+  - 'access comments'
+  - 'access files overview'
+  - 'use text format basic_html'
+  - 'use text format full_html'
+  - 'use text format plain_text'
+  - 'use text format restricted_html'
+  - 'administer image styles'
+  - 'access content overview'
+  - 'administer nodes'
+  - 'bypass node access'
+  - 'delete all revisions'
+  - 'revert all revisions'
+  - 'view all revisions'
+  - 'view own unpublished content'
+  - 'access content'
+  - 'edit any article content'
+  - 'edit own article content'
+  - 'edit any page content'
+  - 'edit own page content'
+  - 'create place content'
+  - 'delete any place content'
+  - 'delete own place content'
+  - 'delete place revisions'
+  - 'edit any place content'
+  - 'edit own place content'
+  - 'revert place revisions'
+  - 'view place revisions'
+  - 'access in-place editing'
+  - 'search content'
+  - 'access site reports'
+  - 'view the administration theme'
+  - 'administer taxonomy'
+  - 'delete terms in tags'
+  - 'edit terms in tags'
+  - 'access toolbar'
