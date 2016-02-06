@@ -1,18 +1,35 @@
 {#
 /**
-* @file
-* Header template, to be included on every page.
+ * @file
+ * Theme override to display a region.
+ *
+ * Available variables:
+ * - content: The content for this region, typically blocks.
+ * - attributes: HTML attributes for the region div.
+ * - region: The name of the region variable as defined in the theme's
+ *   .info.yml file.
+ *
+ * @see template_preprocess_region()
+ */
 #}
-
-<header>
-  <div class="navigation-wrapper">
-    <div class="home-link">
-      <a href="/" title="{{ 'Home'|t }}" rel="home">
-        <h3 class="home-link--heading">{{ elements.sitebranding.content.site_name['#markup'] }}</h3>
-        <i class="home-link--back-arrow fa fa-lg fa-arrow-circle-left"></i>
-      </a>
-    </div>
-    <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu">MENU</a>
-    {{ elements.mappy_main_menu }}
-    </div>
-</header>
+{%
+set classes = [
+  'region',
+  'region-' ~ region|clean_class,
+]
+%}
+{% if content %}
+  <div{{ attributes.addClass(classes) }}>
+    <header>
+      <div class="navigation-wrapper">
+        <div class="home-link">
+          <a href="/" title="{{ 'Home'|t }}" rel="home">
+            <h3 class="home-link--heading">{{ elements.sitebranding.content.site_name['#markup'] }}</h3>
+            <i class="home-link--back-arrow fa fa-lg fa-arrow-circle-left"></i>
+          </a>
+        </div>
+        <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu">MENU</a>
+        {{ elements.mappy_main_menu }}
+      </div>
+    </header>  </div>
+{% endif %}
