@@ -20,20 +20,13 @@
   searchCtrl.addTo(map);
 
   // Add points.
-  function addDataToMap(data, map, icon) {
+  function addDataToMap(data, map, spiderfier, icon) {
     var dataLayer = L.geoJson(data, {
       pointToLayer: function (feature, latLng) {
-        return L.marker(latLng, {icon: icon}).addTo(map);
-      },
-      onEachFeature: function (feature, layer) {
-        feature.layer = layer;
-        var popupText = feature.properties.name;
-        layer.bindPopup(popupText);
-        layer.on('click', function (e) {
-          // I don't know why it's called 'nothing,' nor how to change
-          // it, but this is the entire node display.
-          $("div.sidebar__content").html(feature.properties.nothing);
-        });
+        var marker = new L.marker(latLng, {icon: icon});
+        marker.feature = feature;
+        spiderfier.addMarker(marker);
+        return marker;
       }
     });
     dataLayer.addTo(map);
@@ -51,8 +44,24 @@
     }
   });
 
+  // Add spiderfier to expand overlapping markers on click.
+  // @see https://github.com/jawj/OverlappingMarkerSpiderfier-Leaflet
+  var spiderfier = new OverlappingMarkerSpiderfier(map);
+  spiderfier.nearbyDistance = 20;
+  spiderfier.keepSpiderfied = true;
+  // Rather than attaching a listener to each layer, attach a listener to the spiderfier.
+  var popup = new L.Popup({closeButton: false, offset: new L.Point(0.5, -24)});
+  spiderfier.addListener('click', function(marker) {
+    popup.setContent(marker.feature.properties.name);
+    popup.setLatLng(marker.getLatLng());
+    map.openPopup(popup);
+    // I don't know why it's called 'nothing,' nor how to change
+    // it, but this is the entire node display.
+    $("div.sidebar__content").html(marker.feature.properties.nothing);
+  });
+
   $.getJSON('/points?_format=json', function (data) {
-    addDataToMap(data, map, new pmpIcon);
+    addDataToMap(data, map, spiderfier, new pmpIcon);
     searchCtrl.indexFeatures(data, ['title_1', 'address_text', 'description', 'field_tags']);
   });
 
