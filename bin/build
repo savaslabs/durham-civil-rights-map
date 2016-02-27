@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+source $(dirname $0)/../lib/bowline/bowline
+
+echo "# STARTING CONTAINERS"
+$DCOMPOSE up -d --no-recreate
+
+EXIT=$?
+echo -e "\033[m Exit Status: $EXIT"
+
+bowline
+exit $EXIT

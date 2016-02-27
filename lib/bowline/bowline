@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+
+# check if we're on the host
+if [ -e "/proc/self/cgroup" ];then
+  [ "$(grep docker /proc/self/cgroup)" ] && export context="container"
+fi
+[ "$context" ] || export context="host"
+
+get_container_name () { echo "${SLUG}_${1}_1"; }
+
+check_build() { unset CONTAINERS_BUILT; [ "$(docker ps -a | grep ${SLUG}_web)" ] && CONTAINERS_BUILT="true"; }
+
+check_proxy() {
+  unset PROXY_RUNNING PROXY_HOST_SET;
+  if [ "$(docker ps -q -f name=proxy_)" ];then
+    PROXY_RUNNING="true";
+    PROXY_HOST_SET=$(docker exec proxy_dnsmasq_1 grep "\s${SLUG}$" /etc/althosts|grep "$web_ip\s")
+  fi
+}
+
+# Set basic env variables.
+bowline_init () {
+  cd $(dirname $0)
+  GIT_ROOT=$(git rev-parse --show-toplevel)
+  BOWLINE=${GIT_ROOT##*/}
+  if [ "${COMPOSE_PROJECT_NAME}" ];then BOWLINE=${COMPOSE_PROJECT_NAME}; fi
+  GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  SLUG=${BOWLINE//-/}  # Fig/Compose doesn't allow the - char.
+  SLUG=${SLUG//_/}  # Fig/Compose doesn't allow the _ char.
+  DCOMPOSE="docker-compose"
+  if [ ! "$(command -v docker-compose)" ];then
+    if [ "$(command -v fig)" ];then
+      echo "Using fig which is deprecated and replaced with docker-compose."
+      echo "https://docs.docker.com/compose/install/"
+      DCOMPOSE="fig -f docker-compose.yml"
+    else
+      echo "Docker Compose is required for using Bowline"
+      echo "https://docs.docker.com/compose/install/"
+      exit 1
+    fi
+  fi
+  DCOMPOSE="$DCOMPOSE -p $SLUG"
+
+  cd $GIT_ROOT
+
+  ### @@ Note, everytime the ip changes the following should run
+  # Add some useful container env
+  check_build
+  list_containers=$(grep '^\S*:' docker-compose.yml)
+  unset containers
+  for c in $list_containers; do
+    name="${c%:}"
+    container_name="$(get_container_name ${name})"
+    # Set variables such as $web and $db from the docker-compose.yml.
+    export "${name}=${container_name}"
+    # Set IP addresses if they are available.
+    if [ "$CONTAINERS_BUILT" ];then
+      local ip="$(docker inspect --format='{{.NetworkSettings.IPAddress}}' ${container_name})"
+      [ "$ip" ] && export "${name}_ip"=$ip || export "${name}_ip"="not running"
+    else
+      export "${name}_ip"="not built"
+    fi
+    export containers="${containers} ${name}"
+  done
+}
+
+[ $context = "host" ] && bowline_init
+
+
+assert_running () {
+  local cn=$(get_container_name web)
+  RUNNING=$(docker inspect --format="{{ .State.Running }}" ${cn} 2> /dev/null)
+  [ "$RUNNING" = "true" ] || $DCOMPOSE up -d --no-recreate
+}
+
+assert_composer () {
+  if [ ! -d "vendor" ];then
+    echo "Setting up Composer...."
+    docker exec -it ${web} chown -R www-data:www-data /var/www
+    docker exec -it ${web} chown www-data:www-data /usr/local/bin/composer.phar
+    docker exec -it ${web} sudo -iu www-data composer --working-dir=/var/www self-update
+    docker exec -it ${web} sudo -iu www-data composer --working-dir=/var/www install
+  fi
+}
+
+enter_container () {
+  if [ $context = "container" ];then
+    cd /var/www
+    return
+  fi
+  assert_running
+  docker exec -it $(get_container_name web) /var/www/bin/$(basename $0) $@
+  EXIT=$?
+  echo Exit Status: $EXIT
+  exit $EXIT
+}
+
+system-check () {
+  source $GIT_ROOT/lib/bowline/system-check
+}

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+source $(dirname $0)/../lib/bowline/bowline
+
+if [ ! "$1" ];then
+  echo "Usage: hoist [rigging]"
+  echo "Available riggings:"
+  ls lib/rigging
+  exit
+fi
+
+echo $(date) - adding ${1}>> logs/rigging
+source lib/rigging/${1}/${1}.hoist
+echo $(date) - hoist ${1}: done.>> logs/rigging

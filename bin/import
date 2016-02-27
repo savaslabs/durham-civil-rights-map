@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+source $(dirname $0)/../lib/bowline/bowline
+enter_container $@
+
+# Wait for mysql connection.
+echo "NOTE: Please ignore any warnings about 'Connection refused' while waiting for the db service to start"
+i=0
+while ! bash -c "cat < /dev/null > /dev/tcp/dbhost/3306"; do
+  i=$(($i+1))
+  if [ "$i" -gt 7 ]; then
+    echo "Cannot connect to database. Make sure it is running and the web container is linked to it."
+    exit 1;
+  fi
+  sleep 2;
+done
+
+MY_ARGS="--host=dbhost --user=dbuser --password=dbpass drupal"
+MYSQL="mysql $MY_ARGS"
+
+# Backup first.
+if [ "$1" == "--nobackup" ]; then
+  echo "# Not making a backup!"
+else
+  echo "# Backing up current database before importing."
+  FILENAME=.pre-import.sql.gz
+  mysqldump $MY_ARGS | gzip -c > $FILENAME
+  echo "Database snapshot saved as ${FILENAME} before running import."
+fi
+
+# Drop all tables.
+$MYSQL -ss -e 'SELECT concat("DROP TABLE `", TABLE_NAME, "`;") FROM information_schema.tables WHERE table_schema="drupal"'|$MYSQL
+
+# Import.
+# @TODO: check for the file first.
+pv .snapshot.sql.gz | gunzip | $MYSQL
+

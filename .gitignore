@@ -1,19 +1,4 @@
-# Sensitive information #
-#########################
-# Ignore configuration files that may contain sensitive information.
-*.local.php
-!example.settings.local.php
-development.services.yml
-
-# User Generated Content #
-##########################
-docroot/files
-docroot/sites/*/files
-docroot/sites/*/private
-
-# Vagrant Files #
-#################
-.vagrant
+# see also docroot/.gitignore
 
 # Compiled source #
 ###################
@@ -23,9 +8,6 @@ docroot/sites/*/private
 *.exe
 *.o
 *.so
-*.pyc
-docroot/themes/custom/mappy/.sass-cache/*
-docroot/themes/custom/mappy/css/*
 
 # Packages #
 ############
@@ -50,9 +32,16 @@ docroot/themes/custom/mappy/css/*
 ######################
 .DS_Store*
 ehthumbs.db
-Icon\?
+Icon?
 Thumbs.db
 
-# Temp config files #
-#####################
-config/temp
+# Composer
+/vendor
+/.composer
+
+# Other #
+#########
+tests/behat/local.yml
+*.sass-cache
+.drush
+.bash_history
