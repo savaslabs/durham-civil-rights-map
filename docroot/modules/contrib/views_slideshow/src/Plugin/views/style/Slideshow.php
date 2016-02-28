@@ -10,6 +10,7 @@ namespace Drupal\views_slideshow\Plugin\views\style;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\style\StylePluginBase;
 use Drupal\Core\Url;
+use Drupal\Core\Link;
 
 /**
  * Style plugin to render each item in a slideshow.
@@ -168,7 +169,7 @@ class Slideshow extends StylePluginBase {
     }
     else {
       $form['enable_module'] = array(
-        '#markup' => t('There is no Views Slideshow plugin enabled. Go to the @modules and enable a Views Slideshow plugin module. For example Views Slideshow Singleframe.', array('@modules' => \Drupal::l(t('Modules Page'), Url::fromRoute('system.modules_list')))),
+        '#markup' => t('There is no Views Slideshow plugin enabled. Go to the @modules and enable a Views Slideshow plugin module. For example Views Slideshow Singleframe.', array('@modules' => Link::fromTextAndUrl(t('Modules Page'), Url::fromRoute('system.modules_list')))),
       );
     }
 

@@ -8,8 +8,6 @@
  */
 
 use Drupal\Component\Utility\Html;
-use Drupal\views_slideshow\ViewsSlideshowSkinPluginManager;
-use Drupal\views_slideshow\ViewsSlideshowSkinInterface;
 
 /**
  * Views Slideshow: slideshow.
@@ -286,7 +284,7 @@ function template_preprocess_views_slideshow_controls_widget_render(&$vars) {
   );
 
   $output = '';
-  if (empty($vars['settings']['hide_on_single_slide']) || count($vars['rows']) > $vars['view']->style_options['views_slideshow_cycle']['items_per_slide']) {
+  if (empty($vars['settings']['hide_on_single_slide']) || count($vars['rows']) > $vars['view']->style_plugin->options['views_slideshow_cycle']['items_per_slide']) {
     $output = array(
       '#theme' => $vars['view']->buildThemeFunctions($vars['settings']['type']),
       '#vss_id' => $vars['vss_id'],
