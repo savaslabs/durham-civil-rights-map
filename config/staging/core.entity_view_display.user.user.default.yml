@@ -2,7 +2,11 @@ uuid: 59e338df-ce37-4f4f-881f-316b3623aa6a
 langcode: en
 status: true
 dependencies:
+  config:
+    - field.field.user.user.user_picture
+    - image.style.thumbnail
   module:
+    - image
     - user
 id: user.user.default
 targetEntityType: user
