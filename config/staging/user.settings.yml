@@ -1,9 +1,0 @@
-register: admin_only
-anonymous: Anonymous
-password_strength: false
-verify_mail: false
-cancel_method: null
-notify:
-  status_activated: false
-  status_blocked: false
-  status_canceled: false
