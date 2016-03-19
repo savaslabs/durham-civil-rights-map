@@ -1,5 +1,10 @@
 # durham-civil-rights-map
+
 Durham Civil Rights Map, a project of the Pauli Murray Project
+
+## Remote hosting
+
+Dev, Test and Live are on Pantheon. Use `terminus` for running `drush config-import` after you push to dev/test/live.
 
 ## Local install
 
@@ -7,17 +12,14 @@ Durham Civil Rights Map, a project of the Pauli Murray Project
 2. Create a blank PHP file in `docroot/sites/default/settings.local.php` and add the proper code to specify your local DB config
 3. Making sure you're using drush 8.x (http://docs.drush.org/en/master/install/), run `drush sql-create`.
 4. Download the DB from the dev site (ssh in, `drush sql-dump --gzip --result-file`), and install it locally.
-5. Run `drush config-import staging` to make sure that config is synced
+5. Run `drush config-import` to make sure that config is synced
 
 ## Sass
+
 From the theme directory (docroot/themes/mappy), run `bundle exec compass compile` to compile the Sass files into styles.css
 
-## Working with config changes
+## Workflow
 
-Always after pulling new changes from the repo, run `drush config-import staging` to sync your config with code (this is like reverting features for D7).
+Locally, any time you update any configuration related change in the database, you will want to run `drush config-export` to export the configuration changes to code.
 
-After you make changes to your local site, `drush config-export staging` will export the current local config into code. It seems that git does not always play well with yaml files, so sometimes merge conflicts
-may arise which make the yaml invalid. Because of that it is recommended to test run `drush config-import staging` after each merge operation.
-
-See more about how to manage configuration with Drupal 8 and a git workflow here: http://nuvole.org/blog/2014/aug/20/git-workflow-managing-drupal-8-configuration
-
+Immediately after importing a DB locally to do some development, it's always a good idea to run `drush config-export` to see if the production DB has any changes that were done via the UI.
