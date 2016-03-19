@@ -1,8 +1,0 @@
-uuid: e8a1d8f9-8e41-4427-b02c-446051f2ef4b
-langcode: en
-status: true
-dependencies: {  }
-id: html_week
-label: 'HTML Week'
-locked: true
-pattern: Y-\WW

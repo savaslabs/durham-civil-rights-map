@@ -1,7 +1,0 @@
-definitions:
-  contact__site_page:
-    enabled: true
-    menu_name: footer
-  standard__front_page:
-    enabled: false
-    menu_name: main
