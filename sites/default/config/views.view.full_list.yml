@@ -364,7 +364,7 @@ display:
     position: 1
     display_options:
       display_extenders: {  }
-      path: list
+      path: places
       menu:
         type: normal
         title: 'Explore all points'

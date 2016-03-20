@@ -11,6 +11,7 @@ module:
   config: 0
   contact: 0
   contextual: 0
+  ctools: 0
   datetime: 0
   dblog: 0
   dynamic_page_cache: 0
@@ -27,6 +28,7 @@ module:
   image: 0
   link: 0
   menu_ui: 0
+  metatag: 0
   node: 0
   options: 0
   page_cache: 0
@@ -37,9 +39,11 @@ module:
   search: 0
   serialization: 0
   shortcut: 0
+  simple_sitemap: 0
   system: 0
   taxonomy: 0
   text: 0
+  token: 0
   toolbar: 0
   tour: 0
   update: 0
@@ -49,6 +53,7 @@ module:
   views_slideshow_cycle: 0
   views_ui: 0
   menu_link_content: 1
+  pathauto: 1
   views: 10
   standard: 1000
 theme:
