@@ -1,0 +1,15 @@
+uuid: b4b43eab-9a44-44f2-a44a-74e619648608
+langcode: en
+status: true
+dependencies: {  }
+name: slideshow
+label: 'Slideshow (300x300)'
+effects:
+  e53a6e05-f6c3-4ee8-9d00-d7594149e25a:
+    uuid: e53a6e05-f6c3-4ee8-9d00-d7594149e25a
+    id: image_scale
+    weight: 1
+    data:
+      width: 300
+      height: 300
+      upscale: false

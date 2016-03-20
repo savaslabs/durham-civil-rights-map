@@ -1,0 +1,17 @@
+uuid: 38ff7a46-49d0-434d-b800-c0184a0157df
+langcode: en
+status: true
+dependencies:
+  module:
+    - menu_ui
+third_party_settings:
+  menu_ui:
+    available_menus: {  }
+    parent: ''
+name: Place
+type: place
+description: 'Place on the map, with write-up'
+help: ''
+new_revision: true
+preview_mode: 1
+display_submitted: true

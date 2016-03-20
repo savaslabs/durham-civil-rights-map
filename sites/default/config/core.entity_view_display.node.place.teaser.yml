@@ -1,0 +1,40 @@
+uuid: 85c8c3fe-fd63-434d-bc60-96b5a2f82c72
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.node.teaser
+    - field.field.node.place.body
+    - field.field.node.place.field_address_text
+    - field.field.node.place.field_by
+    - field.field.node.place.field_date
+    - field.field.node.place.field_location_coordinates
+    - field.field.node.place.field_photos
+    - field.field.node.place.field_soundcloud_url
+    - field.field.node.place.field_tags
+    - node.type.place
+  module:
+    - text
+    - user
+id: node.place.teaser
+targetEntityType: node
+bundle: place
+mode: teaser
+content:
+  body:
+    label: hidden
+    type: text_summary_or_trimmed
+    weight: 101
+    settings:
+      trim_length: 600
+    third_party_settings: {  }
+  links:
+    weight: 100
+hidden:
+  field_address_text: true
+  field_by: true
+  field_date: true
+  field_location_coordinates: true
+  field_photos: true
+  field_soundcloud_url: true
+  field_tags: true

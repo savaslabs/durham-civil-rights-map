@@ -1,0 +1,22 @@
+uuid: d955ae42-61ae-437e-8500-bd1ff46e8fed
+langcode: en
+status: true
+dependencies:
+  theme:
+    - mappy
+_core:
+  default_config_hash: X9I1OB0W3WlWtrK-CNcg6hNWwa8wficanpH8pYnDZDE
+id: mappy_local_tasks
+theme: mappy
+region: content
+weight: -4
+provider: null
+plugin: local_tasks_block
+settings:
+  id: local_tasks_block
+  label: Tabs
+  provider: core
+  label_display: '0'
+  primary: true
+  secondary: true
+visibility: {  }

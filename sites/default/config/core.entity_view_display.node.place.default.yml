@@ -1,0 +1,86 @@
+uuid: 7325d9dc-fbd9-4c8f-a500-db5ecc485808
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.place.body
+    - field.field.node.place.field_address_text
+    - field.field.node.place.field_by
+    - field.field.node.place.field_date
+    - field.field.node.place.field_location_coordinates
+    - field.field.node.place.field_photos
+    - field.field.node.place.field_soundcloud_url
+    - field.field.node.place.field_tags
+    - node.type.place
+  module:
+    - datetime
+    - geofield
+    - image
+    - text
+    - user
+id: node.place.default
+targetEntityType: node
+bundle: place
+mode: default
+content:
+  body:
+    label: hidden
+    type: text_default
+    weight: 1
+    settings: {  }
+    third_party_settings: {  }
+  field_address_text:
+    weight: 6
+    label: visually_hidden
+    settings: {  }
+    third_party_settings: {  }
+    type: basic_string
+  field_by:
+    weight: 8
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    type: string
+  field_date:
+    weight: 3
+    label: above
+    settings:
+      format_type: medium
+      timezone_override: ''
+    third_party_settings: {  }
+    type: datetime_default
+  field_location_coordinates:
+    weight: 4
+    label: above
+    settings:
+      output_format: wkt
+    third_party_settings: {  }
+    type: geofield_default
+  field_photos:
+    weight: 2
+    label: visually_hidden
+    settings:
+      image_style: ''
+      image_link: ''
+    third_party_settings: {  }
+    type: image
+  field_soundcloud_url:
+    weight: 7
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    type: string
+  field_tags:
+    weight: 5
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    type: entity_reference_label
+  links:
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
+hidden: {  }

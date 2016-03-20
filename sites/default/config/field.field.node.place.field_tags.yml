@@ -1,0 +1,27 @@
+uuid: 79013b4f-4e23-412e-b632-50ea3cc0d5a1
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_tags
+    - node.type.place
+    - taxonomy.vocabulary.tags
+id: node.place.field_tags
+field_name: field_tags
+entity_type: node
+bundle: place
+label: Tags
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      tags: tags
+    sort:
+      field: _none
+    auto_create: true
+field_type: entity_reference

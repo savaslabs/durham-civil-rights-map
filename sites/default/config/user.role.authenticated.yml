@@ -1,0 +1,24 @@
+uuid: c3e15e92-1268-473f-9526-38de030a7142
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: dJ0L2DNSj5q6XVZAGsuVDpJTh5UeYkIPwKrUOOpr8YI
+id: authenticated
+label: Contributor
+weight: -9
+is_admin: false
+permissions:
+  - 'access content'
+  - 'use text format basic_html'
+  - 'access comments'
+  - 'post comments'
+  - 'skip comment approval'
+  - 'access site-wide contact form'
+  - 'access shortcuts'
+  - 'search content'
+  - 'access contextual links'
+  - 'use text format restricted_html'
+  - 'view own unpublished content'
+  - 'access in-place editing'
+  - 'access toolbar'

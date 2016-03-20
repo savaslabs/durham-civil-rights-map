@@ -1,0 +1,12 @@
+uuid: b834da61-e6e5-4d35-a128-40893d4b0b5c
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: c4zaT5cyPxuTXI6JOWt3qRtMvICT9tHB6d9a5VG-CmQ
+id: feedback
+label: 'Website feedback'
+recipients:
+  - civilrightsmap@savaslabs.com
+reply: ''
+weight: 0

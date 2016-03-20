@@ -1,0 +1,22 @@
+uuid: 9a6193ee-d444-445c-9100-e773b0556c61
+langcode: en
+status: false
+dependencies:
+  module:
+    - help
+  theme:
+    - mappy
+_core:
+  default_config_hash: 8I8iACSa0sKO3k3jlvUG1ge52rfcKX7USJAQYnzuBgg
+id: mappy_help
+theme: mappy
+region: '-1'
+weight: -2
+provider: null
+plugin: help_block
+settings:
+  id: help_block
+  label: Help
+  provider: help
+  label_display: '0'
+visibility: {  }

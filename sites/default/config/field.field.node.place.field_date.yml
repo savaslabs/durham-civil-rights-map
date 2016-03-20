@@ -1,0 +1,21 @@
+uuid: aa74ec82-add4-4040-9953-83ff089292c8
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_date
+    - node.type.place
+  module:
+    - datetime
+id: node.place.field_date
+field_name: field_date
+entity_type: node
+bundle: place
+label: Date
+description: 'Date associated with this place/story. If a date range is more appropriate, enter two dates -- start and end date.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: datetime

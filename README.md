@@ -1,6 +1,6 @@
 # durham-civil-rights-map
 
-Durham Civil Rights Map, a project of the Pauli Murray Project
+Durham Civil Rights Map, a project of the Pauli Murray Project.
 
 ## Remote hosting
 
@@ -8,7 +8,7 @@ Dev, Test and Live are on Pantheon. Use `terminus` for running `drush config-imp
 
 ## Local install
 
-1. Clone the repo locally and set up your vhosts file to point to path/to/repo/docroot with whatever URL.
+1. Clone the repo locally and set up your vhosts file to point to path/to/repo with whatever URL.
 2. Create a blank PHP file in `docroot/sites/default/settings.local.php` and add the proper code to specify your local DB config
 3. Making sure you're using drush 8.x (http://docs.drush.org/en/master/install/), run `drush sql-create`.
 4. Download the DB from the dev site (ssh in, `drush sql-dump --gzip --result-file`), and install it locally.
