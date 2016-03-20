@@ -2,10 +2,6 @@
 
 Durham Civil Rights Map, a project of the Pauli Murray Project.
 
-## Remote hosting
-
-Dev, Test and Live are on Pantheon. Use `terminus` for running `drush config-import` after you push to dev/test/live.
-
 ## Local install
 
 1. Clone the repo locally and set up your vhosts file to point to path/to/repo with whatever URL.
@@ -16,10 +12,20 @@ Dev, Test and Live are on Pantheon. Use `terminus` for running `drush config-imp
 
 ## Sass
 
-From the theme directory (docroot/themes/mappy), run `bundle exec compass compile` to compile the Sass files into styles.css
+From the theme directory (`themes/mappy`), run `bundle exec compass compile` to compile the Sass files into `styles.css`.
 
-## Workflow
+You'll need to commit the `styles.css` file since Pantheon doesn't support running `compass compile`.
 
-Locally, any time you update any configuration related change in the database, you will want to run `drush config-export` to export the configuration changes to code.
+## Dev Workflow
 
-Immediately after importing a DB locally to do some development, it's always a good idea to run `drush config-export` to see if the production DB has any changes that were done via the UI.
+### Local development
+
+1. Use the Pantheon UI or `terminus` (the Pantheon CLI) to obtain the latest DB from `live`.
+2. After importing the DB, run `drush config-export`. You should not see any changes. If you do, you should commit them and push them back to `master`.
+3. {local development on whatever feature you're working on}
+4. Run `drush config-export`. If you've made any changes to any configuration, you should see some YAML files. Make sure you commit those as part of your pull request.
+
+### Pushing to Pantheon
+
+1. Push your branch to `dev` on Pantheon, then to `test` and finally to `live`.
+2. Once your code is in `live`, from your local machine, run `terminus drush config-import` — this imports your file-based configuration to the database. Don't skip this step!
