@@ -72,7 +72,7 @@ class GeoJson extends StylePluginBase {
 
     $this->definition = $plugin_definition + $configuration;
     $this->serializer = $serializer;
-    $this->formats = $serializer_formats;
+    $this->formats = array('json', 'html');
   }
 
   /**
@@ -335,7 +335,7 @@ class GeoJson extends StylePluginBase {
    * {@inheritdoc}
    */
   public function getFormats() {
-    return $this->formats;
+    return ['json', 'html'];
   }
 
 }

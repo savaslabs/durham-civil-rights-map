@@ -228,7 +228,10 @@ class GeoJsonExport extends PathPluginBase {
     if ($route = $collection->get("view.$view_id.$display_id")) {
       $style_plugin = $this->getPlugin('style');
       // REST exports should only respond to get methods.
-      $requirements = array('_method' => 'GET');
+      $requirements = [
+        '_method' => 'GET',
+        '_format' => 'json',
+      ];
 
       // Add the new requirements to the route.
       $route->addRequirements($requirements);
