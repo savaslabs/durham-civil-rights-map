@@ -19,7 +19,7 @@ function mappy_preprocess_node(&$variables) {
 function mappy_page_attachments_alter(&$page) {
   $current_path = \Drupal::service('path.current')->getPath();
   $path_args = explode('/', $current_path);
-  if (sizeof($path_args) > 2) {
+  if (count($path_args) > 2) {
     $current_node = \Drupal\node\Entity\Node::load($path_args[2]);
     if ($current_node && $current_node->bundle() == 'place') {
       $page['#attached']['drupalSettings']['mappy']['nodepageMap']['label'] = $current_node->getTitle();
