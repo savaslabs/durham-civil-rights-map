@@ -18,13 +18,14 @@ set classes = [
   'region-' ~ region|clean_class,
 ]
 %}
+
 {% if content %}
   <div{{ attributes.addClass(classes) }}>
     <header>
       <div class="navigation-wrapper">
         <div class="home-link">
           <a href="/" title="{{ 'Home'|t }}" rel="home">
-            <h3 class="home-link--heading">{{ elements.sitebranding.content.site_name['#markup'] }}</h3>
+            <h3 class="home-link--heading">{{ site_name }}</h3>
             <i class="home-link--back-arrow fa fa-lg fa-arrow-circle-left"></i>
           </a>
         </div>
