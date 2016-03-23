@@ -21,6 +21,7 @@ frontpage_map:
     theme:
       css/leaflet.fusesearch.css: {}
   js:
+    js/oms.min.js: {}
     js/fuse.js: {}
     js/leaflet-fusesearch/src/leaflet.fusesearch.js: {}
     js/page--front--map.js: {}
