@@ -3638,7 +3638,7 @@ body.path-frontpage .sidebar:last-child {
   }
 }
 /* line 72, ../sass/layouts/_nodepage.scss */
-.path-node.page-node-type-place .node-title-box .field--name-address-text {
+.path-node.page-node-type-place .node-title-box .field--name-field-address-text {
   padding-bottom: 1.5em;
 }
 /* line 77, ../sass/layouts/_nodepage.scss */
