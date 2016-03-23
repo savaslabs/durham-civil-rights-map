@@ -39,11 +39,14 @@
 
 // Styles for "Explore all points."
 .path-places {
-  .search-block-form {
-    input {
-      margin-left: 1em !important;
+  .block-page-title-block {
+    text-align: center;
+
+    @include media($narrow) {
+      text-align: left;
     }
   }
+
 
   .views-row {
     border-bottom: 1px solid $element-background-color;
@@ -60,16 +63,16 @@
     margin-bottom: .75em;
     text-align: center;
 
-    @include media($narrow) {
+    @include media($wide) {
       font-size: 1.5em;
       text-align: left;
     }
   }
 
-  .views-field-photos {
+  .views-field-field-photos {
     margin: 1.5em 0;
 
-    @include media($narrow) {
+    @include media($wide) {
       float: left;
       margin: 0 1em 0;
     }
@@ -80,16 +83,12 @@
       width: 20%;
     }
 
-    li {
-      list-style: none;
-      margin: 0;
-
-      img {
-        @include box-shadow;
-        display: block;
-        max-width: 100%;
-        margin: 0 auto;
-      }
+    img {
+      @include box-shadow;
+      display: block;
+      height: auto;
+      max-width: 100%;
+      margin: 0 auto;
     }
   }
 

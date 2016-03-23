@@ -19,10 +19,10 @@ settings:
   id: search_form_block
   label: Search
   provider: search
-  label_display: visible
+  label_display: '0'
 visibility:
   request_path:
     id: request_path
-    pages: list
+    pages: /places
     negate: false
     context_mapping: {  }
