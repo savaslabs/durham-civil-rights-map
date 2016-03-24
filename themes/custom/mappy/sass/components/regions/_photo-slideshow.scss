@@ -5,7 +5,7 @@
  */
 
 // Fix for flicker in slideshow (see http://malsup.com/jquery/cycle/faq.html)
-#views_slideshow_cycle_main_-default {
+#views_slideshow_cycle_main_photo_slideshow-default {
   overflow: hidden;
 }
 
@@ -42,10 +42,6 @@
 
       a {
         padding: 0 10px;
-
-        @include media(em(400)) {
-          padding: 0;
-        }
       }
     }
 
