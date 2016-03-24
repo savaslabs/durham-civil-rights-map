@@ -62,7 +62,7 @@
 
   $.getJSON('/points?_format=json', function (data) {
     addDataToMap(data, map, spiderfier, new pmpIcon);
-    searchCtrl.indexFeatures(data, ['title_1', 'address_text', 'description', 'field_tags']);
+    searchCtrl.indexFeatures(data, ['title_1', 'field_address_text', 'description', 'field_tags']);
   });
 
   // Add zoom controls in bottom right of map.
