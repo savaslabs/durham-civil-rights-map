@@ -10,7 +10,7 @@ id: node.place.field_tags
 field_name: field_tags
 entity_type: node
 bundle: place
-label: Tags
+label: 'Tags:'
 description: ''
 required: false
 translatable: true
