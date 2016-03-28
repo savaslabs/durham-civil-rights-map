@@ -29,7 +29,6 @@ frontpage_map:
    - mappy/leaflet
    - core/drupalSettings
 
-
 nodepage_map:
   js:
     js/page--node--map.js: {}
