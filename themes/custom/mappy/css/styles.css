@@ -4266,60 +4266,70 @@ footer:last-child {
   border-bottom: none;
 }
 
-/* line 42, ../sass/components/_page.scss */
-.path-places .block-page-title-block {
+/* line 43, ../sass/components/_page.scss */
+.path-places .block-page-title-block,
+.path-taxonomy .block-page-title-block {
   text-align: center;
 }
 @media screen and (min-width: 35em) {
-  /* line 42, ../sass/components/_page.scss */
-  .path-places .block-page-title-block {
+  /* line 43, ../sass/components/_page.scss */
+  .path-places .block-page-title-block,
+  .path-taxonomy .block-page-title-block {
     text-align: left;
   }
 }
-/* line 51, ../sass/components/_page.scss */
-.path-places .views-row {
+/* line 52, ../sass/components/_page.scss */
+.path-places .views-row,
+.path-taxonomy .views-row {
   border-bottom: 1px solid #FFFFF9;
   padding: 1.5em;
 }
-/* line 55, ../sass/components/_page.scss */
-.path-places .views-row:last-child {
+/* line 56, ../sass/components/_page.scss */
+.path-places .views-row:last-child,
+.path-taxonomy .views-row:last-child {
   border-bottom: none;
 }
-/* line 60, ../sass/components/_page.scss */
-.path-places .views-field-title {
+/* line 61, ../sass/components/_page.scss */
+.path-places .views-field-title,
+.path-taxonomy .views-field-title {
   font-family: Noto Serif, Georgia, serif;
   font-size: 1.2em;
   margin-bottom: .75em;
   text-align: center;
 }
 @media screen and (min-width: 53.1875em) {
-  /* line 60, ../sass/components/_page.scss */
-  .path-places .views-field-title {
+  /* line 61, ../sass/components/_page.scss */
+  .path-places .views-field-title,
+  .path-taxonomy .views-field-title {
     font-size: 1.5em;
     text-align: left;
   }
 }
-/* line 72, ../sass/components/_page.scss */
-.path-places .views-field-field-photos {
+/* line 73, ../sass/components/_page.scss */
+.path-places .views-field-field-photos,
+.path-taxonomy .views-field-field-photos {
   margin: 1.5em 0;
 }
 @media screen and (min-width: 53.1875em) {
-  /* line 72, ../sass/components/_page.scss */
-  .path-places .views-field-field-photos {
+  /* line 73, ../sass/components/_page.scss */
+  .path-places .views-field-field-photos,
+  .path-taxonomy .views-field-field-photos {
     float: left;
     margin: 0 1em 0;
   }
 }
 @media screen and (min-width: 950px) {
-  /* line 72, ../sass/components/_page.scss */
-  .path-places .views-field-field-photos {
+  /* line 73, ../sass/components/_page.scss */
+  .path-places .views-field-field-photos,
+  .path-taxonomy .views-field-field-photos {
     display: inline-block;
     margin: 0;
     width: 20%;
   }
 }
-/* line 86, ../sass/components/_page.scss */
-.path-places .views-field-field-photos img {
+/* line 87, ../sass/components/_page.scss */
+.path-places .views-field-field-photos img,
+.path-taxonomy .views-field-field-photos img {
   box-shadow: 0 2px 4px #7a6d55;
   display: block;
   height: auto;
@@ -4327,28 +4337,33 @@ footer:last-child {
   margin: 0 auto;
 }
 @media screen and (min-width: 950px) {
-  /* line 95, ../sass/components/_page.scss */
-  .path-places .views-field-body {
+  /* line 96, ../sass/components/_page.scss */
+  .path-places .views-field-body,
+  .path-taxonomy .views-field-body {
     display: inline-block;
     vertical-align: top;
     width: 80%;
   }
-  /* line 101, ../sass/components/_page.scss */
-  .path-places .views-field-body .field-content {
+  /* line 102, ../sass/components/_page.scss */
+  .path-places .views-field-body .field-content,
+  .path-taxonomy .views-field-body .field-content {
     margin-left: 1em;
   }
-  /* line 104, ../sass/components/_page.scss */
-  .path-places .views-field-body .field-content p {
+  /* line 105, ../sass/components/_page.scss */
+  .path-places .views-field-body .field-content p,
+  .path-taxonomy .views-field-body .field-content p {
     margin-top: 0;
   }
 }
-/* line 112, ../sass/components/_page.scss */
-.path-places .views-field-view-node {
+/* line 113, ../sass/components/_page.scss */
+.path-places .views-field-view-node,
+.path-taxonomy .views-field-view-node {
   clear: both;
   margin-bottom: 1.5em;
 }
-/* line 116, ../sass/components/_page.scss */
-.path-places .views-field-view-node a {
+/* line 117, ../sass/components/_page.scss */
+.path-places .views-field-view-node a,
+.path-taxonomy .views-field-view-node a {
   display: inline-block;
   float: right;
 }
