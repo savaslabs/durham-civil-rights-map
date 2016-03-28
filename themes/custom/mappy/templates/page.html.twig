@@ -65,13 +65,13 @@
     <a id="main-content" tabindex="-1"></a>{# link is in html.html.twig #}
 
     <div class="layout-content">
+      {% if page.content.pagetitle %}
       <div class="page-title-box">
         {{ title_prefix }}
-        {% if page.content.pagetitle %}
           <h2>{{ page.content.pagetitle }}</h2>
-        {% endif %}
         {{ title_suffix }}
       </div>
+      {% endif %}
 
       {{ page.content|without('pagetitle') }}
     </div>{# /.layout-content #}

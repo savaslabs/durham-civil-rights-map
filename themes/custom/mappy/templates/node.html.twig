@@ -85,9 +85,9 @@ set classes = [
     {% if label %}
       <h2>{{ label }}</h2>
     {% endif %}
-    {% if content.address_text %}
+    {% if content.field_address_text %}
       <hr>
-      {{ content.address_text }}
+      {{ content.field_address_text }}
     {% endif %}
   </div>
   {{ title_suffix }}
@@ -96,13 +96,13 @@ set classes = [
     {% if node.bundle == 'place' %}
       <div class="node-left-pane">
         {{ photo_slideshow_view }}
-        {{ content.soundcloud_url }}
+        {{ content.field_soundcloud_url }}
       </div>
     {% endif %}
     <div class="node-body">
-      {% if content.by %}
+      {% if content.field_by %}
         <div class="post_author">
-          {{ content.by }}
+          {{ content.field_by }}
         </div>
       {% endif %}
       {{ content.body }}

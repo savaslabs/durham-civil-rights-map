@@ -3455,7 +3455,7 @@ body main::after {
 }
 /* line 21, ../sass/layouts/_base.scss */
 body main h1 {
-  margin-top: 7.5625em;
+  margin-top: 4em;
 }
 
 /**
@@ -3638,7 +3638,7 @@ body.path-frontpage .sidebar:last-child {
   }
 }
 /* line 72, ../sass/layouts/_nodepage.scss */
-.path-node.page-node-type-place .node-title-box .field--name-address-text {
+.path-node.page-node-type-place .node-title-box .field--name-field-address-text {
   padding-bottom: 1.5em;
 }
 /* line 77, ../sass/layouts/_nodepage.scss */
@@ -3735,11 +3735,19 @@ body.path-frontpage .sidebar:last-child {
     margin-right: 0;
   }
 }
-/* line 27, ../sass/layouts/_page.scss */
+/* line 26, ../sass/layouts/_page.scss */
+.layout-container main .page-title-box h1 {
+  margin-top: 7.5625em;
+}
+/* line 31, ../sass/layouts/_page.scss */
 .layout-container main .region-content {
   clear: both;
 }
-/* line 33, ../sass/layouts/_page.scss */
+/* line 36, ../sass/layouts/_page.scss */
+.layout-container main .search-block-form {
+  padding: 1.5em 0;
+}
+/* line 39, ../sass/layouts/_page.scss */
 .layout-container main .search-block-form input[type='search'] {
   display: block;
   margin: 0 auto 5px;
@@ -3747,25 +3755,25 @@ body.path-frontpage .sidebar:last-child {
   width: 15em;
 }
 @media screen and (min-width: 35em) {
-  /* line 33, ../sass/layouts/_page.scss */
+  /* line 39, ../sass/layouts/_page.scss */
   .layout-container main .search-block-form input[type='search'] {
     display: inline;
-    margin: 0 5px 0 0;
+    margin: 0;
   }
 }
-/* line 45, ../sass/layouts/_page.scss */
+/* line 51, ../sass/layouts/_page.scss */
 .layout-container main .search-block-form input[type='submit'] {
   display: block;
   margin: 0 auto;
 }
 @media screen and (min-width: 35em) {
-  /* line 45, ../sass/layouts/_page.scss */
+  /* line 51, ../sass/layouts/_page.scss */
   .layout-container main .search-block-form input[type='submit'] {
     display: inline;
   }
 }
 
-/* line 59, ../sass/layouts/_page.scss */
+/* line 65, ../sass/layouts/_page.scss */
 .path-user .tabs {
   clear: both;
 }
@@ -4049,7 +4057,7 @@ footer:last-child {
  * Photo slideshow styles.
  */
 /* line 8, ../sass/components/regions/_photo-slideshow.scss */
-#views_slideshow_cycle_main_-default {
+#views_slideshow_cycle_main_photo_slideshow-default {
   overflow: hidden;
 }
 
@@ -4106,13 +4114,7 @@ footer:last-child {
 .view-photo-slideshow .view-content .field-content a {
   padding: 0 10px;
 }
-@media screen and (min-width: 25em) {
-  /* line 43, ../sass/components/regions/_photo-slideshow.scss */
-  .view-photo-slideshow .view-content .field-content a {
-    padding: 0;
-  }
-}
-/* line 52, ../sass/components/regions/_photo-slideshow.scss */
+/* line 48, ../sass/components/regions/_photo-slideshow.scss */
 .view-photo-slideshow .view-content img {
   height: auto;
   max-height: 176px;
@@ -4120,47 +4122,47 @@ footer:last-child {
   width: auto;
 }
 @media screen and (min-width: 25em) {
-  /* line 52, ../sass/components/regions/_photo-slideshow.scss */
+  /* line 48, ../sass/components/regions/_photo-slideshow.scss */
   .view-photo-slideshow .view-content img {
     max-height: 215px;
   }
 }
-/* line 65, ../sass/components/regions/_photo-slideshow.scss */
+/* line 61, ../sass/components/regions/_photo-slideshow.scss */
 .view-photo-slideshow .views-slideshow-controls-bottom {
   display: block;
   padding: 10px;
   margin: 0 auto;
 }
 @media screen and (min-width: 25em) {
-  /* line 65, ../sass/components/regions/_photo-slideshow.scss */
+  /* line 61, ../sass/components/regions/_photo-slideshow.scss */
   .view-photo-slideshow .views-slideshow-controls-bottom {
     padding: 10px 0;
     width: 300px;
   }
 }
-/* line 76, ../sass/components/regions/_photo-slideshow.scss */
+/* line 72, ../sass/components/regions/_photo-slideshow.scss */
 .view-photo-slideshow .views_slideshow_slide_counter {
   text-align: center;
 }
-/* line 82, ../sass/components/regions/_photo-slideshow.scss */
+/* line 78, ../sass/components/regions/_photo-slideshow.scss */
 .view-photo-slideshow .views_slideshow_controls_text .views_slideshow_controls_text_previous {
   float: left;
   padding-left: 4em;
 }
-/* line 86, ../sass/components/regions/_photo-slideshow.scss */
+/* line 82, ../sass/components/regions/_photo-slideshow.scss */
 .view-photo-slideshow .views_slideshow_controls_text .views_slideshow_controls_text_previous a {
   content: url(../images/back-arrow.png);
 }
-/* line 91, ../sass/components/regions/_photo-slideshow.scss */
+/* line 87, ../sass/components/regions/_photo-slideshow.scss */
 .view-photo-slideshow .views_slideshow_controls_text .views_slideshow_controls_text_next {
   float: right;
   padding-right: 4em;
 }
-/* line 95, ../sass/components/regions/_photo-slideshow.scss */
+/* line 91, ../sass/components/regions/_photo-slideshow.scss */
 .view-photo-slideshow .views_slideshow_controls_text .views_slideshow_controls_text_next a {
   content: url(../images/forward-arrow.png);
 }
-/* line 100, ../sass/components/regions/_photo-slideshow.scss */
+/* line 96, ../sass/components/regions/_photo-slideshow.scss */
 .view-photo-slideshow .views_slideshow_controls_text .views_slideshow_controls_text_pause {
   display: none;
 }
@@ -4253,86 +4255,88 @@ footer:last-child {
   border-bottom: none;
 }
 
-/* line 43, ../sass/components/_page.scss */
-.path-places .search-block-form input {
-  margin-left: 1em !important;
+/* line 42, ../sass/components/_page.scss */
+.path-places .block-page-title-block {
+  text-align: center;
 }
-/* line 48, ../sass/components/_page.scss */
+@media screen and (min-width: 35em) {
+  /* line 42, ../sass/components/_page.scss */
+  .path-places .block-page-title-block {
+    text-align: left;
+  }
+}
+/* line 51, ../sass/components/_page.scss */
 .path-places .views-row {
   border-bottom: 1px solid #FFFFF9;
   padding: 1.5em;
 }
-/* line 52, ../sass/components/_page.scss */
+/* line 55, ../sass/components/_page.scss */
 .path-places .views-row:last-child {
   border-bottom: none;
 }
-/* line 57, ../sass/components/_page.scss */
+/* line 60, ../sass/components/_page.scss */
 .path-places .views-field-title {
   font-family: Noto Serif, Georgia, serif;
   font-size: 1.2em;
   margin-bottom: .75em;
   text-align: center;
 }
-@media screen and (min-width: 35em) {
-  /* line 57, ../sass/components/_page.scss */
+@media screen and (min-width: 53.1875em) {
+  /* line 60, ../sass/components/_page.scss */
   .path-places .views-field-title {
     font-size: 1.5em;
     text-align: left;
   }
 }
-/* line 69, ../sass/components/_page.scss */
-.path-places .views-field-photos {
+/* line 72, ../sass/components/_page.scss */
+.path-places .views-field-field-photos {
   margin: 1.5em 0;
 }
-@media screen and (min-width: 35em) {
-  /* line 69, ../sass/components/_page.scss */
-  .path-places .views-field-photos {
+@media screen and (min-width: 53.1875em) {
+  /* line 72, ../sass/components/_page.scss */
+  .path-places .views-field-field-photos {
     float: left;
     margin: 0 1em 0;
   }
 }
 @media screen and (min-width: 950px) {
-  /* line 69, ../sass/components/_page.scss */
-  .path-places .views-field-photos {
+  /* line 72, ../sass/components/_page.scss */
+  .path-places .views-field-field-photos {
     display: inline-block;
     margin: 0;
     width: 20%;
   }
 }
-/* line 83, ../sass/components/_page.scss */
-.path-places .views-field-photos li {
-  list-style: none;
-  margin: 0;
-}
-/* line 87, ../sass/components/_page.scss */
-.path-places .views-field-photos li img {
+/* line 86, ../sass/components/_page.scss */
+.path-places .views-field-field-photos img {
   box-shadow: 0 2px 4px #7a6d55;
   display: block;
+  height: auto;
   max-width: 100%;
   margin: 0 auto;
 }
 @media screen and (min-width: 950px) {
-  /* line 96, ../sass/components/_page.scss */
+  /* line 95, ../sass/components/_page.scss */
   .path-places .views-field-body {
     display: inline-block;
     vertical-align: top;
     width: 80%;
   }
-  /* line 102, ../sass/components/_page.scss */
+  /* line 101, ../sass/components/_page.scss */
   .path-places .views-field-body .field-content {
     margin-left: 1em;
   }
-  /* line 105, ../sass/components/_page.scss */
+  /* line 104, ../sass/components/_page.scss */
   .path-places .views-field-body .field-content p {
     margin-top: 0;
   }
 }
-/* line 113, ../sass/components/_page.scss */
+/* line 112, ../sass/components/_page.scss */
 .path-places .views-field-view-node {
   clear: both;
   margin-bottom: 1.5em;
 }
-/* line 117, ../sass/components/_page.scss */
+/* line 116, ../sass/components/_page.scss */
 .path-places .views-field-view-node a {
   display: inline-block;
   float: right;
