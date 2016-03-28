@@ -7,4 +7,5 @@ _core:
 id: global
 label: Global
 tags:
+  image_src: 'http://www.durhamcivilrightsmap.org/sites/default/files/civil-rights-map-frontpage-screenshot.jpg'
   title: '[current-page:title] | [site:name]'

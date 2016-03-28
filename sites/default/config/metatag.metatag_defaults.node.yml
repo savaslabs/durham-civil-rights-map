@@ -7,5 +7,6 @@ _core:
 id: node
 label: Content
 tags:
-  title: '[node:title] | [site:name]'
   description: '[node:summary]'
+  image_src: '[node:field_photos]'
+  title: '[node:title] | [site:name]'
