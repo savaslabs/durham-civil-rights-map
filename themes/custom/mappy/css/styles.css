@@ -4013,6 +4013,19 @@ header .home-link .home-link--back-arrow {
   max-width: 360px;
   width: 100%;
 }
+/* line 65, ../sass/components/regions/_sidebar.scss */
+.path-frontpage .sidebar .sidebar__content .sidebar__node-content__more-link a {
+  background-color: #709130;
+  border-radius: 6px;
+  color: #FFFFF9;
+  display: inline-block;
+  margin: 1em 0;
+  padding: .5em 3em;
+}
+/* line 73, ../sass/components/regions/_sidebar.scss */
+.path-frontpage .sidebar .sidebar__content .sidebar__node-content__more-link a:hover, .path-frontpage .sidebar .sidebar__content .sidebar__node-content__more-link a:focus {
+  background-color: #afd071;
+}
 
 /**
  * @file
