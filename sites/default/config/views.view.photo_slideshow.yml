@@ -102,7 +102,7 @@ display:
                 type: views_slideshow_pager_fields
                 views_slideshow_pager_fields:
                   views_slideshow_pager_fields_fields:
-                    title: 0
+                    field_photos: 0
                   views_slideshow_pager_fields_hover: 0
             bottom:
               views_slideshow_controls:
@@ -112,7 +112,7 @@ display:
                 type: views_slideshow_controls_text
               views_slideshow_slide_counter:
                 enable: 1
-                weight: '1'
+                weight: '2'
               views_slideshow_pager:
                 enable: 0
                 weight: '1'
@@ -120,7 +120,7 @@ display:
                 type: views_slideshow_pager_fields
                 views_slideshow_pager_fields:
                   views_slideshow_pager_fields_fields:
-                    title: 0
+                    field_photos: 0
                   views_slideshow_pager_fields_hover: 0
       row:
         type: fields
