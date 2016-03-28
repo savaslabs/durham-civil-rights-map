@@ -23,4 +23,33 @@ $local_settings = __DIR__ . "/settings.local.php";
 if (file_exists($local_settings)) {
   include $local_settings;
 }
+
 $settings['install_profile'] = 'standard';
+
+if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
+  // Dev.
+  if ($_ENV['PANTHEON_ENVIRONMENT'] === 'dev') {
+    $domain = 'dev-durham-civil-rights-map.pantheonsite.io';
+    $settings['trusted_host_patterns'] = array(
+      'dev-durham-civil-rights-map\.pantheonsite\.io$',
+    );
+  }
+  // Test.
+  if ($_ENV['PANTHEON_ENVIRONMENT'] === 'test') {
+    $domain = 'test-durham-civil-rights-map.pantheonsite.io';
+    $settings['trusted_host_patterns'] = array(
+      'test-durham-civil-rights-map\.pantheonsite\.io$',
+    );
+  }
+  // Live.
+  if ($_ENV['PANTHEON_ENVIRONMENT'] === 'live') {
+    $domain = 'www.durhamcivilrightsmap.org';
+    $settings['trusted_host_patterns'] = array(
+      'durhamcivilrightsmap\.org$',
+      'live-durham-civil-rights-map\.pantheonsite\.io$'
+    );
+  }
+  else {
+    $domain = $_SERVER['HTTP_HOST'];
+  }
+}
