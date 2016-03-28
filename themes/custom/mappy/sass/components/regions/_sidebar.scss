@@ -59,7 +59,24 @@
         margin: 0 auto;
         max-width: 360px;
         width: 100%;
+      }
 
+      .sidebar__node-content__tags {
+        text-align: left;
+      }
+
+      .sidebar__node-content__more-link a {
+        background-color: $link-color;
+        border-radius: 6px;
+        color: $element-background-color;
+        display: inline-block;
+        margin: 1em 0;
+        padding: .5em 3em;
+
+        &:hover,
+        &:focus {
+          background-color: $link-hover;
+        }
       }
     }
   }
