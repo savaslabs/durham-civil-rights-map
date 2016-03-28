@@ -43,9 +43,10 @@ if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
   }
   // Live.
   if ($_ENV['PANTHEON_ENVIRONMENT'] === 'live') {
-    $domain = 'www.durhamatletico.com';
+    $domain = 'www.durhamcivilrightsmap.org';
     $settings['trusted_host_patterns'] = array(
       'durhamcivilrightsmap\.org$',
+      'live-durham-civil-rights-map\.pantheonsite\.io$'
     );
   }
   else {
