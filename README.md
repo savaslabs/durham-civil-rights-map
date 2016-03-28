@@ -28,4 +28,4 @@ You'll need to commit the `styles.css` file since Pantheon doesn't support runni
 ### Pushing to Pantheon
 
 1. Push your branch to `dev` on Pantheon, then to `test` and finally to `live`.
-2. Once your code is in `live`, from your local machine, run `terminus drush config-import` — this imports your file-based configuration to the database. Don't skip this step!
+2. Once your code is in `live`, from your local machine, run `terminus drush config-import --site=durham-civil-rights-map --env=dev` (or `env=test` or `env=live`) — this imports your file-based configuration to the database. Don't skip this step!
