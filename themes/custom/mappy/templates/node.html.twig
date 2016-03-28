@@ -101,11 +101,16 @@ set classes = [
     {% endif %}
     <div class="node-body">
       {% if content.field_by %}
-        <div class="post_author">
+        <div class="post__author">
           {{ content.field_by }}
         </div>
       {% endif %}
       {{ content.body }}
+      {% if content.field_tags %}
+        <div class="post__tags">
+          {{ content.field_tags }}
+        </div>
+      {% endif %}
     </div>
 
     {% if node.bundle == "place" %}

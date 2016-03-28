@@ -3385,7 +3385,7 @@ a {
 h1,
 h2,
 h3,
-.path-node .node--type-place .post_author,
+.path-node .node--type-place .post__author,
 h4,
 h4,
 h5,
@@ -3988,7 +3988,7 @@ header .home-link .home-link--back-arrow {
   display: none;
 }
 /* line 35, ../sass/components/regions/_sidebar.scss */
-.path-frontpage .sidebar .sidebar__content h3, .path-frontpage .sidebar .sidebar__content .path-node .node--type-place .post_author, .path-node .node--type-place .path-frontpage .sidebar .sidebar__content .post_author {
+.path-frontpage .sidebar .sidebar__content h3, .path-frontpage .sidebar .sidebar__content .path-node .node--type-place .post__author, .path-node .node--type-place .path-frontpage .sidebar .sidebar__content .post__author {
   margin: 0;
 }
 /* line 39, ../sass/components/regions/_sidebar.scss */
@@ -4194,28 +4194,39 @@ footer:last-child {
   padding-bottom: 0;
 }
 /* line 17, ../sass/components/_nodepage.scss */
-.path-node .node--type-place .post_author {
+.path-node .node--type-place .post__author {
   margin-bottom: .5em;
   text-align: center;
 }
 /* line 22, ../sass/components/_nodepage.scss */
-.path-node .node--type-place .post_author .field__label,
-.path-node .node--type-place .post_author .field__item {
+.path-node .node--type-place .post__author .field__label,
+.path-node .node--type-place .post__author .field__item {
   display: inline-block;
   float: none;
   font-weight: normal;
 }
 @media screen and (min-width: 60em) {
   /* line 17, ../sass/components/_nodepage.scss */
-  .path-node .node--type-place .post_author {
+  .path-node .node--type-place .post__author {
     text-align: left;
   }
 }
-/* line 38, ../sass/components/_nodepage.scss */
+/* line 34, ../sass/components/_nodepage.scss */
+.path-node .node--type-place .post__tags {
+  margin-top: 1em;
+}
+/* line 37, ../sass/components/_nodepage.scss */
+.path-node .node--type-place .post__tags .field__label,
+.path-node .node--type-place .post__tags .field__items,
+.path-node .node--type-place .post__tags .field__item {
+  display: inline;
+  padding-right: 1em;
+}
+/* line 49, ../sass/components/_nodepage.scss */
 .path-node .node--type-page p {
   clear: both;
 }
-/* line 42, ../sass/components/_nodepage.scss */
+/* line 53, ../sass/components/_nodepage.scss */
 .path-node .node--type-page img {
   box-shadow: 0 2px 4px #7a6d55;
   margin: 3em auto;

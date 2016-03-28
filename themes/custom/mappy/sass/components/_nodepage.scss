@@ -14,7 +14,7 @@
       padding-bottom: 0;
     }
 
-    .post_author {
+    .post__author {
       @extend h3;
       margin-bottom: .5em;
       text-align: center;
@@ -30,6 +30,17 @@
         text-align: left;
       }
     }
+
+    .post__tags {
+      margin-top: 1em;
+
+      .field__label,
+      .field__items,
+      .field__item {
+        display: inline;
+        padding-right: 1em;
+      }
+    }
   }
 
   // For Basic Page nodes (e.g. About).
@@ -42,6 +53,7 @@
     img {
       @include box-shadow;
       margin: 3em auto;
+
       // Maintain aspect ratio.
       height: 100%;
       width: 100%;
