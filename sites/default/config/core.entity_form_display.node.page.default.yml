@@ -4,8 +4,10 @@ status: true
 dependencies:
   config:
     - field.field.node.page.body
+    - field.field.node.page.field_metatag
     - node.type.page
   module:
+    - metatag
     - path
     - text
 _core:
@@ -28,6 +30,11 @@ content:
     weight: 10
     settings: {  }
     third_party_settings: {  }
+  field_metatag:
+    weight: 32
+    settings: {  }
+    third_party_settings: {  }
+    type: metatag_firehose
   path:
     type: path
     weight: 30

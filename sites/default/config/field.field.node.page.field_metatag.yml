@@ -1,0 +1,23 @@
+uuid: 5b44fe67-4120-46f8-bc0c-12b0dca08ce2
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_metatag
+    - node.type.page
+  module:
+    - metatag
+id: node.page.field_metatag
+field_name: field_metatag
+entity_type: node
+bundle: page
+label: Metatag
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: 'a:2:{s:5:"title";s:34:"[current-page:title] | [site:name]";s:9:"image_src";s:97:"http://www.durhamcivilrightsmap.org/sites/default/files/civil-rights-map-frontpage-screenshot.jpg";}'
+default_value_callback: ''
+settings: {  }
+field_type: metatag

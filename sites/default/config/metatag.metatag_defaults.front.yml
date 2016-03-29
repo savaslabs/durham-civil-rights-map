@@ -8,4 +8,7 @@ id: front
 label: 'Front page'
 tags:
   canonical_url: '[site:url]'
+  description: 'Map documenting civil and human rights activism in Durham, NC, by the Pauli Murray Project and Savas Labs.'
+  image_src: 'http://www.durhamcivilrightsmap.org/sites/default/files/civil-rights-map-frontpage-screenshot.jpg'
   shortlink: '[site:url]'
+  title: 'Durham Civil and Human Rights History Map'

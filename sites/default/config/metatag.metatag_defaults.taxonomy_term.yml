@@ -7,5 +7,6 @@ _core:
 id: taxonomy_term
 label: 'Taxonomy term'
 tags:
-  title: '[term:name] | [site:name]'
   description: '[term:description]'
+  image_src: 'http://www.durhamcivilrightsmap.org/sites/default/files/civil-rights-map-frontpage-screenshot.jpg'
+  title: '[term:name] | [site:name]'
