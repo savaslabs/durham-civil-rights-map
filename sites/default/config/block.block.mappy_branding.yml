@@ -11,7 +11,7 @@ _core:
 id: mappy_branding
 theme: mappy
 region: header
-weight: -5
+weight: -7
 provider: null
 plugin: system_branding_block
 settings:
