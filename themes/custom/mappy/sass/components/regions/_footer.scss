@@ -2,6 +2,9 @@
  * @file
  *
  * Styles for the footer region.
+ *
+ * On large screens, show items inline.
+ * On small screens, show them centered and stacked.
  */
 
 footer {
@@ -10,10 +13,69 @@ footer {
 
   background: $element-background-color;
   border-bottom: 7px solid $heading-color;
+
+  // So content looks centered, even with large border bottom.
+  box-sizing: content-box;
   clear: both;
-  height: $footer-height;
+  height: auto;
   margin-top: -$footer-height;
   position: relative;
   text-align: center;
   z-index: 1;
+
+  @include media($wide) {
+
+    // Required for sticky footer.
+    height: $footer-height;
+  }
+
+  .footer__content {
+    @include span-columns(10);
+    @include shift(1);
+
+    box-sizing: border-box;
+    padding: 1em 0;
+
+    @include media($wide) {
+      padding: 0;
+
+      p {
+        line-height: $footer-height;
+        margin: 0;
+      }
+    }
+
+    .footer__savas-credit {
+      img {
+        margin: 0 auto;
+        width: 100px;
+      }
+
+      @include media($wide) {
+        text-align: left;
+
+        img {
+          margin: 0;
+          max-height: $footer-height;
+          padding: 1em 1em 1em 0;
+          width: auto;
+        }
+
+        img, p {
+          float: left;
+        }
+      }
+    }
+
+    .footer__copyright {
+      p {
+        margin-bottom: 0;
+      }
+
+      @include media($wide) {
+        float: right;
+        text-align: right;
+      }
+    }
+  }
 }
