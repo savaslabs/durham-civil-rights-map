@@ -3525,7 +3525,7 @@ body.path-frontpage .sidebar:last-child {
 /* line 14, ../sass/layouts/_nodepage.scss */
 .path-node article {
   overflow: auto;
-  padding-bottom: 6.8125em;
+  padding-bottom: 7.375em;
 }
 @media screen and (min-width: 53.1875em) {
   /* line 14, ../sass/layouts/_nodepage.scss */
@@ -3694,7 +3694,7 @@ body.path-frontpage .sidebar:last-child {
   width: 82.94039%;
   margin-left: 8.5298%;
   overflow: auto;
-  padding-bottom: 6.8125em;
+  padding-bottom: 7.375em;
 }
 /* line 89, ../sass/lib/neat/grid/_span-columns.scss */
 .layout-container main:last-child {
@@ -4046,8 +4046,11 @@ header .home-link .home-link--back-arrow {
  * @file
  *
  * Styles for the footer region.
+ *
+ * On large screens, show items inline.
+ * On small screens, show them centered and stacked.
  */
-/* line 7, ../sass/components/regions/_footer.scss */
+/* line 10, ../sass/components/regions/_footer.scss */
 footer {
   float: left;
   display: block;
@@ -4056,9 +4059,10 @@ footer {
   box-shadow: 0 -2px 4px #7a6d55;
   background: #FFFFF9;
   border-bottom: 7px solid #5F1251;
+  box-sizing: content-box;
   clear: both;
-  height: 61px;
-  margin-top: -61px;
+  height: auto;
+  margin-top: -70px;
   position: relative;
   text-align: center;
   z-index: 1;
@@ -4066,6 +4070,70 @@ footer {
 /* line 89, ../sass/lib/neat/grid/_span-columns.scss */
 footer:last-child {
   margin-right: 0;
+}
+@media screen and (min-width: 53.1875em) {
+  /* line 10, ../sass/components/regions/_footer.scss */
+  footer {
+    height: 70px;
+  }
+}
+/* line 32, ../sass/components/regions/_footer.scss */
+footer .footer__content {
+  float: left;
+  display: block;
+  margin-right: 2.35765%;
+  width: 82.94039%;
+  margin-left: 8.5298%;
+  box-sizing: border-box;
+  padding: 1em 0;
+}
+/* line 89, ../sass/lib/neat/grid/_span-columns.scss */
+footer .footer__content:last-child {
+  margin-right: 0;
+}
+@media screen and (min-width: 53.1875em) {
+  /* line 32, ../sass/components/regions/_footer.scss */
+  footer .footer__content {
+    padding: 0;
+  }
+  /* line 42, ../sass/components/regions/_footer.scss */
+  footer .footer__content p {
+    line-height: 70px;
+    margin: 0;
+  }
+}
+/* line 49, ../sass/components/regions/_footer.scss */
+footer .footer__content .footer__savas-credit img {
+  margin: 0 auto;
+  width: 100px;
+}
+@media screen and (min-width: 53.1875em) {
+  /* line 48, ../sass/components/regions/_footer.scss */
+  footer .footer__content .footer__savas-credit {
+    text-align: left;
+  }
+  /* line 57, ../sass/components/regions/_footer.scss */
+  footer .footer__content .footer__savas-credit img {
+    margin: 0;
+    max-height: 70px;
+    padding: 1.25em 1.25em 1.25em 0;
+    width: auto;
+  }
+  /* line 64, ../sass/components/regions/_footer.scss */
+  footer .footer__content .footer__savas-credit img, footer .footer__content .footer__savas-credit p {
+    float: left;
+  }
+}
+/* line 71, ../sass/components/regions/_footer.scss */
+footer .footer__content .footer__copyright p {
+  margin-bottom: 0;
+}
+@media screen and (min-width: 53.1875em) {
+  /* line 70, ../sass/components/regions/_footer.scss */
+  footer .footer__content .footer__copyright {
+    float: right;
+    text-align: right;
+  }
 }
 
 /**
