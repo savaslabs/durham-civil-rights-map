@@ -8,6 +8,7 @@ dependencies:
     - field.storage.node.field_location_coordinates
     - field.storage.node.field_photos
     - field.storage.node.field_tags
+    - image.style.slideshow
     - node.type.place
   module:
     - geofield
@@ -247,9 +248,9 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: text_default
+          type: text_summary_or_trimmed
           settings:
-            trim_length: '600'
+            trim_length: 500
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -627,7 +628,7 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          text: 'Read more'
+          text: 'Read and hear more'
           entity_type: node
           plugin_id: entity_link
         nothing:
@@ -641,7 +642,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "<div class=\"sidebar__node-content\">\n<h3>{{ title }}</h3>\n<hr>\n<div class=\"sidebar__node-content__address\"><p>{{ field_address_text }}</p></div>\n<div class=\"sidebar__node-content__photos\">{{ field_photos_1 }}</div>\n<div class=\"sidebar__node-content__body\">{{ body }}</div>\n<div class=\"sidebar__node-content__tags\">{{ field_tags }}</div>\n<div class=\"sidebar__node-content__more-link\">{{ view_node }}</div>\n</div>"
+            text: "<div class=\"sidebar__node-content\">\n<h3>{{ title }}</h3>\n<hr>\n<div class=\"sidebar__node-content__address\"><p>{{ field_address_text }}</p></div>\n<div class=\"sidebar__node-content__photos\">{{ field_photos_1 }}</div>\n<div class=\"sidebar__node-content__body\">{{ body }}</div>\n<div class=\"sidebar__node-content__more-link\">{{ view_node }}</div>\n<div class=\"sidebar__node-content__tags\">{{ field_tags }}</div>\n</div>"
             make_link: false
             path: ''
             absolute: false
