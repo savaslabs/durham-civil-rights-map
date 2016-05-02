@@ -6,9 +6,9 @@
  */
 
 use Drupal\Core\Url;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Asset;
+use Drupal\Core\Link;
 
 /**
  * Implements hook_help().
@@ -17,10 +17,10 @@ function views_slideshow_cycle_help($route_name, RouteMatchInterface $route_matc
   switch ($route_name) {
     case 'help.page.views_slideshow_cycle':
       if (\Drupal::moduleHandler()->moduleExists('advanced_help')) {
-        $output = '<p>' . \Drupal::l('Click here to view the documentation for Views Slideshow Cycle.', Url::fromRoute('advanced_help.module_index', array('module' => 'views_slideshow_cycle'))) . '</p>';
+        $output = '<p>' . Link::fromTextAndUrl('Click here to view the documentation for Views Slideshow Cycle.', Url::fromRoute('advanced_help.module_index', array('module' => 'views_slideshow_cycle'))) . '</p>';
       }
       else {
-        $output = '<p>' . t('Views Slideshow Cycle help can be found by installing and enabling the !advanced_help', array('!advanced_help' => \Drupal::l(t('Advanced Help module'), Url::fromUri('http://drupal.org/project/advanced_help')))) . '</p>';
+        $output = '<p>' . t('Views Slideshow Cycle help can be found by installing and enabling the !advanced_help', array('!advanced_help' => Link::fromTextAndUrl(t('Advanced Help module'), Url::fromUri('http://drupal.org/project/advanced_help')))) . '</p>';
       }
       return $output;
   }
