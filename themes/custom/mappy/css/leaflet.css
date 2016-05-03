@@ -685,7 +685,7 @@
 }
 /* line 42, ../sass/components/_map-overrides.scss */
 .leaflet-bar a:hover, .leaflet-bar a:focus {
-  color: #afd071;
+  color: #8eb73d;
 }
 
 /* line 49, ../sass/components/_map-overrides.scss */
@@ -708,7 +708,6 @@
 }
 /* line 67, ../sass/components/_map-overrides.scss */
 .leaflet-top .leaflet-fusesearch-control {
-  background-color: #FFFFF9;
   margin-top: 50px;
 }
 @media only screen and (min-width: 851px) {
@@ -717,8 +716,9 @@
     margin-top: 100px;
   }
 }
-/* line 75, ../sass/components/_map-overrides.scss */
+/* line 74, ../sass/components/_map-overrides.scss */
 .leaflet-top .leaflet-fusesearch-control .button {
+  background-color: #FFFFF9;
   height: 40px;
   width: 40px;
 }
