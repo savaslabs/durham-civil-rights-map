@@ -9,8 +9,9 @@ $element-background-color: #FFFFF9;     // Eggshell
 $page-background-color: #DDE0D0;        // Taupe
 $heading-color: #5F1251;                // Purple. Consider darkening.
 $link-color: #709130;                   // Green
-$link-hover: lighten($link-color, 25%); // Lighter green
+$link-hover: lighten($link-color, 10%); // Lighter green
 $copytext-color: #5C5240;               // Brown
+$white: #fff;                           // White
 
 // Fonts
 $heading-font: unquote('Noto Serif, Georgia, serif');
@@ -20,6 +21,7 @@ $copytext-font: unquote('Open Sans, Arial, sans-serif');
 $border-radius: 8px;
 $general-spacing: 3em;
 $footer-height: 70px; // For sticky footer.
+$search-form-break: em(420);
 
 // Navigation refill variables
 $navigation-background: $element-background-color;

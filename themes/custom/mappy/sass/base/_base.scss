@@ -11,8 +11,14 @@ body {
 }
 
 a {
+  @include transition (all .1s ease-in-out);
   color: $link-color;
   text-decoration: none;
+
+  &:hover,
+  &:focus {
+    color: $link-hover;
+  }
 }
 
 h1,
@@ -39,4 +45,20 @@ hr {
 .xdebug-var-dump,
 .kint {
   margin-top: 100px !important;
+}
+
+.button {
+  @include transition (all .1s ease-in-out);
+
+  background-color: $link-color;
+  border: 0;
+  border-radius: 3px;
+  color: $element-background-color;
+  padding: .25em .5em;
+
+  &:hover,
+  &:focus {
+    background-color: $link-hover;
+    color: $white;
+  }
 }

@@ -48,7 +48,6 @@
     }
   }
 
-
   .views-row {
     border-bottom: 1px solid $element-background-color;
     padding: 1.5em;
@@ -117,6 +116,38 @@
     a {
       display: inline-block;
       float: right;
+    }
+  }
+}
+
+// Search section on /places.
+.path-places {
+  .view-full-list {
+
+    // Views filter.
+    .views-exposed-form {
+      margin-bottom: 1em;
+
+      // Filter items.
+      .form-item {
+        margin-bottom: .5em;
+
+        @include media($search-form-break) {
+          line-height: 1.875em;
+          margin-bottom: 1em;
+        }
+      }
+
+      // "Apply" button.
+      .form-actions {
+        @include media($search-form-break) {
+          clear: none;
+          display: inline;
+          float: left;
+          line-height: 1.375em;
+          margin-left: .5em;
+        }
+      }
     }
   }
 }

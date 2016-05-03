@@ -31,31 +31,35 @@
     .region-content {
       clear: both;
     }
+  }
+}
 
-    // Search form
-    .search-block-form {
-      padding: 1.5em 0;
+// Search form
+.search-block-form,
+.search-page-form {
+  padding: 1.5em 0 .5em;
 
-      input[type='search'] {
-        display: block;
-        margin: 0 auto 5px;
-        max-width: 100%;
-        width: 15em;
+  input[type='search'] {
+    display: block;
+    margin: .5em 0;
+    max-width: 100%;
+    width: 15em;
 
-        @include media($narrow) {
-          display: inline;
-          margin: 0;
-        }
-      }
+    @include media($search-form-break) {
+      display: inline;
 
-      input[type='submit'] {
-        display: block;
-        margin: 0 auto;
+      // Fixes highlight on click in Chrome.
+      margin: 0 0 0 .125em;
+    }
+  }
 
-        @include media($narrow) {
-          display: inline;
-        }
-      }
+  input[type='submit'] {
+    display: block;
+    margin: 0;
+
+    @include media($search-form-break) {
+      display: inline;
+      margin-left: .75em;
     }
   }
 }
