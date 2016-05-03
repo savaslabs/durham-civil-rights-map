@@ -10,8 +10,8 @@ _core:
   default_config_hash: KHQIJ7Vfl25lTjzIc7qIvnuistt-Mw2O0kG4jCofmkI
 id: mappy_messages
 theme: mappy
-region: header
-weight: -3
+region: content
+weight: -6
 provider: null
 plugin: system_messages_block
 settings:

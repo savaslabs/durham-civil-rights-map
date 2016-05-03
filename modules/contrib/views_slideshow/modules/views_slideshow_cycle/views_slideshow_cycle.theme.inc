@@ -70,7 +70,9 @@ function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
   }
 
   // Load the json2 library.
-  $vars['#attached']['library'][] = 'views_slideshow_cycle/json2';
+  if (!empty($settings['advanced_options'])) {
+    $vars['#attached']['library'][] = 'views_slideshow_cycle/json2';
+  }
 
   // Load the pause library.
   if (!empty($settings['pause_in_middle'])) {
