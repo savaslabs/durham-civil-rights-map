@@ -3579,13 +3579,7 @@ body.path-frontpage .sidebar:last-child {
   border-radius: 8px;
   text-align: center;
 }
-@media screen and (min-width: 53.1875em) {
-  /* line 25, ../sass/layouts/_nodepage.scss */
-  .path-node article .node-title-box {
-    margin-top: 7.5625em;
-  }
-}
-/* line 57, ../sass/base/_variables.scss */
+/* line 51, ../sass/base/_variables.scss */
 .path-node article .node-title-box h2 {
   color: #5C5240;
   margin: 0;
@@ -3737,13 +3731,7 @@ body.path-frontpage .sidebar:last-child {
   border-radius: 8px;
   text-align: center;
 }
-@media screen and (min-width: 53.1875em) {
-  /* line 18, ../sass/layouts/_page.scss */
-  .layout-container main .page-title-box {
-    margin-top: 7.5625em;
-  }
-}
-/* line 57, ../sass/base/_variables.scss */
+/* line 51, ../sass/base/_variables.scss */
 .layout-container main .page-title-box h2 {
   color: #5C5240;
   margin: 0;
