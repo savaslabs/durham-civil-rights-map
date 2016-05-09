@@ -52,10 +52,7 @@
         .node-body {
           @include span-columns(6 of 10);
           margin-right: 0;
-        }
-
-        p {
-          margin: 0;
+          margin-bottom: $general-spacing;
         }
       }
     }

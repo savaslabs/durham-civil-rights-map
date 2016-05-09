@@ -8,8 +8,8 @@
   var map = L.map('map', {
     zoomControl: false,
     scrollWheelZoom: false,
-    center: [35.9908385, -78.9005222],
-    zoom: 12
+    center: [35.9908385, -78.93],
+    zoom: 13
   });
 
   // Add basemap to map.
