@@ -3625,17 +3625,14 @@ body.path-frontpage .sidebar:last-child {
     margin-right: 2.84259%;
     width: 58.86297%;
     margin-right: 0;
+    margin-bottom: 3em;
   }
   /* line 89, ../sass/lib/neat/grid/_span-columns.scss */
   .path-node.page-node-type-place .node__content .node-body:last-child {
     margin-right: 0;
   }
-  /* line 57, ../sass/layouts/_nodepage.scss */
-  .path-node.page-node-type-place .node__content p {
-    margin: 0;
-  }
 }
-/* line 64, ../sass/layouts/_nodepage.scss */
+/* line 61, ../sass/layouts/_nodepage.scss */
 .path-node.page-node-type-place .node-title-box {
   float: left;
   display: block;
@@ -3647,7 +3644,7 @@ body.path-frontpage .sidebar:last-child {
   margin-right: 0;
 }
 @media screen and (min-width: 53.1875em) {
-  /* line 64, ../sass/layouts/_nodepage.scss */
+  /* line 61, ../sass/layouts/_nodepage.scss */
   .path-node.page-node-type-place .node-title-box {
     float: left;
     display: block;
@@ -3660,18 +3657,18 @@ body.path-frontpage .sidebar:last-child {
     margin-right: 0;
   }
 }
-/* line 72, ../sass/layouts/_nodepage.scss */
+/* line 69, ../sass/layouts/_nodepage.scss */
 .path-node.page-node-type-place .node-title-box .field--name-field-address-text {
   padding-bottom: 1.5em;
 }
-/* line 77, ../sass/layouts/_nodepage.scss */
+/* line 74, ../sass/layouts/_nodepage.scss */
 .path-node.page-node-type-place .map--node {
   box-shadow: 0 2px 4px #7a6d55;
   height: 300px;
   margin-top: 3em;
   width: 100%;
 }
-/* line 91, ../sass/layouts/_nodepage.scss */
+/* line 88, ../sass/layouts/_nodepage.scss */
 .path-node.page-node-type-page .node-title-box {
   float: left;
   display: block;
@@ -3683,7 +3680,7 @@ body.path-frontpage .sidebar:last-child {
   margin-right: 0;
 }
 @media screen and (min-width: 53.1875em) {
-  /* line 91, ../sass/layouts/_nodepage.scss */
+  /* line 88, ../sass/layouts/_nodepage.scss */
   .path-node.page-node-type-page .node-title-box {
     float: left;
     display: block;
@@ -3695,7 +3692,7 @@ body.path-frontpage .sidebar:last-child {
     margin-right: 0;
   }
 }
-/* line 99, ../sass/layouts/_nodepage.scss */
+/* line 96, ../sass/layouts/_nodepage.scss */
 .path-node.page-node-type-page img {
   display: block;
 }
