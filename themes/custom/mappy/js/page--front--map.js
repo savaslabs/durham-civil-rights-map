@@ -37,7 +37,7 @@
             hitType: 'event',
             eventCategory: 'Map',
             eventAction: 'click',
-            eventLabel: feature.properties.name
+            eventLabel: feature.properties.title_1
           });
         });
       }
