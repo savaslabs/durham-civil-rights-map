@@ -3,7 +3,7 @@ domain_mode: 0
 cross_domains: ''
 visibility:
   request_path_mode: 0
-  request_path_pages: "/admin\r\n/admin/*\r\n/batch\r\n/node/add*\r\n/node/*/*\r\n/user/*/*"
+  request_path_pages: "/admin\r\n/admin/*\r\n/batch\r\n/node/add*\r\n/user/*/*"
   user_role_mode: 0
   user_role_roles:
     anonymous: anonymous
