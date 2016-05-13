@@ -33,6 +33,12 @@
           // I don't know why it's called 'nothing,' nor how to change
           // it, but this is the entire node display.
           $("div.sidebar__content").html(feature.properties.nothing);
+          ga('send', {
+            hitType: 'event',
+            eventCategory: 'Map',
+            eventAction: 'click',
+            eventLabel: feature.properties.name
+          });
         });
       }
     });
@@ -54,6 +60,14 @@
   $.getJSON('/points?_format=json', function (data) {
     addDataToMap(data, map, new pmpIcon);
     searchCtrl.indexFeatures(data, ['title_1', 'field_address_text', 'description', 'field_tags']);
+    ga('send', {
+      hitType: 'event',
+      eventCategory: 'Map',
+      eventAction: 'loaded',
+      eventLabel: 'Map JSON loaded',
+      nonInteraction: true
+    });
+
   });
 
   // Add zoom controls in bottom right of map.
