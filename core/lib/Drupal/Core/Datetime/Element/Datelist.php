@@ -268,6 +268,7 @@ class Datelist extends DateElementBase {
         '#options' => $options,
         '#required' => $element['#required'],
         '#error_no_message' => FALSE,
+        '#empty_option' => $title,
       );
     }
 
@@ -313,7 +314,7 @@ class Datelist extends DateElementBase {
         $form_state->setError($element, t('The %field date is required.'));
       }
       elseif (!empty($all_empty)) {
-        foreach ($all_empty as $value){
+        foreach ($all_empty as $value) {
           $form_state->setError($element[$value], t('A value must be selected for %part.', array('%part' => $value)));
         }
       }
@@ -357,7 +358,6 @@ class Datelist extends DateElementBase {
    * Rounds minutes and seconds to nearest requested value.
    *
    * @param $date
-   *
    * @param $increment
    *
    * @return

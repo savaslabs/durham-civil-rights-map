@@ -472,12 +472,28 @@ class Field extends FieldPluginBase implements CacheableDependencyInterface, Mul
 
     // Get the settings form.
     $settings_form = array('#value' => array());
-    if ($formatter = $this->getFormatterInstance()) {
+    $format = isset($form_state->getUserInput()['options']['type']) ? $form_state->getUserInput()['options']['type'] : $this->options['type'];
+    if ($formatter = $this->getFormatterInstance($format)) {
       $settings_form = $formatter->settingsForm($form, $form_state);
       // Convert field UI selector states to work in the Views field form.
       FormHelper::rewriteStatesSelector($settings_form, "fields[{$field->getName()}][settings_edit_form]", 'options');
     }
     $form['settings'] = $settings_form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitFormCalculateOptions(array $options, array $form_state_options) {
+    // When we change the formatter type we don't want to keep any of the
+    // previous configured formatter settings, as there might be schema
+    // conflict.
+    unset($options['settings']);
+    $options = $form_state_options + $options;
+    if (!isset($options['settings'])) {
+      $options['settings'] = [];
+    }
+    return $options;
   }
 
   /**
@@ -937,13 +953,16 @@ class Field extends FieldPluginBase implements CacheableDependencyInterface, Mul
    * @return \Drupal\Core\Field\FormatterInterface|null
    *   The field formatter instance.
    */
-  protected function getFormatterInstance() {
-    $settings = $this->options['settings'] + $this->formatterPluginManager->getDefaultSettings($this->options['type']);
+  protected function getFormatterInstance($format = NULL) {
+    if (!isset($format)) {
+      $format = $this->options['type'];
+    }
+    $settings = $this->options['settings'] + $this->formatterPluginManager->getDefaultSettings($format);
 
     $options = [
       'field_definition' => $this->getFieldDefinition(),
       'configuration' => [
-        'type' => $this->options['type'],
+        'type' => $format,
         'settings' => $settings,
         'label' => '',
         'weight' => 0,
@@ -1030,15 +1049,27 @@ class Field extends FieldPluginBase implements CacheableDependencyInterface, Mul
 
     $field_item_definition = $field_item_list->getFieldDefinition();
 
-    if ($field_item_definition->getFieldStorageDefinition()->getCardinality() == 1) {
-      return $field ? $field_item_list->$field : $field_item_list->value;
-    }
-
     $values = [];
     foreach ($field_item_list as $field_item) {
-      $values[] = $field ? $field_item->$field : $field_item->value;
+      /** @var \Drupal\Core\Field\FieldItemInterface $field_item */
+      if ($field) {
+        $values[] = $field_item->$field;
+      }
+      // Find the value using the main property of the field. If no main
+      // property is provided fall back to 'value'.
+      elseif ($main_property_name = $field_item->mainPropertyName()) {
+        $values[] = $field_item->{$main_property_name};
+      }
+      else {
+        $values[] = $field_item->value;
+      }
     }
-    return $values;
+    if ($field_item_definition->getFieldStorageDefinition()->getCardinality() == 1) {
+      return reset($values);
+    }
+    else {
+      return $values;
+    }
   }
 
 }

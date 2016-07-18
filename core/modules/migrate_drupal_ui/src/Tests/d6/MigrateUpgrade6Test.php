@@ -3,6 +3,7 @@
 namespace Drupal\migrate_drupal_ui\Tests\d6;
 
 use Drupal\migrate_drupal_ui\Tests\MigrateUpgradeTestBase;
+use Drupal\user\Entity\User;
 
 /**
  * Tests Drupal 6 upgrade using the migrate UI.
@@ -43,7 +44,7 @@ class MigrateUpgrade6Test extends MigrateUpgradeTestBase {
       'field_config' => 62,
       'field_storage_config' => 43,
       'file' => 7,
-      'filter_format' => 8,
+      'filter_format' => 7,
       'image_style' => 5,
       'migration' => 105,
       'node' => 9,
@@ -68,6 +69,18 @@ class MigrateUpgrade6Test extends MigrateUpgradeTestBase {
       'entity_view_mode' => 12,
       'base_field_override' => 33,
     ];
+  }
+
+  /**
+   * Executes all steps of migrations upgrade.
+   */
+  protected function testMigrateUpgrade() {
+    parent::testMigrateUpgrade();
+
+    // Ensure migrated users can log in.
+    $user = User::load(2);
+    $user->pass_raw = 'john.doe_pass';
+    $this->drupalLogin($user);
   }
 
 }

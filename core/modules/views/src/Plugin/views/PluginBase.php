@@ -196,7 +196,6 @@ abstract class PluginBase extends ComponentPluginBase implements ContainerFactor
    *
    * @param array $storage
    *   The stored options.
-   *
    * @param array $options
    *   The defined options.
    */
@@ -337,7 +336,7 @@ abstract class PluginBase extends ComponentPluginBase implements ContainerFactor
    * @param $tokens
    *   Array of token => replacement_value items.
    *
-   * @return String
+   * @return string
    */
   protected function viewsTokenReplace($text, $tokens) {
     if (!strlen($text)) {
@@ -373,8 +372,9 @@ abstract class PluginBase extends ComponentPluginBase implements ContainerFactor
         $top = array_shift($parts);
         assert('preg_match(\'/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/\', $top) === 1', 'Tokens need to be valid Twig variables.');
         $token_array = array(array_pop($parts) => $replacement);
-        foreach(array_reverse($parts) as $key) {
-          assert('preg_match(\'/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/\', $key) === 1', 'Tokens need to be valid Twig variables.');
+        foreach (array_reverse($parts) as $key) {
+          // The key could also be numeric (array index) so allow that.
+          assert('is_numeric($key) || (preg_match(\'/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/\', $key) === 1)', 'Tokens need to be valid Twig variables.');
           $token_array = array($key => $token_array);
         }
         if (!isset($twig_tokens[$top])) {

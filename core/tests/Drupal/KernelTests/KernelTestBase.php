@@ -850,7 +850,7 @@ abstract class KernelTestBase extends \PHPUnit_Framework_TestCase implements Ser
    * To install test modules outside of the testing environment, add
    * @code
    * $settings['extension_discovery_scan_tests'] = TRUE;
-   * @encode
+   * @endcode
    * to your settings.php.
    *
    * @param string[] $modules
@@ -1179,7 +1179,7 @@ abstract class KernelTestBase extends \PHPUnit_Framework_TestCase implements Ser
       'kernel',
       // @see \Drupal\simpletest\TestBase::prepareEnvironment()
       'generatedTestFiles',
-      // @see \Drupal\simpletest\KernelTestBase::containerBuild()
+      // Properties from the old KernelTestBase class that has been removed.
       'keyValueFactory',
     );
     if (in_array($name, $denied) || strpos($name, 'original') === 0) {
@@ -1209,6 +1209,9 @@ abstract class KernelTestBase extends \PHPUnit_Framework_TestCase implements Ser
    * {@inheritdoc}
    */
   public static function assertEquals($expected, $actual, $message = '', $delta = 0.0, $maxDepth = 10, $canonicalize = FALSE, $ignoreCase = FALSE) {
+    // Cast objects implementing MarkupInterface to string instead of
+    // relying on PHP casting them to string depending on what they are being
+    // comparing with.
     $expected = static::castSafeStrings($expected);
     $actual = static::castSafeStrings($actual);
     parent::assertEquals($expected, $actual, $message, $delta, $maxDepth, $canonicalize, $ignoreCase);

@@ -217,7 +217,7 @@ class Migration extends PluginBase implements MigrationInterface, RequirementsIn
   protected $migrationPluginManager;
 
   /**
-   *  The source plugin manager.
+   * The source plugin manager.
    *
    * @var \Drupal\migrate\Plugin\MigratePluginManager
    */
@@ -662,7 +662,7 @@ class Migration extends PluginBase implements MigrationInterface, RequirementsIn
    * {@inheritdoc}
    */
   public function getMigrationDependencies() {
-    return $this->migration_dependencies + ['required' => [], 'optional' => []];
+    return ($this->migration_dependencies ?: []) + ['required' => [], 'optional' => []];
   }
 
   /**
@@ -703,13 +703,14 @@ class Migration extends PluginBase implements MigrationInterface, RequirementsIn
    * {@inheritdoc}
    */
   public function getTrackLastImported() {
-    $this->trackLastImported;
+    return $this->trackLastImported;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getDestinationIds() {
-    $this->destinationIds;
+    return $this->destinationIds;
   }
+
 }

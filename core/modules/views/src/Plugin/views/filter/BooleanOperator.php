@@ -44,9 +44,9 @@ class BooleanOperator extends FilterPluginBase {
   // exposed filter options
   protected $alwaysMultiple = TRUE;
   // Don't display empty space where the operator would be.
-  var $no_operator = TRUE;
+  public $no_operator = TRUE;
   // Whether to accept NULL as a false value or not
-  var $accept_null = FALSE;
+  public $accept_null = FALSE;
 
 
 
@@ -93,9 +93,14 @@ class BooleanOperator extends FilterPluginBase {
     parent::init($view, $display, $options);
 
     $this->value_value = $this->t('True');
+
     if (isset($this->definition['label'])) {
       $this->value_value = $this->definition['label'];
     }
+    elseif (isset($this->definition['title'])) {
+      $this->value_value = $this->definition['title'];
+    }
+
     if (isset($this->definition['accept null'])) {
       $this->accept_null = (bool) $this->definition['accept null'];
     }

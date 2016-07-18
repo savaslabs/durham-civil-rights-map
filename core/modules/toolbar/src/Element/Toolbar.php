@@ -59,9 +59,9 @@ class Toolbar extends RenderElement {
    *   A renderable array.
    *
    * @return array
-   *  A renderable array.
+   *   A renderable array.
    *
-   * @see toolbar_page_top().
+   * @see toolbar_page_top()
    */
   public static function preRenderToolbar($element) {
     // Get the configured breakpoints to switch from vertical to horizontal

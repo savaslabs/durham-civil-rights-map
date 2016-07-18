@@ -82,7 +82,7 @@ class FileTranslation extends StaticTranslation {
    *   want to find translation files.
    *
    * @return string
-   *  String file pattern.
+   *   String file pattern.
    */
   protected function getTranslationFilesPattern($langcode = NULL) {
     // The file name matches: drupal-[release version].[language code].po
@@ -116,4 +116,5 @@ class FileTranslation extends StaticTranslation {
     }
     return $writer->getData();
   }
+
 }

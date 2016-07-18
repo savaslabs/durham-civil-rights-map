@@ -132,7 +132,6 @@ interface FieldHandlerInterface extends ViewsHandlerInterface {
    *   An object containing all retrieved values.
    * @param string $field
    *   Optional name of the field where the value is stored.
-   *
    */
   public function getValue(ResultRow $values, $field = NULL);
 
@@ -141,7 +140,7 @@ interface FieldHandlerInterface extends ViewsHandlerInterface {
    * by in the style settings.
    *
    * @return bool
-   *  TRUE if this field handler is groupable, otherwise FALSE.
+   *   TRUE if this field handler is groupable, otherwise FALSE.
    */
   public function useStringGroupBy();
 
@@ -153,7 +152,6 @@ interface FieldHandlerInterface extends ViewsHandlerInterface {
    *
    * @param \Drupal\views\ResultRow[] $values
    *   An array of all ResultRow objects returned from the query.
-   *
    */
   public function preRender(&$values);
 
@@ -167,7 +165,6 @@ interface FieldHandlerInterface extends ViewsHandlerInterface {
    *   The rendered output. If the output is safe it will be wrapped in an
    *   object that implements MarkupInterface. If it is empty or unsafe it
    *   will be a string.
-   *
    */
   public function render(ResultRow $values);
 
@@ -204,7 +201,6 @@ interface FieldHandlerInterface extends ViewsHandlerInterface {
    *   The advanced rendered output. If the output is safe it will be wrapped in
    *   an object that implements MarkupInterface. If it is empty or unsafe
    *   it will be a string.
-   *
    */
   public function advancedRender(ResultRow $values);
 
@@ -219,7 +215,7 @@ interface FieldHandlerInterface extends ViewsHandlerInterface {
    *   Whether or not to use empty() to check the value.
    *
    * @return bool
-   * TRUE if the value is considered empty, FALSE otherwise.
+   *   TRUE if the value is considered empty, FALSE otherwise.
    */
   public function isValueEmpty($value, $empty_zero, $no_skip_empty = TRUE);
 
