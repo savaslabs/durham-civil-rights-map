@@ -50,7 +50,7 @@ class BigPipePlaceholderTestCases {
 
     // 1. Real-world example of HTML placeholder.
     $status_messages = new BigPipePlaceholderTestCase(
-      [], //['#type' => 'status_messages'],
+      ['#type' => 'status_messages'],
       '<drupal-render-placeholder callback="Drupal\Core\Render\Element\StatusMessages::renderMessages" arguments="0" token="a8c34b5e"></drupal-render-placeholder>',
       [
         '#lazy_builder' => [
@@ -110,7 +110,7 @@ class BigPipePlaceholderTestCases {
           'command' => 'insert',
           'method' => 'replaceWith',
           'selector' => '[data-big-pipe-placeholder-id="callback=Drupal%5CCore%5CRender%5CElement%5CStatusMessages%3A%3ArenderMessages&args[0]&token=a8c34b5e"]',
-          'data' => "\n" . '    <div role="contentinfo" aria-label="Status message" class="messages messages--status">' . "\n" . '                  <h2 class="visually-hidden">Status message</h2>' . "\n" . '                    Hello from BigPipe!' . "\n" . '            </div>' . "\n    \n",
+          'data' => "\n" . '    <div role="contentinfo" aria-label="Status message" class="messages messages--status">' . "\n" . '                  <h2 class="visually-hidden">Status message</h2>' . "\n" . '                    Hello from BigPipe!' . "\n" . '            </div>' . "\n    ",
           'settings' => NULL,
         ],
       ];
@@ -244,7 +244,7 @@ class BigPipePlaceholderTestCases {
         'command' => 'insert',
         'method' => 'replaceWith',
         'selector' => '[data-big-pipe-placeholder-id="timecurrent-timetime"]',
-        'data' => '<time datetime=1991-03-14"></time>',
+        'data' => '<time datetime="1991-03-14"></time>',
         'settings' => NULL,
       ],
     ];
@@ -258,7 +258,7 @@ class BigPipePlaceholderTestCases {
         ],
       ],
     ];
-    $current_time->embeddedHtmlResponse = '<time datetime=1991-03-14"></time>';
+    $current_time->embeddedHtmlResponse = '<time datetime="1991-03-14"></time>';
 
 
     // 6. Edge case: #lazy_builder that throws an exception.

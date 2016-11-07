@@ -365,11 +365,6 @@ class Renderer implements RendererInterface {
       $elements['#lazy_builder_built'] = TRUE;
     }
 
-    // All render elements support #markup and #plain_text.
-    if (!empty($elements['#markup']) || !empty($elements['#plain_text'])) {
-      $elements = $this->ensureMarkupIsSafe($elements);
-    }
-
     // Make any final changes to the element before it is rendered. This means
     // that the $element or the children can be altered or corrected before the
     // element is rendered into the final text.
@@ -380,6 +375,11 @@ class Renderer implements RendererInterface {
         }
         $elements = call_user_func($callable, $elements);
       }
+    }
+
+    // All render elements support #markup and #plain_text.
+    if (!empty($elements['#markup']) || !empty($elements['#plain_text'])) {
+      $elements = $this->ensureMarkupIsSafe($elements);
     }
 
     // Defaults for bubbleable rendering metadata.
@@ -636,8 +636,33 @@ class Renderer implements RendererInterface {
       return FALSE;
     }
 
-    foreach (array_keys($elements['#attached']['placeholders']) as $placeholder) {
-      $elements = $this->renderPlaceholder($placeholder, $elements);
+    // The 'status messages' placeholder needs to be special cased, because it
+    // depends on global state that can be modified when other placeholders are
+    // being rendered: any code can add messages to render.
+    // This violates the principle that each lazy builder must be able to render
+    // itself in isolation, and therefore in any order. However, we cannot
+    // change the way drupal_set_message() works in the Drupal 8 cycle. So we
+    // have to accommodate its special needs.
+    // Allowing placeholders to be rendered in a particular order (in this case:
+    // last) would violate this isolation principle. Thus a monopoly is granted
+    // to this one special case, with this hard-coded solution.
+    // @see \Drupal\Core\Render\Element\StatusMessages
+    // @see https://www.drupal.org/node/2712935#comment-11368923
+
+    // First render all placeholders except 'status messages' placeholders.
+    $message_placeholders = [];
+    foreach ($elements['#attached']['placeholders'] as $placeholder => $placeholder_element) {
+      if (isset($placeholder_element['#lazy_builder']) && $placeholder_element['#lazy_builder'][0] === 'Drupal\Core\Render\Element\StatusMessages::renderMessages') {
+        $message_placeholders[] = $placeholder;
+      }
+      else {
+        $elements = $this->renderPlaceholder($placeholder, $elements);
+      }
+    }
+
+    // Then render 'status messages' placeholders.
+    foreach ($message_placeholders as $message_placeholder) {
+      $elements = $this->renderPlaceholder($message_placeholder, $elements);
     }
 
     return TRUE;
@@ -708,7 +733,7 @@ class Renderer implements RendererInterface {
    *
    * @see \Drupal\Component\Utility\Html::escape()
    * @see \Drupal\Component\Utility\Xss::filter()
-   * @see \Drupal\Component\Utility\Xss::adminFilter()
+   * @see \Drupal\Component\Utility\Xss::filterAdmin()
    */
   protected function ensureMarkupIsSafe(array $elements) {
     if (empty($elements['#markup']) && empty($elements['#plain_text'])) {

@@ -5,6 +5,7 @@ namespace Drupal\Tests\field\Kernel\Migrate\d7;
 use Drupal\comment\Entity\CommentType;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\FieldConfigInterface;
+use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\Tests\migrate_drupal\Kernel\d7\MigrateDrupal7TestBase;
 use Drupal\node\Entity\NodeType;
 
@@ -45,6 +46,7 @@ class MigrateFieldInstanceTest extends MigrateDrupal7TestBase {
     $this->createType('book');
     $this->createType('forum');
     $this->createType('test_content_type');
+    Vocabulary::create(['vid' => 'test_vocabulary'])->save();
     $this->executeMigrations(['d7_field', 'd7_field_instance']);
   }
 
@@ -95,6 +97,19 @@ class MigrateFieldInstanceTest extends MigrateDrupal7TestBase {
   }
 
   /**
+   * Asserts the settings of a link field config entity.
+   *
+   * @param $id
+   *   The entity ID in the form ENTITY_TYPE.BUNDLE.FIELD_NAME.
+   * @param $title_setting
+   *   The expected title setting.
+   */
+  protected function assertLinkFields($id, $title_setting) {
+    $field = FieldConfig::load($id);
+    $this->assertSame($title_setting, $field->getSetting('title'));
+  }
+
+  /**
    * Tests migrating D7 field instances to field_config entities.
    */
   public function testFieldInstances() {
@@ -129,6 +144,10 @@ class MigrateFieldInstanceTest extends MigrateDrupal7TestBase {
     $this->assertEntity('node.test_content_type.field_text', 'Text', 'text', FALSE);
     $this->assertEntity('comment.comment_node_test_content_type.field_integer', 'Integer', 'integer', FALSE);
     $this->assertEntity('user.user.field_file', 'File', 'file', FALSE);
+
+    $this->assertLinkFields('node.test_content_type.field_link', DRUPAL_OPTIONAL);
+    $this->assertLinkFields('node.article.field_link', DRUPAL_DISABLED);
+    $this->assertLinkFields('node.blog.field_link', DRUPAL_REQUIRED);
   }
 
 }

@@ -2,6 +2,8 @@
 
 namespace Drupal\FunctionalTests;
 
+use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Component\Utility\Xss;
 use Drupal\KernelTests\AssertLegacyTrait as BaseAssertLegacyTrait;
 
 /**
@@ -53,10 +55,17 @@ trait AssertLegacyTrait {
    *   Plain text to look for.
    *
    * @deprecated Scheduled for removal in Drupal 9.0.0.
-   *   Use $this->assertSession()->pageTextContains() or
-   *   $this->assertSession()->responseContains() instead.
+   *   Use instead:
+   *     - $this->assertSession()->responseContains() for non-HTML responses,
+   *       like XML or Json.
+   *     - $this->assertSession()->pageTextContains() for HTML responses. Unlike
+   *       the deprecated assertText(), the passed text should be HTML decoded,
+   *       exactly as a human sees it in the browser.
    */
   protected function assertText($text) {
+    // Cast MarkupInterface to string.
+    $text = (string) $text;
+
     $content_type = $this->getSession()->getResponseHeader('Content-type');
     // In case of a Non-HTML response (example: XML) check the original
     // response.
@@ -64,7 +73,7 @@ trait AssertLegacyTrait {
       $this->assertSession()->responseContains($text);
     }
     else {
-      $this->assertSession()->pageTextContains($text);
+      $this->assertTextHelper($text, FALSE);
     }
   }
 
@@ -78,10 +87,17 @@ trait AssertLegacyTrait {
    *   Plain text to look for.
    *
    * @deprecated Scheduled for removal in Drupal 9.0.0.
-   *   Use $this->assertSession()->pageTextNotContains() or
-   *   $this->assertSession()->responseNotContains() instead.
+   *   Use instead:
+   *     - $this->assertSession()->responseNotContains() for non-HTML responses,
+   *       like XML or Json.
+   *     - $this->assertSession()->pageTextNotContains() for HTML responses.
+   *       Unlike the deprecated assertNoText(), the passed text should be HTML
+   *       decoded, exactly as a human sees it in the browser.
    */
   protected function assertNoText($text) {
+    // Cast MarkupInterface to string.
+    $text = (string) $text;
+
     $content_type = $this->getSession()->getResponseHeader('Content-type');
     // In case of a Non-HTML response (example: XML) check the original
     // response.
@@ -89,8 +105,90 @@ trait AssertLegacyTrait {
       $this->assertSession()->responseNotContains($text);
     }
     else {
-      $this->assertSession()->pageTextNotContains($text);
+      $this->assertTextHelper($text);
     }
+  }
+
+  /**
+   * Helper for assertText and assertNoText.
+   *
+   * @param string $text
+   *   Plain text to look for.
+   * @param bool $not_exists
+   *   (optional) TRUE if this text should not exist, FALSE if it should.
+   *   Defaults to TRUE.
+   *
+   * @return bool
+   *   TRUE on pass, FALSE on fail.
+   */
+  protected function assertTextHelper($text, $not_exists = TRUE) {
+    $args = ['@text' => $text];
+    $message = $not_exists ? new FormattableMarkup('"@text" not found', $args) : new FormattableMarkup('"@text" found', $args);
+
+    $raw_content = $this->getSession()->getPage()->getContent();
+    // Trying to simulate what the user sees, given that it removes all text
+    // inside the head tags, removes inline Javascript, fix all HTML entities,
+    // removes dangerous protocols and filtering out all HTML tags, as they are
+    // not visible in a normal browser.
+    $raw_content = preg_replace('@<head>(.+?)</head>@si', '', $raw_content);
+    $page_text = Xss::filter($raw_content, []);
+
+    $actual = $not_exists == (strpos($page_text, (string) $text) === FALSE);
+    $this->assertTrue($actual, $message);
+
+    return $actual;
+  }
+
+  /**
+   * Passes if the text is found ONLY ONCE on the text version of the page.
+   *
+   * The text version is the equivalent of what a user would see when viewing
+   * through a web browser. In other words the HTML has been filtered out of
+   * the contents.
+   *
+   * @param string|\Drupal\Component\Render\MarkupInterface $text
+   *   Plain text to look for.
+   * @param string $message
+   *   (optional) A message to display with the assertion. Do not translate
+   *   messages with t(). If left blank, a default message will be displayed.
+   *
+   * @deprecated Scheduled for removal in Drupal 9.0.0.
+   *   Use $this->getSession()->getPage()->getText() and substr_count() instead.
+   */
+  protected function assertUniqueText($text, $message = NULL) {
+    // Cast MarkupInterface objects to string.
+    $text = (string) $text;
+
+    $message = $message ?: "'$text' found only once on the page";
+    $page_text = $this->getSession()->getPage()->getText();
+    $nr_found = substr_count($page_text, $text);
+    $this->assertSame(1, $nr_found, $message);
+  }
+
+  /**
+   * Passes if the text is found MORE THAN ONCE on the text version of the page.
+   *
+   * The text version is the equivalent of what a user would see when viewing
+   * through a web browser. In other words the HTML has been filtered out of
+   * the contents.
+   *
+   * @param string|\Drupal\Component\Render\MarkupInterface $text
+   *   Plain text to look for.
+   * @param string $message
+   *   (optional) A message to display with the assertion. Do not translate
+   *   messages with t(). If left blank, a default message will be displayed.
+   *
+   * @deprecated Scheduled for removal in Drupal 9.0.0.
+   *   Use $this->getSession()->getPage()->getText() and substr_count() instead.
+   */
+  protected function assertNoUniqueText($text, $message = '') {
+    // Cast MarkupInterface objects to string.
+    $text = (string) $text;
+
+    $message = $message ?: "'$text' found more than once on the page";
+    $page_text = $this->getSession()->getPage()->getText();
+    $nr_found = substr_count($page_text, $text);
+    $this->assertGreaterThan(1, $nr_found, $message);
   }
 
   /**
@@ -125,6 +223,27 @@ trait AssertLegacyTrait {
     $this->assertSession()->fieldExists($name);
     if ($value !== NULL) {
       $this->assertSession()->fieldValueEquals($name, (string) $value);
+    }
+  }
+
+  /**
+   * Asserts that a field exists with the given name and value.
+   *
+   * @param string $name
+   *   Name of field to assert.
+   * @param string $value
+   *   (optional) Value of the field to assert. You may pass in NULL (default)
+   *   to skip checking the actual value, while still checking that the field
+   *   exists.
+   *
+   * @deprecated Scheduled for removal in Drupal 9.0.0.
+   *   Use $this->assertSession()->fieldNotExists() or
+   *   $this->assertSession()->fieldValueNotEquals() instead.
+   */
+  protected function assertNoFieldByName($name, $value = NULL) {
+    $this->assertSession()->fieldNotExists($name);
+    if ($value !== NULL) {
+      $this->assertSession()->fieldValueNotEquals($name, (string) $value);
     }
   }
 
@@ -344,6 +463,53 @@ trait AssertLegacyTrait {
   }
 
   /**
+   * Asserts that a select option in the current page is checked.
+   *
+   * @param string $id
+   *   ID of select field to assert.
+   * @param string $option
+   *   Option to assert.
+   * @param string $message
+   *   (optional) A message to display with the assertion. Do not translate
+   *   messages with t(). If left blank, a default message will be displayed.
+   *
+   * @deprecated Scheduled for removal in Drupal 9.0.0.
+   *   Use $this->assertSession()->optionExists() instead and check the
+   *   "selected" attribute yourself.
+   */
+  protected function assertOptionSelected($id, $option, $message = NULL) {
+    $option_field = $this->assertSession()->optionExists($id, $option);
+    $message = $message ?: "Option $option for field $id is selected.";
+    $this->assertTrue($option_field->hasAttribute('selected'), $message);
+  }
+
+  /**
+   * Asserts that a checkbox field in the current page is checked.
+   *
+   * @param string $id
+   *   ID of field to assert.
+   *
+   * @deprecated Scheduled for removal in Drupal 9.0.0.
+   *   Use $this->assertSession()->checkboxChecked() instead.
+   */
+  protected function assertFieldChecked($id) {
+    $this->assertSession()->checkboxChecked($id);
+  }
+
+  /**
+   * Asserts that a checkbox field in the current page is not checked.
+   *
+   * @param string $id
+   *   ID of field to assert.
+   *
+   * @deprecated Scheduled for removal in Drupal 9.0.0.
+   *   Use $this->assertSession()->checkboxNotChecked() instead.
+   */
+  protected function assertNoFieldChecked($id) {
+    $this->assertSession()->checkboxNotChecked($id);
+  }
+
+  /**
    * Passes if the raw text IS found escaped on the loaded page, fail otherwise.
    *
    * Raw text refers to the raw HTML that the page generated.
@@ -371,6 +537,19 @@ trait AssertLegacyTrait {
    */
   protected function assertNoEscaped($raw) {
     $this->assertSession()->assertNoEscaped($raw);
+  }
+
+  /**
+   * Triggers a pass if the Perl regex pattern is found in the raw content.
+   *
+   * @param string $pattern
+   *   Perl regex to look for including the regex delimiters.
+   *
+   * @deprecated Scheduled for removal in Drupal 9.0.0.
+   *   Use $this->assertSession()->responseMatches() instead.
+   */
+  protected function assertPattern($pattern) {
+    $this->assertSession()->responseMatches($pattern);
   }
 
   /**

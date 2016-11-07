@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
+use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\Core\TypedData\TypedDataInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\MigrateException;
@@ -85,7 +86,12 @@ class EntityContentBase extends Entity {
     if (!$entity) {
       throw new MigrateException('Unable to get entity');
     }
-    return $this->save($entity, $old_destination_id_values);
+
+    $ids = $this->save($entity, $old_destination_id_values);
+    if (!empty($this->configuration['translations'])) {
+      $ids[] = $entity->language()->getId();
+    }
+    return $ids;
   }
 
   /**
@@ -105,11 +111,29 @@ class EntityContentBase extends Entity {
   }
 
   /**
+   * Get whether this destination is for translations.
+   *
+   * @return bool
+   *   Whether this destination is for translations.
+   */
+  protected function isTranslationDestination() {
+    return !empty($this->configuration['translations']);
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function getIds() {
     $id_key = $this->getKey('id');
-    $ids[$id_key]['type'] = 'integer';
+    $ids[$id_key] = $this->getDefinitionFromEntity($id_key);
+
+    if ($this->isTranslationDestination()) {
+      if (!$langcode_key = $this->getKey('langcode')) {
+        throw new MigrateException('This entity type does not support translation.');
+      }
+      $ids[$langcode_key] = $this->getDefinitionFromEntity($langcode_key);
+    }
+
     return $ids;
   }
 
@@ -120,8 +144,29 @@ class EntityContentBase extends Entity {
    *   The entity to update.
    * @param \Drupal\migrate\Row $row
    *   The row object to update from.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface|null
+   *   An updated entity, or NULL if it's the same as the one passed in.
    */
   protected function updateEntity(EntityInterface $entity, Row $row) {
+    // By default, an update will be preserved.
+    $rollback_action = MigrateIdMapInterface::ROLLBACK_PRESERVE;
+
+    // Make sure we have the right translation.
+    if ($this->isTranslationDestination()) {
+      $property = $this->storage->getEntityType()->getKey('langcode');
+      if ($row->hasDestinationProperty($property)) {
+        $language = $row->getDestinationProperty($property);
+        if (!$entity->hasTranslation($language)) {
+          $entity->addTranslation($language);
+
+          // We're adding a translation, so delete it on rollback.
+          $rollback_action = MigrateIdMapInterface::ROLLBACK_DELETE;
+        }
+        $entity = $entity->getTranslation($language);
+      }
+    }
+
     // If the migration has specified a list of properties to be overwritten,
     // clone the row with an empty set of destination values, and re-add only
     // the specified properties.
@@ -140,7 +185,10 @@ class EntityContentBase extends Entity {
       }
     }
 
-    $this->setRollbackAction($row->getIdMap());
+    $this->setRollbackAction($row->getIdMap(), $rollback_action);
+
+    // We might have a different (translated) entity, so return it.
+    return $entity;
   }
 
   /**
@@ -183,6 +231,62 @@ class EntityContentBase extends Entity {
         $row->setDestinationProperty($field_name, $values);
       }
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function rollback(array $destination_identifier) {
+    if ($this->isTranslationDestination()) {
+      // Attempt to remove the translation.
+      $entity = $this->storage->load(reset($destination_identifier));
+      if ($entity && $entity instanceof TranslatableInterface) {
+        if ($key = $this->getKey('langcode')) {
+          if (isset($destination_identifier[$key])) {
+            $langcode = $destination_identifier[$key];
+            if ($entity->hasTranslation($langcode)) {
+              // Make sure we don't remove the default translation.
+              $translation = $entity->getTranslation($langcode);
+              if (!$translation->isDefaultTranslation()) {
+                $entity->removeTranslation($langcode);
+                $entity->save();
+              }
+            }
+          }
+        }
+      }
+    }
+    else {
+      parent::rollback($destination_identifier);
+    }
+  }
+
+  /**
+   * Gets the field definition from a specific entity base field.
+   *
+   * The method takes the field ID as an argument and returns the field storage
+   * definition to be used in getIds() by querying the destination entity base
+   * field definition.
+   *
+   * @param string $key
+   *   The field ID key.
+   *
+   * @return array
+   *   An associative array with a structure that contains the field type, keyed
+   *   as 'type', together with field storage settings as they are returned by
+   *   FieldStorageDefinitionInterface::getSettings().
+   *
+   * @see \Drupal\Core\Field\FieldStorageDefinitionInterface::getSettings()
+   */
+  protected function getDefinitionFromEntity($key) {
+    $entity_type_id = static::getEntityTypeId($this->getPluginId());
+    /** @var \Drupal\Core\Field\FieldStorageDefinitionInterface[] $definitions */
+    $definitions = $this->entityManager->getBaseFieldDefinitions($entity_type_id);
+    $field_definition = $definitions[$key];
+
+    return [
+      'type' => $field_definition->getType(),
+    ] + $field_definition->getSettings();
   }
 
 }

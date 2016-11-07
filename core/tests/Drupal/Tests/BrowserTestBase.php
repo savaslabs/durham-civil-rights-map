@@ -7,13 +7,15 @@ use Behat\Mink\Element\Element;
 use Behat\Mink\Mink;
 use Behat\Mink\Session;
 use Drupal\Component\FileCache\FileCacheFactory;
-use Drupal\Component\Serialization\Yaml;
+use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Config\Testing\ConfigSchemaChecker;
 use Drupal\Core\Database\Database;
 use Drupal\Core\DrupalKernel;
+use Drupal\Core\Serialization\Yaml;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\Session\UserSession;
@@ -27,8 +29,7 @@ use Drupal\simpletest\AssertHelperTrait;
 use Drupal\simpletest\ContentTypeCreationTrait;
 use Drupal\simpletest\BlockCreationTrait;
 use Drupal\simpletest\NodeCreationTrait;
-use Drupal\user\Entity\Role;
-use Drupal\user\Entity\User;
+use Drupal\simpletest\UserCreationTrait;
 use Symfony\Component\CssSelector\CssSelectorConverter;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -55,6 +56,11 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   }
   use ContentTypeCreationTrait {
     createContentType as drupalCreateContentType;
+  }
+  use ConfigTestTrait;
+  use UserCreationTrait {
+    createRole as drupalCreateRole;
+    createUser as drupalCreateUser;
   }
 
   /**
@@ -148,6 +154,44 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    * @var \Drupal\Core\Config\ConfigImporter
    */
   protected $configImporter;
+
+  /**
+   * Set to TRUE to strict check all configuration saved.
+   *
+   * @see \Drupal\Core\Config\Testing\ConfigSchemaChecker
+   *
+   * @var bool
+   */
+  protected $strictConfigSchema = TRUE;
+
+  /**
+   * Modules to enable.
+   *
+   * The test runner will merge the $modules lists from this class, the class
+   * it extends, and so on up the class hierarchy. It is not necessary to
+   * include modules in your list that a parent class has already declared.
+   *
+   * @var string[]
+   *
+   * @see \Drupal\Tests\BrowserTestBase::installDrupal()
+   */
+  public static $modules = [];
+
+  /**
+   * An array of config object names that are excluded from schema checking.
+   *
+   * @var string[]
+   */
+  protected static $configSchemaCheckerExclusions = array(
+    // Following are used to test lack of or partial schema. Where partial
+    // schema is provided, that is explicitly tested in specific tests.
+    'config_schema_test.noschema',
+    'config_schema_test.someschema',
+    'config_schema_test.schema_data_types',
+    'config_schema_test.no_schema_data_types',
+    // Used to test application of schema to filtering of configuration.
+    'config_test.dynamic.system',
+  );
 
   /**
    * The profile to install as a basis for testing.
@@ -354,7 +398,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     }
 
     if (is_array($this->minkDefaultDriverArgs)) {
-       // Use ReflectionClass to instantiate class with received params.
+      // Use ReflectionClass to instantiate class with received params.
       $reflector = new \ReflectionClass($this->minkDefaultDriverClass);
       $driver = $reflector->newInstanceArgs($this->minkDefaultDriverArgs);
     }
@@ -484,10 +528,11 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *   The file path.
    */
   public static function filePreDeleteCallback($path) {
-    $success = @chmod($path, 0700);
-    if (!$success) {
-      trigger_error("Can not make $path writable whilst cleaning up test directory. The webserver and phpunit are probably not being run by the same user.");
-    }
+    // When the webserver runs with the same system user as phpunit, we can
+    // make read-only files writable again. If not, chmod will fail while the
+    // file deletion still works if file permissions have been configured
+    // correctly. Thus, we ignore any problems while running chmod.
+    @chmod($path, 0700);
   }
 
   /**
@@ -624,17 +669,29 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *   Drupal path or URL to load into Mink controlled browser.
    * @param array $options
    *   (optional) Options to be forwarded to the url generator.
+   * @param string[] $headers
+   *   An array containing additional HTTP request headers, the array keys are
+   *   the header names and the array values the header values. This is useful
+   *   to set for example the "Accept-Language" header for requesting the page
+   *   in a different language. Note that not all headers are supported, for
+   *   example the "Accept" header is always overridden by the browser. For
+   *   testing REST APIs it is recommended to directly use an HTTP client such
+   *   as Guzzle instead.
    *
    * @return string
    *   The retrieved HTML string, also available as $this->getRawContent()
    */
-  protected function drupalGet($path, array $options = array()) {
+  protected function drupalGet($path, array $options = array(), array $headers = array()) {
     $options['absolute'] = TRUE;
     $url = $this->buildUrl($path, $options);
 
     $session = $this->getSession();
 
     $this->prepareRequest();
+    foreach ($headers as $header_name => $header_value) {
+      $session->setRequestHeader($header_name, $header_value);
+    }
+
     $session->visit($url);
     $out = $session->getPage()->getContent();
 
@@ -681,139 +738,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
       $path = $base_url . $path;
     }
     return $path;
-  }
-
-  /**
-   * Creates a user with a given set of permissions.
-   *
-   * @param array $permissions
-   *   (optional) Array of permission names to assign to user. Note that the
-   *   user always has the default permissions derived from the
-   *   "authenticated users" role.
-   * @param string $name
-   *   (optional) The user name.
-   *
-   * @return \Drupal\user\Entity\User|false
-   *   A fully loaded user object with passRaw property, or FALSE if account
-   *   creation fails.
-   */
-  protected function drupalCreateUser(array $permissions = array(), $name = NULL) {
-    // Create a role with the given permission set, if any.
-    $rid = FALSE;
-    if ($permissions) {
-      $rid = $this->drupalCreateRole($permissions);
-      if (!$rid) {
-        return FALSE;
-      }
-    }
-
-    // Create a user assigned to that role.
-    $edit = array();
-    $edit['name'] = !empty($name) ? $name : $this->randomMachineName();
-    $edit['mail'] = $edit['name'] . '@example.com';
-    $edit['pass'] = user_password();
-    $edit['status'] = 1;
-    if ($rid) {
-      $edit['roles'] = array($rid);
-    }
-
-    $account = User::create($edit);
-    $account->save();
-
-    $this->assertNotNull($account->id(), SafeMarkup::format('User created with name %name and pass %pass', array('%name' => $edit['name'], '%pass' => $edit['pass'])));
-    if (!$account->id()) {
-      return FALSE;
-    }
-
-    // Add the raw password so that we can log in as this user.
-    $account->passRaw = $edit['pass'];
-    return $account;
-  }
-
-  /**
-   * Creates a role with specified permissions.
-   *
-   * @param array $permissions
-   *   Array of permission names to assign to role.
-   * @param string $rid
-   *   (optional) The role ID (machine name). Defaults to a random name.
-   * @param string $name
-   *   (optional) The label for the role. Defaults to a random string.
-   * @param int $weight
-   *   (optional) The weight for the role. Defaults NULL so that entity_create()
-   *   sets the weight to maximum + 1.
-   *
-   * @return string
-   *   Role ID of newly created role, or FALSE if role creation failed.
-   */
-  protected function drupalCreateRole(array $permissions, $rid = NULL, $name = NULL, $weight = NULL) {
-    // Generate a random, lowercase machine name if none was passed.
-    if (!isset($rid)) {
-      $rid = strtolower($this->randomMachineName(8));
-    }
-    // Generate a random label.
-    if (!isset($name)) {
-      // In the role UI role names are trimmed and random string can start or
-      // end with a space.
-      $name = trim($this->randomString(8));
-    }
-
-    // Check the all the permissions strings are valid.
-    if (!$this->checkPermissions($permissions)) {
-      return FALSE;
-    }
-
-    // Create new role.
-    /* @var \Drupal\user\RoleInterface $role */
-    $role = Role::create(array(
-      'id' => $rid,
-      'label' => $name,
-    ));
-    if (!is_null($weight)) {
-      $role->set('weight', $weight);
-    }
-    $result = $role->save();
-
-    $this->assertSame($result, SAVED_NEW, SafeMarkup::format('Created role ID @rid with name @name.', array(
-      '@name' => var_export($role->label(), TRUE),
-      '@rid' => var_export($role->id(), TRUE),
-    )));
-
-    if ($result === SAVED_NEW) {
-      // Grant the specified permissions to the role, if any.
-      if (!empty($permissions)) {
-        user_role_grant_permissions($role->id(), $permissions);
-        $assigned_permissions = entity_load('user_role', $role->id())->getPermissions();
-        $missing_permissions = array_diff($permissions, $assigned_permissions);
-        if ($missing_permissions) {
-          $this->fail(SafeMarkup::format('Failed to create permissions: @perms', array('@perms' => implode(', ', $missing_permissions))));
-        }
-      }
-      return $role->id();
-    }
-
-    return FALSE;
-  }
-
-  /**
-   * Checks whether a given list of permission names is valid.
-   *
-   * @param array $permissions
-   *   The permission names to check.
-   *
-   * @return bool
-   *   TRUE if the permissions are valid, FALSE otherwise.
-   */
-  protected function checkPermissions(array $permissions) {
-    $available = array_keys(\Drupal::service('user.permissions')->getPermissions());
-    $valid = TRUE;
-    foreach ($permissions as $permission) {
-      if (!in_array($permission, $available)) {
-        $this->fail(SafeMarkup::format('Invalid permission %permission.', array('%permission' => $permission)));
-        $valid = FALSE;
-      }
-    }
-    return $valid;
   }
 
   /**
@@ -1118,6 +1042,17 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     }
     // Copy the testing-specific service overrides in place.
     copy($settings_services_file, $directory . '/services.yml');
+    if ($this->strictConfigSchema) {
+      // Add a listener to validate configuration schema on save.
+      $content = file_get_contents($directory . '/services.yml');
+      $services = Yaml::decode($content);
+      $services['services']['simpletest.config_schema_checker'] = [
+        'class' => ConfigSchemaChecker::class,
+        'arguments' => ['@config.typed', $this->getConfigSchemaExclusions()],
+        'tags' => [['name' => 'event_subscriber']]
+      ];
+      file_put_contents($directory . '/services.yml', Yaml::encode($services));
+    }
 
     // Since Drupal is bootstrapped already, install_begin_request() will not
     // bootstrap into DRUPAL_BOOTSTRAP_CONFIGURATION (again). Hence, we have to
@@ -1280,14 +1215,9 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    * @see BrowserTestBase::prepareEnvironment()
    */
   private function prepareDatabasePrefix() {
-    // Ensure that the generated test site directory does not exist already,
-    // which may happen with a large amount of concurrent threads and
-    // long-running tests.
-    do {
-      $suffix = mt_rand(100000, 999999);
-      $this->siteDirectory = 'sites/simpletest/' . $suffix;
-      $this->databasePrefix = 'simpletest' . $suffix;
-    } while (is_dir(DRUPAL_ROOT . '/' . $this->siteDirectory));
+    $test_db = new TestDatabase();
+    $this->siteDirectory = $test_db->getTestSitePath();
+    $this->databasePrefix = $test_db->getDatabasePrefix();
   }
 
   /**
@@ -1694,17 +1624,21 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *
    * @param string|\Drupal\Component\Render\MarkupInterface $label
    *   Text between the anchor tags.
+   * @param int $index
+   *   (optional) The index number for cases where multiple links have the same
+   *   text. Defaults to 0.
    */
-  protected function clickLink($label) {
+  protected function clickLink($label, $index = 0) {
     $label = (string) $label;
-    $this->getSession()->getPage()->clickLink($label);
+    $links = $this->getSession()->getPage()->findAll('named', ['link', $label]);
+    $links[$index]->click();
   }
 
   /**
    * Retrieves the plain-text content from the current page.
    */
   protected function getTextContent() {
-    return $this->getSession()->getPage()->getContent();
+    return $this->getSession()->getPage()->getText();
   }
 
   /**
@@ -1768,6 +1702,20 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   }
 
   /**
+   * Gets the JavaScript drupalSettings variable for the currently-loaded page.
+   *
+   * @return array
+   *   The JSON decoded drupalSettings value from the current page.
+   */
+  protected function getDrupalSettings() {
+    $html = $this->getSession()->getPage()->getHtml();
+    if (preg_match('@<script type="application/json" data-drupal-selector="drupal-settings-json">([^<]*)</script>@', $html, $matches)) {
+      return Json::decode($matches[1]);
+    }
+    return [];
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function assertEquals($expected, $actual, $message = '', $delta = 0.0, $maxDepth = 10, $canonicalize = FALSE, $ignoreCase = FALSE) {
@@ -1798,6 +1746,25 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // Ensure that the cache is deleted for the yaml file loader.
     $file_cache = FileCacheFactory::get('container_yaml_loader');
     $file_cache->delete($filename);
+  }
+
+  /**
+   * Gets the config schema exclusions for this test.
+   *
+   * @return string[]
+   *   An array of config object names that are excluded from schema checking.
+   */
+  protected function getConfigSchemaExclusions() {
+    $class = get_class($this);
+    $exceptions = [];
+    while ($class) {
+      if (property_exists($class, 'configSchemaCheckerExclusions')) {
+        $exceptions = array_merge($exceptions, $class::$configSchemaCheckerExclusions);
+      }
+      $class = get_parent_class($class);
+    }
+    // Filter out any duplicates.
+    return array_unique($exceptions);
   }
 
 }

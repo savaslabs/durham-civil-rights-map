@@ -301,7 +301,7 @@ abstract class FieldPluginBase extends HandlerBase implements FieldHandlerInterf
     if (!isset($elements)) {
       // @todo Add possible html5 elements.
       $elements = array(
-        '' => $this->t(' - Use default -'),
+        '' => $this->t('- Use default -'),
         '0' => $this->t('- None -')
       );
       $elements += \Drupal::config('views.settings')->get('field_rewrite_elements');
@@ -1271,7 +1271,20 @@ abstract class FieldPluginBase extends HandlerBase implements FieldHandlerInterf
 
         // @todo Views should expect and store a leading /. See
         //   https://www.drupal.org/node/2423913.
-        $more_link = ' ' . $this->linkGenerator()->generate($more_link_text, CoreUrl::fromUserInput('/' . $more_link_path, array('attributes' => array('class' => array('views-more-link')))));
+        $options = array(
+          'attributes' => array(
+            'class' => array(
+              'views-more-link',
+            ),
+          ),
+        );
+        if (UrlHelper::isExternal($more_link_path)) {
+          $more_link_url = CoreUrl::fromUri($more_link_path, $options);
+        }
+        else {
+          $more_link_url = CoreUrl::fromUserInput('/' . $more_link_path, $options);
+        }
+        $more_link = ' ' . $this->linkGenerator()->generate($more_link_text, $more_link_url);
       }
     }
 
