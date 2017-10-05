@@ -9,7 +9,7 @@ use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
  *
  * @MigrateSource(
  *   id = "d7_taxonomy_vocabulary",
- *   source_provider = "taxonomy"
+ *   source_module = "taxonomy"
  * )
  */
 class Vocabulary extends DrupalSqlBase {
@@ -19,7 +19,7 @@ class Vocabulary extends DrupalSqlBase {
    */
   public function query() {
     $query = $this->select('taxonomy_vocabulary', 'v')
-      ->fields('v', array(
+      ->fields('v', [
         'vid',
         'name',
         'description',
@@ -27,7 +27,7 @@ class Vocabulary extends DrupalSqlBase {
         'module',
         'weight',
         'machine_name',
-      ));
+      ]);
     return $query;
   }
 
@@ -35,7 +35,7 @@ class Vocabulary extends DrupalSqlBase {
    * {@inheritdoc}
    */
   public function fields() {
-    return array(
+    return [
       'vid' => $this->t('The vocabulary ID.'),
       'name' => $this->t('The name of the vocabulary.'),
       'description' => $this->t('The description of the vocabulary.'),
@@ -43,7 +43,7 @@ class Vocabulary extends DrupalSqlBase {
       'module' => $this->t('Module responsible for the vocabulary.'),
       'weight' => $this->t('The weight of the vocabulary in relation to other vocabularies.'),
       'machine_name' => $this->t('Unique machine name of the vocabulary.')
-    );
+    ];
   }
 
   /**

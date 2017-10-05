@@ -3,6 +3,7 @@
 namespace Drupal\Tests\Component\PhpStorage;
 
 use Drupal\Component\PhpStorage\FileStorage;
+use Drupal\Component\Utility\Random;
 
 /**
  * @coversDefaultClass \Drupal\Component\PhpStorage\FileStorage
@@ -24,10 +25,10 @@ class FileStorageTest extends PhpStorageTestBase {
   protected function setUp() {
     parent::setUp();
 
-    $this->standardSettings = array(
+    $this->standardSettings = [
       'directory' => $this->directory,
       'bin' => 'test',
-    );
+    ];
   }
 
   /**
@@ -55,11 +56,13 @@ class FileStorageTest extends PhpStorageTestBase {
    * @covers ::deleteAll
    */
   public function testDeleteAll() {
+    // Random generator.
+    $random_generator = new Random();
 
     // Write out some files.
     $php = new FileStorage($this->standardSettings);
 
-    $name = $this->randomMachineName() . '/' . $this->randomMachineName() . '.php';
+    $name = $random_generator->name(8, TRUE) . '/' . $random_generator->name(8, TRUE) . '.php';
 
     // Find a global that doesn't exist.
     do {
