@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\google_analytics\Plugin\migrate\process\GoogleAnalyticsVisibilityPages.
- */
-
 namespace Drupal\google_analytics\Plugin\migrate\process;
 
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -42,8 +37,9 @@ class GoogleAnalyticsVisibilityPages extends ProcessPluginBase implements Contai
   protected $migrationPlugin;
 
   /**
-   * Whether or not to skip Google Analytics that use PHP for visibility. Only
-   * applies if the PHP module is not enabled.
+   * Whether or not to skip Google Analytics that use PHP for visibility.
+   *
+   * Only applies if the PHP module is not enabled.
    *
    * @var bool
    */
@@ -66,12 +62,12 @@ class GoogleAnalyticsVisibilityPages extends ProcessPluginBase implements Contai
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
-    $migration_configuration = array(
-      'migration' => array(
+    $migration_configuration = [
+      'migration' => [
         'd6_user_role',
         'd7_user_role',
-      ),
-    );
+      ],
+    ];
     return new static(
       $configuration,
       $plugin_id,

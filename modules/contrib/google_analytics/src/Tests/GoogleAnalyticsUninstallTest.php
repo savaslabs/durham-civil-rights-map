@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\google_analytics\Tests\GoogleAnalyticsUninstallTest.
- */
-
 namespace Drupal\google_analytics\Tests;
 
 use Drupal\simpletest\WebTestBase;
@@ -50,7 +45,7 @@ class GoogleAnalyticsUninstallTest extends WebTestBase {
     // Show tracker in pages.
     $this->config('google_analytics.settings')->set('account', $ua_code)->save();
 
-    // Enable local caching of analytics.js
+    // Enable local caching of analytics.js.
     $this->config('google_analytics.settings')->set('cache', 1)->save();
 
     // Load page to get the analytics.js downloaded into local cache.
@@ -59,6 +54,7 @@ class GoogleAnalyticsUninstallTest extends WebTestBase {
     // Test if the directory and analytics.js exists.
     $this->assertTrue(file_prepare_directory($cache_path), 'Cache directory "public://google_analytics" has been found.');
     $this->assertTrue(file_exists($cache_path . '/analytics.js'), 'Cached analytics.js tracking file has been found.');
+    $this->assertTrue(file_exists($cache_path . '/analytics.js.gz'), 'Cached analytics.js.gz tracking file has been found.');
 
     // Uninstall the module.
     $edit = [];
