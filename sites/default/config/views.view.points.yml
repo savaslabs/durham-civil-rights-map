@@ -15,6 +15,7 @@ dependencies:
     - image
     - node
     - rest
+    - serialization
     - text
     - user
     - views_geojson
@@ -682,7 +683,7 @@ display:
           plugin_id: custom
       filters:
         status:
-          value: true
+          value: '1'
           table: node_field_data
           field: status
           plugin_id: boolean
@@ -750,6 +751,7 @@ display:
       row:
         type: data_entity
         options: {  }
+      auth: {  }
     cache_metadata:
       max-age: -1
       contexts:

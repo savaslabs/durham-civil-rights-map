@@ -1,18 +1,18 @@
 custom:
   -
     path: /
-    priority: '1.0'
+    priority: !!float 1
   -
     path: /places
-    priority: '1.0'
+    priority: !!float 1
 entity_types:
   node_type:
     place:
       index: 1
-      priority: '0.5'
+      priority: 0.5
     page:
       index: 1
-      priority: '0.5'
+      priority: 0.5
 settings:
   max_links: 2000
   cron_generate: true

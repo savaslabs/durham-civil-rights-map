@@ -373,7 +373,7 @@ display:
           group_type: group
           admin_label: ''
           operator: '='
-          value: true
+          value: '1'
           group: 1
           exposed: true
           expose:
@@ -583,6 +583,8 @@ display:
         menu_name: admin
         weight: -10
         context: ''
+        enabled: true
+        expanded: false
       tab_options:
         type: normal
         title: Content
