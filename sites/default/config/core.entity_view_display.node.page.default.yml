@@ -23,12 +23,15 @@ content:
     weight: 100
     settings: {  }
     third_party_settings: {  }
+    region: content
   field_metatag:
     weight: 102
     label: above
     settings: {  }
     third_party_settings: {  }
     type: metatag_empty_formatter
+    region: content
   links:
     weight: 101
+    region: content
 hidden: {  }

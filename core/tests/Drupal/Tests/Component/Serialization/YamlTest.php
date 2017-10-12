@@ -7,13 +7,13 @@ use Drupal\Component\Serialization\SerializationInterface;
 use Drupal\Component\Serialization\Yaml;
 use Drupal\Component\Serialization\YamlPecl;
 use Drupal\Component\Serialization\YamlSymfony;
-use Drupal\Tests\UnitTestCase;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @coversDefaultClass \Drupal\Component\Serialization\Yaml
  * @group Serialization
  */
-class YamlTest extends UnitTestCase {
+class YamlTest extends TestCase {
 
   /**
    * @var \PHPUnit_Framework_MockObject_MockObject
@@ -66,6 +66,7 @@ class YamlTest extends UnitTestCase {
    * @dataProvider providerYamlFilesInCore
    */
   public function testYamlFiles($file) {
+    file_put_contents('/tmp/dup.txt', $file . "\n", FILE_APPEND);
     $data = file_get_contents($file);
     try {
       $this->assertEquals(YamlSymfony::decode($data), YamlPecl::decode($data), $file);
@@ -74,6 +75,23 @@ class YamlTest extends UnitTestCase {
       // Provide file context to the failure so the exception message is useful.
       $this->fail("Exception thrown parsing $file:\n" . $e->getMessage());
     }
+  }
+
+  /**
+   * Ensures that decoding php objects is similar for PECL and Symfony.
+   *
+   * @requires extension yaml
+   */
+  public function testObjectSupportDisabled() {
+    $object = new \stdClass();
+    $object->foo = 'bar';
+    // In core all Yaml encoding is done via Symfony and it does not support
+    // objects so in order to encode an object we hace to use the PECL
+    // extension.
+    // @see \Drupal\Component\Serialization\Yaml::encode()
+    $yaml = YamlPecl::encode([$object]);
+    $this->assertEquals(['O:8:"stdClass":1:{s:3:"foo";s:3:"bar";}'], YamlPecl::decode($yaml));
+    $this->assertEquals(['!php/object "O:8:\"stdClass\":1:{s:3:\"foo\";s:3:\"bar\";}"'], YamlSymfony::decode($yaml));
   }
 
   /**

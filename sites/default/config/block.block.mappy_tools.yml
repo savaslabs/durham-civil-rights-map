@@ -12,7 +12,7 @@ _core:
   default_config_hash: NeHSoqm4XFqA7_0bDmR429ZZQt3LRbZMNRJTMsFyOfI
 id: mappy_tools
 theme: mappy
-region: '-1'
+region: header
 weight: -2
 provider: null
 plugin: 'system_menu_block:tools'

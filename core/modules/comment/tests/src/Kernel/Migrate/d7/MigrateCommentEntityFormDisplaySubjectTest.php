@@ -12,7 +12,7 @@ use Drupal\Tests\migrate_drupal\Kernel\d7\MigrateDrupal7TestBase;
  */
 class MigrateCommentEntityFormDisplaySubjectTest extends MigrateDrupal7TestBase {
 
-  public static $modules = ['node', 'comment', 'text'];
+  public static $modules = ['node', 'comment', 'text', 'menu_ui'];
 
   /**
    * {@inheritdoc}
@@ -48,7 +48,7 @@ class MigrateCommentEntityFormDisplaySubjectTest extends MigrateDrupal7TestBase 
     $this->assertDisplay('comment.comment_node_article.default');
     $this->assertDisplay('comment.comment_node_book.default');
     $this->assertDisplay('comment.comment_node_blog.default');
-    $this->assertDisplay('comment.comment_node_forum.default');
+    $this->assertDisplay('comment.comment_forum.default');
     $this->assertDisplay('comment.comment_node_test_content_type.default');
   }
 

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\google_analytics\Tests\GoogleAnalyticsPhpFilterTest.
- */
-
 namespace Drupal\google_analytics\Tests;
 
 use Drupal\Component\Utility\Html;
@@ -36,7 +31,7 @@ class GoogleAnalyticsPhpFilterTest extends WebTestBase {
     $permissions_admin_user = [
       'access administration pages',
       'administer google analytics',
-      'use PHP for tracking visibility',
+      'use PHP for google analytics tracking visibility',
     ];
     $this->admin_user = $this->drupalCreateUser($permissions_admin_user);
 
@@ -68,13 +63,13 @@ class GoogleAnalyticsPhpFilterTest extends WebTestBase {
     // Check tracking code visibility.
     $this->config('google_analytics.settings')->set('visibility.request_path_pages', '<?php return TRUE; ?>')->save();
     $this->drupalGet('');
-    $this->assertRaw('//www.google-analytics.com/analytics.js', '[testGoogleAnalyticsPhpFilter]: Tracking is displayed on frontpage page.');
+    $this->assertRaw('https://www.google-analytics.com/analytics.js', '[testGoogleAnalyticsPhpFilter]: Tracking is displayed on frontpage page.');
     $this->drupalGet('admin');
-    $this->assertRaw('//www.google-analytics.com/analytics.js', '[testGoogleAnalyticsPhpFilter]: Tracking is displayed on admin page.');
+    $this->assertRaw('https://www.google-analytics.com/analytics.js', '[testGoogleAnalyticsPhpFilter]: Tracking is displayed on admin page.');
 
     $this->config('google_analytics.settings')->set('visibility.request_path_pages', '<?php return FALSE; ?>')->save();
     $this->drupalGet('');
-    $this->assertNoRaw('//www.google-analytics.com/analytics.js', '[testGoogleAnalyticsPhpFilter]: Tracking is not displayed on frontpage page.');
+    $this->assertNoRaw('https://www.google-analytics.com/analytics.js', '[testGoogleAnalyticsPhpFilter]: Tracking is not displayed on frontpage page.');
 
     // Test administration form.
     $this->config('google_analytics.settings')->set('visibility.request_path_pages', '<?php return TRUE; ?>')->save();
