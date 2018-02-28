@@ -84,14 +84,15 @@ class ModerationInformation implements ModerationInformationInterface {
    */
   public function getLatestRevisionId($entity_type_id, $entity_id) {
     if ($storage = $this->entityTypeManager->getStorage($entity_type_id)) {
-      $revision_ids = $storage->getQuery()
-        ->allRevisions()
+      $result = $storage->getQuery()
+        ->latestRevision()
         ->condition($this->entityTypeManager->getDefinition($entity_type_id)->getKey('id'), $entity_id)
-        ->sort($this->entityTypeManager->getDefinition($entity_type_id)->getKey('revision'), 'DESC')
-        ->range(0, 1)
+        // No access check is performed here since this is an API function and
+        // should return the same ID regardless of the current user.
+        ->accessCheck(FALSE)
         ->execute();
-      if ($revision_ids) {
-        return array_keys($revision_ids)[0];
+      if ($result) {
+        return key($result);
       }
     }
   }
@@ -101,13 +102,15 @@ class ModerationInformation implements ModerationInformationInterface {
    */
   public function getDefaultRevisionId($entity_type_id, $entity_id) {
     if ($storage = $this->entityTypeManager->getStorage($entity_type_id)) {
-      $revision_ids = $storage->getQuery()
+      $result = $storage->getQuery()
+        ->currentRevision()
         ->condition($this->entityTypeManager->getDefinition($entity_type_id)->getKey('id'), $entity_id)
-        ->sort($this->entityTypeManager->getDefinition($entity_type_id)->getKey('revision'), 'DESC')
-        ->range(0, 1)
+        // No access check is performed here since this is an API function and
+        // should return the same ID regardless of the current user.
+        ->accessCheck(FALSE)
         ->execute();
-      if ($revision_ids) {
-        return array_keys($revision_ids)[0];
+      if ($result) {
+        return key($result);
       }
     }
   }

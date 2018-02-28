@@ -713,6 +713,12 @@ abstract class ContentEntityBase extends Entity implements \IteratorAggregate, C
         elseif (isset($this->translatableEntityKeys[$key][$this->activeLangcode])) {
           unset($this->translatableEntityKeys[$key][$this->activeLangcode]);
         }
+        // If the revision identifier field is being populated with the original
+        // value, we need to make sure the "new revision" flag is reset
+        // accordingly.
+        if ($key === 'revision' && $this->getRevisionId() == $this->getLoadedRevisionId()) {
+          $this->newRevision = FALSE;
+        }
       }
     }
 
@@ -916,7 +922,7 @@ abstract class ContentEntityBase extends Entity implements \IteratorAggregate, C
    * {@inheritdoc}
    */
   public function getTranslationLanguages($include_default = TRUE) {
-    $translations = array_filter($this->translations, function($translation) {
+    $translations = array_filter($this->translations, function ($translation) {
       return $translation['status'];
     });
     unset($translations[LanguageInterface::LANGCODE_DEFAULT]);
