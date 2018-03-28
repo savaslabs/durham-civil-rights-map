@@ -490,6 +490,8 @@ display:
           text: 'Read more'
           entity_type: node
           plugin_id: entity_link
+          output_url_as_text: false
+          absolute: false
       display_extenders: {  }
       link_url: ''
       link_display: page_1
