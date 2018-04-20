@@ -26,30 +26,47 @@ if (file_exists($local_settings)) {
 
 $settings['install_profile'] = 'standard';
 
+if (isset($_ENV['PANTHEON_ENVIRONMENT']) && php_sapi_name() != 'cli') {
+  // Redirect to https://$primary_domain in the Live environment
+  if ($_ENV['PANTHEON_ENVIRONMENT'] === 'live') {
+      $primary_domain = 'www.durhamcivilrightsmap.org';
+  }
+  else {
+    // Redirect to HTTPS on every Pantheon environment.
+    $primary_domain = $_SERVER['HTTP_HOST'];
+  }
+  if ($_SERVER['HTTP_HOST'] != $primary_domain
+    || !isset($_SERVER['HTTP_USER_AGENT_HTTPS'])
+    || $_SERVER['HTTP_USER_AGENT_HTTPS'] != 'ON' ) {
+
+    # Name transaction "redirect" in New Relic for improved reporting (optional)
+    if (extension_loaded('newrelic')) {
+      newrelic_name_transaction("redirect");
+    }
+
+    header('HTTP/1.0 301 Moved Permanently');
+    header('Location: https://'. $primary_domain . $_SERVER['REQUEST_URI']);
+    exit();
+  }
+  // Drupal 8 Trusted Host Settings
+  if (is_array($settings)) {
+    $settings['trusted_host_patterns'] = ['^'. preg_quote($primary_domain) .'$'];
+  }
+}
+
 if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
   // Dev.
   if ($_ENV['PANTHEON_ENVIRONMENT'] === 'dev') {
     $domain = 'dev-durham-civil-rights-map.pantheonsite.io';
-    $settings['trusted_host_patterns'] = array(
+    $settings['trusted_host_patterns'] = [
       'dev-durham-civil-rights-map\.pantheonsite\.io$',
-    );
+    ];
   }
   // Test.
   if ($_ENV['PANTHEON_ENVIRONMENT'] === 'test') {
     $domain = 'test-durham-civil-rights-map.pantheonsite.io';
-    $settings['trusted_host_patterns'] = array(
+    $settings['trusted_host_patterns'] = [
       'test-durham-civil-rights-map\.pantheonsite\.io$',
-    );
-  }
-  // Live.
-  if ($_ENV['PANTHEON_ENVIRONMENT'] === 'live') {
-    $domain = 'www.durhamcivilrightsmap.org';
-    $settings['trusted_host_patterns'] = array(
-      'durhamcivilrightsmap\.org$',
-      'live-durham-civil-rights-map\.pantheonsite\.io$'
-    );
-  }
-  else {
-    $domain = $_SERVER['HTTP_HOST'];
+    ];
   }
 }
