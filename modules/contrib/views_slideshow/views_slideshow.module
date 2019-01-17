@@ -5,137 +5,152 @@
  * Provides Slideshow style options for Views.
  */
 
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function views_slideshow_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the gss module.
+    case 'help.page.views_slideshow':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Views Slideshow can be used to create a slideshow of any content (not just images) that can appear in a View. Powered by jQuery, it is heavily customizable: you may choose slideshow settings for each View you create.') . '</p>';
+      $output .= '<h3>' . t('More Information') . '</h3>';
+      $output .= '<p>' . t('For more information about this module visite the <a href="@link">Views Slideshow</a> module page.', array('@link' => 'https://www.drupal.org/project/views_slideshow')) . '</p>';
+      return $output;
+  }
+}
+
 /**
  * Implements hook_theme().
  */
 function views_slideshow_theme() {
-  return array(
-    'views_slideshow_main_section' => array(
-      'variables' => array(
+  return [
+    'views_slideshow_main_section' => [
+      'variables' => [
         'vss_id' => NULL,
         'slides' => NULL,
         'plugin' => NULL,
-      ),
+      ],
       'file' => 'views_slideshow.theme.inc',
-      //'pattern' => 'views_slideshow_main_section__',
-    ),
-    'views_slideshow_pager_widget_render' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_pager_widget_render' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
+        'settings' => [],
         'location' => NULL,
-        'rows' => array(),
-      ),
+        'rows' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-      //'pattern' => 'views_slideshow_pager_widget_render__',
       'function' => 'template_preprocess_views_slideshow_pager_widget_render',
-    ),
-    'views_slideshow_pager_fields' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_pager_fields' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
+        'settings' => [],
         'location' => NULL,
-        'attributes' => array(),
-      ),
+        'attributes' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-      //'pattern' => 'views_slideshow_pager_fields__',
-    ),
-    'views_slideshow_pager_field_field' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_pager_field_field' => [
+      'variables' => [
         'view' => NULL,
         'css_identifier' => NULL,
         'label' => NULL,
         'output' => NULL,
-      ),
+      ],
       'file' => 'views_slideshow.theme.inc',
-      //'pattern' => 'views_slideshow_pager_field_field__',
-    ),
-    'views_slideshow_pager_field_item' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_pager_field_item' => [
+      'variables' => [
         'vss_id' => NULL,
         'item' => NULL,
         'count' => NULL,
         'location' => NULL,
         'length' => NULL,
-      ),
-      //'pattern' => 'views_slideshow_pager_field_item__',
-    ),
-    'views_slideshow_controls_widget_render' => array(
-      'variables' => array(
+      ],
+    ],
+    'views_slideshow_pager_bullets' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
+        'settings' => [],
         'location' => NULL,
-        'rows' => array(),
-      ),
+        'attributes' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-      //'pattern' => 'views_slideshow_controls_widget_render__',
+    ],
+    'views_slideshow_controls_widget_render' => [
+      'variables' => [
+        'vss_id' => NULL,
+        'view' => NULL,
+        'settings' => [],
+        'location' => NULL,
+        'rows' => [],
+      ],
+      'file' => 'views_slideshow.theme.inc',
       'function' => 'template_preprocess_views_slideshow_controls_widget_render',
-    ),
-    'views_slideshow_controls_text' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_controls_text' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
+        'settings' => [],
         'location' => NULL,
-        'rows' => array(),
-      ),
-      //'pattern' => 'views_slideshow_controls_text__',
+        'rows' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-    ),
-    'views_slideshow_controls_text_previous' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_controls_text_previous' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
-      ),
-      //'pattern' => 'views_slideshow_controls_text_previous__',
+        'settings' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-    ),
-    'views_slideshow_controls_text_pause' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_controls_text_pause' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
-      ),
-      //'pattern' => 'views_slideshow_controls_text_pause__',
+        'settings' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-    ),
-    'views_slideshow_controls_text_next' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_controls_text_next' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
-      ),
-      //'pattern' => 'views_slideshow_controls_text_next__',
+        'settings' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-    ),
-    'views_slideshow_slide_counter_widget_render' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_slide_counter_widget_render' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
+        'settings' => [],
         'location' => NULL,
-        'rows' => array(),
-      ),
+        'rows' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-      //'pattern' => 'views_slideshow_counter_widget_render__',
       'function' => 'template_preprocess_views_slideshow_slide_counter_widget_render',
-    ),
-    'views_slideshow_slide_counter' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_slide_counter' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
-        'settings' => array(),
+        'settings' => [],
         'location' => NULL,
-        'rows' => array(),
-      ),
-      //'pattern' => 'views_slideshow_slide_counter__',
+        'rows' => [],
+      ],
       'file' => 'views_slideshow.theme.inc',
-    ),
-  );
+    ],
+  ];
 }
 
 /**

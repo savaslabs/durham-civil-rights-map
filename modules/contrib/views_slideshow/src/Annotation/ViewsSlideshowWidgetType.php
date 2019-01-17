@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\views_slideshow\Annotation\ViewsSlideshowWidgetType.
- */
-
 namespace Drupal\views_slideshow\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
@@ -26,9 +21,9 @@ class ViewsSlideshowWidgetType extends Plugin {
   /**
    * The human-readable name of the widget type.
    *
-   * @ingroup plugin_translatable
-   *
    * @var \Drupal\Core\Annotation\Translation
+   *
+   * @ingroup plugin_translatable
    */
   public $label;
 
@@ -45,4 +40,5 @@ class ViewsSlideshowWidgetType extends Plugin {
    * @var array
    */
   public $calls;
+
 }

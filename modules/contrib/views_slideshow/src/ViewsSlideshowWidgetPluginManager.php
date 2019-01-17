@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains Drupal\views_slideshow\ViewsSlideshowWidgetPluginManager.
- */
 
 namespace Drupal\views_slideshow;
 
@@ -11,10 +7,10 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
 /**
- * Class ViewsSlideshowWidgetPluginManager
- * @package Drupal\views_slideshow
+ * Manager for Views Slideshow Widget plugins.
  */
 class ViewsSlideshowWidgetPluginManager extends DefaultPluginManager {
+
   /**
    * Constructs a new ViewsSlideshowWidgetPluginManager.
    *

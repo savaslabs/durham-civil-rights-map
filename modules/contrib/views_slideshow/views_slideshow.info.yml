@@ -2,13 +2,12 @@ name: Views Slideshow
 type: module
 description: 'Provides a View style that displays rows as a jQuery slideshow.  This is an API and requires Views Slideshow Cycle or another module that supports the API.'
 package: Views
-# version: 8.4
 # core: 8.x
 dependencies:
-  - views
+  - drupal:views
 
-# Information added by Drupal.org packaging script on 2016-02-18
-version: '8.x-4.0'
+# Information added by Drupal.org packaging script on 2017-11-18
+version: '8.x-4.6'
 core: '8.x'
 project: 'views_slideshow'
-datestamp: 1455833943
+datestamp: 1510987088

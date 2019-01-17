@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\views_slideshow\Annotation\ViewsSlideshowSkin.
- */
-
 namespace Drupal\views_slideshow\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
@@ -26,9 +21,9 @@ class ViewsSlideshowSkin extends Plugin {
   /**
    * The human-readable name of the slideshow skin.
    *
-   * @ingroup plugin_translatable
-   *
    * @var \Drupal\Core\Annotation\Translation
+   *
+   * @ingroup plugin_translatable
    */
   public $label;
 

@@ -1,16 +1,11 @@
 <?php
-/**
- * @file
- * Contains Drupal\views_slideshow\Plugin\ViewsSlideshowSkin\DefaultSkin.
- */
 
 namespace Drupal\views_slideshow\Plugin\ViewsSlideshowSkin;
 
 use Drupal\views_slideshow\ViewsSlideshowSkinBase;
 
 /**
- * Class DefaultSkin
- * @package Drupal\views_slideshow\Plugin\ViewsSlideshowSkin
+ * Provides a default basic skin.
  *
  * @ViewsSlideshowSkin(
  *   id = "default",

@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Provides Drupal\views_slideshow\ViewsSlideshowTypeBase.
- */
 
 namespace Drupal\views_slideshow;
 
@@ -10,6 +6,9 @@ use Drupal\Component\Plugin\PluginBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 
+/**
+ * Provides basic functionality for Views slideshow types.
+ */
 abstract class ViewsSlideshowTypeBase extends PluginBase implements ViewsSlideshowTypeInterface {
   use StringTranslationTrait;
 
@@ -39,16 +38,16 @@ abstract class ViewsSlideshowTypeBase extends PluginBase implements ViewsSlidesh
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
-    return array();
+    return [];
   }
 
   /**
    * {@inheritdoc}
    */
   public function getConfiguration() {
-    return array(
+    return [
       'id' => $this->getPluginId(),
-    ) + $this->configuration;
+    ] + $this->configuration;
   }
 
   /**
@@ -63,7 +62,7 @@ abstract class ViewsSlideshowTypeBase extends PluginBase implements ViewsSlidesh
    * {@inheritdoc}
    */
   public function calculateDependencies() {
-    return array();
+    return [];
   }
 
   /**
@@ -71,4 +70,5 @@ abstract class ViewsSlideshowTypeBase extends PluginBase implements ViewsSlidesh
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
   }
+
 }

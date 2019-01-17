@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains Drupal\views_slideshow\ViewsSlideshowSkinPluginManager.
- */
 
 namespace Drupal\views_slideshow;
 
@@ -11,8 +7,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
 /**
- * Class ViewsSlideshowSkinPluginManager
- * @package Drupal\views_slidehsow
+ * Manager for Views Slideshow Skin plugins.
  */
 class ViewsSlideshowSkinPluginManager extends DefaultPluginManager {
 
@@ -33,4 +28,5 @@ class ViewsSlideshowSkinPluginManager extends DefaultPluginManager {
     $this->alterInfo('views_slideshow_skin_info');
     $this->setCacheBackend($cache_backend, 'views_slideshow_skin');
   }
+
 }

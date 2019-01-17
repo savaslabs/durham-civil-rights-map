@@ -7,7 +7,6 @@
 
 use Drupal\Core\Url;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Asset;
 use Drupal\Core\Link;
 
 /**
@@ -17,10 +16,10 @@ function views_slideshow_cycle_help($route_name, RouteMatchInterface $route_matc
   switch ($route_name) {
     case 'help.page.views_slideshow_cycle':
       if (\Drupal::moduleHandler()->moduleExists('advanced_help')) {
-        $output = '<p>' . Link::fromTextAndUrl('Click here to view the documentation for Views Slideshow Cycle.', Url::fromRoute('advanced_help.module_index', array('module' => 'views_slideshow_cycle'))) . '</p>';
+        $output = '<p>' . Link::fromTextAndUrl(t('Click here to view the documentation for Views Slideshow Cycle.'), Url::fromRoute('advanced_help.module_index', ['module' => 'views_slideshow_cycle'])->toString()) . '</p>';
       }
       else {
-        $output = '<p>' . t('Views Slideshow Cycle help can be found by installing and enabling the !advanced_help', array('!advanced_help' => Link::fromTextAndUrl(t('Advanced Help module'), Url::fromUri('http://drupal.org/project/advanced_help')))) . '</p>';
+        $output = '<p>' . t('Views Slideshow Cycle help can be found by installing and enabling the @advanced_help', ['@advanced_help' => Link::fromTextAndUrl(t('Advanced Help module'), Url::fromUri('http://drupal.org/project/advanced_help'))->toString()]) . '</p>';
       }
       return $output;
   }
@@ -30,53 +29,49 @@ function views_slideshow_cycle_help($route_name, RouteMatchInterface $route_matc
  * Implements hook_theme().
  */
 function views_slideshow_cycle_theme($existing, $type, $theme, $path) {
-  return array(
-    'views_slideshow_cycle' => array(
-      'variables' => array(
+  return [
+    'views_slideshow_cycle' => [
+      'variables' => [
         'view' => NULL,
-        'settings' => array(),
-        'rows' => array(),
+        'settings' => [],
+        'rows' => [],
         'title' => '',
-      ),
+      ],
       'template' => 'views-slideshow-cycle',
       'file' => 'views_slideshow_cycle.theme.inc',
-      //'pattern' => 'views_slideshow_cycle__',
-    ),
-    'views_slideshow_cycle_main_frame' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_cycle_main_frame' => [
+      'variables' => [
         'vss_id' => NULL,
         'view' => NULL,
         'settings' => NULL,
         'rows' => NULL,
-      ),
+      ],
       'template' => 'views-slideshow-cycle-main-frame',
       'file' => 'views_slideshow_cycle.theme.inc',
-      //'pattern' => 'views_slideshow_cycle_main_frame__',
-    ),
-    'views_slideshow_cycle_main_frame_row' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_cycle_main_frame_row' => [
+      'variables' => [
         'vss_id' => NULL,
         'items' => NULL,
         'count' => NULL,
         'view' => NULL,
-      ),
+      ],
       'template' => 'views-slideshow-cycle-main-frame-row',
       'file' => 'views_slideshow_cycle.theme.inc',
-      //'pattern' => 'views_slideshow_cycle_main_frame_row__',
-    ),
-    'views_slideshow_cycle_main_frame_row_item' => array(
-      'variables' => array(
+    ],
+    'views_slideshow_cycle_main_frame_row_item' => [
+      'variables' => [
         'item' => NULL,
         'item_count' => NULL,
         'count' => NULL,
         'view' => NULL,
         'length' => NULL,
-      ),
+      ],
       'template' => 'views-slideshow-cycle-main-frame-row-item',
       'file' => 'views_slideshow_cycle.theme.inc',
-      //'pattern' => 'views_slideshow_cycle_main_frame_row_item__',
-    ),
-  );
+    ],
+  ];
 }
 
 /**
