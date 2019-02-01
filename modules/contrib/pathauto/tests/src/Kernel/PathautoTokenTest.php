@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\pathauto\Kernel\PathautoTokenTest.
- */
-
 namespace Drupal\Tests\pathauto\Kernel;
 
 use Drupal\Core\Render\BubbleableMetadata;
@@ -44,6 +39,42 @@ class PathautoTokenTest extends KernelTestBase {
     $alias_cleaner = \Drupal::service('pathauto.alias_cleaner');
     $alias_cleaner->cleanTokenValues($replacements, $data, array());
     $this->assertEqual($replacements['[array:join-path]'], 'test-first-arg/array-value');
+
+    // Test additional token cleaning and its configuration.
+    $safe_tokens = $this->config('pathauto.settings')->get('safe_tokens');
+    $safe_tokens[] = 'safe';
+    $this->config('pathauto.settings')
+      ->set('safe_tokens', $safe_tokens)
+      ->save();
+
+    $safe_tokens = [
+      '[example:path]',
+      '[example:url]',
+      '[example:url-brief]',
+      '[example:login-url]',
+      '[example:login-url:relative]',
+      '[example:url:relative]',
+      '[example:safe]',
+    ];
+    $unsafe_tokens = [
+      '[example:path_part]',
+      '[example:something_url]',
+      '[example:unsafe]',
+    ];
+    foreach ($safe_tokens as $token) {
+      $replacements = [
+        $token => 'this/is/a/path',
+      ];
+      $alias_cleaner->cleanTokenValues($replacements);
+      $this->assertEquals('this/is/a/path', $replacements[$token], "Token $token cleaned.");
+    }
+    foreach ($unsafe_tokens as $token) {
+      $replacements = [
+        $token => 'This is not a / path',
+      ];
+      $alias_cleaner->cleanTokenValues($replacements);
+      $this->assertEquals('not-path', $replacements[$token], "Token $token not cleaned.");
+    }
   }
 
   /**
@@ -79,4 +110,5 @@ class PathautoTokenTest extends KernelTestBase {
     }
     return $return;
   }
+
 }

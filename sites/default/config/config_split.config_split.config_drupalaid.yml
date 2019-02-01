@@ -1,0 +1,19 @@
+uuid: 014ca59e-e987-405d-873a-62c08e301f5b
+langcode: en
+status: false
+dependencies: {  }
+id: config_drupalaid
+label: 'Dev Config'
+description: 'Local Dev Configs'
+folder: sites/default/config_drupalaid
+module:
+  hacked: 0
+  reroute_email: 0
+  shield: 0
+  stage_file_proxy: 0
+theme: {  }
+blacklist: {  }
+graylist: {  }
+graylist_dependents: true
+graylist_skip_equal: true
+weight: 0

@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag\Plugin\metatag\Tag\OriginalSource.
- */
 
 namespace Drupal\metatag\Plugin\metatag\Tag;
 
@@ -17,6 +13,7 @@ namespace Drupal\metatag\Plugin\metatag\Tag;
  *   group = "advanced",
  *   weight = 4,
  *   type = "uri",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */

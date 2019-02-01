@@ -1,12 +1,8 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag_twitter_cards\Plugin\metatag\Tag\TwitterCardsPlayerWidth.
- */
 
 namespace Drupal\metatag_twitter_cards\Plugin\metatag\Tag;
 
-use Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
+use Drupal\metatag\Plugin\metatag\Tag\MetaNameBase;
 
 /**
  * The Twitter Cards player width metatag.
@@ -19,8 +15,9 @@ use Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
  *   group = "twitter_cards",
  *   weight = 401,
  *   type = "integer",
+ *   secure = FALSE,
  *   multiple = FALSE
  * );
  */
-class TwitterCardsPlayerWidth extends MetaPropertyBase {
+class TwitterCardsPlayerWidth extends MetaNameBase {
 }

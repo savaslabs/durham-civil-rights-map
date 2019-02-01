@@ -1,9 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\token\Tests\TokenTestBase.
- */
 namespace Drupal\token\Tests;
 
 use Drupal\simpletest\WebTestBase;
@@ -20,6 +16,6 @@ abstract class TokenTestBase extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('path', 'token', 'token_module_test');
+  public static $modules = ['path', 'token', 'token_module_test'];
 
 }

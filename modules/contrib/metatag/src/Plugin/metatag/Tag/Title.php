@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag\Plugin\metatag\Tag\Title.
- */
 
 namespace Drupal\metatag\Plugin\metatag\Tag;
 
@@ -12,11 +8,12 @@ namespace Drupal\metatag\Plugin\metatag\Tag;
  * @MetatagTag(
  *   id = "title",
  *   label = @Translation("Page title"),
- *   description = @Translation("The text to display in the title bar of a visitor's web browser when they view this page. This meta tag may also be used as the title of the page when a visitor bookmarks or favorites this page. It is common to append '[site:name]' to the end of this, so the site's name is automatically added."),
+ *   description = @Translation("The text to display in the title bar of a visitor's web browser when they view this page. This meta tag may also be used as the title of the page when a visitor bookmarks or favorites this page, or as the page title in a search engine result. It is common to append '[site:name]' to the end of this, so the site's name is automatically added. It is recommended that the title is no greater than 55 - 65 characters long, including spaces."),
  *   name = "title",
  *   group = "basic",
  *   weight = -1,
  *   type = "label",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */
@@ -33,13 +30,14 @@ class Title extends MetaNameBase {
   //     $element = '';
   //   }
   //   else {
-  //     $element = array(
+  //     $element = [
   //       '#theme' => 'hidden',
   //       // '#tag' => 'title',
   //       '#value' => $this->value(),
-  //     );
+  //     ];
   //   }
   //
   //   return $element;
   // }
+
 }

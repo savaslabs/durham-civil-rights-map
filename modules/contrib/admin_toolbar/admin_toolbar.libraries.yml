@@ -1,5 +1,10 @@
 toolbar.tree:
-  version: VERSION
   css:
     theme:
       css/admin.toolbar.css: {}
+  js:
+    js/jquery.hoverIntent.js: {}
+    js/admin_toolbar.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal

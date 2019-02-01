@@ -1,13 +1,8 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag_twitter_cards\Plugin\metatag\Tag\TwitterCardsCreatorId.
- */
 
 namespace Drupal\metatag_twitter_cards\Plugin\metatag\Tag;
 
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
+use Drupal\metatag\Plugin\metatag\Tag\MetaNameBase;
 
 /**
  * The Twitter Cards creator id metatag.
@@ -20,8 +15,9 @@ use Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
  *   group = "twitter_cards",
  *   weight = 4,
  *   type = "string",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */
-class TwitterCardsCreatorId extends MetaPropertyBase {
+class TwitterCardsCreatorId extends MetaNameBase {
 }

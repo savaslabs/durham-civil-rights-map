@@ -1,14 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\pathauto\Kernel\PathautoKernelTest.
- */
-
 namespace Drupal\Tests\pathauto\Kernel;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\language\Entity\ConfigurableLanguage;
@@ -21,6 +15,8 @@ use Drupal\pathauto\Tests\PathautoTestHelperTrait;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\node\Entity\Node;
+use Drupal\user\Entity\User;
 
 /**
  * Unit tests for Pathauto functions.
@@ -68,7 +64,7 @@ class PathautoKernelTest extends KernelTestBase {
 
     \Drupal::service('router.builder')->rebuild();
 
-    $this->currentUser = entity_create('user', array('name' => $this->randomMachineName()));
+    $this->currentUser = User::create(array('name' => $this->randomMachineName()));
     $this->currentUser->save();
   }
 
@@ -154,7 +150,7 @@ class PathautoKernelTest extends KernelTestBase {
       ),
     );
     foreach ($tests as $test) {
-      $entity = \Drupal::entityManager()->getStorage($test['entity'])->create($test['values']);
+      $entity = \Drupal::entityTypeManager()->getStorage($test['entity'])->create($test['values']);
       $entity->save();
       $actual = \Drupal::service('pathauto.generator')->getPatternByEntity($entity);
       $this->assertIdentical($actual->getPattern(), $test['expected'], t("Correct pattern returned for @entity_type with @values", array(
@@ -162,6 +158,29 @@ class PathautoKernelTest extends KernelTestBase {
         '@values' => print_r($test['values'], TRUE),
       )));
     }
+  }
+
+  /**
+   * Test potential conflicts with the same alias in different languages.
+   */
+  public function testSameTitleDifferentLanguages() {
+    // Create two English articles with the same title.
+    $edit = [
+      'title' => 'Sample page',
+      'type' => 'page',
+      'langcode' => 'en',
+    ];
+    $node1 = $this->drupalCreateNode($edit);
+    $this->assertEntityAlias($node1, '/content/sample-page', 'en');
+
+    $node2 = $this->drupalCreateNode($edit);
+    $this->assertEntityAlias($node2, '/content/sample-page-0', 'en');
+
+    // Now, create a French article with the same title, and verify that it gets
+    // the basic alias with the correct langcode.
+    $edit['langcode'] = 'fr';
+    $node3 = $this->drupalCreateNode($edit);
+    $this->assertEntityAlias($node3, '/content/sample-page', 'fr');
   }
 
   /**
@@ -234,11 +253,13 @@ class PathautoKernelTest extends KernelTestBase {
     $this->saveAlias('/node/1', '/node-1-alias-en', 'en');
     $this->saveAlias('/node/1', '/node-1-alias-fr', 'fr');
     $this->saveAlias('/node/2', '/node-2-alias');
+    $this->saveAlias('/node/10', '/node-10-alias');
 
-    \Drupal::service('pathauto.alias_storage_helper')->deleteAll('/node/1');
+    \Drupal::service('pathauto.alias_storage_helper')->deleteBySourcePrefix('/node/1');
     $this->assertNoAliasExists(array('source' => "/node/1"));
     $this->assertNoAliasExists(array('source' => "/node/1/view"));
     $this->assertAliasExists(array('source' => "/node/2"));
+    $this->assertAliasExists(array('source' => "/node/10"));
   }
 
   /**
@@ -263,13 +284,13 @@ class PathautoKernelTest extends KernelTestBase {
     $this->assertEntityAlias($node, '/content/second-title');
     $this->assertNoAliasExists(array('alias' => '/content/first-title'));
 
-    // Test PATHAUTO_UPDATE_ACTION_LEAVE
+    // Test PATHAUTO_UPDATE_ACTION_LEAVE.
     $config->set('update_action', PathautoGeneratorInterface::UPDATE_ACTION_LEAVE);
     $config->save();
     $node->setTitle('Third title');
     $node->save();
     $this->assertEntityAlias($node, '/content/third-title');
-    $this->assertAliasExists(array('source' => '/' . $node->urlInfo()->getInternalPath(), 'alias' => '/content/second-title'));
+    $this->assertAliasExists(array('source' => '/' . $node->toUrl()->getInternalPath(), 'alias' => '/content/second-title'));
 
     $config->set('update_action', PathautoGeneratorInterface::UPDATE_ACTION_DELETE);
     $config->save();
@@ -278,7 +299,7 @@ class PathautoKernelTest extends KernelTestBase {
     $this->assertEntityAlias($node, '/content/fourth-title');
     $this->assertNoAliasExists(array('alias' => '/content/third-title'));
     // The older second alias is not deleted yet.
-    $older_path = $this->assertAliasExists(array('source' => '/' . $node->urlInfo()->getInternalPath(), 'alias' => '/content/second-title'));
+    $older_path = $this->assertAliasExists(array('source' => '/' . $node->toUrl()->getInternalPath(), 'alias' => '/content/second-title'));
     \Drupal::service('path.alias_storage')->delete($older_path);
 
     $config->set('update_action', PathautoGeneratorInterface::UPDATE_ACTION_NO_NEW);
@@ -301,8 +322,8 @@ class PathautoKernelTest extends KernelTestBase {
   }
 
   /**
-   * Test that \Drupal::service('pathauto.generator')->createEntityAlias() will not create an alias for a pattern
-   * that does not get any tokens replaced.
+   * Test that \Drupal::service('pathauto.generator')->createEntityAlias() will
+   * not create an alias for a pattern that does not get any tokens replaced.
    */
   public function testNoTokensNoAlias() {
     $this->installConfig(['filter']);
@@ -343,12 +364,11 @@ class PathautoKernelTest extends KernelTestBase {
   function testParentChildPathTokens() {
     // First create a field which will be used to create the path. It must
     // begin with a letter.
-
     $this->installEntitySchema('taxonomy_term');
 
     Vocabulary::create(['vid' => 'tags'])->save();
 
-    $fieldname = 'a' . Unicode::strtolower($this->randomMachineName());
+    $fieldname = 'a' . mb_strtolower($this->randomMachineName());
     $field_storage = FieldStorageConfig::create(['entity_type' => 'taxonomy_term', 'field_name' => $fieldname, 'type' => 'string']);
     $field_storage->save();
     $field = FieldConfig::create(['field_storage' => $field_storage, 'bundle' => 'tags']);
@@ -369,11 +389,11 @@ class PathautoKernelTest extends KernelTestBase {
     // Create the child term.
     $child = Term::create(['vid' => 'tags', $fieldname => $this->randomMachineName(), 'parent' => $parent, 'name' => $this->randomMachineName()]);
     $child->save();
-    $this->assertEntityAlias($child, '/' . Unicode::strtolower($parent->getName() . '/' . $child->$fieldname->value));
+    $this->assertEntityAlias($child, '/' . mb_strtolower($parent->getName() . '/' . $child->$fieldname->value));
 
     // Re-saving the parent term should not modify the child term's alias.
     $parent->save();
-    $this->assertEntityAlias($child, '/' . Unicode::strtolower($parent->getName() . '/' . $child->$fieldname->value));
+    $this->assertEntityAlias($child, '/' . mb_strtolower($parent->getName() . '/' . $child->$fieldname->value));
   }
 
   /**
@@ -436,7 +456,7 @@ class PathautoKernelTest extends KernelTestBase {
     $edit['pass']   = user_password();
     $edit['path'] = array('pathauto' => TRUE);
     $edit['status'] = 1;
-    $account = entity_create('user', $edit);
+    $account = User::create($edit);
     $account->save();
     $this->assertEntityAlias($account, '/users/test-user');
   }
@@ -484,6 +504,64 @@ class PathautoKernelTest extends KernelTestBase {
   }
 
   /**
+   * Tests that enabled entity types generates the necessary fields and plugins.
+   */
+  public function testSettingChangeInvalidatesCache() {
+
+    $this->installConfig(['pathauto']);
+
+    $this->enableModules(['entity_test']);
+
+    $definitions = \Drupal::service('plugin.manager.alias_type')->getDefinitions();
+    $this->assertFalse(isset($definitions['canonical_entities:entity_test']));
+
+    $fields = \Drupal::service('entity_field.manager')->getBaseFieldDefinitions('entity_test');
+    $this->assertFalse(isset($fields['path']));
+
+    $this->config('pathauto.settings')
+      ->set('enabled_entity_types', ['user', 'entity_test'])
+      ->save();
+
+    $definitions = \Drupal::service('plugin.manager.alias_type')->getDefinitions();
+    $this->assertTrue(isset($definitions['canonical_entities:entity_test']));
+
+    $fields = \Drupal::service('entity_field.manager')->getBaseFieldDefinitions('entity_test');
+    $this->assertTrue(isset($fields['path']));
+
+  }
+
+  /**
+   * Tests that aliases are only generated for default revisions.
+   */
+  public function testDefaultRevision() {
+    $node1 = $this->drupalCreateNode(['title' => 'Default revision', 'type' => 'page']);
+    $this->assertEntityAlias($node1, '/content/default-revision');
+
+    $node1->setNewRevision(TRUE);
+    $node1->isDefaultRevision(FALSE);
+    $node1->setTitle('New non-default-revision');
+    $node1->save();
+
+    $this->assertEntityAlias($node1, '/content/default-revision');
+  }
+
+  /**
+   * Tests that the pathauto state property gets set to CREATED for new nodes.
+   *
+   * In some cases, this can trigger $node->path to be set up with no default
+   * value for the pathauto property.
+   */
+  public function testCreateNodeWhileAccessingPath() {
+    $node = Node::create([
+      'type' => 'article',
+      'title' => 'TestAlias',
+    ]);
+    $node->path->langcode;
+    $node->save();
+    $this->assertEntityAlias($node, '/content/testalias');
+  }
+
+  /**
    * Creates a node programmatically.
    *
    * @param array $settings
@@ -499,9 +577,10 @@ class PathautoKernelTest extends KernelTestBase {
       'type'      => 'page',
     );
 
-    $node = entity_create('node', $settings);
+    $node = Node::create($settings);
     $node->save();
 
     return $node;
   }
+
 }

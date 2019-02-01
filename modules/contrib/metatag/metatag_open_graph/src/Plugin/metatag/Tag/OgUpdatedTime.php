@@ -1,12 +1,8 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag_open_graph\Plugin\metatag\Tag\OgUpdatedTime.
- */
 
 namespace Drupal\metatag_open_graph\Plugin\metatag\Tag;
 
-use \Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
+use Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
 
 /**
  * Provides a plugin for the 'og:updated_time' meta tag.
@@ -19,6 +15,7 @@ use \Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
  *   group = "open_graph",
  *   weight = 15,
  *   type = "date",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */

@@ -1,12 +1,8 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag_twitter_cards\Plugin\metatag\Tag\TwitterCardsLabel1.
- */
 
 namespace Drupal\metatag_twitter_cards\Plugin\metatag\Tag;
 
-use \Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
+use Drupal\metatag\Plugin\metatag\Tag\MetaNameBase;
 
 /**
  * Provides a plugin for the 'twitter:label1' meta tag.
@@ -19,9 +15,10 @@ use \Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
  *   group = "twitter_cards",
  *   weight = 500,
  *   type = "string",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */
-class TwitterCardsLabel1 extends MetaPropertyBase {
+class TwitterCardsLabel1 extends MetaNameBase {
   // Nothing here yet. Just a placeholder class for a plugin.
 }

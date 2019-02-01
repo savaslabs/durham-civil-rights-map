@@ -1,17 +1,20 @@
 # Schema for the configuration files of the geofield module.
 
-field.geofield.storage_settings:
+field.storage_settings.geofield:
+  type: mapping
+  label: 'Geofield Settings'
+  mapping:
+    backend:
+      type: string
+      label: 'Backend storage'
+
+field.field_settings.geofield:
   label: 'Geofield settings'
   type: mapping
   mapping:
     backend:
       type: string
       label: 'Backend storage'
-
-field.geofield.field_settings:
-  type: mapping
-  label: 'Geofield settings'
-  mapping: {  }
 
 field.geofield.value:
   type: sequence
@@ -61,3 +64,39 @@ entity_form_display.field.geofield_bbox:
       label: 'Settings'
       sequence:
         - type: string
+
+field.widget.settings.geofield_latlon:
+  type: mapping
+  label: 'Latitude/Longitude settings'
+  mapping:
+    html5_geolocation:
+      type: boolean
+      label: 'Use HTML5 Geolocation to set default values'
+
+field.formatter.settings.geofield_default:
+  type: mapping
+  label: 'Geofield default display format settings'
+  mapping:
+    output_format:
+      type: string
+      label: 'Output format'
+
+field.formatter.settings.geofield_latlon:
+  type: mapping
+  label: 'Geofield LatLon display format settings'
+  mapping:
+    output_format:
+      type: string
+      label: 'Output format'
+
+views.field.geofield_proximity_field:
+  type: views.field.numeric
+  label: 'Geofield Proximity Field'
+
+views.filter_value.geofield_proximity_filter:
+  type: views.field.numeric
+  label: 'Geofield Proximity Filter'
+
+views.sort.geofield_proximity_sort:
+  type: views_sort
+  label: 'Geofield Proximity Sort'

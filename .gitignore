@@ -63,5 +63,6 @@ Thumbs.db
 
 
 settings.local.php
-modules/drupalaid-dev/
-sites/all/modules/drupalaid-dev/
+modules/drupalaid-dev
+sites/all/modules/drupalaid-dev
+sites/default/config_drupalaid

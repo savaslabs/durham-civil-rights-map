@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag\Plugin\metatag\Tag\Generator.
- */
 
 namespace Drupal\metatag\Plugin\metatag\Tag;
 
@@ -17,6 +13,7 @@ namespace Drupal\metatag\Plugin\metatag\Tag;
  *   group = "advanced",
  *   weight = 4,
  *   type = "string",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */

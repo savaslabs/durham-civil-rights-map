@@ -1,14 +1,11 @@
 <?php
-/**
- * @file
- * Contains \Drupal\pathauto\PathautoWidget.
- */
 
 namespace Drupal\pathauto;
 
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\path\Plugin\Field\FieldWidget\PathWidget;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Extends the core path widget.
@@ -46,11 +43,18 @@ class PathautoWidget extends PathWidget {
       return $element;
     }
 
+    if (\Drupal::currentUser()->hasPermission('administer pathauto')) {
+      $description = $this->t('Uncheck this to create a custom alias below. <a href="@admin_link">Configure URL alias patterns.</a>', ['@admin_link' => Url::fromRoute('entity.pathauto_pattern.collection')->toString()]);
+    }
+    else {
+      $description = $this->t('Uncheck this to create a custom alias below.');
+    }
+
     $element['pathauto'] = array(
       '#type' => 'checkbox',
       '#title' => $this->t('Generate automatic URL alias'),
       '#default_value' => $entity->path->pathauto,
-      '#description' => $this->t('Uncheck this to create a custom alias below. <a href="@admin_link">Configure URL alias patterns.</a>', array('@admin_link' => \Drupal::url('entity.pathauto_pattern.collection'))),
+      '#description' => $description,
       '#weight' => -1,
     );
 
@@ -58,24 +62,10 @@ class PathautoWidget extends PathWidget {
     // alias checkbox is checked.
     $element['alias']['#states']['disabled']['input[name="path[' . $delta . '][pathauto]"]'] = array('checked' => TRUE);
 
-
     // Override path.module's vertical tabs summary.
     $element['alias']['#attached']['library'] = ['pathauto/widget'];
 
-    if ($entity->path->pathauto == PathautoState::CREATE && !empty($entity->path->old_alias) && empty($entity->path->alias)) {
-      $element['alias']['#default_value'] = $entity->path->old_alias;
-      $entity->path->alias = $entity->path->old_alias;
-    }
-
-    // For Pathauto to remember the old alias and prevent the Path module from
-    // deleting it when Pathauto wants to preserve it.
-    if (!empty($entity->path->alias)) {
-      $element['old_alias'] = array(
-        '#type' => 'value',
-        '#value' => $entity->path->alias,
-      );
-    }
-
     return $element;
   }
+
 }

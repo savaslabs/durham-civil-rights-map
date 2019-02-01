@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\pathauto\Tests\PathautoTaxonomyWebTest.
- */
-
 namespace Drupal\pathauto\Tests;
 use Drupal\simpletest\WebTestBase;
 
@@ -32,7 +27,7 @@ class PathautoTaxonomyWebTest extends WebTestBase {
   protected $adminUser;
 
   /**
-   * {inheritdoc}
+   * {@inheritdoc}
    */
   function setUp() {
     parent::setUp();
@@ -49,7 +44,6 @@ class PathautoTaxonomyWebTest extends WebTestBase {
 
     $this->createPattern('taxonomy_term', '/[term:vocabulary]/[term:name]');
   }
-
 
   /**
    * Basic functional testing of Pathauto with taxonomy terms.
@@ -103,6 +97,5 @@ class PathautoTaxonomyWebTest extends WebTestBase {
     $this->drupalGet($manual_alias);
     $this->assertText($name, 'Term accessible through manual alias.');
   }
-
 
 }

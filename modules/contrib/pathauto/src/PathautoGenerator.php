@@ -1,16 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\pathauto\PathautoGenerator.
- */
-
 namespace Drupal\pathauto;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Render\BubbleableMetadata;
@@ -18,6 +13,7 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\Core\Utility\Token;
 use Drupal\token\TokenEntityMapperInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
  * Provides methods for generating path aliases.
@@ -90,9 +86,18 @@ class PathautoGenerator implements PathautoGeneratorInterface {
   protected $messenger;
 
   /**
+   * The token entity mapper.
+   *
    * @var \Drupal\token\TokenEntityMapperInterface
    */
   protected $tokenEntityMapper;
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
 
   /**
    * Creates a new Pathauto manager.
@@ -113,8 +118,12 @@ class PathautoGenerator implements PathautoGeneratorInterface {
    *   The messenger service.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
    *   The string translation service.
+   * @param \Drupal\token\TokenEntityMapperInterface $token_entity_mapper
+   *   The token entity mapper.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ModuleHandlerInterface $module_handler, Token $token, AliasCleanerInterface $alias_cleaner, AliasStorageHelperInterface $alias_storage_helper, AliasUniquifierInterface $alias_uniquifier, MessengerInterface $messenger, TranslationInterface $string_translation, TokenEntityMapperInterface $token_entity_mappper) {
+  public function __construct(ConfigFactoryInterface $config_factory, ModuleHandlerInterface $module_handler, Token $token, AliasCleanerInterface $alias_cleaner, AliasStorageHelperInterface $alias_storage_helper, AliasUniquifierInterface $alias_uniquifier, MessengerInterface $messenger, TranslationInterface $string_translation, TokenEntityMapperInterface $token_entity_mapper, EntityTypeManagerInterface $entity_type_manager) {
     $this->configFactory = $config_factory;
     $this->moduleHandler = $module_handler;
     $this->token = $token;
@@ -123,7 +132,8 @@ class PathautoGenerator implements PathautoGeneratorInterface {
     $this->aliasUniquifier = $alias_uniquifier;
     $this->messenger = $messenger;
     $this->stringTranslation = $string_translation;
-    $this->tokenEntityMapper = $token_entity_mappper;
+    $this->tokenEntityMapper = $token_entity_mapper;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -160,8 +170,9 @@ class PathautoGenerator implements PathautoGeneratorInterface {
       'bundle' => $entity->bundle(),
       'language' => &$langcode,
     );
-    // @todo Is still hook still useful?
+    $pattern_original = $pattern->getPattern();
     $this->moduleHandler->alter('pathauto_pattern', $pattern, $context);
+    $pattern_altered = $pattern->getPattern();
 
     // Special handling when updating an item which is already aliased.
     $existing_alias = NULL;
@@ -204,7 +215,7 @@ class PathautoGenerator implements PathautoGeneratorInterface {
     $this->moduleHandler->alter('pathauto_alias', $alias, $context);
 
     // If we have arrived at an empty string, discontinue.
-    if (!Unicode::strlen($alias)) {
+    if (!mb_strlen($alias)) {
       return NULL;
     }
 
@@ -231,11 +242,19 @@ class PathautoGenerator implements PathautoGeneratorInterface {
       'language' => $langcode,
     );
 
-    return $this->aliasStorageHelper->save($path, $existing_alias, $op);
+    $return  = $this->aliasStorageHelper->save($path, $existing_alias, $op);
+
+    // Because there is no way to set an altered pattern to not be cached,
+    // change it back to the original value.
+    if ($pattern_altered !== $pattern_original) {
+      $pattern->setPattern($pattern_original);
+    }
+
+    return $return;
   }
 
   /**
-   * Loads pathauto patterns for a given entity type ID
+   * Loads pathauto patterns for a given entity type ID.
    *
    * @param string $entity_type_id
    *   An entity type ID.
@@ -303,6 +322,11 @@ class PathautoGenerator implements PathautoGeneratorInterface {
       return NULL;
     }
 
+    // Only act if this is the default revision.
+    if ($entity instanceof RevisionableInterface && !$entity->isDefaultRevision()) {
+      return NULL;
+    }
+
     $options += array('language' => $entity->language()->getId());
     $type = $entity->getEntityTypeId();
 
@@ -325,7 +349,7 @@ class PathautoGenerator implements PathautoGeneratorInterface {
       $result = $this->createEntityAlias($entity, $op);
     }
     catch (\InvalidArgumentException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      $this->messenger->addError($e->getMessage());
       return NULL;
     }
 
@@ -349,7 +373,7 @@ class PathautoGenerator implements PathautoGeneratorInterface {
    *   An array of term objects that are the children of the term $tid.
    */
   protected function loadTermChildren($tid) {
-    return \Drupal::entityManager()->getStorage('taxonomy_term')->loadChildren($tid);
+    return $this->entityTypeManager->getStorage('taxonomy_term')->loadChildren($tid);
   }
 
 }

@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\pathauto\Plugin\Deriver\EntityAliasTypeDeriver.
- */
 
 namespace Drupal\pathauto\Plugin\Deriver;
 
@@ -30,6 +26,8 @@ class EntityAliasTypeDeriver extends DeriverBase implements ContainerDeriverInte
   protected $entityTypeManager;
 
   /**
+   * The entity field manager.
+   *
    * @var \Drupal\Core\Entity\EntityFieldManagerInterface
    */
   protected $entityFieldManager;
@@ -48,7 +46,7 @@ class EntityAliasTypeDeriver extends DeriverBase implements ContainerDeriverInte
    *   The entity field manager.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
    *   The string translation service.
-   * @apram \Drupal\Token\TokenEntityMapperInterface $token_entity_mapper
+   * @param \Drupal\Token\TokenEntityMapperInterface $token_entity_mapper
    *   The token entity mapper.
    */
   public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, TranslationInterface $string_translation, TokenEntityMapperInterface $token_entity_mapper) {
@@ -81,7 +79,6 @@ class EntityAliasTypeDeriver extends DeriverBase implements ContainerDeriverInte
         if (!isset($base_fields['path'])) {
           // The entity type does not have a path field and is therefore not
           // supported.
-          // @todo: Add a UI to enable that base field on any content entity.
           continue;
         }
         $this->derivatives[$entity_type_id] = $base_plugin_definition;

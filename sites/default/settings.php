@@ -69,4 +69,7 @@ if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
       'test-durham-civil-rights-map\.pantheonsite\.io$',
     ];
   }
+
+  //Disable Config Split
+  $config['config_split.config_split.config_drupalaid']['status'] = FALSE;
 }

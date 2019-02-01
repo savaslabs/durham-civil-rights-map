@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\pathauto\Form\PatternEditForm.
- */
-
 namespace Drupal\pathauto\Form;
 
 use Drupal\Core\Entity\EntityForm;
@@ -21,6 +16,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class PatternEditForm extends EntityForm {
 
   /**
+   * The alias type manager.
+   *
    * @var \Drupal\pathauto\AliasTypeManager
    */
   protected $manager;
@@ -38,11 +35,15 @@ class PatternEditForm extends EntityForm {
   protected $entityTypeBundleInfo;
 
   /**
+   * The entity manager service.
+   *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
 
   /**
+   * The language manager service.
+   *
    * @var \Drupal\Core\Language\LanguageManagerInterface
    */
   protected $languageManager;
@@ -63,24 +64,28 @@ class PatternEditForm extends EntityForm {
    * PatternEditForm constructor.
    *
    * @param \Drupal\pathauto\AliasTypeManager $manager
+   *   The alias type manager.
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
+   *   The entity type bundle info service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity manager service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
+   *   The language manager service.
    */
   function __construct(AliasTypeManager $manager, EntityTypeBundleInfoInterface $entity_type_bundle_info, EntityTypeManagerInterface $entity_type_manager, LanguageManagerInterface $language_manager) {
     $this->manager = $manager;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
     $this->entityTypeManager = $entity_type_manager;
-    $this->languageManager= $language_manager;
+    $this->languageManager = $language_manager;
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
     $options = [];
-    foreach ($this->manager->getDefinitions() as $plugin_id => $plugin_definition) {
+    foreach ($this->manager->getVisibleDefinitions() as $plugin_id => $plugin_definition) {
       $options[$plugin_id] = $plugin_definition['label'];
     }
     $form['type'] = [
@@ -120,6 +125,7 @@ class PatternEditForm extends EntityForm {
         '#after_build' => array('token_element_validate'),
         '#token_types' => $alias_type->getTokenTypes(),
         '#min_tokens' => 1,
+        '#required' => TRUE,
       );
 
       // Show the token help relevant to this pattern type.
@@ -152,7 +158,7 @@ class PatternEditForm extends EntityForm {
             '#type' => 'checkboxes',
             '#options' => $bundle_options,
             '#default_value' => $default_bundles,
-            '#description' => t('Check to which types this pattern should be applied. Leave empty to allow any.'),
+            '#description' => $this->t('Check to which types this pattern should be applied. Leave empty to allow any.'),
           );
         }
 
@@ -166,7 +172,7 @@ class PatternEditForm extends EntityForm {
             '#type' => 'checkboxes',
             '#options' => $language_options,
             '#default_value' => $default_languages,
-            '#description' => t('Check to which languages this pattern should be applied. Leave empty to allow any.'),
+            '#description' => $this->t('Check to which languages this pattern should be applied. Leave empty to allow any.'),
           );
         }
       }
@@ -178,6 +184,7 @@ class PatternEditForm extends EntityForm {
       '#maxlength' => 255,
       '#default_value' => $this->entity->label(),
       '#required' => TRUE,
+      '#description' => $this->t('A short name to help you identify this pattern in the patterns list.'),
     );
 
     $form['id'] = array(
@@ -202,12 +209,13 @@ class PatternEditForm extends EntityForm {
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function buildEntity(array $form, FormStateInterface $form_state) {
     /** @var \Drupal\pathauto\PathautoPatternInterface $entity */
     $entity = parent::buildEntity($form, $form_state);
 
+    // Will only be used for new patterns.
     $default_weight = 0;
 
     $alias_type = $entity->getAliasType();
@@ -253,17 +261,21 @@ class PatternEditForm extends EntityForm {
 
     }
 
-    $entity->setWeight($default_weight);
+    if ($entity->isNew()) {
+      $entity->setWeight($default_weight);
+    }
 
     return $entity;
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
     parent::save($form, $form_state);
-    drupal_set_message($this->t('Pattern @label saved.', ['@label' => $this->entity->label()]));
+    $this->messenger()->addMessage($this->t('Pattern %label saved.', [
+      '%label' => $this->entity->label(),
+    ]));
     $form_state->setRedirectUrl($this->entity->toUrl('collection'));
   }
 

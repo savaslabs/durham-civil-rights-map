@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\pathauto\PathautoPatternListBuilder.
- */
-
 namespace Drupal\pathauto;
 
 use Drupal\Core\Config\Entity\DraggableListBuilder;
@@ -14,6 +9,11 @@ use Drupal\Core\Entity\EntityInterface;
  * Provides a listing of Pathauto pattern entities.
  */
 class PathautoPatternListBuilder extends DraggableListBuilder {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $limit = FALSE;
 
   /**
    * {@inheritdoc}

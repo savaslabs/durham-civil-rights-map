@@ -1,12 +1,8 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag_twitter_cards\Plugin\metatag\Tag\TwitterCardsAppStoreCountry.
- */
 
 namespace Drupal\metatag_twitter_cards\Plugin\metatag\Tag;
 
-use Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
+use Drupal\metatag\Plugin\metatag\Tag\MetaNameBase;
 
 /**
  * The Twitter Cards app store country code metatag.
@@ -19,8 +15,9 @@ use Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
  *   group = "twitter_cards",
  *   weight = 300,
  *   type = "string",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */
-class TwitterCardsAppStoreCountry extends MetaPropertyBase {
+class TwitterCardsAppStoreCountry extends MetaNameBase {
 }

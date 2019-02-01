@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag\Plugin\metatag\Tag\ShortLink.
- */
 
 namespace Drupal\metatag\Plugin\metatag\Tag;
 
@@ -17,6 +13,7 @@ namespace Drupal\metatag\Plugin\metatag\Tag;
  *   group = "advanced",
  *   weight = 1,
  *   type = "uri",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */

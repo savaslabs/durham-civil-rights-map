@@ -1,9 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\pathauto\AliasCleanerInterface
- */
 namespace Drupal\pathauto;
 
 /**
@@ -76,8 +72,8 @@ interface AliasCleanerInterface {
   /**
    * Return an array of arrays for punctuation values.
    *
-   * Returns an array of arrays for punctuation values keyed by a name, including
-   * the value and a textual description.
+   * Returns an array of arrays for punctuation values keyed by a name,
+   * including the value and a textual description.
    * Can and should be expanded to include "all" non text punctuation values.
    *
    * @return array
@@ -103,4 +99,5 @@ interface AliasCleanerInterface {
    * Resets internal caches.
    */
   public function resetCaches();
+
 }

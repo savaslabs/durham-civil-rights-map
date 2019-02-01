@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\metatag\Plugin\Field\FieldType\MetatagFieldItem.
- */
-
 namespace Drupal\metatag\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\FieldItemBase;
@@ -28,22 +23,22 @@ class MetatagFieldItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public static function schema(FieldStorageDefinitionInterface $field_definition) {
-    return array(
-      'columns' => array(
-        'value' => array(
+    return [
+      'columns' => [
+        'value' => [
           'type' => 'text',
           'size' => 'big',
           'not null' => FALSE,
-        ),
-      ),
-    );
+        ],
+      ],
+    ];
   }
 
   /**
    * {@inheritdoc}
    */
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
-    $properties['value'] = DataDefinition::create('string')
+    $properties['value'] = DataDefinition::create('metatag')
       ->setLabel(t('Metatag'))
       ->setRequired(TRUE);
 
@@ -55,7 +50,7 @@ class MetatagFieldItem extends FieldItemBase {
    */
   public function isEmpty() {
     $value = $this->get('value')->getValue();
-    return $value === NULL || $value === '';
+    return $value === NULL || $value === '' || $value === serialize([]);
   }
 
   /**
@@ -69,11 +64,17 @@ class MetatagFieldItem extends FieldItemBase {
 
     // Get the value about to be saved.
     $current_value = $this->value;
-    $current_tags = unserialize($current_value);
+    // Only unserialize if still serialized string.
+    if (is_string($current_value)) {
+      $current_tags = unserialize($current_value);
+    }
+    else {
+      $current_tags = $current_value;
+    }
 
     // Only include values that differ from the default.
-    // @TODO: When site defaults are added, account for those.
-    $tags_to_save = array();
+    // @todo When site defaults are added, account for those.
+    $tags_to_save = [];
     foreach ($current_tags as $tag_id => $tag_value) {
       if (!isset($default_tags[$tag_id]) || ($tag_value != $default_tags[$tag_id])) {
         $tags_to_save[$tag_id] = $tag_value;
