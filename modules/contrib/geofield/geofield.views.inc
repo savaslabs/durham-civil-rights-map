@@ -17,6 +17,7 @@ function geofield_field_views_data(FieldStorageConfigInterface $field_storage) {
   $data = views_field_default_views_data($field_storage);
 
   $field_name = $field_storage->getName();
+  $entity_type_id = $field_storage->getTargetEntityTypeId();
   $field_label = NULL;
 
   foreach ($data as $table_name => $table_data) {
@@ -45,6 +46,20 @@ function geofield_field_views_data(FieldStorageConfigInterface $field_storage) {
           'longitude' => [
             'field' => $field_name . '_lon',
           ],
+        ],
+      ],
+      'argument' => [
+        'id' => 'geofield_proximity_argument',
+        'table' => $table_name,
+        'entity_type' => $entity_type_id,
+        'field_name' => $field_name . '_proximity',
+        'real field' => $field_name,
+        'label' => t('Distance to !field_name', [$field_name]),
+        'empty field name' => '- No value -',
+        'additional fields' => [
+          $field_name . 'value',
+          $field_name . '_lat',
+          $field_name . '_lon',
         ],
       ],
       'filter' => [

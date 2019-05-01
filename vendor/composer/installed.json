@@ -979,18 +979,18 @@
     },
     {
         "name": "drupal/geofield",
-        "version": "1.1.0",
-        "version_normalized": "1.1.0.0",
+        "version": "1.3.0",
+        "version_normalized": "1.3.0.0",
         "source": {
             "type": "git",
-            "url": "https://git.drupal.org/project/geofield",
-            "reference": "8.x-1.1"
+            "url": "https://git.drupalcode.org/project/geofield.git",
+            "reference": "8.x-1.3"
         },
         "dist": {
             "type": "zip",
-            "url": "https://ftp.drupal.org/files/projects/geofield-8.x-1.1.zip",
-            "reference": "8.x-1.1",
-            "shasum": "8eab2aa14e806d467e32de4d55040d604650299f"
+            "url": "https://ftp.drupal.org/files/projects/geofield-8.x-1.3.zip",
+            "reference": "8.x-1.3",
+            "shasum": "ab9691a959dd4e4ad48e7138f96a500caabb43a9"
         },
         "require": {
             "drupal/core": "~8.0",
@@ -1002,8 +1002,8 @@
                 "dev-1.x": "1.x-dev"
             },
             "drupal": {
-                "version": "8.x-1.1",
-                "datestamp": "1548102780",
+                "version": "8.x-1.3",
+                "datestamp": "1555935785",
                 "security-coverage": {
                     "status": "covered",
                     "message": "Covered by Drupal's security advisory policy"
@@ -1055,7 +1055,7 @@
         "description": "Stores geographic and location data (points, lines, and polygons).",
         "homepage": "https://www.drupal.org/project/geofield",
         "support": {
-            "source": "http://git.drupal.org/project/geofield.git",
+            "source": "https://git.drupalcode.org/project/geofield",
             "issues": "https://www.drupal.org/project/issues/geofield",
             "irc": "irc://irc.freenode.org/drupal-contribute"
         }
@@ -1719,12 +1719,12 @@
         "version_normalized": "1.6.5.0",
         "source": {
             "type": "git",
-            "url": "https://github.com/mikey179/vfsStream.git",
+            "url": "https://github.com/bovigo/vfsStream.git",
             "reference": "d5fec95f541d4d71c4823bb5e30cf9b9e5b96145"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/mikey179/vfsStream/zipball/d5fec95f541d4d71c4823bb5e30cf9b9e5b96145",
+            "url": "https://api.github.com/repos/bovigo/vfsStream/zipball/d5fec95f541d4d71c4823bb5e30cf9b9e5b96145",
             "reference": "d5fec95f541d4d71c4823bb5e30cf9b9e5b96145",
             "shasum": ""
         },

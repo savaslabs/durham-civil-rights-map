@@ -12,6 +12,34 @@ use Drupal\views\Plugin\views\HandlerBase;
 interface GeofieldProximitySourceInterface extends PluginInspectionInterface {
 
   /**
+   * Check for a valid couple of latitude and longitude.
+   *
+   * @param float $lat
+   *   The latitude value.
+   * @param float $lon
+   *   The longitude value.
+   *
+   * @return bool
+   *   The flag indicates whether location is valid.
+   *
+   * @todo: add more tests, particularly around max/min values.
+   */
+  public function isValidLocation($lat, $lon);
+
+  /**
+   * Check if Location is empty.
+   *
+   * @param float $lat
+   *   The latitude value.
+   * @param float $lon
+   *   The longitude value.
+   *
+   * @return bool
+   *   The bool result.
+   */
+  public function isEmptyLocation($lat, $lon);
+
+  /**
    * Builds the specific form elements for the geofield proximity plugin.
    *
    * @param array $form

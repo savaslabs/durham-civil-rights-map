@@ -2,6 +2,7 @@
 
 namespace Drupal\geofield\Plugin\views\filter;
 
+use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\geofield\Plugin\GeofieldProximitySourceManager;
@@ -181,6 +182,8 @@ class GeofieldProximityFilter extends NumericFilter {
     $lat_alias = $this->realField . '_lat';
     $lon_alias = $this->realField . '_lon';
 
+    /** @var \Drupal\views\Plugin\views\query\Sql $query */
+    $query = $this->query;
     try {
       /** @var \Drupal\geofield\Plugin\GeofieldProximitySourceInterface $source_plugin */
       $this->sourcePlugin = $this->proximitySourceManager->createInstance($this->options['source'], $this->options['source_configuration']);
@@ -192,6 +195,14 @@ class GeofieldProximityFilter extends NumericFilter {
         $haversine_options['destination_latitude'] = $this->tableAlias . '.' . $lat_alias;
         $haversine_options['destination_longitude'] = $this->tableAlias . '.' . $lon_alias;
         $this->{$info[$this->operator]['method']}($haversine_options);
+
+        // Ensure that destination is valid.
+        $condition = (new Condition('AND'))->isNotNull($haversine_options['destination_latitude'])->isNotNull($haversine_options['destination_longitude']);
+        $query->addWhere($this->options['group'], $condition);
+      }
+      elseif (!$this->isExposed()) {
+        // Origin is not valid so return no results (if not exposed filter).
+        $query->addWhereExpression($this->options['group'], '1=0');
       }
     }
     catch (\Exception $e) {
@@ -301,6 +312,23 @@ class GeofieldProximityFilter extends NumericFilter {
     if (isset($form_values[$identifier]['min']) && isset($form_values[$identifier]['max'])
       && ($form_values[$identifier]['min'] > $form_values[$identifier]['max'])) {
       $form_state->setError($form[$identifier]['min'], t('The Min value should be smaller than the Max value.'));
+    }
+
+    // Validate the Origin (not null) value, when the filter is required.
+    if ($this->options['expose']['required'] == TRUE) {
+      if (isset($form_values[$identifier]['source_configuration']['origin'])) {
+        $input_origin = $form_values[$identifier]['source_configuration']['origin'];
+        if ($this->sourcePlugin->isEmptyLocation($input_origin['lat'], $input_origin['lon'])) {
+          $form_state->setError($form[$identifier]['source_configuration']['origin'], t('The Origin (Lat/Lon) is required'));
+        }
+      }
+      elseif (isset($form_values[$identifier]['source_configuration']['origin_address'])) {
+        $input_address = $form_values[$identifier]['source_configuration']['origin_address'];
+        if (empty($input_address)) {
+          $form_state->setError($form[$identifier]['source_configuration']['origin_address'], t('The Origin Address is required'));
+        }
+      }
+
     }
   }
 
