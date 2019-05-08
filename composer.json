@@ -9,7 +9,7 @@
         "drupal/geofield": "^1.0"
     },
     "replace": {
-        "drupal/core": "^8.6"
+        "drupal/core": "^8.7"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
