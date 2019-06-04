@@ -33,7 +33,7 @@ class DeprecationErrorHandler
      * - use "/some-regexp/" to stop the test suite whenever a deprecation
      *   message matches the given regular expression;
      * - use a number to define the upper bound of allowed deprecations,
-     *   making the test suite fail whenever more notices are trigerred.
+     *   making the test suite fail whenever more notices are triggered.
      *
      * @param int|string|false $mode The reporting mode, defaults to not allowing any deprecations
      */
@@ -54,7 +54,11 @@ class DeprecationErrorHandler
             if (false === $mode) {
                 $mode = getenv('SYMFONY_DEPRECATIONS_HELPER');
             }
-            if (DeprecationErrorHandler::MODE_WEAK !== $mode && DeprecationErrorHandler::MODE_WEAK_VENDORS !== $mode && (!isset($mode[0]) || '/' !== $mode[0])) {
+            if (DeprecationErrorHandler::MODE_DISABLED !== $mode
+                && DeprecationErrorHandler::MODE_WEAK !== $mode
+                && DeprecationErrorHandler::MODE_WEAK_VENDORS !== $mode
+                && (!isset($mode[0]) || '/' !== $mode[0])
+            ) {
                 $mode = preg_match('/^[1-9][0-9]*$/', $mode) ? (int) $mode : 0;
             }
 
@@ -101,14 +105,13 @@ class DeprecationErrorHandler
             'remaining vendor' => array(),
         );
         $deprecationHandler = function ($type, $msg, $file, $line, $context = array()) use (&$deprecations, $getMode, $UtilPrefix, $inVendors) {
-            $mode = $getMode();
-            if ((E_USER_DEPRECATED !== $type && E_DEPRECATED !== $type) || DeprecationErrorHandler::MODE_DISABLED === $mode) {
+            if ((E_USER_DEPRECATED !== $type && E_DEPRECATED !== $type) || DeprecationErrorHandler::MODE_DISABLED === $mode = $getMode()) {
                 $ErrorHandler = $UtilPrefix.'ErrorHandler';
 
                 return $ErrorHandler::handleError($type, $msg, $file, $line, $context);
             }
 
-            $trace = debug_backtrace(true);
+            $trace = debug_backtrace();
             $group = 'other';
             $isVendor = DeprecationErrorHandler::MODE_WEAK_VENDORS === $mode && $inVendors($file);
 
