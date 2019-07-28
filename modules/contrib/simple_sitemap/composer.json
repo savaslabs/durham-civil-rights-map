@@ -1,6 +1,6 @@
 {
   "name": "drupal/simple_sitemap",
-  "description": "Simple XML sitemap creates a standard conform XML sitemap of your content.",
+  "description": "Creates a standard conform hreflang XML sitemap of the site content and provides a framework for developing other sitemap types.",
   "type": "drupal-module",
   "homepage": "https://drupal.org/project/simple_sitemap",
   "authors": [
@@ -9,11 +9,6 @@
       "email": "contact@gbyte.co",
       "homepage": "https://www.drupal.org/u/gbyte.co",
       "role": "Maintainer"
-    },
-    {
-      "name": "Sam Becker (Sam152)",
-      "homepage": "https://www.drupal.org/u/sam152",
-      "role": "Co-maintainer"
     }
   ],
   "support": {
@@ -23,7 +18,9 @@
   },
   "license": "GPL-2.0+",
   "minimum-stability": "dev",
-  "require": { },
+  "require": {
+    "ext-xmlwriter": "*"
+  },
   "extra": {
     "drush": {
       "services": {
@@ -32,4 +29,3 @@
     }
   }
 }
-

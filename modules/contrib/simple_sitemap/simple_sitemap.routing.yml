@@ -1,28 +1,20 @@
-simple_sitemap.sitemap:
+simple_sitemap.sitemap_default:
   path: '/sitemap.xml'
   defaults:
     _controller: '\Drupal\simple_sitemap\Controller\SimplesitemapController::getSitemap'
+    _disable_route_normalizer: 'TRUE'
   requirements:
     _access: 'TRUE'
 
-simple_sitemap.sitemaps:
-  path: '/sitemaps'
+# The actual path to a variant is '/{variant}/sitemap.xml'. Because Drupal 8
+# cannot handle a parameter as first route argument,
+# Drupal\simple_sitemap\PathProcessor\PathProcessorSitemapVariant::processInbound()
+# is being used to catch the request and redirect to the following route.
+simple_sitemap.sitemap_variant:
+  path: '/sitemaps/{variant}/sitemap.xml'
   defaults:
     _controller: '\Drupal\simple_sitemap\Controller\SimplesitemapController::getSitemap'
-  requirements:
-    _access: 'TRUE'
-
-simple_sitemap.chunk_fallback:
-  path: '/sitemaps/{chunk_id}'
-  defaults:
-    _controller: '\Drupal\simple_sitemap\Controller\SimplesitemapController::getSitemap'
-  requirements:
-    _access: 'TRUE'
-
-simple_sitemap.chunk:
-  path: '/sitemaps/{chunk_id}/sitemap.xml'
-  defaults:
-    _controller: '\Drupal\simple_sitemap\Controller\SimplesitemapController::getSitemap'
+    _disable_route_normalizer: 'TRUE'
   requirements:
     _access: 'TRUE'
 
@@ -49,3 +41,19 @@ simple_sitemap.settings_custom:
     _title: 'Simple XML Sitemap Settings'
   requirements:
     _permission: 'administer sitemap settings'
+
+simple_sitemap.settings_variants:
+  path: '/admin/config/search/simplesitemap/variants'
+  defaults:
+    _form: '\Drupal\simple_sitemap\Form\SimplesitemapVariantsForm'
+    _title: 'Simple XML Sitemap Settings'
+  requirements:
+    _permission: 'administer sitemap settings'
+
+simple_sitemap.sitemap_xsl:
+  path: '/sitemap.xsl'
+  defaults:
+    _controller: '\Drupal\simple_sitemap\Controller\SimplesitemapController::getSitemapXsl'
+    _title: 'Sitemap XSL'
+  requirements:
+    _access: 'TRUE'

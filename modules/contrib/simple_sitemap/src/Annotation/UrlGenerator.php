@@ -30,7 +30,7 @@ class UrlGenerator extends Plugin {
    *
    * @var \Drupal\Core\Annotation\Translation
    */
-  public $title;
+  public $label;
 
   /**
    * A short description of the generator.
@@ -42,25 +42,9 @@ class UrlGenerator extends Plugin {
   public $description;
 
   /**
-   * An integer to determine the weight of this generator relative to others.
-   *
-   * @var int
-   */
-  public $weight = 0;
-
-  /**
-   * Whether the generator is enabled by default.
-   *
-   * @var bool
-   */
-  public $enabled = TRUE;
-
-  /**
    * Default generator settings.
    *
    * @var array
    */
-  public $settings = [
-    'instantiate_for_each_data_set' => FALSE,
-  ];
+  public $settings = [];
 }

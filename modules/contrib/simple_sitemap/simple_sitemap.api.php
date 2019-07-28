@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Hooks provided by the Simple XML sitemap module.
+ * Hooks provided by the Simple XML Sitemap module.
  */
 
 /**
@@ -15,13 +15,15 @@
  * This hook gets invoked for every sitemap chunk generated.
  *
  * @param array &$links
- *   Array containing multilingual links generated for each path to be indexed.
+ *   Array containing multilingual links generated for each path to be indexed
+ *
+ * @param string $sitemap_variant
  */
-function hook_simple_sitemap_links_alter(array &$links) {
+function hook_simple_sitemap_links_alter(array &$links, $sitemap_variant) {
 
   // Remove German URL for a certain path in the hreflang sitemap.
   foreach ($links as $key => $link) {
-    if ($link['path'] === 'node/1') {
+    if ($link['meta']['path'] === 'node/1') {
 
       // Remove 'loc' URL if it points to a german site.
       if ($link['langcode'] === 'de') {
@@ -43,12 +45,13 @@ function hook_simple_sitemap_links_alter(array &$links) {
  * Add arbitrary links to the sitemap.
  *
  * @param array &$arbitrary_links
+ * @param string $sitemap_variant
  */
-function hook_simple_sitemap_arbitrary_links_alter(array &$arbitrary_links) {
+function hook_simple_sitemap_arbitrary_links_alter(array &$arbitrary_links, $sitemap_variant) {
 
-  // Add an arbitrary link.
+  // Add an arbitrary link to all sitemap variants.
   $arbitrary_links[] = [
-    'url' => 'http://this-is-your-life.net/tyler',
+    'url' => 'http://some-arbitrary-link/',
     'priority' => '0.5',
 
     // An ISO8601 formatted date.
@@ -66,6 +69,15 @@ function hook_simple_sitemap_arbitrary_links_alter(array &$arbitrary_links) {
       'de' => 'http://this-is-your-life.net/en/tyler',
     ]
   ];
+
+  // Add an arbitrary link to the 'fight_club' sitemap variant only.
+  switch ($sitemap_variant) {
+    case 'fight_club':
+      $arbitrary_links[] = [
+        'url' => 'http://this-is-your-life.net/tyler',
+      ];
+      break;
+  }
 }
 
 /**
@@ -73,8 +85,9 @@ function hook_simple_sitemap_arbitrary_links_alter(array &$arbitrary_links) {
  * Attributes can be added, changed and removed.
  *
  * @param array &$attributes
+ * @param string $sitemap_variant
  */
-function hook_simple_sitemap_attributes_alter(array &$attributes) {
+function hook_simple_sitemap_attributes_alter(array &$attributes, $sitemap_variant) {
 
   // Remove the xhtml attribute e.g. if no xhtml sitemap elements are present.
   unset($attributes['xmlns:xhtml']);
@@ -85,26 +98,43 @@ function hook_simple_sitemap_attributes_alter(array &$attributes) {
  * Attributes can be added, changed and removed.
  *
  * @param array &$index_attributes
+ * @param string $sitemap_variant
  */
-function hook_simple_sitemap_index_attributes_alter(array &$index_attributes) {
+function hook_simple_sitemap_index_attributes_alter(array &$index_attributes, $sitemap_variant) {
 
   // Add some attribute to the sitemap index.
   $index_attributes['name'] = 'value';
 }
 
 /**
- * Alter properties of and remove generator plugins.
+ * Alter properties of and remove URL generator plugins.
  *
- * @param array $generators
+ * @param array $url_generators
  */
-function hook_simple_sitemap_url_generators_alter(array &$generators) {
+function hook_simple_sitemap_url_generators_alter(array &$url_generators) {
 
   // Remove the entity generator.
-  // Useful when creating your own entity generator plugin.
-  unset($generators['entity']);
+  unset($url_generators['entity']);
+}
 
-  // Change the weight of the arbitrary link generator.
-  $generators['arbitrary']['weight'] = -100;
+/**
+ * Alter properties of and remove sitemap generator plugins.
+ *
+ * @param array $sitemap_generators
+ */
+function hook_simple_sitemap_sitemap_generators_alter(array &$sitemap_generators) {
+
+  // Remove the default generator.
+  unset($sitemap_generators['default']);
+}
+
+/**
+ * Alter properties of and remove sitemap type plugins.
+ *
+ * @param array $sitemap_types
+ */
+function hook_simple_sitemap_sitemap_types_alter(array &$sitemap_types) {
+
 }
 
 /**

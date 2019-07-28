@@ -5,10 +5,13 @@ simple_sitemap.settings:
       label: 'Max links'
       type: integer
     cron_generate:
-      label: 'Cron generate'
+      label: 'Cron generation'
       type: boolean
     cron_generate_interval:
-      label: 'Cron generate interval'
+      label: 'Cron generation interval'
+      type: integer
+    generate_duration:
+      label: 'Generation duration'
       type: integer
     remove_duplicates:
       label: 'Remove duplicates'
@@ -16,33 +19,36 @@ simple_sitemap.settings:
     skip_untranslated:
       label: 'Skip untranslated'
       type: boolean
-    batch_process_limit:
-      label: 'Batch process limit'
-      type: integer
+    xsl:
+      label: 'Include a stylesheet in the sitemaps for humans'
+      type: boolean
     base_url:
       label: 'Base URL'
+      type: string
+    default_variant:
+      label: 'Default variant'
       type: string
     custom_links_include_images:
       label: 'Include images of custom links'
       type: boolean
-    enabled_entity_types:
-      label: 'Enabled entity types'
-      type: sequence
-      sequence:
-        type: string
     excluded_languages:
       label: 'Excluded languages'
       type: sequence
       sequence:
         type: string
+    enabled_entity_types:
+      label: 'Enabled entity types'
+      type: sequence
+      sequence:
+        type: string
 
-simple_sitemap.bundle_settings.*.*:
+simple_sitemap.bundle_settings.*.*.*:
   label: 'Entity bundle settings'
   type: config_object
   mapping:
     index:
       label: 'Index'
-      type: integer
+      type: boolean
     priority:
       label: 'Priority'
       type: string
@@ -51,15 +57,15 @@ simple_sitemap.bundle_settings.*.*:
       type: string
     include_images:
       label: 'Include images'
-      type: integer
+      type: boolean
 
-simple_sitemap.custom:
+simple_sitemap.custom_links.*:
   label: 'Custom links'
   type: config_object
   mapping:
     links:
-      type: sequence
       label: 'Custom links'
+      type: sequence
       sequence:
         type: mapping
         mapping:
@@ -72,3 +78,20 @@ simple_sitemap.custom:
           changefreq:
             label: 'Change frequency'
             type: string
+
+simple_sitemap.variants.*:
+  label: 'Sitemap variants'
+  type: config_object
+  mapping:
+    variants:
+      label: 'Sitemap variants'
+      type: sequence
+      sequence:
+        type: mapping
+        mapping:
+          label:
+            label: 'Variant label'
+            type: string
+          weight:
+            label: 'Weight'
+            type: integer

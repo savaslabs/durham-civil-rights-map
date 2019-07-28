@@ -4,41 +4,79 @@ namespace Drupal\simple_sitemap;
 
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Url;
 
 /**
- * Class EntityHelper
+ * Helper class for working with entities.
+ *
  * @package Drupal\simple_sitemap
  */
 class EntityHelper {
 
   /**
+   * The entity type manager.
+   *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
 
   /**
+   * The current active database's master connection.
+   *
    * @var \Drupal\Core\Database\Connection
    */
   protected $db;
 
   /**
-   * EntityHelper constructor.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
-   * @param \Drupal\Core\Database\Connection $database
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, Connection $database) {
-    $this->entityTypeManager = $entityTypeManager;
+  protected $entityTypeBundleInfo;
+
+  /**
+   * EntityHelper constructor.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   * @param \Drupal\Core\Database\Connection $database
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
+   */
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $database, EntityTypeBundleInfoInterface $entity_type_bundle_info) {
+    $this->entityTypeManager = $entity_type_manager;
     $this->db = $database;
+    $this->entityTypeBundleInfo = $entity_type_bundle_info;
+  }
+
+  /**
+   * @param string $entity_type_id
+   * @return array
+   */
+  public function getBundleInfo($entity_type_id) {
+    return $this->entityTypeBundleInfo->getBundleInfo($entity_type_id);
+  }
+
+  /**
+   * @param string $entity_type_id
+   * @param string $bundle_name
+   * @return mixed
+   */
+  public function getBundleLabel($entity_type_id, $bundle_name) {
+    $entity_info = $this->getBundleInfo($entity_type_id);
+
+    return isset($entity_info[$bundle_name]['label'])
+      ? $entity_info[$bundle_name]['label']
+      : $bundle_name; // Menu fix.
   }
 
   /**
    * Gets an entity's bundle name.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to get the bundle name for.
+   *
    * @return string
+   *   The bundle of the entity.
    */
   public function getEntityInstanceBundleName(EntityInterface $entity) {
     return $entity->getEntityTypeId() === 'menu_link_content'
@@ -50,7 +88,10 @@ class EntityHelper {
    * Gets the entity type id for a bundle.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to get an entity type id for a bundle.
+   *
    * @return null|string
+   *   The entity type for a bundle or NULL on failure.
    */
   public function getBundleEntityTypeId(EntityInterface $entity) {
     return $entity->getEntityTypeId() === 'menu'
@@ -65,23 +106,33 @@ class EntityHelper {
    *   Objects of entity types that can be indexed by the sitemap.
    */
   public function getSupportedEntityTypes() {
-    $entity_types = $this->entityTypeManager->getDefinitions();
-
-    foreach ($entity_types as $entity_type_id => $entity_type) {
-      if (!$entity_type instanceof ContentEntityTypeInterface
-        || !method_exists($entity_type, 'getBundleEntityType')
-        || !$entity_type->hasLinkTemplate('canonical')) {
-        unset($entity_types[$entity_type_id]);
-      }
-    }
-    return $entity_types;
+    return array_filter($this->entityTypeManager->getDefinitions(), [$this, 'supports']);
   }
+
+  /**
+   * Determines if an entity type is supported or not.
+   *
+   * @return bool
+   *   TRUE if entity type supported by Simple Sitemap, FALSE if not.
+   */
+  public function supports(EntityTypeInterface $entity_type) {
+    if (!$entity_type instanceof ContentEntityTypeInterface
+      || !method_exists($entity_type, 'getBundleEntityType')
+      || !$entity_type->hasLinkTemplate('canonical')) {
+      return FALSE;
+    }
+
+    return TRUE;
+   }
 
   /**
    * Checks whether an entity type does not provide bundles.
    *
    * @param string $entity_type_id
+   *   The entity type ID.
+   *
    * @return bool
+   *   TRUE if the entity type is atomic and FALSE otherwise.
    */
   public function entityTypeIsAtomic($entity_type_id) {
 
@@ -100,8 +151,16 @@ class EntityHelper {
   }
 
   /**
-   * @param $url_object
-   * @return object|null
+   * Gets the entity from URL object.
+   *
+   * @param \Drupal\Core\Url $url_object
+   *   The URL object.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface|null
+   *   An entity object. NULL if no matching entity is found.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function getEntityFromUrlObject(Url $url_object) {
     return $url_object->isRouted()
@@ -113,23 +172,36 @@ class EntityHelper {
   }
 
   /**
-   * @param $entity_type_name
-   * @param $entity_id
+   * Gets the entity IDs by entity type and bundle.
+   *
+   * @param string $entity_type_id
+   *   The entity type ID.
+   * @param string|null $bundle_name
+   *   The bundle name.
+   *
    * @return array
+   *   An array of entity IDs
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function getEntityImageUrls($entity_type_name, $entity_id) {
-    $query = $this->db->select('file_managed', 'fm');
-    $query->fields('fm', ['uri']);
-    $query->join('file_usage', 'fu', 'fu.fid = fm.fid');
-    $query->condition('fm.filemime', 'image/%', 'LIKE');
-    $query->condition('fu.type', $entity_type_name);
-    $query->condition('fu.id', $entity_id);
-
-    foreach ($query->execute() as $row) {
-      $imageUris[] = file_create_url($row->uri);
+  public function getEntityInstanceIds($entity_type_id, $bundle_name = NULL) {
+    $sitemap_entity_types = $this->getSupportedEntityTypes();
+    if (!isset($sitemap_entity_types[$entity_type_id])) {
+      return [];
     }
 
-    return !empty($imageUris) ? $imageUris : [];
+    $entity_query = $this->entityTypeManager->getStorage($entity_type_id)->getQuery();
+    if (!$this->entityTypeIsAtomic($entity_type_id) && NULL !== $bundle_name) {
+      $keys = $sitemap_entity_types[$entity_type_id]->getKeys();
+
+      // Menu fix.
+      $keys['bundle'] = $entity_type_id === 'menu_link_content' ? 'menu_name' : $keys['bundle'];
+
+      $entity_query->condition($keys['bundle'], $bundle_name);
+    }
+
+    return $entity_query->execute();
   }
 
 }

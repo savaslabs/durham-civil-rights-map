@@ -2,6 +2,7 @@
 
 namespace Drupal\simple_sitemap;
 
+use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Session\AccountProxyInterface;
 use Psr\Log\LoggerInterface;
@@ -30,6 +31,11 @@ class Logger {
   protected $logger;
 
   /**
+   * @var \Drupal\Core\Messenger\Messenger
+   */
+  protected $messenger;
+
+  /**
    * @var \Drupal\Core\Session\AccountProxyInterface
    */
   protected $currentUser;
@@ -46,15 +52,17 @@ class Logger {
 
   /**
    * Logger constructor.
-   *
-   * @param $logger
-   * @param $current_user
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Drupal\Core\Messenger\Messenger $messenger
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
    */
   public function __construct(
     LoggerInterface $logger,
+    Messenger $messenger,
     AccountProxyInterface $current_user
   ) {
     $this->logger = $logger;
+    $this->messenger = $messenger;
     $this->currentUser = $current_user;
   }
 
@@ -85,7 +93,7 @@ class Logger {
    */
   public function display($displayMessageType = self::DISPLAY_MESSAGE_TYPE_DEFAULT, $permission = '') {
     if (empty($permission) || $this->currentUser->hasPermission($permission)) {
-      drupal_set_message($this->t($this->message, $this->substitutions), $displayMessageType);
+      $this->messenger->addMessage($this->t($this->message, $this->substitutions), $displayMessageType);
     }
     return $this;
   }

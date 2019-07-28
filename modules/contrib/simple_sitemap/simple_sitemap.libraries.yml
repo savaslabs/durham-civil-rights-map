@@ -4,12 +4,6 @@ fieldsetSummaries:
     js/simple_sitemap.fieldsetSummaries.js: {}
   dependencies:
     - core/jquery
-form:
-  version: VERSION
-  js:
-    js/simple_sitemap.form.js: {}
-  dependencies:
-    - core/jquery
 sitemapEntities:
   version: VERSION
   js:
@@ -17,3 +11,8 @@ sitemapEntities:
   dependencies:
     - core/jquery
     - core/drupalSettings
+sitemapSettings:
+  version: VERSION
+  css:
+    theme:
+      css/simple_sitemap.settings.css: {}
