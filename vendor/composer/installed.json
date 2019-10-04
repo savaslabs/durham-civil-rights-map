@@ -988,7 +988,7 @@
         "version_normalized": "8.3.1.0",
         "source": {
             "type": "git",
-            "url": "https://git.drupal.org/project/coder.git",
+            "url": "https://git.drupalcode.org/project/coder.git",
             "reference": "29a25627e7148b3119c84f18e087fc3b8c85b959"
         },
         "require": {
@@ -1023,18 +1023,18 @@
     },
     {
         "name": "drupal/geofield",
-        "version": "1.3.0",
-        "version_normalized": "1.3.0.0",
+        "version": "1.6.0",
+        "version_normalized": "1.6.0.0",
         "source": {
             "type": "git",
             "url": "https://git.drupalcode.org/project/geofield.git",
-            "reference": "8.x-1.3"
+            "reference": "8.x-1.6"
         },
         "dist": {
             "type": "zip",
-            "url": "https://ftp.drupal.org/files/projects/geofield-8.x-1.3.zip",
-            "reference": "8.x-1.3",
-            "shasum": "ab9691a959dd4e4ad48e7138f96a500caabb43a9"
+            "url": "https://ftp.drupal.org/files/projects/geofield-8.x-1.6.zip",
+            "reference": "8.x-1.6",
+            "shasum": "7d4263317c331b8236cdf02b3ef0680af3974673"
         },
         "require": {
             "drupal/core": "~8.0",
@@ -1046,8 +1046,8 @@
                 "dev-1.x": "1.x-dev"
             },
             "drupal": {
-                "version": "8.x-1.3",
-                "datestamp": "1555935785",
+                "version": "8.x-1.6",
+                "datestamp": "1569408784",
                 "security-coverage": {
                     "status": "covered",
                     "message": "Covered by Drupal's security advisory policy"

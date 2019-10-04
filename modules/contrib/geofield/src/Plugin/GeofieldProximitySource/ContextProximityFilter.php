@@ -15,7 +15,7 @@ use Drupal\geofield\Plugin\views\argument\GeofieldProximityArgument;
  *
  * @GeofieldProximitySource(
  *   id = "geofield_context_filter",
- *   label = @Translation("Context Filter (By context filter")),
+ *   label = @Translation("Context Filter (By context filter)"),
  *   description = @Translation("Allow the contextual input of Distance and Origin (as couple of Latitude and Longitude in decimal degrees.)"),
  *   exposedDescription = @Translation("Contextual input of Distance and Origin (as couple of Latitude and Longitude in decimal degrees.)"),
  *   context = {

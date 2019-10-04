@@ -137,7 +137,7 @@ abstract class GeofieldProximitySourceBase extends PluginBase implements Geofiel
     $radius = constant($this->units);
 
     $origin = $this->getOrigin();
-    if ($this->isEmptyLocation($origin['lat'], $origin['lon'])) {
+    if (!isset($origin['lat']) || !isset($origin['lon']) || $this->isEmptyLocation($origin['lat'], $origin['lon'])) {
       return NULL;
     }
 
