@@ -102,6 +102,14 @@ It is possible to have several sitemap instances of different sitemap types with
 specific links accessible under certain URLs. These sitemap variants can be
 configured under admin/config/search/simplesitemap/variants.
 
+#### AUTOMATIC SUBMISSION ####
+
+It is possible to have the module automatically submit specific sitemap
+variants to search engines. Google and Bing are preconfigured. This
+functionality is available through the included simple_sitemap_engines
+submodule. After enabling this module, go to
+admin/config/search/simplesitemap/engines/settings to set it up.
+
 ## USAGE ## 
 
 The sitemaps are accessible to the whole world under [variant name]/sitemap.xml.

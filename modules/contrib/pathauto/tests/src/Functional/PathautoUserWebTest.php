@@ -1,8 +1,8 @@
 <?php
 
-namespace Drupal\pathauto\Tests;
+namespace Drupal\Tests\pathauto\Functional;
 
-use Drupal\simpletest\WebTestBase;
+use Drupal\Tests\BrowserTestBase;
 use Drupal\views\Views;
 
 /**
@@ -10,7 +10,7 @@ use Drupal\views\Views;
  *
  * @group pathauto
  */
-class PathautoUserWebTest extends WebTestBase {
+class PathautoUserWebTest extends BrowserTestBase {
 
   use PathautoTestHelperTrait;
 

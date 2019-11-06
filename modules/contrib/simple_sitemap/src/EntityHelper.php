@@ -7,7 +7,6 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Database\Connection;
 use Drupal\Core\Url;
 
 /**
@@ -25,13 +24,6 @@ class EntityHelper {
   protected $entityTypeManager;
 
   /**
-   * The current active database's master connection.
-   *
-   * @var \Drupal\Core\Database\Connection
-   */
-  protected $db;
-
-  /**
    * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
    */
   protected $entityTypeBundleInfo;
@@ -39,12 +31,10 @@ class EntityHelper {
   /**
    * EntityHelper constructor.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   * @param \Drupal\Core\Database\Connection $database
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $database, EntityTypeBundleInfoInterface $entity_type_bundle_info) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info) {
     $this->entityTypeManager = $entity_type_manager;
-    $this->db = $database;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
   }
 

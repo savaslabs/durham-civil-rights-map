@@ -3,6 +3,7 @@
 namespace Drupal\Tests\simple_sitemap\Functional;
 
 use Drupal\Core\Url;
+use Drupal\node\Entity\Node;
 
 /**
  * Tests Simple XML Sitemap functional integration.
@@ -374,6 +375,20 @@ class SimplesitemapTest extends SimplesitemapTestBase {
       ->execute()
       ->fetchField();
     $this->assertTrue(empty($result));
+  }
+
+  /**
+   * Tests that a page does not break if an entity has its id set.
+   */
+  public function testNewEntityWithIdSet() {
+    $new_node = Node::create([
+      'nid' => rand(5, 10),
+      'type' => 'page',
+    ]);
+    // Assert that the form does not break if an entity has an id but is not
+    // saved.
+    // @see https://www.drupal.org/project/simple_sitemap/issues/3079897
+    \Drupal::service('entity.form_builder')->getForm($new_node);
   }
 
   /**

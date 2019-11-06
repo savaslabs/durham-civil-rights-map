@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\pathauto\Tests;
+namespace Drupal\Tests\pathauto\Functional;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
@@ -73,7 +73,7 @@ trait PathautoTestHelperTrait {
     $bubbleable_metadata = new BubbleableMetadata();
     $tokens = \Drupal::token()->generate($type, [$token => $token], [$type => $object], [], $bubbleable_metadata);
     $tokens += [$token => ''];
-    $this->assertIdentical($tokens[$token], $expected, t("Token value for [@type:@token] was '@actual', expected value '@expected'.", ['@type' => $type, '@token' => $token, '@actual' => $tokens[$token], '@expected' => $expected]));
+    $this->assertSame($tokens[$token], $expected, t("Token value for [@type:@token] was '@actual', expected value '@expected'.", ['@type' => $type, '@token' => $token, '@actual' => $tokens[$token], '@expected' => $expected]));
   }
 
   public function saveAlias($source, $alias, $langcode = Language::LANGCODE_NOT_SPECIFIED) {
@@ -119,7 +119,7 @@ trait PathautoTestHelperTrait {
 
   public function assertAlias($source, $expected_alias, $langcode = Language::LANGCODE_NOT_SPECIFIED) {
     \Drupal::service('path.alias_manager')->cacheClear($source);
-    $this->assertEqual($expected_alias, \Drupal::service('path.alias_manager')->getAliasByPath($source, $langcode), t("Alias for %source with language '@language' is correct.",
+    $this->assertEquals($expected_alias, \Drupal::service('path.alias_manager')->getAliasByPath($source, $langcode), t("Alias for %source with language '@language' is correct.",
       ['%source' => $source, '@language' => $langcode]));
   }
 
@@ -176,7 +176,7 @@ trait PathautoTestHelperTrait {
     $entity = \Drupal::entityTypeManager()->getStorage($entity_type)->create($values);
 
     $pattern = \Drupal::service('pathauto.generator')->getPatternByEntity($entity);
-    $this->assertIdentical($expected, $pattern->getPattern());
+    $this->assertSame($expected, $pattern->getPattern());
   }
 
   public function drupalGetTermByName($name, $reset = FALSE) {

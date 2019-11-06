@@ -120,7 +120,7 @@ class EntityMenuLinkContentUrlGenerator extends EntityUrlGeneratorBase {
   /**
    * @inheritdoc
    *
-   * @todo Check if menu link has not been deleted after the queue has been built.
+   * @todo Find a way to be able to check if a menu link still exists. This is difficult as we don't operate on MenuLinkContent entities, but on Link entities directly (as some menu links are not MenuLinkContent entities).
    */
   protected function processDataSet($data_set) {
 

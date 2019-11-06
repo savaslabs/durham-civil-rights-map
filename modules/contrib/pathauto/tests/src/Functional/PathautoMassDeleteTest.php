@@ -1,16 +1,16 @@
 <?php
 
-namespace Drupal\pathauto\Tests;
+namespace Drupal\Tests\pathauto\Functional;
 
 use Drupal\pathauto\PathautoState;
-use Drupal\simpletest\WebTestBase;
+use Drupal\Tests\BrowserTestBase;
 
 /**
  * Mass delete functionality tests.
  *
  * @group pathauto
  */
-class PathautoMassDeleteTest extends WebTestBase {
+class PathautoMassDeleteTest extends BrowserTestBase {
 
   use PathautoTestHelperTrait;
 
@@ -84,7 +84,7 @@ class PathautoMassDeleteTest extends WebTestBase {
 
     // Make sure that all of them are actually deleted.
     $aliases = \Drupal::database()->select('url_alias', 'ua')->fields('ua', [])->execute()->fetchAll();
-    $this->assertEqual($aliases, [], "All the aliases have been deleted.");
+    $this->assertEmpty($aliases, "All the aliases have been deleted.");
 
     // 2. Test deleting only specific (entity type) aliases.
     $manager = $this->container->get('plugin.manager.alias_type');
@@ -128,7 +128,7 @@ class PathautoMassDeleteTest extends WebTestBase {
     // Make sure that only custom aliases and aliases with no information about
     // their state still exist.
     $aliases = \Drupal::database()->select('url_alias', 'ua')->fields('ua', ['source'])->execute()->fetchCol();
-    $this->assertEqual($aliases, ['/node/101', '/node/104', '/node/105'], 'Custom aliases still exist.');
+    $this->assertEquals(['/node/101', '/node/104', '/node/105'], $aliases, 'Custom aliases still exist.');
   }
 
   /**

@@ -300,7 +300,7 @@ class SimplesitemapSettingsForm extends SimplesitemapFormBase {
     $form['simple_sitemap_settings']['advanced']['remove_duplicates'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Exclude duplicate links'),
-      '#description' => $this->t('Prevent per-sitemap variant duplicate links.<br>Uncheck this to significantly speed up the sitemap generation process on a huge site (more than 20 000 indexed entities).'),
+      '#description' => $this->t('Prevent per-sitemap variant duplicate links.<br>Unchecking this may help avoiding PHP memory errors on huge sites.'),
       '#default_value' => $this->generator->getSetting('remove_duplicates', TRUE),
     ];
 
@@ -308,7 +308,7 @@ class SimplesitemapSettingsForm extends SimplesitemapFormBase {
       '#type' => 'number',
       '#title' => $this->t('Maximum links in a sitemap'),
       '#min' => 1,
-      '#description' => $this->t('The maximum number of links one sitemap can hold. If more links are generated than set here, a sitemap index will be created and the links split into several sub-sitemaps.<br>50 000 links is the maximum Google will parse per sitemap, but an equally important consideration is generation performance: Splitting sitemaps into chunks <em>greatly</em> increases it.<br>If left blank, all links will be shown on a single sitemap.'),
+      '#description' => $this->t('The maximum number of links one sitemap can hold. If more links are generated than set here, a sitemap index will be created and the links split into several sub-sitemaps.<br>50 000 links is the maximum Google will parse per sitemap, but choosing a lower value may be needed to avoid PHP memory errors on huge sites.<br>If left blank, all links will be shown on a single sitemap.'),
       '#default_value' => $this->generator->getSetting('max_links'),
     ];
 

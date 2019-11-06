@@ -113,21 +113,16 @@ function simple_sitemap_entity_form_submit($form, FormStateInterface &$form_stat
         switch ($f->getEntityCategory()) {
 
           case 'bundle':
-            $generator->setBundleSettings($f->getEntityTypeId(),
-              !empty($f->getBundleName()) ? $f->getBundleName() : $f->getFormEntityId(),
-              $settings
-            );
-
+            $generator->setBundleSettings($f->getEntityTypeId(), $f->getBundleName(), $settings);
             if (empty($settings['index'])) {
               $generator->removeEntityInstanceSettings($f->getEntityTypeId(), $f->getInstanceId());
             }
             break;
 
           case 'instance':
-            $generator->setEntityInstanceSettings($f->getEntityTypeId(),
-              !empty($f->getInstanceId()) ? $f->getInstanceId() : $f->getFormEntityId(),
-              $settings
-            );
+            if (!$f->entityIsNew()) {
+              $generator->setEntityInstanceSettings($f->getEntityTypeId(), $f->getInstanceId(), $settings);
+            }
             break;
         }
       }

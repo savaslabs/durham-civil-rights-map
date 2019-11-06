@@ -214,13 +214,15 @@ abstract class EntityUrlGeneratorBase extends UrlGeneratorBase {
     foreach ($entity->getFieldDefinitions() as $field) {
       if ($field->getType() === 'image') {
         foreach ($entity->get($field->getName())->getValue() as $value) {
-          $image_data[] = [
-            'path' => $this->replaceBaseUrlWithCustom(
-              file_create_url(File::load($value['target_id'])->getFileUri())
-            ),
-            'alt' => $value['alt'],
-            'title' => $value['title'],
-          ] ;
+          if (!empty($file = File::load($value['target_id']))) {
+            $image_data[] = [
+              'path' => $this->replaceBaseUrlWithCustom(
+                file_create_url($file->getFileUri())
+              ),
+              'alt' => $value['alt'],
+              'title' => $value['title'],
+            ];
+          }
         }
       }
     }

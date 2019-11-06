@@ -642,7 +642,10 @@ class Simplesitemap {
       return $this;
     }
 
-    $entity = $this->entityTypeManager->getStorage($entity_type_id)->load($id);
+    if (empty($entity = $this->entityTypeManager->getStorage($entity_type_id)->load($id))) {
+      // todo exception
+      return $this;
+    }
 
     $all_bundle_settings = $this->getBundleSettings(
       $entity_type_id, $this->entityHelper->getEntityInstanceBundleName($entity), TRUE, TRUE
@@ -721,11 +724,13 @@ class Simplesitemap {
       return unserialize($results);
     }
     else {
+      if (empty($entity = $this->entityTypeManager->getStorage($entity_type_id)->load($id))) {
+        return FALSE;
+      }
+
       return $this->getBundleSettings(
         $entity_type_id,
-        $this->entityHelper->getEntityInstanceBundleName(
-          $this->entityTypeManager->getStorage($entity_type_id)->load($id)
-        )
+        $this->entityHelper->getEntityInstanceBundleName($entity)
       );
     }
   }

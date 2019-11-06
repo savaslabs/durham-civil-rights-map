@@ -1,16 +1,16 @@
 <?php
 
-namespace Drupal\pathauto\Tests;
+namespace Drupal\Tests\pathauto\Functional;
 
 use Drupal\pathauto\PathautoGeneratorInterface;
-use Drupal\simpletest\WebTestBase;
+use Drupal\Tests\BrowserTestBase;
 
 /**
  * Tests pathauto settings form.
  *
  * @group pathauto
  */
-class PathautoSettingsFormWebTest extends WebTestBase {
+class PathautoSettingsFormWebTest extends BrowserTestBase {
 
   use PathautoTestHelperTrait;
 

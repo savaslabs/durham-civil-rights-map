@@ -57,7 +57,6 @@ services:
     public: true
     arguments:
       - '@entity_type.manager'
-      - '@database'
       - '@entity_type.bundle.info'
 
   simple_sitemap.form_helper:

@@ -1,14 +1,15 @@
 <?php
 
-namespace Drupal\pathauto\Tests;
-use Drupal\simpletest\WebTestBase;
+namespace Drupal\Tests\pathauto\Functional;
+
+use Drupal\Tests\BrowserTestBase;
 
 /**
  * Tests pathauto taxonomy UI integration.
  *
  * @group pathauto
  */
-class PathautoTaxonomyWebTest extends WebTestBase {
+class PathautoTaxonomyWebTest extends BrowserTestBase {
 
   use PathautoTestHelperTrait;
 
@@ -60,7 +61,7 @@ class PathautoTaxonomyWebTest extends WebTestBase {
     $automatic_alias = '/tags/testing-term-name';
     $this->drupalPostForm('admin/structure/taxonomy/manage/tags/add', ['name[0][value]' => $name], 'Save');
     $name = trim($name);
-    $this->assertText("Created new term $name.");
+    $this->assertSession()->pageTextContains("Created new term $name.");
     $term = $this->drupalGetTermByName($name);
 
     // Look for alias generated in the form.

@@ -1,18 +1,18 @@
 <?php
 
-namespace Drupal\pathauto\Tests;
+namespace Drupal\Tests\pathauto\Functional;
 
 use Drupal\pathauto\Entity\PathautoPattern;
 use Drupal\node\Entity\Node;
 use Drupal\pathauto\PathautoState;
-use Drupal\simpletest\WebTestBase;
+use Drupal\Tests\BrowserTestBase;
 
 /**
  * Tests pathauto node UI integration.
  *
  * @group pathauto
  */
-class PathautoNodeWebTest extends WebTestBase {
+class PathautoNodeWebTest extends BrowserTestBase {
 
   use PathautoTestHelperTrait;
 
@@ -288,6 +288,92 @@ class PathautoNodeWebTest extends WebTestBase {
     $this->assertAliasExists(['alias' => '/sample-article-api']);
     $this->drupalGet('sample-article-api');
     $this->assertResponse(200);
+  }
+
+  /**
+   * Tests that nodes with an automatic alias can get a custom alias.
+   */
+  public function testCustomAliasAfterAutomaticAlias() {
+    // Create a pattern.
+    $this->createPattern('node', '/content/[node:title]');
+
+    // Create a node with an automatic alias.
+    $edit = [
+      'title[0][value]' => 'Sample article',
+    ];
+    $this->drupalPostForm('node/add/article', $edit, 'Save');
+    $this->assertSession()->pageTextContains('article Sample article has been created.');
+
+    // Ensure that the automatic alias got created.
+    $this->assertAliasExists(['alias' => '/content/sample-article']);
+    $this->drupalGet('/content/sample-article');
+    $this->assertSession()->statusCodeEquals(200);
+
+    // Now edit the node, set a custom alias.
+    $edit = [
+      'path[0][pathauto]' => 0,
+      'path[0][alias]' => '/sample-pattern-for-article',
+    ];
+    $this->drupalPostForm('node/1/edit', $edit, 'Save');
+
+    // Assert that the new alias exists and the old one does not.
+    $this->assertAliasExists(['alias' => '/sample-pattern-for-article']);
+    $this->assertNoAliasExists(['alias' => '/content/sample-article']);
+    $this->drupalGet('sample-pattern-for-article');
+    $this->assertSession()->statusCodeEquals(200);
+  }
+
+  /**
+   * Tests setting custom alias for nodes after removing pattern.
+   *
+   * Tests that nodes that had an automatic alias can get a custom alias after
+   * the pathauto pattern on which the automatic alias was based, is removed.
+   */
+  public function testCustomAliasAfterRemovingPattern() {
+    // Create a pattern.
+    $this->createPattern('node', '/content/[node:title]');
+
+    // Create a node with an automatic alias.
+    $edit = [
+      'title[0][value]' => 'Sample article',
+    ];
+    $this->drupalPostForm('node/add/article', $edit, 'Save');
+    $this->assertSession()->pageTextContains('article Sample article has been created.');
+
+    // Ensure that the automatic alias got created.
+    $this->assertAliasExists(['alias' => '/content/sample-article']);
+    $this->drupalGet('/content/sample-article');
+    $this->assertSession()->statusCodeEquals(200);
+
+    // Go to the edit the node form and confirm that the pathauto checkbox
+    // exists.
+    $this->drupalGet('node/1/edit');
+    $this->assertSession()->elementExists('css', '#edit-path-0-pathauto');
+
+    // Delete all patterns to be sure that there will be no match.
+    $entity_ids = \Drupal::entityQuery('pathauto_pattern')->execute();
+    $entities = PathautoPattern::loadMultiple($entity_ids);
+    foreach ($entities as $entity) {
+      $entity->delete();
+    }
+
+    // Reload the node edit form and confirm that the pathauto checkbox no
+    // longer exists.
+    $this->drupalGet('node/1/edit');
+    $this->assertSession()->elementNotExists('css', '#edit-path-0-pathauto');
+
+    // Set a custom alias. We cannot disable the pathauto checkbox, because
+    // there is none.
+    $edit = [
+      'path[0][alias]' => '/sample-alias-for-article',
+    ];
+    $this->submitForm($edit, 'Save');
+
+    // Check that the new alias exists and the old one does not.
+    $this->assertAliasExists(['alias' => '/sample-alias-for-article']);
+    $this->assertNoAliasExists(['alias' => '/content/sample-article']);
+    $this->drupalGet('sample-alias-for-article');
+    $this->assertSession()->statusCodeEquals(200);
   }
 
 }

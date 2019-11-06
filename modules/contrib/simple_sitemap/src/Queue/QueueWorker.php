@@ -273,11 +273,11 @@ class QueueWorker {
     if ($this->generatorSettings['remove_duplicates'] && !empty($results)) {
       $result = $results[key($results)];
       if (isset($result['meta']['path'])) {
-        if (in_array($result['meta']['path'], $this->processedPaths)) {
+        if (isset($this->processedPaths[$result['meta']['path']])) {
           $results = [];
         }
         else {
-          $this->processedPaths[] = $result['meta']['path'];
+          $this->processedPaths[$result['meta']['path']] = TRUE;
         }
       }
     }
