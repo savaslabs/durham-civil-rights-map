@@ -23,7 +23,6 @@ module:
   geofield: 0
   geophp: 0
   google_analytics: 0
-  hacked: 0
   help: 0
   history: 0
   image: 0
@@ -37,11 +36,9 @@ module:
   path_alias: 0
   quickedit: 0
   rdf: 0
-  reroute_email: 0
   rest: 0
   search: 0
   serialization: 0
-  shield: 0
   shortcut: 0
   simple_sitemap: 0
   system: 0
