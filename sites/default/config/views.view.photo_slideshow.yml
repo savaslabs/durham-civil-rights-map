@@ -17,7 +17,6 @@ description: 'A slideshow of photos for node pages'
 tag: ''
 base_table: node_field_data
 base_field: nid
-core: 8.x
 display:
   default:
     display_plugin: default
@@ -88,17 +87,17 @@ display:
           widgets:
             top:
               views_slideshow_controls:
-                enable: 0
+                enable: false
                 weight: '1'
-                hide_on_single_slide: 0
+                hide_on_single_slide: '0'
                 type: views_slideshow_controls_text
               views_slideshow_slide_counter:
-                enable: 0
+                enable: false
                 weight: '1'
               views_slideshow_pager:
-                enable: 0
+                enable: false
                 weight: '1'
-                hide_on_single_slide: 0
+                hide_on_single_slide: '0'
                 type: views_slideshow_pager_fields
                 views_slideshow_pager_fields:
                   views_slideshow_pager_fields_fields:
@@ -106,17 +105,17 @@ display:
                   views_slideshow_pager_fields_hover: 0
             bottom:
               views_slideshow_controls:
-                enable: 1
+                enable: true
                 weight: '1'
-                hide_on_single_slide: 1
+                hide_on_single_slide: '1'
                 type: views_slideshow_controls_text
               views_slideshow_slide_counter:
-                enable: 1
+                enable: true
                 weight: '2'
               views_slideshow_pager:
-                enable: 0
+                enable: false
                 weight: '1'
-                hide_on_single_slide: 0
+                hide_on_single_slide: '0'
                 type: views_slideshow_pager_fields
                 views_slideshow_pager_fields:
                   views_slideshow_pager_fields_fields:
@@ -205,6 +204,8 @@ display:
           id: status
           expose:
             operator: ''
+            operator_limit_selection: false
+            operator_list: {  }
           group: 1
         type:
           id: type
@@ -215,6 +216,9 @@ display:
           entity_type: node
           entity_field: type
           plugin_id: bundle
+          expose:
+            operator_limit_selection: false
+            operator_list: {  }
       sorts:
         created:
           id: created
