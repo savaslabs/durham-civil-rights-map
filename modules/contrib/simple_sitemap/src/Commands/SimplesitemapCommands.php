@@ -25,12 +25,12 @@ class SimplesitemapCommands extends DrushCommands {
   }
 
   /**
-   * Regenerate the XML sitemaps according to the module settings.
+   * Regenerate all XML sitemap variants or continue generation.
    *
    * @command simple-sitemap:generate
    *
    * @usage drush simple-sitemap:generate
-   *   Regenerate the XML sitemaps according to the module settings.
+   *   Regenerate all XML sitemap variants or continue generation.
    *
    * @validate-module-enabled simple_sitemap
    *
@@ -41,19 +41,41 @@ class SimplesitemapCommands extends DrushCommands {
   }
 
   /**
-   * Rebuild the sitemap queue for all sitemap variants.
+   * Queue all or specific sitemap variants for regeneration.
    *
    * @command simple-sitemap:rebuild-queue
    *
+   * @option variants
+   *   Queue all or specific sitemap variants for regeneration.
+   *
    * @usage drush simple-sitemap:rebuild-queue
    *   Rebuild the sitemap queue for all sitemap variants.
+   * @usage drush simple-sitemap:rebuild-queue --variants=default,test
+   *   Rebuild the sitemap queue queuing only variants 'default' and 'test'.
    *
    * @validate-module-enabled simple_sitemap
    *
    * @aliases ssr, simple-sitemap-rebuild-queue
+   *
+   * @param array $options
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
-  public function rebuildQueue() {
-    $this->generator->rebuildQueue();
-  }
+  public function rebuildQueue(array $options = ['variants' => '']) {
+    $variants = array_keys($this->generator->getSitemapManager()->getSitemapVariants(NULL, FALSE));
+    if (strlen($options['variants']) > 0) {
+      $chosen_variants = array_map('trim', array_filter(explode(',', $options['variants'])));
+      if (!empty($erroneous_variants = array_diff($chosen_variants, $variants))) {
+        $message = "The following variants do not exist: " . implode(', ', $erroneous_variants)
+          . ". Available variants are: " . implode(', ', $variants) . '.';
+        $this->logger()->log('error', $message);
+        return;
+      }
+      $variants = $chosen_variants;
+    }
 
+    $this->generator->setVariants($variants)->rebuildQueue();
+
+    $this->logger()->log('notice', 'The following variants have been queued for regeneration: ' . implode(', ', $variants) . '.');
+  }
 }

@@ -19,6 +19,9 @@ simple_sitemap.settings:
     skip_untranslated:
       label: 'Skip untranslated'
       type: boolean
+    disable_language_hreflang:
+      label: 'Disable language hreflang'
+      type: boolean
     xsl:
       label: 'Include a stylesheet in the sitemaps for humans'
       type: boolean

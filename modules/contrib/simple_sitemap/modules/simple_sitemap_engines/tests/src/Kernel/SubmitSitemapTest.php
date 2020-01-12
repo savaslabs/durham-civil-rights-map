@@ -80,7 +80,7 @@ class SubmitSitemapTest extends KernelTestBase {
     $this->assertEmpty($bing->last_submitted);
 
     // Check that exactly 1 HTTP request was sent to the correct URL.
-    $http_client->request('GET', 'http://www.google.com/ping?sitemap=http://localhost/default/sitemap.xml')->shouldBeCalled();
+    $http_client->request('GET', 'https://www.google.com/ping?sitemap=http://localhost/default/sitemap.xml')->shouldBeCalled();
     $http_client->request('GET', Argument::any())->shouldBeCalledTimes(1);
   }
 
@@ -100,7 +100,7 @@ class SubmitSitemapTest extends KernelTestBase {
 
     // Check that Google was submitted and store its last submitted time.
     $google = $this->engineStorage->load('google');
-    $http_client->request('GET', 'http://www.google.com/ping?sitemap=http://localhost/default/sitemap.xml')->shouldBeCalledTimes(1);
+    $http_client->request('GET', 'https://www.google.com/ping?sitemap=http://localhost/default/sitemap.xml')->shouldBeCalledTimes(1);
     $this->assertNotEmpty($google->last_submitted);
     $google_last_submitted = $google->last_submitted;
 
@@ -114,7 +114,7 @@ class SubmitSitemapTest extends KernelTestBase {
     // run.
     $this->assertEquals($google->last_submitted, $google_last_submitted);
     // Check that no duplicate request was sent.
-    $http_client->request('GET', 'http://www.google.com/ping?sitemap=http://localhost/default/sitemap.xml')->shouldBeCalledTimes(1);
+    $http_client->request('GET', 'https://www.google.com/ping?sitemap=http://localhost/default/sitemap.xml')->shouldBeCalledTimes(1);
   }
 
   /**

@@ -230,3 +230,25 @@ function simple_sitemap_menu_delete(MenuInterface $menu) {
   $generator = \Drupal::service('simple_sitemap.generator');
   $generator->setVariants(TRUE)->removeBundleSettings('menu_link_content', $menu->id());
 }
+
+/**
+ * Implements hook_page_attachments_alter().
+ */
+function simple_sitemap_page_attachments_alter(array &$attachments) {
+  /** @var \Drupal\simple_sitemap\Simplesitemap $generator */
+  $generator = \Drupal::service('simple_sitemap.generator');
+  if ($generator->getSetting('disable_language_hreflang')) {
+    // @fixme https://www.drupal.org/project/drupal/issues/1255092
+    // Content Translation module normally adds identical hreflang tags, so
+    // executing its hook_page_attachments() implementation would be harmless,
+    // but if an entity page is configured as the front page, it attaches
+    // extraneous hreflang tags using the entity URL.
+    foreach ($attachments['#attached']['html_head_link'] as $key => $list) {
+      foreach ($list as $k => $element) {
+        if (!empty($element['hreflang']) && !empty($element['rel'])) {
+          unset($attachments['#attached']['html_head_link'][$key]);
+        }
+      }
+    }
+  }
+}

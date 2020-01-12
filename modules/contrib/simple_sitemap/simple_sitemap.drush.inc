@@ -10,14 +10,14 @@
  */
 function simple_sitemap_drush_command() {
   $items['simple-sitemap-generate'] = [
-    'description' => 'Regenerate the XML sitemaps according to the module settings.',
+    'description' => 'Regenerate all XML sitemap variants or continue generation.',
     'callback' => 'drush_simple_sitemap_generate',
     'drupal dependencies' => ['simple_sitemap'],
     'aliases' => ['ssg'],
   ];
 
   $items['simple-sitemap-rebuild-queue'] = [
-    'description' => 'Rebuild the sitemap queue for all sitemap variants.',
+    'description' => 'Queue all sitemap variants for regeneration.',
     'callback' => 'drush_simple_sitemap_rebuild_queue',
     'drupal dependencies' => ['simple_sitemap'],
     'aliases' => ['ssr'],

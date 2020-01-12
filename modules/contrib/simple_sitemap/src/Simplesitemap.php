@@ -183,6 +183,8 @@ class Simplesitemap {
    *  true: All existing variants will be set.
    *
    * @return $this
+   *
+   * @todo Check if variants exist and throw exception.
    */
   public function setVariants($variants = NULL) {
     if (NULL === $variants) {
@@ -315,7 +317,6 @@ class Simplesitemap {
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    *
-   * @todo Respect $this->variants and generate for specific variants.
    * @todo Implement lock functionality.
    */
   public function generateSitemap($from = 'form') {
@@ -335,7 +336,19 @@ class Simplesitemap {
   }
 
   /**
-   * Rebuilds the queue for the currently set variants.
+   * Queues links from currently set variants.
+   *
+   * @return $this
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  public function queue() {
+    $this->queueWorker->queue($this->getVariants());
+
+    return $this;
+  }
+
+  /**
+   * Deletes the queue and queues links from currently set variants.
    *
    * @return $this
    * @throws \Drupal\Component\Plugin\Exception\PluginException

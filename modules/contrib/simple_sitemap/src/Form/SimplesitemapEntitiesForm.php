@@ -115,7 +115,7 @@ class SimplesitemapEntitiesForm extends SimplesitemapFormBase {
         $indexed_bundles_string = '';
         if (isset($indexed_bundles[$entity_type_id])) {
           foreach ($indexed_bundles[$entity_type_id] as $bundle => $bundle_data) {
-            $indexed_bundles_string .= '<br><em>' . $bundle_data['bundle_label'] . '</em> <span class="description">(' . $this->t('sitemap variants') . ': <em>' . implode($bundle_data['variants'], ', ') . '</em>)</span>';
+            $indexed_bundles_string .= '<br><em>' . $bundle_data['bundle_label'] . '</em> <span class="description">(' . $this->t('sitemap variants') . ': <em>' . implode(', ', $bundle_data['variants']) . '</em>)</span>';
           }
         }
 

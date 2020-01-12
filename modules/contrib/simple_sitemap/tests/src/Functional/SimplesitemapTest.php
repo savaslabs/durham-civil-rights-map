@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\simple_sitemap\Functional;
 
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
 
@@ -573,6 +574,23 @@ class SimplesitemapTest extends SimplesitemapTestBase {
     $index = $this->database->query('SELECT id FROM {simple_sitemap} WHERE delta = 0 AND status = 1')
       ->fetchField();
     $this->assertTrue($chunk_count > 1 ? (FALSE !== $index) : !$index);
+  }
+
+  /**
+   * Test the removal of hreflang tags in HTML.
+   */
+  public function testHrefLangRemoval() {
+    // Test the nodes markup contains hreflang with default settings.
+    $this->generator->saveSetting('disable_language_hreflang', FALSE);
+    $this->drupalGet('node/' . $this->node->id());
+    $this->assertNotEmpty($this->xpath("//link[@hreflang]"));
+
+    Cache::invalidateTags($this->node->getCacheTags());
+
+    // Test the hreflang markup gets removed.
+    $this->generator->saveSetting('disable_language_hreflang', TRUE);
+    $this->drupalGet('node/' . $this->node->id());
+    $this->assertEmpty($this->xpath("//link[@hreflang]"));
   }
 
 }

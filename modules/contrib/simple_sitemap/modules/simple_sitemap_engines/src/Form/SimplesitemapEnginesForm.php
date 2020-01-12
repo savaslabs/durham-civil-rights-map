@@ -87,52 +87,55 @@ class SimplesitemapEnginesForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('simple_sitemap_engines.settings');
-    $engines = $this->entityTypeManager->getStorage('simple_sitemap_engine')->loadMultiple();
-    $variants = array_map(
-      function ($variant) { return $this->t($variant['label']); },
-      $this->sitemapManager->getSitemapVariants(NULL, FALSE)
-    );
 
     $form['#tree'] = TRUE;
-    $form['engines'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('Search engines'),
-      '#markup' => '<div class="description">' . $this->t('Configure sitemap variants to submit to search engines.') . '</div>',
-      '#prefix' => FormHelper::getDonationText(),
-    ];
-    foreach ($engines as $engine_id => $engine) {
-      $form['engines'][$engine_id] = [
-        '#type' => 'details',
-        '#title' => $engine->label(),
-        '#open' => !empty($engine->sitemap_variants) || count($engines) == 1,
-      ];
-      $form['engines'][$engine_id]['variants'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Sitemap variants'),
-        '#options' => $variants,
-        '#default_value' => $engine->sitemap_variants,
-        '#multiple' => TRUE,
-      ];
-    }
 
     $form['settings'] = [
       '#type' => 'fieldset',
-      '#title' => $this->t('Submission settings'),
+      '#title' => $this->t('General submission settings'),
+      '#prefix' => FormHelper::getDonationText(),
     ];
+
     $form['settings']['enabled'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Submit the sitemap to search engines'),
       '#default_value' => $config->get('enabled'),
     ];
+
     $form['settings']['submission_interval'] = [
       '#type' => 'select',
       '#title' => $this->t('Submission interval'),
       '#options' => FormHelper::getCronIntervalOptions(),
       '#default_value' => $config->get('submission_interval'),
       '#states' => [
-        'visible' => [':input[name="enabled"]' => ['checked' => TRUE]],
+        'visible' => [':input[name="settings[enabled]"]' => ['checked' => TRUE]],
       ],
     ];
+
+    $form['engines'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Variant specific settings'),
+      '#markup' => '<div class="description">' . $this->t('Choose which sitemap variants are to be submitted to which search engines.<br>Variants can be configured <a href="@url">here</a>.', ['@url' => $GLOBALS['base_url'] . '/admin/config/search/simplesitemap/variants']) . '</div>',
+    ];
+
+    $engines = $this->entityTypeManager->getStorage('simple_sitemap_engine')->loadMultiple();
+    foreach ($engines as $engine_id => $engine) {
+      $form['engines'][$engine_id] = [
+        '#type' => 'details',
+        '#title' => $engine->label(),
+        '#open' => !empty($engine->sitemap_variants) || count($engines) === 1,
+      ];
+      $form['engines'][$engine_id]['variants'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Sitemap variants'),
+        '#options' => array_map(
+          function ($variant) { return $this->t($variant['label']); },
+          $this->sitemapManager->getSitemapVariants(NULL, FALSE)
+        ),
+        '#default_value' => $engine->sitemap_variants,
+        '#multiple' => TRUE,
+      ];
+    }
 
     return parent::buildForm($form, $form_state);
   }
@@ -141,16 +144,26 @@ class SimplesitemapEnginesForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $engines = $this->entityTypeManager->getStorage('simple_sitemap_engine')->loadMultiple();
-    foreach ($engines as $engine_id => $engine) {
-      $engine->sitemap_variants = $form_state->getValue(['engines', $engine_id, 'variants']);
+    foreach ($this->entityTypeManager->getStorage('simple_sitemap_engine')->loadMultiple() as $engine_id => $engine) {
+      if (!empty($values = $form_state->getValue(['engines', $engine_id, 'variants']))) {
+        $submit = TRUE;
+      }
+      $engine->sitemap_variants = $values;
       $engine->save();
     }
 
     $config = $this->config('simple_sitemap_engines.settings');
-    $config->set('enabled', $form_state->getValue(['settings', 'enabled']));
+
+    $enabled = (bool) $form_state->getValue(['settings', 'enabled']);
+    $config->set('enabled', $enabled);
     $config->set('submission_interval', $form_state->getValue(['settings', 'submission_interval']));
     $config->save();
+
+    if ($enabled && empty($submit)) {
+      $this->messenger()->addWarning($this->t('No sitemap variants have been selected for submission.'));
+    }
+
+    parent::submitForm($form, $form_state);
   }
 
 }

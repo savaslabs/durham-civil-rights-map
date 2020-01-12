@@ -150,6 +150,7 @@ class SimplesitemapManager {
       $variants = $attach_type_info ? $this->attachSitemapTypeToVariants($variants, $sitemap_type) : $variants;
     }
     array_multisort(array_column($variants, "weight"), SORT_ASC, $variants);
+
     return $variants;
   }
 

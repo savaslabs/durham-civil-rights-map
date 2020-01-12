@@ -18,38 +18,6 @@ simple_sitemap.sitemap_variant:
   requirements:
     _access: 'TRUE'
 
-simple_sitemap.settings:
-  path: '/admin/config/search/simplesitemap'
-  defaults:
-    _form: '\Drupal\simple_sitemap\Form\SimplesitemapSettingsForm'
-    _title: 'Simple XML Sitemap Settings'
-  requirements:
-    _permission: 'administer sitemap settings'
-
-simple_sitemap.settings_entities:
-  path: '/admin/config/search/simplesitemap/entities'
-  defaults:
-    _form: '\Drupal\simple_sitemap\Form\SimplesitemapEntitiesForm'
-    _title: 'Simple XML Sitemap Settings'
-  requirements:
-    _permission: 'administer sitemap settings'
-
-simple_sitemap.settings_custom:
-  path: '/admin/config/search/simplesitemap/custom'
-  defaults:
-    _form: '\Drupal\simple_sitemap\Form\SimplesitemapCustomLinksForm'
-    _title: 'Simple XML Sitemap Settings'
-  requirements:
-    _permission: 'administer sitemap settings'
-
-simple_sitemap.settings_variants:
-  path: '/admin/config/search/simplesitemap/variants'
-  defaults:
-    _form: '\Drupal\simple_sitemap\Form\SimplesitemapVariantsForm'
-    _title: 'Simple XML Sitemap Settings'
-  requirements:
-    _permission: 'administer sitemap settings'
-
 simple_sitemap.sitemap_xsl:
   path: '/sitemap.xsl'
   defaults:
@@ -57,3 +25,43 @@ simple_sitemap.sitemap_xsl:
     _title: 'Sitemap XSL'
   requirements:
     _access: 'TRUE'
+
+simple_sitemap.sitemaps:
+  path: '/admin/config/search/simplesitemap'
+  defaults:
+    _form: '\Drupal\simple_sitemap\Form\SimplesitemapSitemapsForm'
+    _title: 'Simple XML Sitemap'
+  requirements:
+    _permission: 'administer sitemap settings'
+
+simple_sitemap.settings:
+  path: '/admin/config/search/simplesitemap/settings'
+  defaults:
+    _form: '\Drupal\simple_sitemap\Form\SimplesitemapSettingsForm'
+    _title: 'Simple XML Sitemap'
+  requirements:
+    _permission: 'administer sitemap settings'
+
+simple_sitemap.entities:
+  path: '/admin/config/search/simplesitemap/entities'
+  defaults:
+    _form: '\Drupal\simple_sitemap\Form\SimplesitemapEntitiesForm'
+    _title: 'Simple XML Sitemap'
+  requirements:
+    _permission: 'administer sitemap settings'
+
+simple_sitemap.custom:
+  path: '/admin/config/search/simplesitemap/custom'
+  defaults:
+    _form: '\Drupal\simple_sitemap\Form\SimplesitemapCustomLinksForm'
+    _title: 'Simple XML Sitemap'
+  requirements:
+    _permission: 'administer sitemap settings'
+
+simple_sitemap.variants:
+  path: '/admin/config/search/simplesitemap/variants'
+  defaults:
+    _form: '\Drupal\simple_sitemap\Form\SimplesitemapVariantsForm'
+    _title: 'Simple XML Sitemap'
+  requirements:
+    _permission: 'administer sitemap settings'
