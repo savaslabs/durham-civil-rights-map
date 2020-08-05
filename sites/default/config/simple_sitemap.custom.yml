@@ -1,0 +1,7 @@
+links:
+  -
+    path: /
+    priority: '1'
+  -
+    path: /places
+    priority: '1'
