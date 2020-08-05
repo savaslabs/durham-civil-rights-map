@@ -2,6 +2,18 @@
 
 Durham Civil Rights Map, a project of the Pauli Murray Project.
 
+## Local install (Docksal)
+
+1. Install Docksal (https://docksal.io/)
+1. Verify you have access to the Pantheon project.
+1. Clone this repo to your workspace.
+1. Create a `.docksal/docksal-local.env` file with the following line:
+    ``````
+    SECRET_TERMINUS_TOKEN="my-super-secret-token"
+1. Run `fin init`
+1. Currently, the files aren't pulling correctly from Pantheon, and I haven't diagnosed it yet, so you will need to download
+a backed up copyof the site files directory and copy it into `sites/default/files`.
+
 ## Local install
 
 1. Clone the repo locally and set up your vhosts file to point to path/to/repo with whatever URL.
