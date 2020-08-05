@@ -12,10 +12,10 @@ use Symfony\Component\Serializer\Exception\UnexpectedValueException;
  */
 class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
 
+  use EntityReferenceFieldItemNormalizerTrait;
+
   /**
-   * The interface or class that this Normalizer supports.
-   *
-   * @var string
+   * {@inheritdoc}
    */
   protected $supportedInterfaceOrClass = EntityReferenceItem::class;
 
@@ -42,6 +42,8 @@ class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
   public function normalize($field_item, $format = NULL, array $context = []) {
     $values = parent::normalize($field_item, $format, $context);
 
+    $this->normalizeRootReferenceValue($values, $field_item);
+
     /** @var \Drupal\Core\Entity\EntityInterface $entity */
     if ($entity = $field_item->get('entity')->getValue()) {
       $values['target_type'] = $entity->getEntityTypeId();
@@ -51,10 +53,17 @@ class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
       // Add a 'url' value if there is a reference and a canonical URL. Hard
       // code 'canonical' here as config entities override the default $rel
       // parameter value to 'edit-form.
-      if ($url = $entity->url('canonical')) {
-        $values['url'] = $url;
+      if ($entity->hasLinkTemplate('canonical') && !$entity->isNew() && $url = $entity->toUrl('canonical')->toString(TRUE)) {
+        $this->addCacheableDependency($context, $url);
+        $values['url'] = $url->getGeneratedUrl();
+      }
+      // @todo Remove in https://www.drupal.org/project/drupal/issues/2925520
+      // @see \Drupal\hal\Normalizer\FileEntityNormalizer
+      elseif ($entity->getEntityTypeId() === 'file') {
+        $values['url'] = file_create_url($entity->getFileUri());
       }
     }
+
     return $values;
   }
 
@@ -73,7 +82,7 @@ class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
         throw new UnexpectedValueException(sprintf('The field "%s" property "target_type" must be set to "%s" or omitted.', $field_item->getFieldDefinition()->getName(), $target_type));
       }
       if ($entity = $this->entityRepository->loadEntityByUuid($target_type, $data['target_uuid'])) {
-        return ['target_id' => $entity->id()];
+        return ['target_id' => $entity->id()] + array_intersect_key($data, $field_item->getProperties());
       }
       else {
         // Unable to load entity by uuid.

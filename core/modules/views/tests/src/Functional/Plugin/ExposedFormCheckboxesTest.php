@@ -2,11 +2,10 @@
 
 namespace Drupal\Tests\views\Functional\Plugin;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\Tests\field\Traits\EntityReferenceTestTrait;
 use Drupal\Tests\views\Functional\ViewTestBase;
 use Drupal\views\Tests\ViewTestData;
 use Drupal\views\Views;
@@ -29,6 +28,11 @@ class ExposedFormCheckboxesTest extends ViewTestBase {
    * {@inheritdoc}
    */
   public static $modules = ['node', 'views_ui', 'taxonomy'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Test terms.
@@ -80,7 +84,7 @@ class ExposedFormCheckboxesTest extends ViewTestBase {
    */
   public function testExposedFormRenderCheckboxes() {
     // Use a test theme to convert multi-select elements into checkboxes.
-    \Drupal::service('theme_handler')->install(['views_test_checkboxes_theme']);
+    \Drupal::service('theme_installer')->install(['views_test_checkboxes_theme']);
     $this->config('system.theme')
       ->set('default', 'views_test_checkboxes_theme')
       ->save();
@@ -123,7 +127,7 @@ class ExposedFormCheckboxesTest extends ViewTestBase {
     }
 
     // Create a field.
-    $field_name = Unicode::strtolower($this->randomMachineName());
+    $field_name = mb_strtolower($this->randomMachineName());
     $handler_settings = [
       'target_bundles' => [
         $this->vocabulary->id() => $this->vocabulary->id(),
@@ -143,7 +147,7 @@ class ExposedFormCheckboxesTest extends ViewTestBase {
     ]);
 
     // Use a test theme to convert multi-select elements into checkboxes.
-    \Drupal::service('theme_handler')->install(['views_test_checkboxes_theme']);
+    \Drupal::service('theme_installer')->install(['views_test_checkboxes_theme']);
     $this->config('system.theme')
       ->set('default', 'views_test_checkboxes_theme')
       ->save();

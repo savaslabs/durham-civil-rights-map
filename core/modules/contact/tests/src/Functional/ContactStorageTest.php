@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\contact\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\contact\Entity\Message;
 use Drupal\user\RoleInterface;
 
@@ -33,6 +32,11 @@ class ContactStorageTest extends ContactSitewideTest {
   ];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
+
+  /**
    * Tests configuration options and the site-wide contact form.
    */
   public function testContactStorage() {
@@ -47,7 +51,7 @@ class ContactStorageTest extends ContactSitewideTest {
     $this->drupalLogin($admin_user);
     // Create first valid contact form.
     $mail = 'simpletest@example.com';
-    $this->addContactForm($id = Unicode::strtolower($this->randomMachineName(16)), $label = $this->randomMachineName(16), implode(',', [$mail]), '', TRUE, 'Your message has been sent.', [
+    $this->addContactForm($id = mb_strtolower($this->randomMachineName(16)), $label = $this->randomMachineName(16), implode(',', [$mail]), '', TRUE, 'Your message has been sent.', [
       'send_a_pony' => 1,
     ]);
     $this->assertText(t('Contact form @label has been added.', ['@label' => $label]));

@@ -215,21 +215,21 @@ class CommentAdminOverview extends FormBase {
             '#type' => 'link',
             '#title' => $commented_entity->label(),
             '#access' => $commented_entity->access('view'),
-            '#url' => $commented_entity->urlInfo(),
+            '#url' => $commented_entity->toUrl(),
           ],
         ],
         'changed' => $this->dateFormatter->format($comment->getChangedTimeAcrossTranslations(), 'short'),
       ];
-      $comment_uri_options = $comment->urlInfo()->getOptions() + ['query' => $destination];
+      $comment_uri_options = $comment->toUrl()->getOptions() + ['query' => $destination];
       $links = [];
       $links['edit'] = [
         'title' => $this->t('Edit'),
-        'url' => $comment->urlInfo('edit-form', $comment_uri_options),
+        'url' => $comment->toUrl('edit-form', $comment_uri_options),
       ];
       if ($this->moduleHandler->moduleExists('content_translation') && $this->moduleHandler->invoke('content_translation', 'translate_access', [$comment])->isAllowed()) {
         $links['translate'] = [
           'title' => $this->t('Translate'),
-          'url' => $comment->urlInfo('drupal:content-translation-overview', $comment_uri_options),
+          'url' => $comment->toUrl('drupal:content-translation-overview', $comment_uri_options),
         ];
       }
       $options[$comment->id()]['operations']['data'] = [
@@ -279,7 +279,7 @@ class CommentAdminOverview extends FormBase {
         }
         $comment->save();
       }
-      drupal_set_message($this->t('The update has been performed.'));
+      $this->messenger()->addStatus($this->t('The update has been performed.'));
       $form_state->setRedirect('comment.admin');
     }
     else {
@@ -290,9 +290,9 @@ class CommentAdminOverview extends FormBase {
         $info[$comment->id()][$langcode] = $langcode;
       }
       $this->tempStoreFactory
-        ->get('comment_multiple_delete_confirm')
-        ->set($this->currentUser()->id(), $info);
-      $form_state->setRedirect('comment.multiple_delete_confirm');
+        ->get('entity_delete_multiple_confirm')
+        ->set($this->currentUser()->id() . ':comment', $info);
+      $form_state->setRedirect('entity.comment.delete_multiple_form');
     }
   }
 

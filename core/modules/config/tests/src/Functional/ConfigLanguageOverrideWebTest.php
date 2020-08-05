@@ -21,8 +21,13 @@ class ConfigLanguageOverrideWebTest extends BrowserTestBase {
   public static $modules = [
     'block',
     'language',
-    'system'
+    'system',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

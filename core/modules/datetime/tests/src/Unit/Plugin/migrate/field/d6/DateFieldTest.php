@@ -4,6 +4,7 @@ namespace Drupal\Tests\datetime\Unit\Plugin\migrate\field\d6;
 
 use Drupal\datetime\Plugin\migrate\field\d6\DateField;
 use Drupal\migrate\MigrateException;
+use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -13,24 +14,30 @@ use Drupal\Tests\UnitTestCase;
 class DateFieldTest extends UnitTestCase {
 
   /**
-   * @var \Drupal\migrate_drupal\Plugin\MigrateFieldInterface
-   */
-  protected $plugin;
-
-  /**
    * @var \Drupal\migrate\Plugin\MigrationInterface
    */
   protected $migration;
 
   /**
-   * Tests an Exception is thrown when the field type is not a known date type.
+   * {@inheritdoc}
    */
-  public function testUnknownDateType() {
-    $this->migration = $this->prophesize('Drupal\migrate\Plugin\MigrationInterface')->reveal();
-    $this->plugin = new DateField([], '', []);
+  protected function setUp() {
+    parent::setUp();
+    $this->migration = $this->prophesize(MigrationInterface::class)->reveal();
+  }
 
-    $this->setExpectedException(MigrateException::class, "Field field_date of type 'timestamp' is an unknown date field type.");
-    $this->plugin->processFieldValues($this->migration, 'field_date', ['type' => 'timestamp']);
+  /**
+   * Tests an Exception is thrown when the field type is not a known date type.
+   *
+   * @runInSeparateProcess
+   * @expectedDeprecation DateField is deprecated in Drupal 8.4.x and will be removed before Drupal 9.0.x. Use \Drupal\datetime\Plugin\migrate\field\DateField instead.
+   */
+  public function testUnknownDateType($method = 'defineValueProcessPipeline') {
+    $plugin = new DateField([], '', []);
+
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage("Field field_date of type 'timestamp' is an unknown date field type.");
+    $plugin->$method($this->migration, 'field_date', ['type' => 'timestamp']);
   }
 
 }

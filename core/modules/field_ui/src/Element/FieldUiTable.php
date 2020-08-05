@@ -38,7 +38,7 @@ class FieldUiTable extends Table {
    * @return array
    *   The $element with prepared variables ready for field-ui-table.html.twig.
    *
-   * @see drupal_render()
+   * @see \Drupal\Core\Render\RendererInterface::render()
    * @see \Drupal\Core\Render\Element\Table::preRenderTable()
    */
   public static function tablePreRender($elements) {
@@ -159,7 +159,7 @@ class FieldUiTable extends Table {
         $elements['#rows'][] = [
           'class' => [
             'region-title',
-            'region-' . $region_name_class . '-title'
+            'region-' . $region_name_class . '-title',
           ],
           'no_striping' => TRUE,
           'data' => [

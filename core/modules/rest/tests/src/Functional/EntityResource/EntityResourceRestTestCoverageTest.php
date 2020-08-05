@@ -26,15 +26,19 @@ class EntityResourceRestTestCoverageTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
 
-    $all_modules = system_rebuild_module_data();
+    $all_modules = $this->container->get('extension.list.module')->getList();
     $stable_core_modules = array_filter($all_modules, function ($module) {
       // Filter out contrib, hidden, testing, and experimental modules. We also
       // don't need to enable modules that are already enabled.
-      return
-        $module->origin === 'core' &&
+      return $module->origin === 'core' &&
         empty($module->info['hidden']) &&
         $module->status == FALSE &&
         $module->info['package'] !== 'Testing' &&
@@ -57,12 +61,10 @@ class EntityResourceRestTestCoverageTest extends BrowserTestBase {
    * Tests that all core content/config entity types have REST test coverage.
    */
   public function testEntityTypeRestTestCoverage() {
-    $default_test_locations = [
+    $tests = [
       // Test coverage for formats provided by the 'serialization' module.
       'serialization' => [
-        'possible paths' => [
-          '\Drupal\Tests\rest\Functional\EntityResource\CLASS\CLASS',
-        ],
+        'path' => '\Drupal\Tests\PROVIDER\Functional\Rest\CLASS',
         'class suffix' => [
           'JsonAnonTest',
           'JsonBasicAuthTest',
@@ -74,9 +76,7 @@ class EntityResourceRestTestCoverageTest extends BrowserTestBase {
       ],
       // Test coverage for formats provided by the 'hal' module.
       'hal' => [
-        'possible paths' => [
-          '\Drupal\Tests\hal\Functional\EntityResource\CLASS\CLASS',
-        ],
+        'path' => '\Drupal\Tests\PROVIDER\Functional\Hal\CLASS',
         'class suffix' => [
           'HalJsonAnonTest',
           'HalJsonBasicAuthTest',
@@ -92,21 +92,14 @@ class EntityResourceRestTestCoverageTest extends BrowserTestBase {
       $class_name = end($parts);
       $module_name = $parts[1];
 
-      // The test class can live either in the REST/HAL module, or in the module
-      // providing the entity type.
-      $tests = $default_test_locations;
-      $tests['serialization']['possible paths'][] = '\Drupal\Tests\\' . $module_name . '\Functional\Rest\CLASS';
-      $tests['hal']['possible paths'][] = '\Drupal\Tests\\' . $module_name . '\Functional\Hal\CLASS';
-
       foreach ($tests as $module => $info) {
-        $possible_paths = $info['possible paths'];
+        $path = $info['path'];
         $missing_tests = [];
         foreach ($info['class suffix'] as $postfix) {
-          foreach ($possible_paths as $path) {
-            $class = str_replace('CLASS', $class_name, $path . $postfix);
-            if (class_exists($class)) {
-              continue 2;
-            }
+          $class = str_replace(['PROVIDER', 'CLASS'], [$module_name, $class_name], $path . $postfix);
+          $class_alternative = str_replace("\\Drupal\\Tests\\$module_name\\Functional", '\Drupal\FunctionalTests', $class);
+          if (class_exists($class) || class_exists($class_alternative)) {
+            continue;
           }
           $missing_tests[] = $postfix;
         }

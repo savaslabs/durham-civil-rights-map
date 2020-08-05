@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\Core\Session;
 
+use Drupal\Core\Cache\MemoryCache\MemoryCache;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Session\UserSession;
 use Drupal\Tests\UnitTestCase;
@@ -94,6 +95,7 @@ class UserSessionTest extends UnitTestCase {
       ]));
 
     $role_storage = $this->getMockBuilder('Drupal\user\RoleStorage')
+      ->setConstructorArgs(['role', new MemoryCache()])
       ->disableOriginalConstructor()
       ->setMethods(['loadMultiple'])
       ->getMock();
@@ -108,13 +110,13 @@ class UserSessionTest extends UnitTestCase {
         [['anonymous', 'role_one', 'role_two'], [$roles['role_one'], $roles['role_two']]],
       ]));
 
-    $entity_manager = $this->getMock('Drupal\Core\Entity\EntityManagerInterface');
-    $entity_manager->expects($this->any())
+    $entity_type_manager = $this->createMock('Drupal\Core\Entity\EntityTypeManagerInterface');
+    $entity_type_manager->expects($this->any())
       ->method('getStorage')
       ->with($this->equalTo('user_role'))
       ->will($this->returnValue($role_storage));
     $container = new ContainerBuilder();
-    $container->set('entity.manager', $entity_manager);
+    $container->set('entity_type.manager', $entity_type_manager);
     \Drupal::setContainer($container);
 
     $this->users['user_one'] = $this->createUserSession(['role_one']);

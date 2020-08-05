@@ -32,15 +32,15 @@ abstract class BaseFieldDefinitionTestBase extends UnitTestCase {
     $namespaces = new \ArrayObject();
     $namespaces["Drupal\\$module_name"] = $module_dir . '/src';
 
-    $module_handler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
+    $module_handler = $this->createMock('Drupal\Core\Extension\ModuleHandlerInterface');
     $module_handler->expects($this->once())
       ->method('moduleExists')
       ->with($module_name)
       ->will($this->returnValue(TRUE));
-    $typed_data_manager = $this->getMock(TypedDataManagerInterface::class);
+    $typed_data_manager = $this->createMock(TypedDataManagerInterface::class);
     $plugin_manager = new FieldTypePluginManager(
       $namespaces,
-      $this->getMock('Drupal\Core\Cache\CacheBackendInterface'),
+      $this->createMock('Drupal\Core\Cache\CacheBackendInterface'),
       $module_handler,
       $typed_data_manager
     );
@@ -65,8 +65,8 @@ abstract class BaseFieldDefinitionTestBase extends UnitTestCase {
   /**
    * Returns the module name and the module directory for the plugin.
    *
-   * drupal_get_path() cannot be used here, because it is not available in
-   * Drupal PHPUnit tests.
+   * Function drupal_get_path() cannot be used here, because it is not available
+   * in Drupal PHPUnit tests.
    *
    * @return array
    *   A one-dimensional array containing the following strings:

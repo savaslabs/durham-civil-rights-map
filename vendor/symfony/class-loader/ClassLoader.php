@@ -43,8 +43,8 @@ namespace Symfony\Component\ClassLoader;
  */
 class ClassLoader
 {
-    private $prefixes = array();
-    private $fallbackDirs = array();
+    private $prefixes = [];
+    private $fallbackDirs = [];
     private $useIncludePath = false;
 
     /**
@@ -95,12 +95,12 @@ class ClassLoader
             return;
         }
         if (isset($this->prefixes[$prefix])) {
-            if (is_array($paths)) {
+            if (\is_array($paths)) {
                 $this->prefixes[$prefix] = array_unique(array_merge(
                     $this->prefixes[$prefix],
                     $paths
                 ));
-            } elseif (!in_array($paths, $this->prefixes[$prefix])) {
+            } elseif (!\in_array($paths, $this->prefixes[$prefix])) {
                 $this->prefixes[$prefix][] = $paths;
             }
         } else {
@@ -136,7 +136,7 @@ class ClassLoader
      */
     public function register($prepend = false)
     {
-        spl_autoload_register(array($this, 'loadClass'), true, $prepend);
+        spl_autoload_register([$this, 'loadClass'], true, $prepend);
     }
 
     /**
@@ -144,7 +144,7 @@ class ClassLoader
      */
     public function unregister()
     {
-        spl_autoload_unregister(array($this, 'loadClass'));
+        spl_autoload_unregister([$this, 'loadClass']);
     }
 
     /**
@@ -161,6 +161,8 @@ class ClassLoader
 
             return true;
         }
+
+        return null;
     }
 
     /**
@@ -174,7 +176,7 @@ class ClassLoader
     {
         if (false !== $pos = strrpos($class, '\\')) {
             // namespaced class name
-            $classPath = str_replace('\\', DIRECTORY_SEPARATOR, substr($class, 0, $pos)).DIRECTORY_SEPARATOR;
+            $classPath = str_replace('\\', \DIRECTORY_SEPARATOR, substr($class, 0, $pos)).\DIRECTORY_SEPARATOR;
             $className = substr($class, $pos + 1);
         } else {
             // PEAR-like class name
@@ -182,26 +184,28 @@ class ClassLoader
             $className = $class;
         }
 
-        $classPath .= str_replace('_', DIRECTORY_SEPARATOR, $className).'.php';
+        $classPath .= str_replace('_', \DIRECTORY_SEPARATOR, $className).'.php';
 
         foreach ($this->prefixes as $prefix => $dirs) {
             if ($class === strstr($class, $prefix)) {
                 foreach ($dirs as $dir) {
-                    if (file_exists($dir.DIRECTORY_SEPARATOR.$classPath)) {
-                        return $dir.DIRECTORY_SEPARATOR.$classPath;
+                    if (file_exists($dir.\DIRECTORY_SEPARATOR.$classPath)) {
+                        return $dir.\DIRECTORY_SEPARATOR.$classPath;
                     }
                 }
             }
         }
 
         foreach ($this->fallbackDirs as $dir) {
-            if (file_exists($dir.DIRECTORY_SEPARATOR.$classPath)) {
-                return $dir.DIRECTORY_SEPARATOR.$classPath;
+            if (file_exists($dir.\DIRECTORY_SEPARATOR.$classPath)) {
+                return $dir.\DIRECTORY_SEPARATOR.$classPath;
             }
         }
 
         if ($this->useIncludePath && $file = stream_resolve_include_path($classPath)) {
             return $file;
         }
+
+        return null;
     }
 }

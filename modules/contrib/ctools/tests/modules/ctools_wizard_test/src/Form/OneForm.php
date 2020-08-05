@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\ctools_wizard_test\Form\OneForm.
- */
-
 namespace Drupal\ctools_wizard_test\Form;
 
 
@@ -69,8 +64,7 @@ class OneForm extends FormBase {
       $cached_values[$key] = $form_state->getValue($key);
     }
     $form_state->setTemporaryValue('wizard', $cached_values);
-
-    drupal_set_message($this->t('Dynamic value submitted: @value', ['@value' => $cached_values['dynamic']]));;
+    $this->messenger()->addMessage($this->t('Dynamic value submitted: @value', ['@value' => $cached_values['dynamic']]));
   }
 
 }

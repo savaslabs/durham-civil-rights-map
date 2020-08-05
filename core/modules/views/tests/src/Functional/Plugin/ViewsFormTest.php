@@ -19,6 +19,11 @@ class ViewsFormTest extends ViewTestBase {
   public static $modules = ['action_bulk_test'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Tests the Views form wrapper.
    */
   public function testFormWrapper() {
@@ -27,7 +32,7 @@ class ViewsFormTest extends ViewTestBase {
     $xpath = $this->cssSelect('.views-form form');
     $this->assertIdentical(count($xpath), 1, 'There is one views form on the page.');
     // Ensure we don't have nested form elements.
-    $result = (bool) preg_match('#<form[^>]*?>(?!/form).*<form#s', $this->getRawContent());
+    $result = (bool) preg_match('#<form[^>]*?>(?!/form).*<form#s', $this->getSession()->getPage()->getContent());
     $this->assertFalse($result, 'The views form element is not nested.');
   }
 

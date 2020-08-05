@@ -3,12 +3,15 @@
 namespace Drupal\Tests\simpletest\Functional;
 
 use Drupal\Tests\BrowserTestBase;
+use Drupal\Core\Url;
 
 /**
  * Verifies that tests in other installation profiles are found.
  *
  * @group simpletest
- * @see SimpleTestInstallationProfileModuleTestsTestCase
+ * @group legacy
+ *
+ * @see \Drupal\simpletest\Tests\InstallationProfileModuleTestsTest
  */
 class OtherInstallationProfileTestsTest extends BrowserTestBase {
 
@@ -31,7 +34,7 @@ class OtherInstallationProfileTestsTest extends BrowserTestBase {
    * @var string
    *
    * @see \Drupal\simpletest\Tests\InstallationProfileModuleTestsTest
-   * @see \Drupal\drupal_system_listing_compatible_test\Tests\SystemListingCompatibleTest
+   * @see \Drupal\Tests\drupal_system_listing_compatible_test\Kernel\SystemListingCrossProfileCompatibleTest
    */
   protected $profile = 'minimal';
 
@@ -51,16 +54,18 @@ class OtherInstallationProfileTestsTest extends BrowserTestBase {
 
   /**
    * Tests that tests located in another installation profile appear.
+   *
+   * @expectedDeprecation Drupal\simpletest\TestDiscovery is deprecated in drupal:8.8.0 and is removed from drupal:9.0.0. Use \Drupal\Core\Test\TestDiscovery instead. See https://www.drupal.org/node/2949692
    */
   public function testOtherInstallationProfile() {
     // Assert the existence of a test in a different installation profile than
     // the current.
-    $this->drupalGet('admin/config/development/testing');
+    $this->drupalGet(Url::fromRoute('simpletest.test_form'));
     $this->assertText('Tests Standard installation profile expectations.');
 
     // Assert the existence of a test for a module in a different installation
     // profile than the current.
-    $this->assertText('Drupal\drupal_system_listing_compatible_test\Tests\SystemListingCompatibleTest');
+    $this->assertText('Drupal\Tests\drupal_system_listing_compatible_test\Kernel\SystemListingCrossProfileCompatibleTest');
   }
 
 }

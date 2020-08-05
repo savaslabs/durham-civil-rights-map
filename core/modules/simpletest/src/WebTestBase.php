@@ -7,23 +7,25 @@ use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\UrlHelper;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\EventSubscriber\AjaxResponseSubscriber;
 use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\Test\AssertMailTrait;
 use Drupal\Core\Test\FunctionalTestSetupTrait;
+use Drupal\Core\Test\TestDiscovery;
 use Drupal\Core\Url;
+use Drupal\KernelTests\AssertContentTrait as CoreAssertContentTrait;
 use Drupal\system\Tests\Cache\AssertPageCacheContextsAndTagsTrait;
 use Drupal\Tests\EntityViewTrait;
 use Drupal\Tests\block\Traits\BlockCreationTrait as BaseBlockCreationTrait;
 use Drupal\Tests\Listeners\DeprecationListenerTrait;
-use Drupal\Tests\node\Traits\ContentTypeCreationTrait;
-use Drupal\Tests\node\Traits\NodeCreationTrait;
+use Drupal\Tests\node\Traits\ContentTypeCreationTrait as BaseContentTypeCreationTrait;
+use Drupal\Tests\node\Traits\NodeCreationTrait as BaseNodeCreationTrait;
 use Drupal\Tests\Traits\Core\CronRunTrait;
 use Drupal\Tests\TestFileCreationTrait;
-use Drupal\Tests\user\Traits\UserCreationTrait;
+use Drupal\Tests\user\Traits\UserCreationTrait as BaseUserCreationTrait;
 use Drupal\Tests\XdebugRequestTrait;
 use Zend\Diactoros\Uri;
 
@@ -31,11 +33,14 @@ use Zend\Diactoros\Uri;
  * Test case for typical Drupal tests.
  *
  * @ingroup testing
+ *
+ * @deprecated in drupal:8.8.0 and is removed from drupal:9.0.0. Instead,
+ *   use \Drupal\Tests\BrowserTestBase. See https://www.drupal.org/node/3030340.
  */
 abstract class WebTestBase extends TestBase {
 
   use FunctionalTestSetupTrait;
-  use AssertContentTrait;
+  use CoreAssertContentTrait;
   use TestFileCreationTrait {
     getTestFiles as drupalGetTestFiles;
     compareFiles as drupalCompareFiles;
@@ -44,18 +49,18 @@ abstract class WebTestBase extends TestBase {
   use BaseBlockCreationTrait {
     placeBlock as drupalPlaceBlock;
   }
-  use ContentTypeCreationTrait {
+  use BaseContentTypeCreationTrait {
     createContentType as drupalCreateContentType;
   }
   use CronRunTrait;
   use AssertMailTrait {
     getMails as drupalGetMails;
   }
-  use NodeCreationTrait {
+  use BaseNodeCreationTrait {
     getNodeByTitle as drupalGetNodeByTitle;
     createNode as drupalCreateNode;
   }
-  use UserCreationTrait {
+  use BaseUserCreationTrait {
     createUser as drupalCreateUser;
     createRole as drupalCreateRole;
     createAdminRole as drupalCreateAdminRole;
@@ -176,6 +181,8 @@ abstract class WebTestBase extends TestBase {
 
   /**
    * The number of redirects followed during the handling of a request.
+   *
+   * @var int
    */
   protected $redirectCount;
 
@@ -225,7 +232,7 @@ abstract class WebTestBase extends TestBase {
    */
   protected function assertBlockAppears(Block $block) {
     $result = $this->findBlockInstance($block);
-    $this->assertTrue(!empty($result), format_string('Ensure the block @id appears on the page', ['@id' => $block->id()]));
+    $this->assertTrue(!empty($result), new FormattableMarkup('Ensure the block @id appears on the page', ['@id' => $block->id()]));
   }
 
   /**
@@ -236,7 +243,7 @@ abstract class WebTestBase extends TestBase {
    */
   protected function assertNoBlockAppears(Block $block) {
     $result = $this->findBlockInstance($block);
-    $this->assertFalse(!empty($result), format_string('Ensure the block @id does not appear on the page', ['@id' => $block->id()]));
+    $this->assertFalse(!empty($result), new FormattableMarkup('Ensure the block @id does not appear on the page', ['@id' => $block->id()]));
   }
 
   /**
@@ -285,8 +292,8 @@ abstract class WebTestBase extends TestBase {
     }
 
     $edit = [
-      'name' => $account->getUsername(),
-      'pass' => $account->pass_raw
+      'name' => $account->getAccountName(),
+      'pass' => $account->pass_raw,
     ];
     $this->drupalPostForm('user/login', $edit, t('Log in'));
 
@@ -294,7 +301,7 @@ abstract class WebTestBase extends TestBase {
     if (isset($this->sessionId)) {
       $account->session_id = $this->sessionId;
     }
-    $pass = $this->assert($this->drupalUserIsLoggedIn($account), format_string('User %name successfully logged in.', ['%name' => $account->getUsername()]), 'User login');
+    $pass = $this->assert($this->drupalUserIsLoggedIn($account), new FormattableMarkup('User %name successfully logged in.', ['%name' => $account->getAccountName()]), 'User login');
     if ($pass) {
       $this->loggedInUser = $account;
       $this->container->get('current_user')->setAccount($account);
@@ -384,6 +391,8 @@ abstract class WebTestBase extends TestBase {
 
     // Initialize and override certain configurations.
     $this->initConfig($container);
+
+    $this->installDefaultThemeFromClassProperty($container);
 
     // Collect modules to install.
     $this->installModulesFromClassProperty($container);
@@ -660,9 +669,9 @@ abstract class WebTestBase extends TestBase {
       '@method' => !empty($curl_options[CURLOPT_NOBODY]) ? 'HEAD' : (empty($curl_options[CURLOPT_POSTFIELDS]) ? 'GET' : 'POST'),
       '@url' => isset($original_url) ? $original_url : $url,
       '@status' => $status,
-      '@length' => format_size(strlen($this->getRawContent()))
+      '@length' => format_size(strlen($this->getRawContent())),
     ];
-    $message = SafeMarkup::format('@method @url returned @status (@length).', $message_vars);
+    $message = new FormattableMarkup('@method @url returned @status (@length).', $message_vars);
     $this->assertTrue($this->getRawContent() !== FALSE, $message, 'Browser');
     return $this->getRawContent();
   }
@@ -698,7 +707,8 @@ abstract class WebTestBase extends TestBase {
       if ($parameters[1] === 'User deprecated function') {
         if (getenv('SYMFONY_DEPRECATIONS_HELPER') !== 'disabled') {
           $message = (string) $parameters[0];
-          if (!in_array($message, DeprecationListenerTrait::getSkippedDeprecations())) {
+          $test_info = TestDiscovery::getTestInfo(get_called_class());
+          if (!in_array('legacy', $test_info['groups']) && !in_array($message, DeprecationListenerTrait::getSkippedDeprecations())) {
             call_user_func_array([&$this, 'error'], $parameters);
           }
         }
@@ -1053,12 +1063,12 @@ abstract class WebTestBase extends TestBase {
       }
       // We have not found a form which contained all fields of $edit.
       foreach ($edit as $name => $value) {
-        $this->fail(SafeMarkup::format('Failed to set field @name to @value', ['@name' => $name, '@value' => $value]));
+        $this->fail(new FormattableMarkup('Failed to set field @name to @value', ['@name' => $name, '@value' => $value]));
       }
       if (!$ajax && isset($submit)) {
-        $this->assertTrue($submit_matches, format_string('Found the @submit button', ['@submit' => $submit]));
+        $this->assertTrue($submit_matches, new FormattableMarkup('Found the @submit button', ['@submit' => $submit]));
       }
-      $this->fail(format_string('Found the requested form fields at @path', ['@path' => ($path instanceof Url) ? $path->toString() : $path]));
+      $this->fail(new FormattableMarkup('Found the requested form fields at @path', ['@path' => ($path instanceof Url) ? $path->toString() : $path]));
     }
   }
 
@@ -1725,10 +1735,10 @@ abstract class WebTestBase extends TestBase {
     $urls = $this->xpath($pattern, [':label' => $label]);
     if (isset($urls[$index])) {
       $url_target = $this->getAbsoluteUrl($urls[$index]['href']);
-      $this->pass(SafeMarkup::format('Clicked link %label (@url_target) from @url_before', ['%label' => $label, '@url_target' => $url_target, '@url_before' => $url_before]), 'Browser');
+      $this->pass(new FormattableMarkup('Clicked link %label (@url_target) from @url_before', ['%label' => $label, '@url_target' => $url_target, '@url_before' => $url_before]), 'Browser');
       return $this->drupalGet($url_target);
     }
-    $this->fail(SafeMarkup::format('Link %label does not exist on @url_before', ['%label' => $label, '@url_before' => $url_before]), 'Browser');
+    $this->fail(new FormattableMarkup('Link %label does not exist on @url_before', ['%label' => $label, '@url_before' => $url_before]), 'Browser');
     return FALSE;
   }
 
@@ -1904,7 +1914,7 @@ abstract class WebTestBase extends TestBase {
    *   (optional) Any additional options to pass for $path to the url generator.
    * @param $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    * @param $group
@@ -1931,7 +1941,7 @@ abstract class WebTestBase extends TestBase {
     }
     $url = $url_obj->setAbsolute()->toString();
     if (!$message) {
-      $message = SafeMarkup::format('Expected @url matches current URL (@current_url).', [
+      $message = new FormattableMarkup('Expected @url matches current URL (@current_url).', [
         '@url' => var_export($url, TRUE),
         '@current_url' => $this->getUrl(),
       ]);
@@ -1951,7 +1961,7 @@ abstract class WebTestBase extends TestBase {
    *   of all codes see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html.
    * @param $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    * @param $group
@@ -1966,7 +1976,7 @@ abstract class WebTestBase extends TestBase {
   protected function assertResponse($code, $message = '', $group = 'Browser') {
     $curl_code = curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE);
     $match = is_array($code) ? in_array($curl_code, $code) : $curl_code == $code;
-    return $this->assertTrue($match, $message ? $message : SafeMarkup::format('HTTP response expected @code, actual @curl_code', ['@code' => $code, '@curl_code' => $curl_code]), $group);
+    return $this->assertTrue($match, $message ? $message : new FormattableMarkup('HTTP response expected @code, actual @curl_code', ['@code' => $code, '@curl_code' => $curl_code]), $group);
   }
 
   /**
@@ -1977,7 +1987,7 @@ abstract class WebTestBase extends TestBase {
    *   of all codes see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html.
    * @param $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    * @param $group
@@ -1992,7 +2002,7 @@ abstract class WebTestBase extends TestBase {
   protected function assertNoResponse($code, $message = '', $group = 'Browser') {
     $curl_code = curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE);
     $match = is_array($code) ? in_array($curl_code, $code) : $curl_code == $code;
-    return $this->assertFalse($match, $message ? $message : SafeMarkup::format('HTTP response not expected @code, actual @curl_code', ['@code' => $code, '@curl_code' => $curl_code]), $group);
+    return $this->assertFalse($match, $message ? $message : new FormattableMarkup('HTTP response not expected @code, actual @curl_code', ['@code' => $code, '@curl_code' => $curl_code]), $group);
   }
 
   /**

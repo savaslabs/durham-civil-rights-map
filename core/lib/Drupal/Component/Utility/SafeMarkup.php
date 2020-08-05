@@ -33,13 +33,14 @@ class SafeMarkup {
    * @return bool
    *   TRUE if the string has been marked secure, FALSE otherwise.
    *
-   * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0.
+   * @deprecated in drupal:8.0.0 and is removed from drupal:9.0.0.
    *   Instead, you should just check if a variable is an instance of
    *   \Drupal\Component\Render\MarkupInterface.
    *
    * @see https://www.drupal.org/node/2549395
    */
   public static function isSafe($string, $strategy = 'html') {
+    @trigger_error('SafeMarkup::isSafe() is scheduled for removal in Drupal 9.0.0. Instead, you should just check if a variable is an instance of \Drupal\Component\Render\MarkupInterface. See https://www.drupal.org/node/2549395.', E_USER_DEPRECATED);
     return $string instanceof MarkupInterface;
   }
 
@@ -66,6 +67,7 @@ class SafeMarkup {
    * @see drupal_validate_utf8()
    */
   public static function checkPlain($text) {
+    @trigger_error('SafeMarkup::checkPlain() is scheduled for removal in Drupal 9.0.0. Rely on Twig\'s auto-escaping feature, or use the @link theme_render #plain_text @endlink key when constructing a render array that contains plain text in order to use the renderer\'s auto-escaping feature. If neither of these are possible, \Drupal\Component\Utility\Html::escape() can be used in places where explicit escaping is needed. See https://www.drupal.org/node/2549395.', E_USER_DEPRECATED);
     return new HtmlEscapedText($text);
   }
 
@@ -87,12 +89,13 @@ class SafeMarkup {
    * @see \Drupal\Component\Render\FormattableMarkup::placeholderFormat()
    * @see \Drupal\Component\Render\FormattableMarkup
    *
-   * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
+   * @deprecated in drupal:8.0.0 and is removed from drupal:9.0.0.
    *   Use \Drupal\Component\Render\FormattableMarkup.
    *
    * @see https://www.drupal.org/node/2549395
    */
   public static function format($string, array $args) {
+    @trigger_error('SafeMarkup::format() is scheduled for removal in Drupal 9.0.0. Use \Drupal\Component\Render\FormattableMarkup. See https://www.drupal.org/node/2549395.', E_USER_DEPRECATED);
     return new FormattableMarkup($string, $args);
   }
 

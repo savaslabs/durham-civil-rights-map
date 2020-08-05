@@ -5,6 +5,7 @@ namespace Drupal\language\Form;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\Url;
 use Drupal\language\Entity\ConfigurableLanguage;
 
 /**
@@ -88,14 +89,14 @@ class LanguageAddForm extends LanguageFormBase {
 
     $t_args = ['%language' => $this->entity->label(), '%langcode' => $this->entity->id()];
     $this->logger('language')->notice('The %language (%langcode) language has been created.', $t_args);
-    drupal_set_message($this->t('The language %language has been created and can now be used.', $t_args));
+    $this->messenger()->addStatus($this->t('The language %language has been created and can now be used.', $t_args));
 
     if ($this->moduleHandler->moduleExists('block')) {
       // Tell the user they have the option to add a language switcher block
       // to their theme so they can switch between the languages.
-      drupal_set_message($this->t('Use one of the language switcher blocks to allow site visitors to switch between languages. You can enable these blocks on the <a href=":block-admin">block administration page</a>.', [':block-admin' => $this->url('block.admin_display')]));
+      $this->messenger()->addStatus($this->t('Use one of the language switcher blocks to allow site visitors to switch between languages. You can enable these blocks on the <a href=":block-admin">block administration page</a>.', [':block-admin' => Url::fromRoute('block.admin_display')->toString()]));
     }
-    $form_state->setRedirectUrl($this->entity->urlInfo('collection'));
+    $form_state->setRedirectUrl($this->entity->toUrl('collection'));
   }
 
   /**

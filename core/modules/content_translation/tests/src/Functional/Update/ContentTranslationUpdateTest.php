@@ -4,12 +4,13 @@ namespace Drupal\Tests\content_translation\Functional\Update;
 
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\FunctionalTests\Update\UpdatePathTestBase;
-use Drupal\system\Tests\Entity\EntityDefinitionTestTrait;
+use Drupal\Tests\system\Functional\Entity\Traits\EntityDefinitionTestTrait;
 
 /**
  * Tests the upgrade path for the Content Translation module.
  *
  * @group Update
+ * @group legacy
  */
 class ContentTranslationUpdateTest extends UpdatePathTestBase {
 
@@ -30,13 +31,6 @@ class ContentTranslationUpdateTest extends UpdatePathTestBase {
   protected $entityDefinitionUpdateManager;
 
   /**
-   * The entity manager service.
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
-   */
-  protected $entityManager;
-
-  /**
    * The state service.
    *
    * @var \Drupal\Core\State\StateInterface
@@ -51,7 +45,6 @@ class ContentTranslationUpdateTest extends UpdatePathTestBase {
 
     $this->database = \Drupal::database();
     $this->entityDefinitionUpdateManager = \Drupal::entityDefinitionUpdateManager();
-    $this->entityManager = \Drupal::entityManager();
     $this->state = \Drupal::state();
   }
 

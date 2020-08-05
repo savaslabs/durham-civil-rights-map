@@ -218,10 +218,17 @@ class SessionManager extends NativeSessionStorage implements SessionManagerInter
 
     if ($this->isStarted()) {
       $old_session_id = $this->getId();
+      // Save and close the old session. Call the parent method to avoid issue
+      // with session destruction due to the session being considered obsolete.
+      parent::save();
+      // Ensure the session is reloaded correctly.
+      $this->startedLazy = TRUE;
     }
     session_id(Crypt::randomBytesBase64());
 
-    $this->getMetadataBag()->clearCsrfTokenSeed();
+    // We set token seed immediately to avoid race condition between two
+    // simultaneous requests without a seed.
+    $this->getMetadataBag()->setCsrfTokenSeed(Crypt::randomBytesBase64());
 
     if (isset($old_session_id)) {
       $params = session_get_cookie_params();
@@ -230,10 +237,7 @@ class SessionManager extends NativeSessionStorage implements SessionManagerInter
       $this->migrateStoredSession($old_session_id);
     }
 
-    if (!$this->isStarted()) {
-      // Start the session when it doesn't exist yet.
-      $this->startNow();
-    }
+    $this->startNow();
   }
 
   /**

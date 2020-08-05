@@ -2,7 +2,6 @@
 
 namespace Drupal\system;
 
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Menu\MenuActiveTrailInterface;
 use Drupal\Core\Menu\MenuLinkTreeInterface;
 use Drupal\Core\Menu\MenuLinkInterface;
@@ -79,7 +78,7 @@ class SystemManager {
    * @param \Drupal\Core\Menu\MenuActiveTrailInterface $menu_active_trail
    *   The active menu trail service.
    */
-  public function __construct(ModuleHandlerInterface $module_handler, EntityManagerInterface $entity_manager, RequestStack $request_stack, MenuLinkTreeInterface $menu_tree, MenuActiveTrailInterface $menu_active_trail) {
+  public function __construct(ModuleHandlerInterface $module_handler, $entity_manager, RequestStack $request_stack, MenuLinkTreeInterface $menu_tree, MenuActiveTrailInterface $menu_active_trail) {
     $this->moduleHandler = $module_handler;
     $this->requestStack = $request_stack;
     $this->menuTree = $menu_tree;
@@ -152,7 +151,8 @@ class SystemManager {
    * hidden, so we supply the contents of the block.
    *
    * @return array
-   *   A render array suitable for drupal_render.
+   *   A render array suitable for
+   *   \Drupal\Core\Render\RendererInterface::render().
    */
   public function getBlockContents() {
     // We hard-code the menu name here since otherwise a link in the tools menu

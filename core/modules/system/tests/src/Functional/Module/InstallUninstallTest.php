@@ -4,13 +4,20 @@ namespace Drupal\Tests\system\Functional\Module;
 
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Logger\RfcLogLevel;
+use Drupal\workspaces\Entity\Workspace;
 
 /**
  * Install/uninstall core module and confirm table creation/deletion.
  *
+ * @group #slow
  * @group Module
  */
 class InstallUninstallTest extends ModuleTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -22,7 +29,8 @@ class InstallUninstallTest extends ModuleTestBase {
    */
   public function testInstallUninstall() {
     // Set a variable so that the hook implementations in system_test.module
-    // will display messages via drupal_set_message().
+    // will display messages via
+    // \Drupal\Core\Messenger\MessengerInterface::addStatus().
     $this->container->get('state')->set('system_test.verbose_module_hooks', TRUE);
 
     // Install and uninstall module_test to ensure hook_preinstall_module and
@@ -33,7 +41,7 @@ class InstallUninstallTest extends ModuleTestBase {
     $this->assertEqual($this->container->get('state')->get('system_test_preuninstall_module'), 'module_test');
     $this->resetAll();
 
-    $all_modules = system_rebuild_module_data();
+    $all_modules = $this->container->get('extension.list.module')->getList();
 
     // Test help on required modules, but do not test uninstalling.
     $required_modules = array_filter($all_modules, function ($module) {
@@ -145,6 +153,12 @@ class InstallUninstallTest extends ModuleTestBase {
       if ($name == 'forum') {
         // Forum has an extra step to be able to uninstall it.
         $this->preUninstallForum();
+      }
+
+      // Delete all workspaces before uninstall.
+      if ($name == 'workspaces') {
+        $workspaces = Workspace::loadMultiple();
+        \Drupal::entityTypeManager()->getStorage('workspace')->delete($workspaces);
       }
 
       $now_installed_list = \Drupal::moduleHandler()->getModuleList();
@@ -286,10 +300,10 @@ class InstallUninstallTest extends ModuleTestBase {
     $existing_updates = \Drupal::keyValue('post_update')->get('existing_updates', []);
     switch ($module) {
       case 'block':
-        $this->assertFalse(array_diff(['block_post_update_disable_blocks_with_missing_contexts'], $existing_updates));
+        $this->assertEmpty(array_diff(['block_post_update_disable_blocks_with_missing_contexts'], $existing_updates));
         break;
       case 'update_test_postupdate':
-        $this->assertFalse(array_diff(['update_test_postupdate_post_update_first', 'update_test_postupdate_post_update_second', 'update_test_postupdate_post_update_test1', 'update_test_postupdate_post_update_test0'], $existing_updates));
+        $this->assertEmpty(array_diff(['update_test_postupdate_post_update_first', 'update_test_postupdate_post_update_second', 'update_test_postupdate_post_update_test1', 'update_test_postupdate_post_update_test0'], $existing_updates));
         break;
     }
   }
@@ -307,10 +321,10 @@ class InstallUninstallTest extends ModuleTestBase {
 
     switch ($module) {
       case 'block':
-        $this->assertFalse(array_intersect(['block_post_update_disable_blocks_with_missing_contexts'], $all_update_functions), 'Asserts that no pending post update functions are available.');
+        $this->assertEmpty(array_intersect(['block_post_update_disable_blocks_with_missing_contexts'], $all_update_functions), 'Asserts that no pending post update functions are available.');
 
         $existing_updates = \Drupal::keyValue('post_update')->get('existing_updates', []);
-        $this->assertFalse(array_intersect(['block_post_update_disable_blocks_with_missing_contexts'], $existing_updates), 'Asserts that no post update functions are stored in keyvalue store.');
+        $this->assertEmpty(array_intersect(['block_post_update_disable_blocks_with_missing_contexts'], $existing_updates), 'Asserts that no post update functions are stored in keyvalue store.');
         break;
     }
   }
@@ -343,7 +357,7 @@ class InstallUninstallTest extends ModuleTestBase {
     $query = \Drupal::entityQuery('taxonomy_term');
     $query->condition('vid', 'forums');
     $ids = $query->execute();
-    $storage = \Drupal::entityManager()->getStorage('taxonomy_term');
+    $storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
     $terms = $storage->loadMultiple($ids);
     $storage->delete($terms);
   }

@@ -3,7 +3,6 @@
 namespace Drupal\Tests\system\Functional\Mail;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\Core\Site\Settings;
 use Drupal\Tests\BrowserTestBase;
@@ -14,6 +13,12 @@ use Drupal\Tests\BrowserTestBase;
  * @group Mail
  */
 class HtmlToTextTest extends BrowserTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   /**
    * Converts a string to its PHP source equivalent for display in test messages.
    *
@@ -48,14 +53,14 @@ class HtmlToTextTest extends BrowserTestBase {
    *   \Drupal\Core\Mail\MailFormatHelper::htmlToText().
    */
   protected function assertHtmlToText($html, $text, $message, $allowed_tags = NULL) {
-    preg_match_all('/<([a-z0-6]+)/', Unicode::strtolower($html), $matches);
+    preg_match_all('/<([a-z0-6]+)/', mb_strtolower($html), $matches);
     $tested_tags = implode(', ', array_unique($matches[1]));
     $message .= ' (' . $tested_tags . ')';
     $result = MailFormatHelper::htmlToText($html, $allowed_tags);
     $pass = $this->assertEqual($result, $text, Html::escape($message));
     $verbose = 'html = <pre>' . $this->stringToHtml($html)
-      . '</pre><br />' . 'result = <pre>' . $this->stringToHtml($result)
-      . '</pre><br />' . 'expected = <pre>' . $this->stringToHtml($text)
+      . '</pre><br />result = <pre>' . $this->stringToHtml($result)
+      . '</pre><br />expected = <pre>' . $this->stringToHtml($text)
       . '</pre>';
     $this->verbose($verbose);
     if (!$pass) {
@@ -212,37 +217,37 @@ class HtmlToTextTest extends BrowserTestBase {
    * (at least) a newline in the plaintext version.
    */
   public function testDrupalHtmlToTextBlockTagToNewline() {
-    $input = '[text]'
-      . '<blockquote>[blockquote]</blockquote>'
-      . '<br />[br]'
-      . '<dl><dt>[dl-dt]</dt>'
-      . '<dt>[dt]</dt>'
-      . '<dd>[dd]</dd>'
-      . '<dd>[dd-dl]</dd></dl>'
-      . '<h1>[h1]</h1>'
-      . '<h2>[h2]</h2>'
-      . '<h3>[h3]</h3>'
-      . '<h4>[h4]</h4>'
-      . '<h5>[h5]</h5>'
-      . '<h6>[h6]</h6>'
-      . '<hr />[hr]'
-      . '<ol><li>[ol-li]</li>'
-      . '<li>[li]</li>'
-      . '<li>[li-ol]</li></ol>'
-      . '<p>[p]</p>'
-      . '<ul><li>[ul-li]</li>'
-      . '<li>[li-ul]</li></ul>'
-      . '[text]';
+    $input = <<<'EOT'
+[text]
+<blockquote>[blockquote]</blockquote>
+<br />[br]
+<dl><dt>[dl-dt]</dt>
+<dt>[dt]</dt>
+<dd>[dd]</dd>
+<dd>[dd-dl]</dd></dl>
+<h1>[h1]</h1>
+<h2>[h2]</h2>
+<h3>[h3]</h3>
+<h4>[h4]</h4>
+<h5>[h5]</h5>
+<h6>[h6]</h6>
+<hr />[hr]
+<ol><li>[ol-li]</li>
+<li>[li]</li>
+<li>[li-ol]</li></ol>
+<p>[p]</p>
+<ul><li>[ul-li]</li>
+<li>[li-ul]</li></ul>
+[text]
+EOT;
+    $input = str_replace(["\r", "\n"], '', $input);
     $output = MailFormatHelper::htmlToText($input);
-    $pass = $this->assertFalse(
-      preg_match('/\][^\n]*\[/s', $output),
-      'Block-level HTML tags should force newlines'
-    );
+    $pass = $this->assertNotRegExp('/\][^\n]*\[/s', $output, 'Block-level HTML tags should force newlines');
     if (!$pass) {
       $this->verbose($this->stringToHtml($output));
     }
-    $output_upper = Unicode::strtoupper($output);
-    $upper_input = Unicode::strtoupper($input);
+    $output_upper = mb_strtoupper($output);
+    $upper_input = mb_strtoupper($input);
     $upper_output = MailFormatHelper::htmlToText($upper_input);
     $pass = $this->assertEqual(
       $upper_output,
@@ -288,23 +293,28 @@ class HtmlToTextTest extends BrowserTestBase {
    */
   public function testFootnoteReferences() {
     global $base_path, $base_url;
-    $source = '<a href="http://www.example.com/node/1">Host and path</a>'
-      . '<br /><a href="http://www.example.com">Host, no path</a>'
-      . '<br /><a href="' . $base_path . 'node/1">Path, no host</a>'
-      . '<br /><a href="node/1">Relative path</a>';
+    $source = <<<EOT
+<a href="http://www.example.com/node/1">Host and path</a>
+<br /><a href="http://www.example.com">Host, no path</a>
+<br /><a href="{$base_path}node/1">Path, no host</a>
+<br /><a href="node/1">Relative path</a>
+EOT;
+    $source = str_replace(["\r", "\n"], '', $source);
     // @todo Footnote URLs should be absolute.
-    $tt = "Host and path [1]"
-      . "\nHost, no path [2]"
-      // @todo The following two references should be combined.
-      . "\nPath, no host [3]"
-      . "\nRelative path [4]"
-      . "\n"
-      . "\n[1] http://www.example.com/node/1"
-      . "\n[2] http://www.example.com"
-      // @todo The following two references should be combined.
-      . "\n[3] $base_url/node/1"
-      . "\n[4] node/1\n";
-    $this->assertHtmlToText($source, $tt, 'Footnotes');
+    // @todo The last two references should be combined.
+    $text = <<<EOT
+Host and path [1]
+Host, no path [2]
+Path, no host [3]
+Relative path [4]
+
+[1] http://www.example.com/node/1
+[2] http://www.example.com
+[3] $base_url/node/1
+[4] node/1
+
+EOT;
+    $this->assertHtmlToText($source, $text, 'Footnotes');
   }
 
   /**
@@ -347,8 +357,8 @@ class HtmlToTextTest extends BrowserTestBase {
 
     $maximum_line_length = 0;
     foreach (explode($eol, $output) as $line) {
-      // We must use strlen() rather than Unicode::strlen() in order to count
-      // octets rather than characters.
+      // We must use strlen() rather than mb_strlen() in order to count octets
+      // rather than characters.
       $maximum_line_length = max($maximum_line_length, strlen($line . $eol));
     }
     $verbose = 'Maximum line length found was ' . $maximum_line_length . ' octets.';

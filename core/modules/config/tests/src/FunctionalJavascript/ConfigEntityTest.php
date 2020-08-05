@@ -2,19 +2,24 @@
 
 namespace Drupal\Tests\config\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests the Config operations through the UI.
  *
  * @group config
  */
-class ConfigEntityTest extends JavascriptTestBase {
+class ConfigEntityTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
    */
   public static $modules = ['config_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests ajax operations through the UI on 'Add' page.

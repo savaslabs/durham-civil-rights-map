@@ -18,6 +18,11 @@ class BlockContentFieldFilterTest extends BlockContentTestBase {
   public static $modules = ['language'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Views used by this test.
    *
    * @var array
@@ -30,7 +35,6 @@ class BlockContentFieldFilterTest extends BlockContentTestBase {
    * @var array
    */
   public $blockContentInfos = [];
-
 
   /**
    * {@inheritdoc}

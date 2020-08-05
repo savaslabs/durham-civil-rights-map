@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\node\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 
@@ -19,6 +18,11 @@ class NodeAccessFieldTest extends NodeTestBase {
    * @var array
    */
   public static $modules = ['node_access_test', 'field_ui'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * A user with permission to bypass access content.
@@ -51,21 +55,23 @@ class NodeAccessFieldTest extends NodeTestBase {
     $this->contentAdminUser = $this->drupalCreateUser(['access content', 'administer content types', 'administer node fields']);
 
     // Add a custom field to the page content type.
-    $this->fieldName = Unicode::strtolower($this->randomMachineName() . '_field_name');
+    $this->fieldName = mb_strtolower($this->randomMachineName() . '_field_name');
     FieldStorageConfig::create([
       'field_name' => $this->fieldName,
       'entity_type' => 'node',
-      'type' => 'text'
+      'type' => 'text',
     ])->save();
     FieldConfig::create([
       'field_name' => $this->fieldName,
       'entity_type' => 'node',
       'bundle' => 'page',
     ])->save();
-    entity_get_display('node', 'page', 'default')
+    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+    $display_repository = \Drupal::service('entity_display.repository');
+    $display_repository->getViewDisplay('node', 'page')
       ->setComponent($this->fieldName)
       ->save();
-    entity_get_form_display('node', 'page', 'default')
+    $display_repository->getFormDisplay('node', 'page')
       ->setComponent($this->fieldName)
       ->save();
   }

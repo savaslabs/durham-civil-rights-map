@@ -11,11 +11,16 @@ use Drupal\Tests\BrowserTestBase;
  */
 class BlockInstallTest extends BrowserTestBase {
 
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   public function testCacheTagInvalidationUponInstallation() {
     // Warm the page cache.
     $this->drupalGet('');
     $this->assertNoText('Powered by Drupal');
-    $this->assertNoCacheTag('config:block_list');
+    $this->assertSession()->responseHeaderNotContains('X-Drupal-Cache-Tags', 'config:block_list');
 
     // Install the block module, and place the "Powered by Drupal" block.
     $this->container->get('module_installer')->install(['block', 'shortcut']);

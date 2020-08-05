@@ -19,6 +19,11 @@ class ModulesListFormWebTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
     \Drupal::state()->set('system_test.module_hidden', FALSE);
@@ -49,6 +54,31 @@ class ModulesListFormWebTest extends BrowserTestBase {
     // is used because its machine name is different than its human readable
     // name.
     $this->assertText('simpletest');
+  }
+
+  public function testModulesListFormWithInvalidInfoFile() {
+    $broken_info_yml = <<<BROKEN
+name: Module With Broken Info file
+type: module
+BROKEN;
+    $path = \Drupal::service('site.path') . "/modules/broken";
+    mkdir($path, 0777, TRUE);
+    file_put_contents("$path/broken.info.yml", $broken_info_yml);
+
+    $this->drupalLogin(
+      $this->drupalCreateUser(
+        ['administer modules', 'administer permissions']
+      )
+    );
+    $this->drupalGet('admin/modules');
+    $this->assertSession()->statusCodeEquals(200);
+
+    // Confirm that the error message is shown.
+    $this->assertSession()
+      ->pageTextContains("The 'core' or the 'core_version_requirement' key must be present in " . $path . '/broken.info.yml');
+
+    // Check that the module filter text box is available.
+    $this->assertSession()->elementExists('xpath', '//input[@name="text"]');
   }
 
 }

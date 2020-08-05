@@ -1,17 +1,13 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\pathauto\AliasSchemaHelper
- */
-
 namespace Drupal\pathauto;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\Core\Path\AliasStorageInterface;
+use Drupal\Core\Path\AliasRepositoryInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 
@@ -37,11 +33,11 @@ class AliasStorageHelper implements AliasStorageHelperInterface {
   protected $configFactory;
 
   /**
-   * The alias storage.
+   * The alias repository.
    *
-   * @var \Drupal\Core\Path\AliasStorageInterface
+   * @var \Drupal\Core\Path\AliasRepositoryInterface
    */
-  protected $aliasStorage;
+  protected $aliasRepository;
 
   /**
    * The database connection.
@@ -58,25 +54,35 @@ class AliasStorageHelper implements AliasStorageHelperInterface {
   protected $messenger;
 
   /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * The config factory.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
-   * @param \Drupal\Core\Path\AliasStorageInterface $alias_storage
-   *   The alias storage.
+   * @param \Drupal\Core\Path\AliasRepositoryInterface $alias_repository
+   *   The alias repository.
    * @param \Drupal\Core\Database\Connection $database
    *   The database connection.
    * @param MessengerInterface $messenger
    *   The messenger.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
    *   The string translation service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manger.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, AliasStorageInterface $alias_storage, Connection $database, MessengerInterface $messenger, TranslationInterface $string_translation) {
+  public function __construct(ConfigFactoryInterface $config_factory, AliasRepositoryInterface $alias_repository, Connection $database, MessengerInterface $messenger, TranslationInterface $string_translation, EntityTypeManagerInterface $entity_type_manager = NULL) {
     $this->configFactory = $config_factory;
-    $this->aliasStorage = $alias_storage;
+    $this->aliasRepository = $alias_repository;
     $this->database = $database;
     $this->messenger = $messenger;
     $this->stringTranslation = $string_translation;
+    $this->entityTypeManager = $entity_type_manager ?: \Drupal::service('entity_type.manager');
   }
 
   /**
@@ -92,94 +98,85 @@ class AliasStorageHelper implements AliasStorageHelperInterface {
   public function save(array $path, $existing_alias = NULL, $op = NULL) {
     $config = $this->configFactory->get('pathauto.settings');
 
+    // Set up all the variables needed to simplify the code below.
+    $source = $path['source'];
+    $alias = $path['alias'];
+    $langcode = $path['language'];
+    if ($existing_alias) {
+      /** @var \Drupal\path_alias\PathAliasInterface $existing_alias */
+      $existing_alias = $this->entityTypeManager->getStorage('path_alias')->load($existing_alias['pid']);
+    }
+
     // Alert users if they are trying to create an alias that is the same as the
-    // internal path.
-    if ($path['source'] == $path['alias']) {
-      $this->messenger->addMessage($this->t('Ignoring alias %alias because it is the same as the internal path.', array('%alias' => $path['alias'])));
+    // internal system path.
+    if ($source == $alias) {
+      $this->messenger->addMessage($this->t('Ignoring alias %alias because it is the same as the internal path.', ['%alias' => $alias]));
       return NULL;
     }
 
-    // Skip replacing the current alias with an identical alias.
-    if (empty($existing_alias) || $existing_alias['alias'] != $path['alias']) {
-      $path += array(
-        'pathauto' => TRUE,
-        'original' => $existing_alias,
-        'pid' => NULL,
-      );
-
-      // If there is already an alias, respect some update actions.
-      if (!empty($existing_alias)) {
-        switch ($config->get('update_action')) {
-          case PathautoGeneratorInterface::UPDATE_ACTION_NO_NEW:
-            // Do not create the alias.
-            return NULL;
-
-          case PathautoGeneratorInterface::UPDATE_ACTION_LEAVE:
-            // Create a new alias instead of overwriting the existing by leaving
-            // $path['pid'] empty.
-            break;
-
-          case PathautoGeneratorInterface::UPDATE_ACTION_DELETE:
-            // The delete actions should overwrite the existing alias.
-            $path['pid'] = $existing_alias['pid'];
-            break;
-        }
+    // Update the existing alias if there is one and the configuration is set to
+    // replace it.
+    if ($existing_alias && $config->get('update_action') == PathautoGeneratorInterface::UPDATE_ACTION_DELETE) {
+      // Skip replacing the current alias with an identical alias.
+      if ($existing_alias->getAlias() == $alias) {
+        return NULL;
       }
 
-      // Save the path array.
-      $this->aliasStorage->save($path['source'], $path['alias'], $path['language'], $path['pid']);
+      $old_alias = $existing_alias->getAlias();
+      $existing_alias->setAlias($alias)->save();
 
-      if (!empty($existing_alias['pid'])) {
-        $this->messenger->addMessage($this->t(
-            'Created new alias %alias for %source, replacing %old_alias.',
-            array(
-              '%alias' => $path['alias'],
-              '%source' => $path['source'],
-              '%old_alias' => $existing_alias['alias'],
-            )
-          )
-        );
-      }
-      else {
-        $this->messenger->addMessage($this->t('Created new alias %alias for %source.', array(
-          '%alias' => $path['alias'],
-          '%source' => $path['source'],
-        )));
-      }
+      $this->messenger->addMessage($this->t('Created new alias %alias for %source, replacing %old_alias.', [
+        '%alias' => $alias,
+        '%source' => $source,
+        '%old_alias' => $old_alias,
+      ]));
 
-      return $path;
+      $return = $existing_alias;
     }
+    else {
+      // Otherwise, create a new alias.
+      $path_alias = $this->entityTypeManager->getStorage('path_alias')->create([
+        'path' => $source,
+        'alias' => $alias,
+        'langcode' => $langcode,
+      ]);
+      $path_alias->save();
+
+      $this->messenger->addMessage($this->t('Created new alias %alias for %source.', [
+        '%alias' => $path_alias->getAlias(),
+        '%source' => $path_alias->getPath(),
+      ]));
+
+      $return = $path_alias;
+    }
+
+    return [
+      'source' => $return->getPath(),
+      'alias' => $return->getAlias(),
+      'pid' => $return->id(),
+      'langcode' => $return->language()->getId(),
+    ];
   }
 
   /**
    * {@inheritdoc}
    */
   public function loadBySource($source, $language = LanguageInterface::LANGCODE_NOT_SPECIFIED) {
-    // @todo convert this to be a query on alias storage.
-    $pid = $this->database->queryRange("SELECT pid FROM {url_alias} WHERE source = :source AND langcode IN (:language, :language_none) ORDER BY langcode DESC, pid DESC", 0, 1, array(
-      ':source' => $source,
-      ':language' => $language,
-      ':language_none' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
-    ))->fetchField();
-    return $this->aliasStorage->load(array('pid' => $pid));
+    $alias = $this->aliasRepository->lookupBySystemPath($source, $language);
+    if ($alias) {
+      return [
+        'pid' => $alias['id'],
+        'alias' => $alias['alias'],
+        'source' => $alias['path'],
+        'langcode' => $alias['langcode'],
+      ];
+    }
   }
 
   /**
    * {@inheritdoc}
    */
-  public function exists($alias, $source, $language = LanguageInterface::LANGCODE_NOT_SPECIFIED) {
-    return (bool) $this->database->queryRange("SELECT pid FROM {url_alias} WHERE source <> :source AND alias = :alias AND langcode IN (:language, :language_none) ORDER BY langcode DESC, pid DESC", 0, 1, array(
-      ':source' => $source,
-      ':alias' => $alias,
-      ':language' => $language,
-      ':language_none' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
-    ))->fetchField();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function deleteAll($source) {
+  public function deleteBySourcePrefix($source) {
     $pids = $this->loadBySourcePrefix($source);
     if ($pids) {
       $this->deleteMultiple($pids);
@@ -189,19 +186,22 @@ class AliasStorageHelper implements AliasStorageHelperInterface {
   /**
    * {@inheritdoc}
    */
-  public function deleteEntityPathAll(EntityInterface $entity, $default_uri = NULL) {
-    $this->deleteAll('/'. $entity->toUrl('canonical')->getInternalPath());
-    if (isset($default_uri) && $entity->toUrl('canonical')->toString() != $default_uri) {
-      $this->deleteAll($default_uri);
+  public function deleteAll() {
+    /** @var \Drupal\Core\Entity\Sql\TableMappingInterface $table_mapping */
+    $table_mapping = $this->entityTypeManager->getStorage('path_alias')->getTableMapping();
+    foreach ($table_mapping->getTableNames() as $table_name) {
+      $this->database->truncate($table_name)->execute();
     }
+    $this->entityTypeManager->getStorage('path_alias')->resetCache();
   }
 
   /**
    * {@inheritdoc}
    */
-  public function deleteMultiple($pids) {
-    foreach ($pids as $pid) {
-      $this->aliasStorage->delete(array('pid' => $pid));
+  public function deleteEntityPathAll(EntityInterface $entity, $default_uri = NULL) {
+    $this->deleteBySourcePrefix('/' . $entity->toUrl('canonical')->getInternalPath());
+    if (isset($default_uri) && $entity->toUrl('canonical')->toString() != $default_uri) {
+      $this->deleteBySourcePrefix($default_uri);
     }
   }
 
@@ -209,9 +209,37 @@ class AliasStorageHelper implements AliasStorageHelperInterface {
    * {@inheritdoc}
    */
   public function loadBySourcePrefix($source) {
-    return $this->database->query("SELECT pid FROM {url_alias} WHERE source = :source OR source LIKE :source_wildcard",
-      [':source' => $source, ':source_wildcard' => $source . '/%'])
-      ->fetchCol();
+    return $this->entityTypeManager->getStorage('path_alias')->getQuery('OR')
+      ->condition('path', $source, '=')
+      ->condition('path', rtrim($source, '/') . '/', 'STARTS_WITH')
+      ->execute();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function countBySourcePrefix($source) {
+    return $this->entityTypeManager->getStorage('path_alias')->getQuery('OR')
+      ->condition('path', $source, '=')
+      ->condition('path', rtrim($source, '/') . '/', 'STARTS_WITH')
+      ->count()
+      ->execute();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function countAll() {
+    return $this->entityTypeManager->getStorage('path_alias')->getQuery()
+      ->count()
+      ->execute();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function deleteMultiple($pids) {
+    $this->entityTypeManager->getStorage('path_alias')->delete($this->entityTypeManager->getStorage('path_alias')->loadMultiple($pids));
   }
 
 }

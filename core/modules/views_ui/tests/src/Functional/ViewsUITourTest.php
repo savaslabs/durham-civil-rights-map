@@ -20,6 +20,11 @@ class ViewsUITourTest extends TourTestBase {
   protected $adminUser;
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * String translation storage object.
    *
    * @var \Drupal\locale\StringStorageInterface
@@ -76,7 +81,7 @@ class ViewsUITourTest extends TourTestBase {
     foreach ($handler_titles as $handler_title) {
       // Create source string.
       $source = $this->localeStorage->createString([
-        'source' => $handler_title
+        'source' => $handler_title,
       ]);
       $source->save();
       $this->createTranslation($source, $langcode);

@@ -4,7 +4,7 @@ namespace Drupal\Tests\menu_ui\Functional;
 
 use Drupal\Core\Url;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
-use Drupal\system\Tests\Cache\PageCacheTagsTestBase;
+use Drupal\Tests\system\Functional\Cache\PageCacheTagsTestBase;
 use Drupal\system\Entity\Menu;
 
 /**
@@ -18,6 +18,11 @@ class MenuCacheTagsTest extends PageCacheTagsTestBase {
    * {@inheritdoc}
    */
   public static $modules = ['menu_ui', 'block', 'test_page_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests cache tags presence and invalidation of the Menu entity.

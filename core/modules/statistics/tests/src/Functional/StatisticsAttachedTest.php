@@ -22,6 +22,11 @@ class StatisticsAttachedTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
 
@@ -29,7 +34,7 @@ class StatisticsAttachedTest extends BrowserTestBase {
 
     // Install "statistics_test_attached" and set it as the default theme.
     $theme = 'statistics_test_attached';
-    \Drupal::service('theme_handler')->install([$theme]);
+    \Drupal::service('theme_installer')->install([$theme]);
     $this->config('system.theme')
       ->set('default', $theme)
       ->save();
@@ -46,7 +51,7 @@ class StatisticsAttachedTest extends BrowserTestBase {
     $node = Node::create([
       'type' => 'page',
       'title' => 'Page node',
-      'body' => 'body text'
+      'body' => 'body text',
     ]);
     $node->save();
     $this->drupalGet('node/' . $node->id());

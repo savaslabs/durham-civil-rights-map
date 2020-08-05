@@ -25,6 +25,11 @@ class ViewsBulkTest extends ViewTestBase {
    */
   public static $modules = ['node', 'views'];
 
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   public function setUp($import_test_views = TRUE) {
     parent::setUp($import_test_views);
 
@@ -41,7 +46,7 @@ class ViewsBulkTest extends ViewTestBase {
     $node_1 = $this->drupalCreateNode([
       'type' => 'page',
       'title' => 'The first node',
-      'changed' => \Drupal::time()->getRequestTime() - 180
+      'changed' => \Drupal::time()->getRequestTime() - 180,
     ]);
 
     // Login as administrator and go to admin/content.
@@ -53,7 +58,7 @@ class ViewsBulkTest extends ViewTestBase {
     $node_2 = $this->drupalCreateNode([
       'type' => 'page',
       'title' => 'The second node',
-      'changed' => \Drupal::time()->getRequestTime() - 120
+      'changed' => \Drupal::time()->getRequestTime() - 120,
     ]);
 
     // Now click 'Apply to selected items' and assert the first node is selected

@@ -67,7 +67,7 @@ class NodeRevisionRevertForm extends ConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager')->getStorage('node'),
+      $container->get('entity_type.manager')->getStorage('node'),
       $container->get('date.formatter'),
       $container->get('datetime.time')
     );
@@ -128,12 +128,18 @@ class NodeRevisionRevertForm extends ConfirmFormBase {
 
     $this->revision = $this->prepareRevertedRevision($this->revision, $form_state);
     $this->revision->revision_log = t('Copy of the revision from %date.', ['%date' => $this->dateFormatter->format($original_revision_timestamp)]);
+    $this->revision->setRevisionUserId($this->currentUser()->id());
     $this->revision->setRevisionCreationTime($this->time->getRequestTime());
     $this->revision->setChangedTime($this->time->getRequestTime());
     $this->revision->save();
 
     $this->logger('content')->notice('@type: reverted %title revision %revision.', ['@type' => $this->revision->bundle(), '%title' => $this->revision->label(), '%revision' => $this->revision->getRevisionId()]);
-    drupal_set_message(t('@type %title has been reverted to the revision from %revision-date.', ['@type' => node_get_type_label($this->revision), '%title' => $this->revision->label(), '%revision-date' => $this->dateFormatter->format($original_revision_timestamp)]));
+    $this->messenger()
+      ->addStatus($this->t('@type %title has been reverted to the revision from %revision-date.', [
+        '@type' => node_get_type_label($this->revision),
+        '%title' => $this->revision->label(),
+        '%revision-date' => $this->dateFormatter->format($original_revision_timestamp),
+      ]));
     $form_state->setRedirect(
       'entity.node.version_history',
       ['node' => $this->revision->id()]

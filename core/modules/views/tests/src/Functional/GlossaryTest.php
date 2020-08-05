@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\views\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
 use Drupal\views\Tests\AssertViewsCacheTagsTrait;
@@ -25,6 +24,11 @@ class GlossaryTest extends ViewTestBase {
   public static $modules = ['node'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Tests the default glossary view.
    */
   public function testGlossaryView() {
@@ -41,7 +45,7 @@ class GlossaryTest extends ViewTestBase {
     $nodes_by_char = [];
     foreach ($nodes_per_char as $char => $count) {
       $setting = [
-        'type' => $type->id()
+        'type' => $type->id(),
       ];
       for ($i = 0; $i < $count; $i++) {
         $node = $setting;
@@ -109,11 +113,11 @@ class GlossaryTest extends ViewTestBase {
     $this->assertResponse(200);
     foreach ($nodes_per_char as $char => $count) {
       $href = Url::fromRoute('view.glossary.page_1', ['arg_0' => $char])->toString();
-      $label = Unicode::strtoupper($char);
+      $label = mb_strtoupper($char);
       // Get the summary link for a certain character. Filter by label and href
       // to ensure that both of them are correct.
       $result = $this->xpath('//a[contains(@href, :href) and normalize-space(text())=:label]/..', [':href' => $href, ':label' => $label]);
-      $this->assertTrue(count($result));
+      $this->assertNotEmpty(count($result));
       // The rendered output looks like "<a href=''>X</a> | (count)" so let's
       // figure out the int.
       $result_count = explode(' ', trim(str_replace(['|', '(', ')'], '', $result[0]->getText())))[1];

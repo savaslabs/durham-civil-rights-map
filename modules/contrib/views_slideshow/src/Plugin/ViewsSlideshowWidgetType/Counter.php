@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\views_slideshow\ViewsSlideshowWidgetType\Counter.
- */
-
 namespace Drupal\views_slideshow\Plugin\ViewsSlideshowWidgetType;
 
 use Drupal\views_slideshow\ViewsSlideshowWidgetTypeBase;
@@ -15,7 +10,12 @@ use Drupal\views_slideshow\ViewsSlideshowWidgetTypeBase;
  * @ViewsSlideshowWidgetType(
  *   id = "views_slideshow_slide_counter",
  *   label = @Translation("Slide counter"),
- *   accepts = {"transitionBegin" = {"required" = TRUE}, "goToSlide", "previousSlide", "nextSlide"},
+ *   accepts = {
+ *     "transitionBegin" = {"required" = TRUE},
+ *     "goToSlide",
+ *     "previousSlide",
+ *     "nextSlide"
+ *   },
  *   calls = {}
  * )
  */

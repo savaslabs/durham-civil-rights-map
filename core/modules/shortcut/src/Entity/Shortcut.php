@@ -18,6 +18,13 @@ use Drupal\shortcut\ShortcutInterface;
  * @ContentEntityType(
  *   id = "shortcut",
  *   label = @Translation("Shortcut link"),
+ *   label_collection = @Translation("Shortcut links"),
+ *   label_singular = @Translation("shortcut link"),
+ *   label_plural = @Translation("shortcut links"),
+ *   label_count = @PluralTranslation(
+ *     singular = "@count shortcut link",
+ *     plural = "@count shortcut links",
+ *   ),
  *   bundle_label = @Translation("Shortcut set"),
  *   handlers = {
  *     "access" = "Drupal\shortcut\ShortcutAccessControlHandler",
@@ -27,7 +34,6 @@ use Drupal\shortcut\ShortcutInterface;
  *       "edit" = "Drupal\shortcut\ShortcutForm",
  *       "delete" = "Drupal\shortcut\Form\ShortcutDeleteForm"
  *     },
- *     "translation" = "Drupal\content_translation\ContentTranslationHandler"
  *   },
  *   base_table = "shortcut",
  *   data_table = "shortcut_field_data",

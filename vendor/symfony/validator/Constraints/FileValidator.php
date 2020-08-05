@@ -27,13 +27,13 @@ class FileValidator extends ConstraintValidator
     const KIB_BYTES = 1024;
     const MIB_BYTES = 1048576;
 
-    private static $suffices = array(
+    private static $suffices = [
         1 => 'bytes',
         self::KB_BYTES => 'kB',
         self::MB_BYTES => 'MB',
         self::KIB_BYTES => 'KiB',
         self::MIB_BYTES => 'MiB',
-    );
+    ];
 
     /**
      * {@inheritdoc}
@@ -57,10 +57,10 @@ class FileValidator extends ConstraintValidator
                         $binaryFormat = $constraint->binaryFormat;
                     } else {
                         $limitInBytes = $iniLimitSize;
-                        $binaryFormat = true;
+                        $binaryFormat = null === $constraint->binaryFormat ? true : $constraint->binaryFormat;
                     }
 
-                    list($sizeAsString, $limitAsString, $suffix) = $this->factorizeSizes(0, $limitInBytes, $binaryFormat);
+                    list(, $limitAsString, $suffix) = $this->factorizeSizes(0, $limitInBytes, $binaryFormat);
                     $this->context->buildViolation($constraint->uploadIniSizeErrorMessage)
                         ->setParameter('{{ limit }}', $limitAsString)
                         ->setParameter('{{ suffix }}', $suffix)
@@ -113,7 +113,7 @@ class FileValidator extends ConstraintValidator
             }
         }
 
-        if (!is_scalar($value) && !$value instanceof FileObject && !(is_object($value) && method_exists($value, '__toString'))) {
+        if (!is_scalar($value) && !$value instanceof FileObject && !(\is_object($value) && method_exists($value, '__toString'))) {
             throw new UnexpectedTypeException($value, 'string');
         }
 
@@ -196,7 +196,7 @@ class FileValidator extends ConstraintValidator
 
     private static function moreDecimalsThan($double, $numberOfDecimals)
     {
-        return strlen((string) $double) > strlen(round($double, $numberOfDecimals));
+        return \strlen((string) $double) > \strlen(round($double, $numberOfDecimals));
     }
 
     /**
@@ -233,6 +233,6 @@ class FileValidator extends ConstraintValidator
             $sizeAsString = (string) round($size / $coef, 2);
         }
 
-        return array($sizeAsString, $limitAsString, self::$suffices[$coef]);
+        return [$sizeAsString, $limitAsString, self::$suffices[$coef]];
     }
 }

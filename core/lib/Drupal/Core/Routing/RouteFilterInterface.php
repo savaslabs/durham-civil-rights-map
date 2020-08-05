@@ -4,12 +4,12 @@ namespace Drupal\Core\Routing;
 
 use Symfony\Component\Routing\Route;
 
-@trigger_error('\Drupal\Core\Routing\Enhancer\RouteFilterInterface is deprecated in Drupal 8.5.0 and will be removed before Drupal 9.0.0. Instead, you should use \Drupal\Core\Routing\FilterInterface. See https://www.drupal.org/node/2894934', E_USER_DEPRECATED);
+@trigger_error('\Drupal\Core\Routing\RouteFilterInterface is deprecated in Drupal 8.5.0 and will be removed before Drupal 9.0.0. Instead, you should use \Drupal\Core\Routing\FilterInterface. See https://www.drupal.org/node/2894934', E_USER_DEPRECATED);
 
 /**
  * A route filter service to filter down the collection of route instances.
  *
- * @deprecated in Drupal 8.4.0 and will be removed before Drupal 9.0.0. Instead,
+ * @deprecated in drupal:8.4.0 and is removed from drupal:9.0.0. Instead,
  * you should use \Drupal\Core\Routing\FilterInterface.
  * See https://www.drupal.org/node/2894934
  */

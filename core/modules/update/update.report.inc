@@ -5,7 +5,6 @@
  * Code required only when rendering the available updates report.
  */
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Url;
 
@@ -31,7 +30,7 @@ function template_preprocess_update_report(&$variables) {
       'library' => [
         'update/drupal.update.admin',
       ],
-    ]
+    ],
   ];
 
   // For no project update data, populate no data message.
@@ -54,7 +53,7 @@ function template_preprocess_update_report(&$variables) {
         '#attributes' => ['class' => ['update']],
       ];
     }
-    $row_key = !empty($project['title']) ? Unicode::strtolower($project['title']) : Unicode::strtolower($project['name']);
+    $row_key = !empty($project['title']) ? mb_strtolower($project['title']) : mb_strtolower($project['name']);
 
     // Add the project status row and details.
     $rows[$project['project_type']][$row_key]['status'] = $project_status;
@@ -119,7 +118,7 @@ function template_preprocess_update_project_status(&$variables) {
 
   $variables['install_type'] = $project['install_type'];
   if ($project['install_type'] == 'dev' && !empty($project['datestamp'])) {
-    $variables['datestamp'] = format_date($project['datestamp'], 'custom', 'Y-M-d');
+    $variables['datestamp'] = \Drupal::service('date.formatter')->format($project['datestamp'], 'custom', 'Y-M-d');
   }
 
   $variables['existing_version'] = $project['existing_version'];
@@ -231,7 +230,7 @@ function template_preprocess_update_project_status(&$variables) {
       $extra_item['data'] = [
         '#prefix' => '<em>',
         '#markup' => $value['data'],
-        '#suffix' => '</em>'
+        '#suffix' => '</em>',
       ];
       $variables['extras'][] = $extra_item;
     }

@@ -8,11 +8,12 @@ namespace Drupal\KernelTests\Core\Database;
  * @group Database
  */
 class SerializeQueryTest extends DatabaseTestBase {
+
   /**
    * Confirms that a query can be serialized and unserialized.
    */
   public function testSerializeQuery() {
-    $query = db_select('test');
+    $query = $this->connection->select('test');
     $query->addField('test', 'age');
     $query->condition('name', 'Ringo');
     // If this doesn't work, it will throw an exception, so no need for an

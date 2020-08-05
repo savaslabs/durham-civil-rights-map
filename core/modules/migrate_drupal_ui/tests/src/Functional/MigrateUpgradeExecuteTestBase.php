@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\migrate_drupal_ui\Functional;
 
-use Drupal\migrate_drupal\MigrationConfigurationTrait;
 use Drupal\Tests\migrate_drupal\Traits\CreateTestContentEntitiesTrait;
 
 /**
@@ -10,7 +9,6 @@ use Drupal\Tests\migrate_drupal\Traits\CreateTestContentEntitiesTrait;
  */
 abstract class MigrateUpgradeExecuteTestBase extends MigrateUpgradeTestBase {
 
-  use MigrationConfigurationTrait;
   use CreateTestContentEntitiesTrait;
 
   /**
@@ -70,15 +68,34 @@ abstract class MigrateUpgradeExecuteTestBase extends MigrateUpgradeTestBase {
     // Ensure submitting the form with invalid database credentials gives us a
     // nice warning.
     $this->drupalPostForm(NULL, [$driver . '[database]' => 'wrong'] + $edits, t('Review upgrade'));
-    $session->pageTextContains('Resolve the issue below to continue the upgrade.');
+    $session->pageTextContains('Resolve all issues below to continue the upgrade.');
 
     $this->drupalPostForm(NULL, $edits, t('Review upgrade'));
     // Ensure we get errors about missing modules.
-    $session->pageTextContains(t('Resolve the issue below to continue the upgrade'));
+    $session->pageTextContains(t('Resolve all issues below to continue the upgrade.'));
     $session->pageTextContains(t('The no_source_module plugin must define the source_module property.'));
 
     // Uninstall the module causing the missing module error messages.
     $this->container->get('module_installer')->uninstall(['migration_provider_test'], TRUE);
+
+    // Test the file sources.
+    $this->drupalGet('/upgrade');
+    $this->drupalPostForm(NULL, [], t('Continue'));
+    if ($version == 6) {
+      $paths['d6_source_base_path'] = DRUPAL_ROOT . '/wrong-path';
+    }
+    else {
+      $paths['source_base_path'] = 'https://example.com/wrong-path';
+      $paths['source_private_file_path'] = DRUPAL_ROOT . '/wrong-path';
+    }
+    $this->drupalPostForm(NULL, $paths + $edits, t('Review upgrade'));
+    if ($version == 6) {
+      $session->responseContains('Failed to read from Files directory.');
+    }
+    else {
+      $session->responseContains('Failed to read from Public files directory.');
+      $session->responseContains('Failed to read from Private files directory.');
+    }
 
     // Restart the upgrade process.
     $this->drupalGet('/upgrade');
@@ -89,7 +106,16 @@ abstract class MigrateUpgradeExecuteTestBase extends MigrateUpgradeTestBase {
     $session->fieldExists('mysql[host]');
 
     $this->drupalPostForm(NULL, $edits, t('Review upgrade'));
-    $this->assertIdConflict($session);
+    $entity_types = [
+      'block_content',
+      'menu_link_content',
+      'file',
+      'taxonomy_term',
+      'user',
+      'comment',
+      'node',
+    ];
+    $this->assertIdConflict($session, $entity_types);
 
     $this->drupalPostForm(NULL, [], t('I acknowledge I may lose data. Continue anyway.'));
     $session->statusCodeEquals(200);
@@ -100,7 +126,7 @@ abstract class MigrateUpgradeExecuteTestBase extends MigrateUpgradeTestBase {
     // Ensure there are no errors about any other missing migration providers.
     $session->pageTextNotContains(t('module not found'));
 
-    // Test the upgrade paths.
+    // Test the review page.
     $available_paths = $this->getAvailablePaths();
     $missing_paths = $this->getMissingPaths();
     $this->assertReviewPage($session, $available_paths, $missing_paths);
@@ -121,7 +147,7 @@ abstract class MigrateUpgradeExecuteTestBase extends MigrateUpgradeTestBase {
     $this->drupalPostForm(NULL, $edits, t('Review upgrade'));
     $session->pageTextContains('WARNING: Content may be overwritten on your new site.');
     $session->pageTextContains('There is conflicting content of these types:');
-    $session->pageTextContains('file entities');
+    $session->pageTextContains('files');
     $session->pageTextContains('content item revisions');
     $session->pageTextContains('There is translated content of these types:');
     $session->pageTextContains('content items');
@@ -129,12 +155,7 @@ abstract class MigrateUpgradeExecuteTestBase extends MigrateUpgradeTestBase {
     $this->drupalPostForm(NULL, [], t('I acknowledge I may lose data. Continue anyway.'));
     $session->statusCodeEquals(200);
 
-    // Need to update available and missing path lists.
-    $all_available = $this->getAvailablePaths();
-    $all_available[] = 'aggregator';
-    $all_missing = $this->getMissingPaths();
-    $all_missing = array_diff($all_missing, ['aggregator']);
-    $this->assertReviewPage($session, $all_available, $all_missing);
+    // Run the incremental migration and check the results.
     $this->drupalPostForm(NULL, [], t('Perform upgrade'));
     $session->pageTextContains(t('Congratulations, you upgraded Drupal!'));
     $this->assertMigrationResults($this->getEntityCountsIncremental(), $version);

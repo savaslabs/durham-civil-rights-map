@@ -97,6 +97,9 @@ abstract class CachePluginBase extends PluginBase {
    * Save data to the cache.
    *
    * A plugin should override this to provide specialized caching behavior.
+   *
+   * @param $type
+   *   The cache type, either 'query', 'result'.
    */
   public function cacheSet($type) {
     switch ($type) {
@@ -119,6 +122,12 @@ abstract class CachePluginBase extends PluginBase {
    * Retrieve data from the cache.
    *
    * A plugin should override this to provide specialized caching behavior.
+   *
+   * @param $type
+   *   The cache type, either 'query', 'result'.
+   *
+   * @return bool
+   *   TRUE if data has been taken from the cache, otherwise FALSE.
    */
   public function cacheGet($type) {
     $cutoff = $this->cacheExpire($type);
@@ -154,19 +163,22 @@ abstract class CachePluginBase extends PluginBase {
   /**
    * Post process any rendered data.
    *
-   * This can be valuable to be able to cache a view and still have some level of
-   * dynamic output. In an ideal world, the actual output will include HTML
+   * This can be valuable to be able to cache a view and still have some level
+   * of dynamic output. In an ideal world, the actual output will include HTML
    * comment based tokens, and then the post process can replace those tokens.
    *
    * Example usage. If it is known that the view is a node view and that the
    * primary field will be a nid, you can do something like this:
-   *
-   * <!--post-FIELD-NID-->
+   * @code
+   *   <!--post-FIELD-NID-->
+   * @endcode
    *
    * And then in the post render, create an array with the text that should
    * go there:
    *
-   * strtr($output, array('<!--post-FIELD-1-->', 'output for FIELD of nid 1');
+   * @code
+   *   strtr($output, array('<!--post-FIELD-1-->', 'output for FIELD of nid 1');
+   * @endcode
    *
    * All of the cached result data will be available in $view->result, as well,
    * so all ids used in the query should be discoverable.
@@ -229,7 +241,7 @@ abstract class CachePluginBase extends PluginBase {
     if (!empty($entity_information)) {
       // Add the list cache tags for each entity type used by this view.
       foreach ($entity_information as $table => $metadata) {
-        $tags = Cache::mergeTags($tags, \Drupal::entityManager()->getDefinition($metadata['entity_type'])->getListCacheTags());
+        $tags = Cache::mergeTags($tags, \Drupal::entityTypeManager()->getDefinition($metadata['entity_type'])->getListCacheTags());
       }
     }
 

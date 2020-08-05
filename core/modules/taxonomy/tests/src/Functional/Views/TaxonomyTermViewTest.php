@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\taxonomy\Functional\Views;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\node\Entity\Node;
@@ -23,6 +22,11 @@ class TaxonomyTermViewTest extends TaxonomyTestBase {
    * @var array
    */
   public static $modules = ['taxonomy', 'views'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * An user with permissions to administer taxonomy.
@@ -50,7 +54,7 @@ class TaxonomyTermViewTest extends TaxonomyTestBase {
 
     // Create a vocabulary and add two term reference fields to article nodes.
 
-    $this->fieldName1 = Unicode::strtolower($this->randomMachineName());
+    $this->fieldName1 = mb_strtolower($this->randomMachineName());
 
     $handler_settings = [
       'target_bundles' => [
@@ -60,12 +64,14 @@ class TaxonomyTermViewTest extends TaxonomyTestBase {
     ];
     $this->createEntityReferenceField('node', 'article', $this->fieldName1, NULL, 'taxonomy_term', 'default', $handler_settings, FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED);
 
-    entity_get_form_display('node', 'article', 'default')
+    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+    $display_repository = \Drupal::service('entity_display.repository');
+    $display_repository->getFormDisplay('node', 'article')
       ->setComponent($this->fieldName1, [
         'type' => 'options_select',
       ])
       ->save();
-    entity_get_display('node', 'article', 'default')
+    $display_repository->getViewDisplay('node', 'article')
       ->setComponent($this->fieldName1, [
         'type' => 'entity_reference_label',
       ])
@@ -101,10 +107,6 @@ class TaxonomyTermViewTest extends TaxonomyTestBase {
       ->grantPermission('create content translations')
       ->grantPermission('translate any entity')
       ->save();
-    drupal_static_reset();
-    \Drupal::entityManager()->clearCachedDefinitions();
-    \Drupal::service('router.builder')->rebuild();
-    \Drupal::service('entity.definition_update_manager')->applyUpdates();
 
     $edit['title[0][value]'] = $translated_title = $this->randomMachineName();
 

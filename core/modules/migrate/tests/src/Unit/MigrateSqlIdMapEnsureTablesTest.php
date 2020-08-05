@@ -28,7 +28,7 @@ class MigrateSqlIdMapEnsureTablesTest extends MigrateTestCase {
       'type' => 'varchar',
       'length' => 64,
       'not null' => 1,
-      'description' => 'Hash of source ids. Used as primary key'
+      'description' => 'Hash of source ids. Used as primary key',
     ];
     $fields['sourceid1'] = [
       'type' => 'int',
@@ -101,7 +101,7 @@ class MigrateSqlIdMapEnsureTablesTest extends MigrateTestCase {
       'type' => 'varchar',
       'length' => 64,
       'not null' => 1,
-      'description' => 'Hash of source ids. Used as primary key'
+      'description' => 'Hash of source ids. Used as primary key',
     ];
     $fields['level'] = [
       'type' => 'int',
@@ -205,7 +205,7 @@ class MigrateSqlIdMapEnsureTablesTest extends MigrateTestCase {
       ->method('schema')
       ->willReturn($schema);
     $migration = $this->getMigration();
-    $plugin = $this->getMock('Drupal\migrate\Plugin\MigrateSourceInterface');
+    $plugin = $this->createMock('Drupal\migrate\Plugin\MigrateSourceInterface');
     $plugin->expects($this->any())
       ->method('getIds')
       ->willReturn([
@@ -219,7 +219,7 @@ class MigrateSqlIdMapEnsureTablesTest extends MigrateTestCase {
     $migration->expects($this->any())
       ->method('getSourcePlugin')
       ->willReturn($plugin);
-    $plugin = $this->getMock('Drupal\migrate\Plugin\MigrateSourceInterface');
+    $plugin = $this->createMock('Drupal\migrate\Plugin\MigrateSourceInterface');
     $plugin->expects($this->any())
       ->method('getIds')
       ->willReturn([
@@ -231,7 +231,7 @@ class MigrateSqlIdMapEnsureTablesTest extends MigrateTestCase {
       ->method('getDestinationPlugin')
       ->willReturn($plugin);
     /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
-    $event_dispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
+    $event_dispatcher = $this->createMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
     $map = new TestSqlIdMap($database, [], 'sql', [], $migration, $event_dispatcher);
     $map->getDatabase();
   }

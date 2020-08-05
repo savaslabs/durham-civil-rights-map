@@ -23,6 +23,11 @@ class CKEditorAdminTest extends BrowserTestBase {
   public static $modules = ['filter', 'editor', 'ckeditor'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * A user with the 'administer filters' permission.
    *
    * @var \Drupal\user\UserInterface
@@ -56,7 +61,7 @@ class CKEditorAdminTest extends BrowserTestBase {
 
     // Ensure no Editor config entity exists yet.
     $editor = Editor::load('filtered_html');
-    $this->assertFalse($editor, 'No Editor config entity exists yet.');
+    $this->assertNull($editor, 'No Editor config entity exists yet.');
 
     // Verify the "Text Editor" <select> when a text editor is available.
     $select = $this->xpath('//select[@name="editor[editor]"]');
@@ -112,7 +117,7 @@ class CKEditorAdminTest extends BrowserTestBase {
     // Keep the "CKEditor" editor selected and click the "Configure" button.
     $this->drupalPostForm(NULL, $edit, 'editor_configure');
     $editor = Editor::load('filtered_html');
-    $this->assertFalse($editor, 'No Editor config entity exists yet.');
+    $this->assertNull($editor, 'No Editor config entity exists yet.');
 
     // Ensure that drupalSettings is correct.
     $ckeditor_settings_toolbar = [
@@ -216,6 +221,19 @@ class CKEditorAdminTest extends BrowserTestBase {
     $editor = Editor::load('filtered_html');
     $this->assertTrue($editor instanceof Editor, 'An Editor config entity exists.');
     $this->assertEqual($expected_settings, $editor->getSettings());
+
+    $this->drupalGet('admin/config/content/formats/add');
+    // Now attempt to add another filter format with the same editor and same
+    // machine name.
+    $edit = [
+      'format' => 'filtered_html',
+      'name' => 'Filtered HTML',
+      'editor[editor]' => 'ckeditor',
+    ];
+    $this->submitForm($edit, 'editor_configure');
+    $this->submitForm($edit, 'Save configuration');
+    $this->assertResponse(200);
+    $this->assertText('The machine-readable name is already in use. It must be unique.');
   }
 
   /**
@@ -248,9 +266,9 @@ class CKEditorAdminTest extends BrowserTestBase {
     ];
     $this->drupalPostForm(NULL, $edit, 'editor_configure');
     $filter_format = FilterFormat::load('amazing_format');
-    $this->assertFalse($filter_format, 'No FilterFormat config entity exists yet.');
+    $this->assertNull($filter_format, 'No FilterFormat config entity exists yet.');
     $editor = Editor::load('amazing_format');
-    $this->assertFalse($editor, 'No Editor config entity exists yet.');
+    $this->assertNull($editor, 'No Editor config entity exists yet.');
 
     // Ensure the toolbar buttons configuration value is initialized to the
     // default value.

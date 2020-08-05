@@ -39,17 +39,17 @@ class RendererRecursionTest extends RendererTestBase {
 
     $complex_child = $complex_child_template;
     $callable = function () use ($renderer, $complex_child) {
-      $this->setExpectedException(\LogicException::class);
+      $this->expectException(\LogicException::class);
       $renderer->renderRoot($complex_child);
     };
 
     $page = [
       'content' => [
         '#pre_render' => [
-          $callable
+          $callable,
         ],
         '#suffix' => $parent_markup,
-      ]
+      ],
     ];
     $renderer->renderRoot($page);
   }
@@ -78,10 +78,10 @@ class RendererRecursionTest extends RendererTestBase {
       'content' => [
         'complex_child' => $complex_child_template,
         '#post_render' => [
-          $callable
+          $callable,
         ],
         '#suffix' => $parent_markup,
-      ]
+      ],
     ];
     $output = $renderer->renderRoot($page);
 
@@ -114,10 +114,10 @@ class RendererRecursionTest extends RendererTestBase {
     $page = [
       'content' => [
         '#pre_render' => [
-          $callable
+          $callable,
         ],
         '#suffix' => $parent_markup,
-      ]
+      ],
     ];
     $output = $renderer->renderRoot($page);
     $this->assertEquals('<p>This is a rendered placeholder!</p>' . $parent_markup, $output, 'Rendered output as expected, with the placeholder replaced.');

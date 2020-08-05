@@ -8,6 +8,12 @@ namespace Drupal\Tests\options\Functional;
  * @group options
  */
 class OptionsSelectDynamicValuesTest extends OptionsDynamicValuesTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   /**
    * Tests the 'options_select' widget (single select).
    */
@@ -24,9 +30,9 @@ class OptionsSelectDynamicValuesTest extends OptionsDynamicValuesTestBase {
     $options = $this->xpath('//select[@id="edit-test-options"]/option');
     $this->assertEqual(count($options), count($this->test) + 1);
     foreach ($options as $option) {
-      $value = (string) $option['value'];
+      $value = $option->getValue();
       if ($value != '_none') {
-        $this->assertTrue(array_search($value, $this->test));
+        $this->assertContains($value, $this->test);
       }
     }
   }

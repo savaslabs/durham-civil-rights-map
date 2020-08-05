@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\views_ui\Functional;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\views\Tests\ViewTestData;
@@ -20,6 +20,11 @@ class HandlerTest extends UITestBase {
    * {@inheritdoc}
    */
   public static $modules = ['node_test_views'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
 
   /**
    * Views used by this test.
@@ -53,7 +58,7 @@ class HandlerTest extends UITestBase {
       'type' => 'int',
       'unsigned' => TRUE,
       'not null' => TRUE,
-      'default' => 0
+      'default' => 0,
     ];
 
     return $schema;
@@ -74,8 +79,8 @@ class HandlerTest extends UITestBase {
       'relationship' => [
         'id' => 'standard',
         'base' => 'users_field_data',
-        'base field' => 'uid'
-      ]
+        'base field' => 'uid',
+      ],
     ];
 
     // Create a dummy field with no help text.
@@ -125,7 +130,7 @@ class HandlerTest extends UITestBase {
 
       // Save the view and have a look whether the handler was added as expected.
       $this->drupalPostForm(NULL, [], t('Save'));
-      $view = $this->container->get('entity.manager')->getStorage('view')->load('test_view_empty');
+      $view = $this->container->get('entity_type.manager')->getStorage('view')->load('test_view_empty');
       $display = $view->getDisplay('default');
       $this->assertTrue(isset($display['display_options'][$type_info['plural']][$id]), 'Ensure the field was added to the view itself.');
 
@@ -134,7 +139,7 @@ class HandlerTest extends UITestBase {
       $this->assertNoLinkByHref($edit_handler_url, 0, 'The handler edit link does not appears in the UI after removing.');
 
       $this->drupalPostForm(NULL, [], t('Save'));
-      $view = $this->container->get('entity.manager')->getStorage('view')->load('test_view_empty');
+      $view = $this->container->get('entity_type.manager')->getStorage('view')->load('test_view_empty');
       $display = $view->getDisplay('default');
       $this->assertFalse(isset($display['display_options'][$type_info['plural']][$id]), 'Ensure the field was removed from the view itself.');
     }
@@ -155,7 +160,7 @@ class HandlerTest extends UITestBase {
     $this->drupalPostForm(NULL, [], t('Apply'));
 
     $this->drupalPostForm(NULL, [], t('Save'));
-    $view = $this->container->get('entity.manager')->getStorage('view')->load('test_view_empty');
+    $view = $this->container->get('entity_type.manager')->getStorage('view')->load('test_view_empty');
     $display = $view->getDisplay('default');
     $this->assertTrue(isset($display['display_options'][$type_info['plural']][$id]), 'Ensure the field was added to the view itself.');
   }
@@ -180,14 +185,14 @@ class HandlerTest extends UITestBase {
       'field_name' => 'field_test',
       'entity_type' => 'node',
       'bundle' => 'page',
-      'label' => 'The giraffe" label'
+      'label' => 'The giraffe" label',
     ])->save();
 
     FieldConfig::create([
       'field_name' => 'field_test',
       'entity_type' => 'node',
       'bundle' => 'article',
-      'label' => 'The <em>giraffe"</em> label <script>alert("the return of the xss")</script>'
+      'label' => 'The <em>giraffe"</em> label <script>alert("the return of the xss")</script>',
     ])->save();
 
     $this->drupalGet('admin/structure/views/nojs/add-handler/content/default/field');
@@ -206,7 +211,7 @@ class HandlerTest extends UITestBase {
       $href = "admin/structure/views/nojs/handler/test_view_broken/default/$type/id_broken";
 
       $result = $this->xpath('//a[contains(@href, :href)]', [':href' => $href]);
-      $this->assertEqual(count($result), 1, SafeMarkup::format('Handler (%type) edit link found.', ['%type' => $type]));
+      $this->assertEqual(count($result), 1, new FormattableMarkup('Handler (%type) edit link found.', ['%type' => $type]));
 
       $text = 'Broken/missing handler';
 
@@ -225,7 +230,7 @@ class HandlerTest extends UITestBase {
       ];
 
       foreach ($original_configuration as $key => $value) {
-        $this->assertText(SafeMarkup::format('@key: @value', ['@key' => $key, '@value' => $value]));
+        $this->assertText(new FormattableMarkup('@key: @value', ['@key' => $key, '@value' => $value]));
       }
     }
   }

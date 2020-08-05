@@ -33,14 +33,14 @@ class ContentTranslationConfigImportTest extends KernelTestBase {
   protected function setUp() {
     parent::setUp();
 
+    $this->installConfig(['system']);
     $this->installEntitySchema('entity_test_mul');
     $this->copyConfig($this->container->get('config.storage'), $this->container->get('config.storage.sync'));
 
     // Set up the ConfigImporter object for testing.
     $storage_comparer = new StorageComparer(
       $this->container->get('config.storage.sync'),
-      $this->container->get('config.storage'),
-      $this->container->get('config.manager')
+      $this->container->get('config.storage')
     );
     $this->configImporter = new ConfigImporter(
       $storage_comparer->createChangelist(),
@@ -51,7 +51,8 @@ class ContentTranslationConfigImportTest extends KernelTestBase {
       $this->container->get('module_handler'),
       $this->container->get('module_installer'),
       $this->container->get('theme_handler'),
-      $this->container->get('string_translation')
+      $this->container->get('string_translation'),
+      $this->container->get('extension.list.module')
     );
   }
 
@@ -74,7 +75,7 @@ class ContentTranslationConfigImportTest extends KernelTestBase {
       'langcode' => 'en',
       'status' => TRUE,
       'dependencies' => [
-        'module' => ['content_translation']
+        'module' => ['content_translation'],
       ],
       'id' => $config_id,
       'target_entity_type_id' => 'entity_test_mul',
@@ -96,7 +97,7 @@ class ContentTranslationConfigImportTest extends KernelTestBase {
     $this->assertIdentical($config->get('id'), $config_id);
 
     // Verify that updates were performed.
-    $entity_type = $this->container->get('entity.manager')->getDefinition($entity_type_id);
+    $entity_type = $this->container->get('entity_type.manager')->getDefinition($entity_type_id);
     $table = $entity_type->getDataTable();
     $db_schema = $this->container->get('database')->schema();
     $result = $db_schema->fieldExists($table, 'content_translation_source') && $db_schema->fieldExists($table, 'content_translation_outdated');

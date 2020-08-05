@@ -4,8 +4,7 @@ namespace Drupal\Tests\config_translation\Functional;
 
 use Behat\Mink\Element\NodeElement;
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Component\Utility\Unicode;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Test\AssertMailTrait;
@@ -46,6 +45,11 @@ class ConfigTranslationUiTest extends BrowserTestBase {
     'views',
     'views_ui',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Languages to enable.
@@ -404,7 +408,7 @@ class ConfigTranslationUiTest extends BrowserTestBase {
 
     // Test that delete links work and operations perform properly.
     foreach ($this->langcodes as $langcode) {
-      $replacements = ['%label' => t('@label @entity_type', ['@label' => $label, '@entity_type' => Unicode::strtolower(t('Contact form'))]), '@language' => \Drupal::languageManager()->getLanguage($langcode)->getName()];
+      $replacements = ['%label' => t('@label @entity_type', ['@label' => $label, '@entity_type' => mb_strtolower(t('Contact form'))]), '@language' => \Drupal::languageManager()->getLanguage($langcode)->getName()];
 
       $this->drupalGet("$translation_base_url/$langcode/delete");
       $this->assertRaw(t('Are you sure you want to delete the @language translation of %label?', $replacements));
@@ -496,7 +500,7 @@ class ConfigTranslationUiTest extends BrowserTestBase {
 
       // Formatting the date 8 / 27 / 1985 @ 13:37 EST with pattern D should
       // display "Tue".
-      $formatted_date = format_date(494015820, $id, NULL, 'America/New_York', 'fr');
+      $formatted_date = $this->container->get('date.formatter')->format(494015820, $id, NULL, 'America/New_York', 'fr');
       $this->assertEqual($formatted_date, 'Tue', 'Got the right formatted date using the date format translation pattern.');
     }
   }
@@ -808,6 +812,7 @@ class ConfigTranslationUiTest extends BrowserTestBase {
     // tests.
     $this->config('locale.settings')
       ->set('translation.import_enabled', TRUE)
+      ->set('translation.use_source', LOCALE_TRANSLATION_USE_SOURCE_LOCAL)
       ->save();
 
     $this->drupalLogin($this->adminUser);
@@ -907,7 +912,7 @@ class ConfigTranslationUiTest extends BrowserTestBase {
     $expected = [
       'kitten',
       'llama',
-      'elephant'
+      'elephant',
     ];
     $actual = $config_factory
       ->getEditable('config_translation_test.content')
@@ -1084,12 +1089,12 @@ class ConfigTranslationUiTest extends BrowserTestBase {
    */
   protected function getTranslation($config_name, $key, $langcode) {
     $settings_locations = $this->localeStorage->getLocations(['type' => 'configuration', 'name' => $config_name]);
-    $this->assertTrue(!empty($settings_locations), format_string('Configuration locations found for %config_name.', ['%config_name' => $config_name]));
+    $this->assertTrue(!empty($settings_locations), new FormattableMarkup('Configuration locations found for %config_name.', ['%config_name' => $config_name]));
 
     if (!empty($settings_locations)) {
       $source = $this->container->get('config.factory')->get($config_name)->get($key);
       $source_string = $this->localeStorage->findString(['source' => $source, 'type' => 'configuration']);
-      $this->assertTrue(!empty($source_string), format_string('Found string for %config_name.%key.', ['%config_name' => $config_name, '%key' => $key]));
+      $this->assertTrue(!empty($source_string), new FormattableMarkup('Found string for %config_name.%key.', ['%config_name' => $config_name, '%key' => $key]));
 
       if (!empty($source_string)) {
         $conditions = [
@@ -1151,19 +1156,17 @@ class ConfigTranslationUiTest extends BrowserTestBase {
       ':id' => $id,
     ]);
     $textarea = reset($textarea);
-    $this->assertTrue($textarea instanceof NodeElement, SafeMarkup::format('Disabled field @id exists.', [
+    $this->assertTrue($textarea instanceof NodeElement, new FormattableMarkup('Disabled field @id exists.', [
       '@id' => $id,
     ]));
     $expected = 'This field has been disabled because you do not have sufficient permissions to edit it.';
-    $this->assertEqual($textarea->getText(), $expected, SafeMarkup::format('Disabled textarea @id hides text in an inaccessible text format.', [
+    $this->assertEqual($textarea->getText(), $expected, new FormattableMarkup('Disabled textarea @id hides text in an inaccessible text format.', [
       '@id' => $id,
     ]));
     // Make sure the text format select is not shown.
     $select_id = str_replace('value', 'format--2', $id);
-    $select = $this->xpath('//select[@id=:id]', [':id' => $select_id]);
-    return $this->assertFalse($select, SafeMarkup::format('Field @id does not exist.', [
-      '@id' => $id,
-    ]));
+    $xpath = $this->assertSession()->buildXPathQuery('//select[@id=:id]', [':id' => $select_id]);
+    $this->assertSession()->elementNotExists('xpath', $xpath);
   }
 
   /**

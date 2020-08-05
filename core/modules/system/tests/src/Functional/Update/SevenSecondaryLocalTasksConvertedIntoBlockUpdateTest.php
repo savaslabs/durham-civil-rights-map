@@ -10,8 +10,14 @@ use Drupal\FunctionalTests\Update\UpdatePathTestBase;
  * @see https://www.drupal.org/node/2569529
  *
  * @group system
+ * @group legacy
  */
 class SevenSecondaryLocalTasksConvertedIntoBlockUpdateTest extends UpdatePathTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -40,7 +46,7 @@ class SevenSecondaryLocalTasksConvertedIntoBlockUpdateTest extends UpdatePathTes
     $this->runUpdates();
 
     /** @var \Drupal\block\BlockInterface $block_storage */
-    $block_storage = \Drupal::entityManager()->getStorage('block');
+    $block_storage = \Drupal::entityTypeManager()->getStorage('block');
 
     // Disable maintenance mode.
     // @todo Can be removed once maintenance mode is automatically turned off
@@ -53,7 +59,7 @@ class SevenSecondaryLocalTasksConvertedIntoBlockUpdateTest extends UpdatePathTes
     // Local actions are visible on the content listing page.
     $this->drupalGet('admin/structure/block');
     $action_link = $this->cssSelect('#secondary-tabs-title');
-    $this->assertTrue($action_link);
+    $this->assertNotEmpty($action_link);
   }
 
 }

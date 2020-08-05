@@ -68,7 +68,7 @@ class WinCacheClassLoader
      */
     public function __construct($prefix, $decorated)
     {
-        if (!extension_loaded('wincache')) {
+        if (!\extension_loaded('wincache')) {
             throw new \RuntimeException('Unable to use WinCacheClassLoader as WinCache is not enabled.');
         }
 
@@ -87,7 +87,7 @@ class WinCacheClassLoader
      */
     public function register($prepend = false)
     {
-        spl_autoload_register(array($this, 'loadClass'), true, $prepend);
+        spl_autoload_register([$this, 'loadClass'], true, $prepend);
     }
 
     /**
@@ -95,7 +95,7 @@ class WinCacheClassLoader
      */
     public function unregister()
     {
-        spl_autoload_unregister(array($this, 'loadClass'));
+        spl_autoload_unregister([$this, 'loadClass']);
     }
 
     /**
@@ -112,6 +112,8 @@ class WinCacheClassLoader
 
             return true;
         }
+
+        return null;
     }
 
     /**
@@ -137,6 +139,6 @@ class WinCacheClassLoader
      */
     public function __call($method, $args)
     {
-        return call_user_func_array(array($this->decorated, $method), $args);
+        return \call_user_func_array([$this->decorated, $method], $args);
     }
 }

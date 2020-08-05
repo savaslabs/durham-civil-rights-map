@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\views_slideshow\ViewsSlideshowWidget\PagerFields.
- */
-
 namespace Drupal\views_slideshow\Plugin\ViewsSlideshowWidget;
 
 use Drupal\Core\Form\FormStateInterface;
@@ -26,8 +21,8 @@ class PagerFields extends ViewsSlideshowWidgetBase {
    */
   public function defaultConfiguration() {
     return [
-      'views_slideshow_pager_fields_fields' => array('default' => array()),
-      'views_slideshow_pager_fields_hover' => array('default' => 0),
+      'views_slideshow_pager_fields_fields' => ['default' => []],
+      'views_slideshow_pager_fields_hover' => ['default' => 0],
     ];
   }
 
@@ -36,7 +31,7 @@ class PagerFields extends ViewsSlideshowWidgetBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     // Settings for fields pager.
-    $options = array();
+    $options = [];
 
     // Get each field and it's name.
     foreach ($this->getConfiguration()['view']->display_handler->getHandlers('field') as $field_name => $field) {
@@ -44,42 +39,43 @@ class PagerFields extends ViewsSlideshowWidgetBase {
     }
 
     // Need to wrap this so it indents correctly.
-    $form['views_slideshow_pager_fields_wrapper'] = array(
+    $form['views_slideshow_pager_fields_wrapper'] = [
       '#markup' => '<div class="vs-dependent">',
-    );
+    ];
+
     // Add ability to choose which fields to show in the pager.
-    $form['views_slideshow_pager_fields_fields'] = array(
+    $form['views_slideshow_pager_fields_fields'] = [
       '#type' => 'checkboxes',
-      '#title' => t('Pager fields'),
+      '#title' => $this->t('Pager fields'),
       '#options' => $options,
       '#default_value' => $this->getConfiguration()['views_slideshow_pager_fields_fields'],
-      '#description' => t('Choose the fields that will appear in the pager.'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => array('checked' => TRUE),
-          ':input[name="' . $this->getConfiguration()['dependency'] . '[type]"]' => array('value' => 'views_slideshow_pager_fields'),
-        ),
-      ),
-    );
+      '#description' => $this->t('Choose the fields that will appear in the pager.'),
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => ['checked' => TRUE],
+          ':input[name="' . $this->getConfiguration()['dependency'] . '[type]"]' => ['value' => 'views_slideshow_pager_fields'],
+        ],
+      ],
+    ];
 
     // Add field to see if they would like to activate slide and pause on pager
     // hover.
-    $form['views_slideshow_pager_fields_hover'] = array(
+    $form['views_slideshow_pager_fields_hover'] = [
       '#type' => 'checkbox',
-      '#title' => t('Activate Slide and Pause on Pager Hover'),
+      '#title' => $this->t('Activate Slide and Pause on Pager Hover'),
       '#default_value' => $this->getConfiguration()['views_slideshow_pager_fields_hover'],
-      '#description' => t('Should the slide be activated and paused when hovering over a pager item.'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => array('checked' => TRUE),
-          ':input[name="' . $this->getConfiguration()['dependency'] . '[type]"]' => array('value' => 'views_slideshow_pager_fields'),
-        ),
-      ),
-    );
+      '#description' => $this->t('Should the slide be activated and paused when hovering over a pager item.'),
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => ['checked' => TRUE],
+          ':input[name="' . $this->getConfiguration()['dependency'] . '[type]"]' => ['value' => 'views_slideshow_pager_fields'],
+        ],
+      ],
+    ];
 
-    $form['views_slideshow_pager_fields_wrapper_close'] = array(
+    $form['views_slideshow_pager_fields_wrapper_close'] = [
       '#markup' => '</div>',
-    );
+    ];
 
     return $form;
   }
@@ -90,4 +86,5 @@ class PagerFields extends ViewsSlideshowWidgetBase {
   public function checkCompatiblity($view) {
     return $view->getStyle()->usesFields();
   }
+
 }

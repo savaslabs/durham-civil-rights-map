@@ -20,7 +20,7 @@ class StatementPrefetch implements \Iterator, StatementInterface {
   /**
    * Driver-specific options. Can be used by child classes.
    *
-   * @var Array
+   * @var array
    */
   protected $driverOptions;
 
@@ -41,14 +41,14 @@ class StatementPrefetch implements \Iterator, StatementInterface {
   /**
    * Main data store.
    *
-   * @var Array
+   * @var array
    */
   protected $data = [];
 
   /**
    * The current row, retrieved in \PDO::FETCH_ASSOC format.
    *
-   * @var Array
+   * @var array
    */
   protected $currentRow = NULL;
 
@@ -62,7 +62,7 @@ class StatementPrefetch implements \Iterator, StatementInterface {
   /**
    * The list of column names in this result set.
    *
-   * @var Array
+   * @var array
    */
   protected $columnNames = NULL;
 
@@ -91,7 +91,7 @@ class StatementPrefetch implements \Iterator, StatementInterface {
   /**
    * Holds supplementary current fetch options (which will be used by the next fetch).
    *
-   * @var Array
+   * @var array
    */
   protected $fetchOptions = [
     'class' => 'stdClass',
@@ -110,7 +110,7 @@ class StatementPrefetch implements \Iterator, StatementInterface {
   /**
    * Holds supplementary default fetch options.
    *
-   * @var Array
+   * @var array
    */
   protected $defaultFetchOptions = [
     'class' => 'stdClass',
@@ -214,8 +214,8 @@ class StatementPrefetch implements \Iterator, StatementInterface {
    *
    * @param $query
    *   The query.
-   * @param array $args
-   *   An array of arguments.
+   * @param array|null $args
+   *   An array of arguments. This can be NULL.
    * @return \PDOStatement
    *   A PDOStatement object.
    */
@@ -282,7 +282,7 @@ class StatementPrefetch implements \Iterator, StatementInterface {
         case \PDO::FETCH_OBJ:
           return (object) $this->currentRow;
         case \PDO::FETCH_CLASS | \PDO::FETCH_CLASSTYPE:
-          $class_name = array_unshift($this->currentRow);
+          $class_name = array_shift($this->currentRow);
           // Deliberate no break.
         case \PDO::FETCH_CLASS:
           if (!isset($class_name)) {

@@ -17,7 +17,7 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
    *
    * @var array
    */
-  public static $modules = ['field', 'taxonomy', 'text', 'language', 'config_translation', 'user'];
+  public static $modules = ['field', 'taxonomy', 'text', 'language', 'config_translation', 'user', 'system'];
 
   /**
    * {@inheritdoc}
@@ -71,7 +71,7 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
     foreach ($vocabulary_data_rows as $row) {
       /** @var \Drupal\taxonomy\Entity\Vocabulary $vocabulary */
       $vocabulary = Vocabulary::load($row['id']);
-      $this->assertTrue($vocabulary);
+      $this->assertNotEmpty($vocabulary);
       $map_row = $vocabulary_id_map->getRowBySource(['id' => $row['id']]);
       $this->assertNotNull($map_row['destid1']);
     }
@@ -83,14 +83,14 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
         'name' => '1',
         'language' => 'fr',
         'property' => 'name',
-        'translation' => 'fr - categories'
+        'translation' => 'fr - categories',
       ],
       [
         'id' => '2',
         'name' => '2',
         'language' => 'fr',
         'property' => 'name',
-        'translation' => 'fr - tags'
+        'translation' => 'fr - tags',
       ],
     ];
     $ids = [
@@ -106,7 +106,7 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
         'ids' => $ids,
         'constants' => [
           'name' => 'name',
-        ]
+        ],
       ],
       'process' => [
         'vid' => 'id',
@@ -159,7 +159,7 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
     foreach ($vocabulary_data_rows as $row) {
       /** @var \Drupal\taxonomy\Entity\Vocabulary $vocabulary */
       $vocabulary = Vocabulary::load($row['id']);
-      $this->assertTrue($vocabulary);
+      $this->assertNotEmpty($vocabulary);
       $map_row = $vocabulary_id_map->getRowBySource(['id' => $row['id']]);
       $this->assertNotNull($map_row['destid1']);
     }

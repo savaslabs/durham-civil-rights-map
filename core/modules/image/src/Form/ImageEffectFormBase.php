@@ -92,7 +92,7 @@ abstract class ImageEffectFormBase extends FormBase {
     $form['actions']['cancel'] = [
       '#type' => 'link',
       '#title' => $this->t('Cancel'),
-      '#url' => $this->imageStyle->urlInfo('edit-form'),
+      '#url' => $this->imageStyle->toUrl('edit-form'),
       '#attributes' => ['class' => ['button']],
     ];
     return $form;
@@ -123,8 +123,8 @@ abstract class ImageEffectFormBase extends FormBase {
     }
     $this->imageStyle->save();
 
-    drupal_set_message($this->t('The image effect was successfully applied.'));
-    $form_state->setRedirectUrl($this->imageStyle->urlInfo('edit-form'));
+    $this->messenger()->addStatus($this->t('The image effect was successfully applied.'));
+    $form_state->setRedirectUrl($this->imageStyle->toUrl('edit-form'));
   }
 
   /**

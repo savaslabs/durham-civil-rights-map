@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\metatag\MetatagDefaultsListBuilder.
- */
-
 namespace Drupal\metatag;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
@@ -18,10 +13,42 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
-  public function load() {
-    $entities = parent::load();
-    // Move the Global defaults to the top.
-    return array('global' => $entities['global']) + $entities;
+  protected function getEntityIds() {
+    $query = $this->getStorage()->getQuery()
+      ->condition('id', 'global', '<>');
+
+    // Only add the pager if a limit is specified.
+    if ($this->limit) {
+      $query->pager($this->limit);
+    }
+
+    $entity_ids = $query->execute();
+
+    // Load global entity always.
+    return $entity_ids + $this->getParentIds($entity_ids);
+  }
+
+  /**
+   * Gets the parent entity ids for the list of entities to load.
+   *
+   * @param array $entity_ids
+   *   The metatag entity ids.
+   *
+   * @return array
+   *   The list of parents to load
+   */
+  protected function getParentIds(array $entity_ids) {
+    $parents = ['global' => 'global'];
+    foreach ($entity_ids as $entity_id) {
+      if (strpos($entity_id, '__') !== FALSE) {
+        $entity_id_array = explode('__', $entity_id);
+        $parent = reset($entity_id_array);
+        $parents[$parent] = $parent;
+      }
+    }
+    $parents_query = $this->getStorage()->getQuery()
+      ->condition('id', $parents, 'IN');
+    return $parents_query->execute();
   }
 
   /**
@@ -29,6 +56,7 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
    */
   public function buildHeader() {
     $header['label'] = $this->t('Type');
+    $header['status'] = $this->t('Status');
     return $header + parent::buildHeader();
   }
 
@@ -37,6 +65,7 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
    */
   public function buildRow(EntityInterface $entity) {
     $row['label'] = $this->getLabelAndConfig($entity);
+    $row['status'] = $entity->status() ? $this->t('Active') : $this->t('Disabled');
     return $row + parent::buildRow($entity);
   }
 
@@ -47,13 +76,13 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
     $operations = parent::getOperations($entity);
 
     // Global and entity defaults can be reverted but not deleted.
-    if (strpos($entity->id(), '__') === FALSE) {
+    if (in_array($entity->id(), MetatagManager::protectedDefaults())) {
       unset($operations['delete']);
-      $operations['revert'] = array(
+      $operations['revert'] = [
         'title' => t('Revert'),
         'weight' => $operations['edit']['weight'] + 1,
-        'url' => $entity->urlInfo('revert-form'),
-      );
+        'url' => $entity->toUrl('revert-form'),
+      ];
     }
 
     return $operations;
@@ -62,10 +91,10 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
   /**
    * Renders the Metatag defaults label plus its configuration.
    *
-   * @param EntityInterface $entity
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The Metatag defaults entity.
    *
-   * @return
+   * @return array
    *   Render array for a table cell.
    */
   public function getLabelAndConfig(EntityInterface $entity) {
@@ -78,17 +107,19 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
     }
     if (strpos($entity->id(), '__') !== FALSE) {
       $prefix .= '<div class="indentation"></div>';
-      list($entity_label, $bundle_label) = explode(': ', $entity->get('label'));
-      $inherits .= ', ' . $entity_label;
+      $entity_label = explode(': ', $entity->get('label'));
+      $inherits .= ', ' . $entity_label[0];
     }
 
     if (!empty($inherits)) {
-      $output .= '<div><p>' . t('Inherits meta tags from: @inherits', array('@inherits' => $inherits)) . '</p></div>';
+      $output .= '<div><p>' . t('Inherits meta tags from: @inherits', [
+        '@inherits' => $inherits,
+      ]) . '</p></div>';
     }
     $tags = $entity->get('tags');
     if (count($tags)) {
       $output .= '<table>
-                    <tbody>';
+<tbody>';
       foreach ($tags as $tag_id => $tag_value) {
         $output .= '<tr><td>' . $tag_id . ':</td><td>' . $tag_value . '</td></tr>';
       }
@@ -97,25 +128,25 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
 
     $output .= '</div></div>';
 
-    return array(
-      'data' => array(
+    return [
+      'data' => [
         '#type' => 'details',
         '#prefix' => $prefix,
-        '#title' => $this->getLabel($entity),
-        'config' => array(
+        '#title' => $entity->label(),
+        'config' => [
           '#markup' => $output,
-        ),
-      ),
-    );
+        ],
+      ],
+    ];
   }
 
   /**
    * {@inheritdoc}
    */
   public function render() {
-    $build['header'] = array(
-      '#markup' => '<p>' . t("To view a summary of the default meta tags and the inheritance, click on a meta tag type. If you need to set metatags for a specific entity, edit it's bundle and add the Metatag field.") . '</p>',
-    );
-    return $build + parent::render();
+    drupal_set_message($this->t('Please note that while the site is in maintenance mode none of the usual meta tags will be output.'));
+
+    return parent::render();
   }
+
 }

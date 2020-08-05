@@ -5,7 +5,6 @@ namespace Drupal\Core;
 use Composer\Autoload\ClassLoader;
 use Drupal\Component\Assertion\Handle;
 use Drupal\Component\FileCache\FileCacheFactory;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\DatabaseBackend;
 use Drupal\Core\Config\BootstrapConfigStorageFactory;
@@ -18,8 +17,10 @@ use Drupal\Core\DependencyInjection\YamlFileLoader;
 use Drupal\Core\Extension\ExtensionDiscovery;
 use Drupal\Core\File\MimeType\MimeTypeGuesser;
 use Drupal\Core\Http\TrustedHostsRequestFactory;
+use Drupal\Core\Installer\InstallerKernel;
 use Drupal\Core\Installer\InstallerRedirectTrait;
 use Drupal\Core\Language\Language;
+use Drupal\Core\Security\PharExtensionInterceptor;
 use Drupal\Core\Security\RequestSanitizer;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Test\TestDatabase;
@@ -36,6 +37,9 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
 use Symfony\Component\Routing\Route;
+use TYPO3\PharStreamWrapper\Manager as PharStreamWrapperManager;
+use TYPO3\PharStreamWrapper\Behavior as PharStreamWrapperBehavior;
+use TYPO3\PharStreamWrapper\PharStreamWrapper;
 
 /**
  * The DrupalKernel class is the core of Drupal itself.
@@ -299,12 +303,16 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
   }
 
   /**
-   * Determine the application root directory based on assumptions.
+   * Determine the application root directory based on this file's location.
    *
    * @return string
    *   The application root.
    */
   protected static function guessApplicationRoot() {
+    // Determine the application root by:
+    // - Removing the namespace directories from the path.
+    // - Getting the path to the directory two levels up from the path
+    //   determined in the previous step.
     return dirname(dirname(substr(__DIR__, 0, -strlen(__NAMESPACE__))));
   }
 
@@ -318,6 +326,9 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    * for bootstrap level configuration, file configuration stores, public file
    * storage and site specific modules and themes.
    *
+   * A file named sites.php must be present in the sites directory for
+   * multisite. If it doesn't exist, then 'sites/default' will be used.
+   *
    * Finds a matching site directory file by stripping the website's hostname
    * from left to right and pathname from right to left. By default, the
    * directory must contain a 'settings.php' file for it to match. If the
@@ -328,9 +339,8 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    * default.settings.php for examples on how the URL is converted to a
    * directory.
    *
-   * If a file named sites.php is present in the sites directory, it will be
-   * loaded prior to scanning for directories. That file can define aliases in
-   * an associative array named $sites. The array is written in the format
+   * The sites.php file in the sites directory can define aliases in an
+   * associative array named $sites. The array is written in the format
    * '<port>.<domain>.<path>' => 'directory'. As an example, to create a
    * directory alias for https://www.drupal.org:8080/mysite/test whose
    * configuration file is in sites/example.com, the array should be defined as:
@@ -465,6 +475,26 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
 
     // Initialize the container.
     $this->initializeContainer();
+
+    if (in_array('phar', stream_get_wrappers(), TRUE)) {
+      // Set up a stream wrapper to handle insecurities due to PHP's builtin
+      // phar stream wrapper. This is not registered as a regular stream wrapper
+      // to prevent \Drupal\Core\File\FileSystem::validScheme() treating "phar"
+      // as a valid scheme.
+      try {
+        $behavior = new PharStreamWrapperBehavior();
+        PharStreamWrapperManager::initialize(
+          $behavior->withAssertion(new PharExtensionInterceptor())
+        );
+      }
+      catch (\LogicException $e) {
+        // Continue if the PharStreamWrapperManager is already initialized. For
+        // example, this occurs during a module install.
+        // @see \Drupal\Core\Extension\ModuleInstaller::install()
+      };
+      stream_wrapper_unregister('phar');
+      stream_wrapper_register('phar', PharStreamWrapper::class);
+    }
 
     $this->booted = TRUE;
 
@@ -656,7 +686,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
       // Redirect the user to the installation script if Drupal has not been
       // installed yet (i.e., if no $databases array has been defined in the
       // settings.php file) and we are not already installing.
-      if (!Database::getConnectionInfo() && !drupal_installation_attempted() && PHP_SAPI !== 'cli') {
+      if (!Database::getConnectionInfo() && !InstallerKernel::installationAttempted() && PHP_SAPI !== 'cli') {
         $response = new RedirectResponse($request->getBasePath() . '/core/install.php', 302, ['Cache-Control' => 'no-cache']);
       }
       else {
@@ -724,6 +754,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
     $request->attributes->set(RouteObjectInterface::ROUTE_NAME, '<none>');
     $this->container->get('request_stack')->push($request);
     $this->container->get('router.request_context')->fromRequest($request);
+    @trigger_error(__NAMESPACE__ . '\DrupalKernel::prepareLegacyRequest is deprecated drupal:8.0.0 and is removed from drupal:9.0.0. Use DrupalKernel::boot() and DrupalKernel::preHandle() instead. See https://www.drupal.org/node/3070678', E_USER_DEPRECATED);
     return $this;
   }
 
@@ -743,16 +774,6 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
       $listing->setProfileDirectories([]);
       $all_profiles = $listing->scan('profile');
       $profiles = array_intersect_key($all_profiles, $this->moduleList);
-
-      // If a module is within a profile directory but specifies another
-      // profile for testing, it needs to be found in the parent profile.
-      $settings = $this->getConfigStorage()->read('simpletest.settings');
-      $parent_profile = !empty($settings['parent_profile']) ? $settings['parent_profile'] : NULL;
-      if ($parent_profile && !isset($profiles[$parent_profile])) {
-        // In case both profile directories contain the same extension, the
-        // actual profile always has precedence.
-        $profiles = [$parent_profile => $all_profiles[$parent_profile]] + $profiles;
-      }
 
       $profile_directories = array_map(function ($profile) {
         return $profile->getPath();
@@ -878,16 +899,6 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
     // If there is no container and no cached container definition, build a new
     // one from scratch.
     if (!isset($container) && !isset($container_definition)) {
-      // Building the container creates 1000s of objects. Garbage collection of
-      // these objects is expensive. This appears to be causing random
-      // segmentation faults in PHP 5.6 due to
-      // https://bugs.php.net/bug.php?id=72286. Once the container is rebuilt,
-      // garbage collection is re-enabled.
-      $disable_gc = version_compare(PHP_VERSION, '7', '<') && gc_enabled();
-      if ($disable_gc) {
-        gc_collect_cycles();
-        gc_disable();
-      }
       $container = $this->compileContainer();
 
       // Only dump the container if dumping is allowed. This is useful for
@@ -896,11 +907,6 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
       if ($this->allowDumping) {
         $dumper = new $this->phpArrayDumperClass($container);
         $container_definition = $dumper->getArray();
-      }
-      // If garbage collection was disabled prior to rebuilding container,
-      // re-enable it.
-      if ($disable_gc) {
-        gc_enable();
       }
     }
 
@@ -981,23 +987,26 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
     // sites/default/default.settings.php contains more runtime settings.
     // The .htaccess file contains settings that cannot be changed at runtime.
 
-    // Use session cookies, not transparent sessions that puts the session id in
-    // the query string.
-    ini_set('session.use_cookies', '1');
-    ini_set('session.use_only_cookies', '1');
-    ini_set('session.use_trans_sid', '0');
-    // Don't send HTTP headers using PHP's session handler.
-    // Send an empty string to disable the cache limiter.
-    ini_set('session.cache_limiter', '');
-    // Use httponly session cookies.
-    ini_set('session.cookie_httponly', '1');
+    if (PHP_SAPI !== 'cli') {
+      // Use session cookies, not transparent sessions that puts the session id
+      // in the query string.
+      ini_set('session.use_cookies', '1');
+      ini_set('session.use_only_cookies', '1');
+      ini_set('session.use_trans_sid', '0');
+      // Don't send HTTP headers using PHP's session handler.
+      // Send an empty string to disable the cache limiter.
+      ini_set('session.cache_limiter', '');
+      // Use httponly session cookies.
+      ini_set('session.cookie_httponly', '1');
+    }
 
     // Set sane locale settings, to ensure consistent string, dates, times and
     // numbers handling.
     setlocale(LC_ALL, 'C');
 
-    // Detect string handling method.
-    Unicode::check();
+    // Set appropriate configuration for multi-byte strings.
+    mb_internal_encoding('utf-8');
+    mb_language('uni');
 
     // Indicate that code is operating in a test child site.
     if (!defined('DRUPAL_TEST_IN_CHILD_SITE')) {
@@ -1011,8 +1020,6 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
 
         // Web tests are to be conducted with runtime assertions active.
         assert_options(ASSERT_ACTIVE, TRUE);
-        // Now synchronize PHP 5 and 7's handling of assertions as much as
-        // possible.
         Handle::register();
 
         // Log fatal errors to the test site directory.
@@ -1087,7 +1094,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
         // misses.
         $old_loader = $this->classLoader;
         $this->classLoader = $loader;
-        // Our class loaders are preprended to ensure they come first like the
+        // Our class loaders are prepended to ensure they come first like the
         // class loader they are replacing.
         $old_loader->register(TRUE);
         $loader->register(TRUE);
@@ -1555,7 +1562,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    * @return bool
    *   TRUE if the Host header is trusted, FALSE otherwise.
    *
-   * @see https://www.drupal.org/node/1992030
+   * @see https://www.drupal.org/docs/8/install/trusted-host-settings
    * @see \Drupal\Core\Http\TrustedHostsRequestFactory
    */
   protected static function setupTrustedHosts(Request $request, $host_patterns) {
@@ -1600,13 +1607,14 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    */
   protected function getInstallProfile() {
     $config = $this->getConfigStorage()->read('core.extension');
-    if (!empty($config['profile'])) {
+    if (isset($config['profile'])) {
       $install_profile = $config['profile'];
     }
     // @todo https://www.drupal.org/node/2831065 remove the BC layer.
     else {
       // If system_update_8300() has not yet run fallback to using settings.
-      $install_profile = Settings::get('install_profile');
+      $settings = Settings::getAll();
+      $install_profile = isset($settings['install_profile']) ? $settings['install_profile'] : NULL;
     }
 
     // Normalize an empty string to a NULL value.

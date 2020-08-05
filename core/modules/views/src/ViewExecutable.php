@@ -114,7 +114,7 @@ class ViewExecutable {
   /**
    * Attachments to place before the view.
    *
-   * @var array()
+   * @var array
    */
   public $attachment_before = [];
 
@@ -925,7 +925,7 @@ class ViewExecutable {
     if (!isset($this->pager)) {
       $this->pager = $this->display_handler->getPlugin('pager');
 
-      if ($this->pager->usePager()) {
+      if ($this->usePager()) {
         $this->pager->setCurrentPage($this->current_page);
       }
 
@@ -951,7 +951,7 @@ class ViewExecutable {
    *   The render array of the pager if it's set, blank string otherwise.
    */
   public function renderPager($exposed_input) {
-    if (!empty($this->pager) && $this->pager->usePager()) {
+    if ($this->usePager()) {
       return $this->pager->render($exposed_input);
     }
 
@@ -1096,7 +1096,8 @@ class ViewExecutable {
           $argument->is_default = TRUE;
         }
 
-        // Set the argument, which will also validate that the argument can be set.
+        // Set the argument, which ensures that the argument is valid and
+        // possibly transforms the value.
         if (!$argument->setArgument($arg)) {
           $status = $argument->validateFail($arg);
           break;
@@ -1110,9 +1111,11 @@ class ViewExecutable {
           $argument->query($this->display_handler->useGroupBy());
         }
 
-        // Add this argument's substitution
+        // Add this argument's substitution.
         $substitutions["{{ arguments.$id }}"] = $arg_title;
-        $substitutions["{{ raw_arguments.$id }}"] = strip_tags(Html::decodeEntities($arg));
+        // Since argument validator plugins can potentially transform the value,
+        // use whatever value the argument handler now has, not the raw value.
+        $substitutions["{{ raw_arguments.$id }}"] = strip_tags(Html::decodeEntities($argument->getValue()));
 
         // Test to see if we should use this argument's title
         if (!empty($argument->options['title_enable']) && !empty($argument->options['title'])) {
@@ -1414,7 +1417,7 @@ class ViewExecutable {
     }
 
     if ($cache->cacheGet('results')) {
-      if ($this->pager->usePager()) {
+      if ($this->usePager()) {
         $this->pager->total_items = $this->total_rows;
         $this->pager->updatePageInfo();
       }
@@ -1467,7 +1470,7 @@ class ViewExecutable {
     // @TODO In the longrun, it would be great to execute a view without
     //   the theme system at all. See https://www.drupal.org/node/2322623.
     $active_theme = \Drupal::theme()->getActiveTheme();
-    $themes = array_keys($active_theme->getBaseThemes());
+    $themes = array_keys($active_theme->getBaseThemeExtensions());
     $themes[] = $active_theme->getName();
 
     // Check for already-cached output.
@@ -1519,7 +1522,7 @@ class ViewExecutable {
     // Let modules modify the view just prior to rendering it.
     $module_handler->invokeAll('views_pre_render', [$this]);
 
-    // Let the themes play too, because pre render is a very themey thing.
+    // Let the themes play too, because prerender is a very themey thing.
     foreach ($themes as $theme_name) {
       $function = $theme_name . '_views_pre_render';
       if (function_exists($function)) {

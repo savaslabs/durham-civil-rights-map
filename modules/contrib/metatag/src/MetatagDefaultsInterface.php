@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\metatag\MetatagDefaultsInterface.
- */
-
 namespace Drupal\metatag;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
@@ -14,5 +9,4 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
  */
 interface MetatagDefaultsInterface extends ConfigEntityInterface {
   // Add get/set methods for your configuration properties here.
-
 }

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\views_slideshow\ViewsSlideshowWidget\ControlsText.
- */
-
 namespace Drupal\views_slideshow\Plugin\ViewsSlideshowWidget;
 
 use Drupal\views_slideshow\ViewsSlideshowWidgetBase;

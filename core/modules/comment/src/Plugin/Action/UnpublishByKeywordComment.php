@@ -65,7 +65,7 @@ class UnpublishByKeywordComment extends ConfigurableActionBase implements Contai
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager')->getViewBuilder('comment'),
+      $container->get('entity_type.manager')->getViewBuilder('comment'),
       $container->get('renderer')
     );
   }
@@ -78,7 +78,7 @@ class UnpublishByKeywordComment extends ConfigurableActionBase implements Contai
     $text = $this->renderer->renderPlain($build);
     foreach ($this->configuration['keywords'] as $keyword) {
       if (strpos($text, $keyword) !== FALSE) {
-        $comment->setPublished(FALSE);
+        $comment->setUnpublished();
         $comment->save();
         break;
       }

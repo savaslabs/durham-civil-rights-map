@@ -32,7 +32,7 @@ trait EntityViewTrait {
    *   (optional) Whether to clear the cache for this entity.
    * @return array
    *
-   * @see drupal_render()
+   * @see \Drupal\Core\Render\RendererInterface::render()
    */
   protected function buildEntityView(EntityInterface $entity, $view_mode = 'full', $langcode = NULL, $reset = FALSE) {
     $ensure_fully_built = function (&$elements) use (&$ensure_fully_built) {
@@ -58,7 +58,7 @@ trait EntityViewTrait {
       }
     };
 
-    $render_controller = $this->container->get('entity.manager')->getViewBuilder($entity->getEntityTypeId());
+    $render_controller = $this->container->get('entity_type.manager')->getViewBuilder($entity->getEntityTypeId());
     if ($reset) {
       $render_controller->resetCache([$entity->id()]);
     }

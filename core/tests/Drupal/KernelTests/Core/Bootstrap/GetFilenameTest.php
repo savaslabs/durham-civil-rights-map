@@ -30,16 +30,11 @@ class GetFilenameTest extends KernelTestBase {
    * Tests that drupal_get_filename() works when the file is not in database.
    */
   public function testDrupalGetFilename() {
-    // Rebuild system.module.files state data.
-    // @todo Remove as part of https://www.drupal.org/node/2186491
-    drupal_static_reset('system_rebuild_module_data');
-    system_rebuild_module_data();
-
     // Retrieving the location of a module.
     $this->assertIdentical(drupal_get_filename('module', 'system'), 'core/modules/system/system.info.yml');
 
     // Retrieving the location of a theme.
-    \Drupal::service('theme_handler')->install(['stark']);
+    \Drupal::service('theme_installer')->install(['stark']);
     $this->assertIdentical(drupal_get_filename('theme', 'stark'), 'core/themes/stark/stark.info.yml');
 
     // Retrieving the location of a theme engine.
@@ -49,20 +44,24 @@ class GetFilenameTest extends KernelTestBase {
     // a fixed location and naming.
     $this->assertIdentical(drupal_get_filename('profile', 'testing'), 'core/profiles/testing/testing.info.yml');
 
-    // Generate a non-existing module name.
-    $non_existing_module = uniqid("", TRUE);
-
     // Set a custom error handler so we can ignore the file not found error.
     set_error_handler(function ($severity, $message, $file, $line) {
       // Skip error handling if this is a "file not found" error.
       if (strstr($message, 'is missing from the file system:')) {
-        \Drupal::state()->set('get_filename_test_triggered_error', TRUE);
+        \Drupal::state()->set('get_filename_test_triggered_error', $message);
         return;
       }
       throw new \ErrorException($message, 0, $severity, $file, $line);
     });
-    $this->assertNull(drupal_get_filename('module', $non_existing_module), 'Searching for an item that does not exist returns NULL.');
-    $this->assertTrue(\Drupal::state()->get('get_filename_test_triggered_error'), 'Searching for an item that does not exist triggers an error.');
+    $this->assertNull(drupal_get_filename('module', 'there_is_a_module_for_that'), 'Searching for an item that does not exist returns NULL.');
+    $this->assertEquals('The following module is missing from the file system: there_is_a_module_for_that', \Drupal::state()->get('get_filename_test_triggered_error'));
+
+    $this->assertNull(drupal_get_filename('theme', 'there_is_a_theme_for_you'), 'Searching for an item that does not exist returns NULL.');
+    $this->assertEquals('The following theme is missing from the file system: there_is_a_theme_for_you', \Drupal::state()->get('get_filename_test_triggered_error'));
+
+    $this->assertNull(drupal_get_filename('profile', 'there_is_an_install_profile_for_you'), 'Searching for an item that does not exist returns NULL.');
+    $this->assertEquals('The following profile is missing from the file system: there_is_an_install_profile_for_you', \Drupal::state()->get('get_filename_test_triggered_error'));
+
     // Restore the original error handler.
     restore_error_handler();
   }

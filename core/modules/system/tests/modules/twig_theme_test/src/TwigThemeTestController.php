@@ -100,8 +100,15 @@ class TwigThemeTestController {
   public function renderable() {
     return [
       '#theme' => 'twig_theme_test_renderable',
-      '#renderable' => new ExampleRenderable()
+      '#renderable' => new ExampleRenderable(),
     ];
+  }
+
+  /**
+   * Renders for testing the embed tag in a Twig template.
+   */
+  public function embedTagRender() {
+    return ['#theme' => 'twig_theme_test_embed_tag'];
   }
 
 }

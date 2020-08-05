@@ -14,9 +14,14 @@ class FieldHelpTest extends BrowserTestBase {
   /**
    * Modules to enable.
    *
-   * @var array.
+   * @var array
    */
   public static $modules = ['field', 'help'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   // Tests field help implementation without optional core modules enabled.
   protected $profile = 'minimal';

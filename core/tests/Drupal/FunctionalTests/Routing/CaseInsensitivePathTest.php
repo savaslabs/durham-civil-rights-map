@@ -19,6 +19,11 @@ class CaseInsensitivePathTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
     \Drupal::state()->set('system_test.module_hidden', FALSE);
@@ -63,8 +68,8 @@ class CaseInsensitivePathTest extends BrowserTestBase {
 
     $this->drupalGet('admin/content', [
       'query' => [
-        'title' => 'FooBarBaz'
-      ]
+        'title' => 'FooBarBaz',
+      ],
     ]);
 
     $this->assertSession()->linkExists('FooBarBaz');
@@ -74,8 +79,8 @@ class CaseInsensitivePathTest extends BrowserTestBase {
 
     $this->drupalGet('Admin/Content', [
       'query' => [
-        'title' => 'FooBarBaz'
-      ]
+        'title' => 'FooBarBaz',
+      ],
     ]);
 
     $this->assertSession()->linkExists('FooBarBaz');

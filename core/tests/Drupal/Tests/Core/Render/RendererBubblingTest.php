@@ -9,7 +9,7 @@ namespace Drupal\Tests\Core\Render;
 
 use Drupal\Core\Cache\MemoryBackend;
 use Drupal\Core\KeyValueStore\KeyValueMemoryFactory;
-use Drupal\Core\Lock\NullLockBackend;
+use Drupal\Core\Security\TrustedCallbackInterface;
 use Drupal\Core\State\State;
 use Drupal\Core\Cache\Cache;
 
@@ -297,7 +297,7 @@ class RendererBubblingTest extends RendererTestBase {
     $test_element = [
       '#cache' => [
         'keys' => ['parent'],
-        'tags' => ['yar', 'har']
+        'tags' => ['yar', 'har'],
       ],
       '#markup' => 'parent',
       'child' => [
@@ -308,10 +308,10 @@ class RendererBubblingTest extends RendererTestBase {
             'tags' => ['fiddle', 'dee'],
           ],
           '#attached' => [
-            'library' => ['foo/bar']
+            'library' => ['foo/bar'],
           ],
           '#markup' => '',
-        ]
+        ],
       ],
     ];
     $expected_cache_items = [
@@ -539,7 +539,7 @@ class RendererBubblingTest extends RendererTestBase {
     $this->setupMemoryCache();
 
     // Mock the State service.
-    $memory_state = new State(new KeyValueMemoryFactory(), new MemoryBackend('test'), new NullLockBackend());
+    $memory_state = new State(new KeyValueMemoryFactory());
     \Drupal::getContainer()->set('state', $memory_state);
     $this->controllerResolver->expects($this->any())
       ->method('getControllerFromDefinition')
@@ -625,14 +625,15 @@ class RendererBubblingTest extends RendererTestBase {
        ],
       '#pre_render' => [__NAMESPACE__ . '\\BubblingTest::bubblingCacheOverwritePrerender'],
     ];
-    $this->setExpectedException(\LogicException::class, 'Cache keys may not be changed after initial setup. Use the contexts property instead to bubble additional metadata.');
+    $this->expectException(\LogicException::class);
+    $this->expectExceptionMessage('Cache keys may not be changed after initial setup. Use the contexts property instead to bubble additional metadata.');
     $this->renderer->renderRoot($data);
   }
 
 }
 
 
-class BubblingTest {
+class BubblingTest implements TrustedCallbackInterface {
 
   /**
    * #pre_render callback for testBubblingWithPrerender().
@@ -709,6 +710,13 @@ class BubblingTest {
     ];
     $elements['#markup'] = 'Setting cache keys just now!';
     return $elements;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function trustedCallbacks() {
+    return ['bubblingPreRender', 'bubblingNestedPreRenderUncached', 'bubblingNestedPreRenderCached', 'bubblingPlaceholder', 'bubblingCacheOverwritePrerender'];
   }
 
 }

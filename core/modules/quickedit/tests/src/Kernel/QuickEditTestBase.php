@@ -86,18 +86,21 @@ abstract class QuickEditTestBase extends KernelTestBase {
     ]);
     $this->fields->$field->save();
 
-    entity_get_form_display('entity_test', 'entity_test', 'default')
+    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+    $display_repository = \Drupal::service('entity_display.repository');
+
+    $display_repository->getFormDisplay('entity_test', 'entity_test')
       ->setComponent($field_name, [
         'type' => $widget_type,
         'settings' => $widget_settings,
       ])
       ->save();
 
-    entity_get_display('entity_test', 'entity_test', 'default')
+    $display_repository->getViewDisplay('entity_test', 'entity_test')
       ->setComponent($field_name, [
         'label' => 'above',
         'type' => $formatter_type,
-        'settings' => $formatter_settings
+        'settings' => $formatter_settings,
       ])
       ->save();
   }

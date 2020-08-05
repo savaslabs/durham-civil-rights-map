@@ -24,9 +24,14 @@ abstract class DateTestBase extends BrowserTestBase {
   public static $modules = ['node', 'entity_test', 'datetime', 'field_ui'];
 
   /**
-   * An array of display options to pass to entity_get_display()
+   * An array of display options.
+   *
+   * An array of display options to pass to
+   * EntityDisplayRepositoryInterface::getViewDisplay()
    *
    * @var array
+   *
+   * @see \Drupal\Core\Entity\EntityDisplayRepositoryInterface::getViewDisplay()
    */
   protected $displayOptions;
 
@@ -106,8 +111,8 @@ abstract class DateTestBase extends BrowserTestBase {
    * Creates a date test field.
    */
   protected function createField() {
-    $field_name = Unicode::strtolower($this->randomMachineName());
-    $field_label = Unicode::ucfirst(Unicode::strtolower($this->randomMachineName()));
+    $field_name = mb_strtolower($this->randomMachineName());
+    $field_label = Unicode::ucfirst(mb_strtolower($this->randomMachineName()));
     $type = $this->getTestFieldType();
     $widget_type = $formatter_type = $type . '_default';
 

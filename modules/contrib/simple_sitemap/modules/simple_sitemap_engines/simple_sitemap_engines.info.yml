@@ -1,0 +1,14 @@
+name: 'Simple XML Sitemap (Search engines)'
+type: module
+description: 'Submits sitemaps to search engines.'
+configure: simple_sitemap_engines.settings
+package: SEO
+core: 8.x
+core_version_requirement: ^8 || ^9
+dependencies:
+  - simple_sitemap:simple_sitemap
+
+# Information added by Drupal.org packaging script on 2019-12-15
+version: '8.x-3.5'
+project: 'simple_sitemap'
+datestamp: 1576429392

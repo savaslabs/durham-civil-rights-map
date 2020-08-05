@@ -1,13 +1,8 @@
 <?php
-/**
- * @file
- * Contains the \Drupal\metatag\Annotation\MetatagTag annotation plugin.
- */
 
 namespace Drupal\metatag\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
-
 
 /**
  * Defines a MetatagTag annotation object.
@@ -63,18 +58,40 @@ class MetatagTag extends Plugin {
   public $weight;
 
   /**
-   * Type of the meta tag should be either 'date', 'image', 'integer', 'label',
-   * 'string' or 'uri'.
+   * Type of the meta tag.
+   *
+   * Should be either 'date', 'image', 'integer', 'label', 'string' or 'uri'.
    *
    * @var string
    */
   public $type;
 
   /**
+   * True if URL must use HTTPS.
+   *
+   * @var bool
+   */
+  protected $secure;
+
+  /**
    * True if more than one is allowed.
    *
-   * @var boolean
+   * @var bool
    */
   public $multiple;
+
+  /**
+   * True if the tag should use a text area.
+   *
+   * @var bool
+   */
+  public $long;
+
+  /**
+   * True if the URL value(s) must be absolute.
+   *
+   * @var bool
+   */
+  protected $absoluteUrl;
 
 }

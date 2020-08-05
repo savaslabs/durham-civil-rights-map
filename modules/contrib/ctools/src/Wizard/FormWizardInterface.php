@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\ctools\Wizard\FormWizardInterface.
- */
-
 namespace Drupal\ctools\Wizard;
 
 use Drupal\Core\Form\FormInterface;
@@ -44,7 +39,7 @@ interface FormWizardInterface extends FormInterface {
   /**
    * The active SharedTempStore for this wizard.
    *
-   * @return \Drupal\user\SharedTempStore
+   * @return \Drupal\Core\TempStore\SharedTempStore
    */
   public function getTempstore();
 

@@ -8,6 +8,7 @@ use Drupal\Component\Utility\Html;
 use Drupal\Core\Url;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\Tests\Traits\Core\CronRunTrait;
+use PHPUnit\Framework\ExpectationFailedException;
 
 /**
  * Tests BrowserTestBase functionality.
@@ -23,7 +24,12 @@ class BrowserTestBaseTest extends BrowserTestBase {
    *
    * @var array
    */
-  public static $modules = ['test_page_test', 'form_test', 'system_test'];
+  public static $modules = ['test_page_test', 'form_test', 'system_test', 'node'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
 
   /**
    * Tests basic page test.
@@ -68,6 +74,21 @@ class BrowserTestBaseTest extends BrowserTestBase {
   }
 
   /**
+   * Tests drupalGet().
+   */
+  public function testDrupalGet() {
+    $this->drupalGet('test-page');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->addressEquals('test-page');
+    $this->drupalGet('/test-page');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->addressEquals('test-page');
+    $this->drupalGet('/test-page/');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->addressEquals('/test-page/');
+  }
+
+  /**
    * Tests basic form functionality.
    */
   public function testForm() {
@@ -99,6 +120,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
 
     // Test drupalPostForm().
     $edit = ['bananas' => 'red'];
+    // Submit the form using the button label.
     $result = $this->drupalPostForm('form-test/object-builder', $edit, 'Save');
     $this->assertSame($this->getSession()->getPage()->getContent(), $result);
     $value = $config_factory->get('form_test.object')->get('bananas');
@@ -108,9 +130,32 @@ class BrowserTestBaseTest extends BrowserTestBase {
     $value = $config_factory->get('form_test.object')->get('bananas');
     $this->assertSame('', $value);
 
+    // Submit the form using the button id.
+    $edit = ['bananas' => 'blue'];
+    $result = $this->drupalPostForm('form-test/object-builder', $edit, 'edit-submit');
+    $this->assertSame($this->getSession()->getPage()->getContent(), $result);
+    $value = $config_factory->get('form_test.object')->get('bananas');
+    $this->assertSame('blue', $value);
+
+    // Submit the form using the button name.
+    $edit = ['bananas' => 'purple'];
+    $result = $this->drupalPostForm('form-test/object-builder', $edit, 'op');
+    $this->assertSame($this->getSession()->getPage()->getContent(), $result);
+    $value = $config_factory->get('form_test.object')->get('bananas');
+    $this->assertSame('purple', $value);
+
     // Test drupalPostForm() with no-html response.
     $values = Json::decode($this->drupalPostForm('form_test/form-state-values-clean', [], t('Submit')));
-    $this->assertTrue(1000, $values['beer']);
+    $this->assertSame(1000, $values['beer']);
+
+    // Test drupalPostForm() with form by HTML id.
+    $this->drupalCreateContentType(['type' => 'page']);
+    $this->drupalLogin($this->drupalCreateUser(['create page content']));
+    $this->drupalGet('form-test/two-instances-of-same-form');
+    $this->getSession()->getPage()->fillField('edit-title-0-value', 'form1');
+    $this->getSession()->getPage()->fillField('edit-title-0-value--2', 'form2');
+    $this->drupalPostForm(NULL, [], 'Save', [], 'node-page-form--2');
+    $this->assertSession()->pageTextContains('Page form2 has been created.');
   }
 
   /**
@@ -129,7 +174,8 @@ class BrowserTestBaseTest extends BrowserTestBase {
   }
 
   public function testError() {
-    $this->setExpectedException('\Exception', 'User notice: foo');
+    $this->expectException('\Exception');
+    $this->expectExceptionMessage('User notice: foo');
     $this->drupalGet('test-error');
   }
 
@@ -160,7 +206,8 @@ class BrowserTestBaseTest extends BrowserTestBase {
    */
   public function testInvalidLinkExistsExact() {
     $this->drupalGet('test-pipe-char');
-    $this->setExpectedException(ExpectationException::class, 'Link with label foo|bar found');
+    $this->expectException(ExpectationException::class);
+    $this->expectExceptionMessage('Link with label foo|bar found');
     $this->assertSession()->linkExistsExact('foo|bar');
   }
 
@@ -181,7 +228,8 @@ class BrowserTestBaseTest extends BrowserTestBase {
    */
   public function testInvalidLinkNotExistsExact() {
     $this->drupalGet('test-pipe-char');
-    $this->setExpectedException(ExpectationException::class, 'Link with label foo|bar|baz not found');
+    $this->expectException(ExpectationException::class);
+    $this->expectExceptionMessage('Link with label foo|bar|baz not found');
     $this->assertSession()->linkNotExistsExact('foo|bar|baz');
   }
 
@@ -196,7 +244,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
     $this->assertText($sanitized);
 
     // Test getRawContent().
-    $this->assertSame($this->getSession()->getPage()->getContent(), $this->getRawContent());
+    $this->assertSame($this->getSession()->getPage()->getContent(), $this->getSession()->getPage()->getContent());
   }
 
   /**
@@ -221,7 +269,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertFieldByXPath("//input[@id = 'notexisting']");
       $this->fail('The "notexisting" field was found.');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass('assertFieldByXPath correctly failed. The "notexisting" field was not found.');
     }
 
@@ -237,7 +285,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertFieldsByValue($this->xpath("//input[@id = 'edit-name']"), 'not the value');
       $this->fail('The "edit-name" field is found with the value "not the value".');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass('The "edit-name" field is not found with the value "not the value".');
     }
   }
@@ -278,7 +326,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertField('invalid_name_and_id');
       $this->fail('The "invalid_name_and_id" field was found.');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass('assertField correctly failed. The "invalid_name_and_id" field was not found.');
     }
 
@@ -317,7 +365,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertFieldById('edit-name');
       $this->fail('The "edit-name" field with no value was found.');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass('The "edit-name" field with no value was not found.');
     }
 
@@ -326,7 +374,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertFieldById('edit-name', 'not the value');
       $this->fail('The "name" field was found, using the wrong value.');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass('The "name" field was not found, using the wrong value.');
     }
 
@@ -367,7 +415,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertFieldByName('non-existing-name');
       $this->fail('The "non-existing-name" field was found.');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass('The "non-existing-name" field was not found');
     }
 
@@ -376,7 +424,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertFieldByName('name', 'not the value');
       $this->fail('The "name" field with incorrect value was found.');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass('assertFieldByName correctly failed. The "name" field with incorrect value was not found.');
     }
 
@@ -431,13 +479,10 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertOptionSelected('options', 1);
       $this->fail('The select option "1" was selected.');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass($e->getMessage());
     }
 
-    // Test \Drupal\FunctionalTests\AssertLegacyTrait::getAllOptions.
-    $this->drupalGet('/form-test/select');
-    $this->assertCount(6, $this->getAllOptions($this->cssSelect('select[name="opt_groups"]')[0]));
   }
 
   /**
@@ -453,7 +498,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
       $this->assertFieldById('Save', NULL);
       $this->fail('The field with id of "Save" was found.');
     }
-    catch (\PHPUnit_Framework_ExpectationFailedException $e) {
+    catch (ExpectationFailedException $e) {
       $this->pass($e->getMessage());
     }
 
@@ -552,7 +597,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
     $this->assertFieldChecked('edit-checkbox-enabled');
     $this->assertNoFieldChecked('edit-checkbox-disabled');
 
-    // Test that the assertion fails correctly with non-existant field id.
+    // Test that the assertion fails correctly with non-existent field id.
     try {
       $this->assertNoFieldChecked('incorrect_checkbox_id');
       $this->fail('The "incorrect_checkbox_id" field was found');
@@ -605,14 +650,20 @@ class BrowserTestBaseTest extends BrowserTestBase {
    * Tests the assumption that local time is in 'Australia/Sydney'.
    */
   public function testLocalTimeZone() {
+    $expected = 'Australia/Sydney';
     // The 'Australia/Sydney' time zone is set in core/tests/bootstrap.php
-    $this->assertEquals('Australia/Sydney', date_default_timezone_get());
+    $this->assertEquals($expected, date_default_timezone_get());
 
     // The 'Australia/Sydney' time zone is also set in
     // FunctionalTestSetupTrait::initConfig().
     $config_factory = $this->container->get('config.factory');
     $value = $config_factory->get('system.date')->get('timezone.default');
-    $this->assertEquals('Australia/Sydney', $value);
+    $this->assertEquals($expected, $value);
+
+    // Test that users have the correct time zone set.
+    $this->assertEquals($expected, $this->rootUser->getTimeZone());
+    $admin_user = $this->drupalCreateUser(['administer site configuration']);
+    $this->assertEquals($expected, $admin_user->getTimeZone());
   }
 
   /**
@@ -637,6 +688,92 @@ class BrowserTestBaseTest extends BrowserTestBase {
     putenv('MINK_DRIVER_ARGS=' . json_encode([NULL, ['key1' => ['key2' => ['key3' => 3, 'key3.1' => 3.1]]]]));
     $this->getDefaultDriverInstance();
     $this->assertEquals([NULL, ['key1' => ['key2' => ['key3' => 3, 'key3.1' => 3.1]]]], $this->minkDefaultDriverArgs);
+  }
+
+  /**
+   * Ensures we can't access modules we shouldn't be able to after install.
+   */
+  public function testProfileModules() {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('The module demo_umami_content does not exist.');
+    $this->assertFileExists('core/profiles/demo_umami/modules/demo_umami_content/demo_umami_content.info.yml');
+    \Drupal::service('extension.list.module')->getPathname('demo_umami_content');
+  }
+
+  /**
+   * Test the protections provided by .htkey.
+   */
+  public function testHtkey() {
+    // Remove the Simpletest private key file so we can test the protection
+    // against requests that forge a valid testing user agent to gain access
+    // to the installer.
+    // @see drupal_valid_test_ua()
+    // Not using File API; a potential error must trigger a PHP warning.
+    $install_url = Url::fromUri('base:core/install.php', ['external' => TRUE, 'absolute' => TRUE])->toString();
+    $this->drupalGet($install_url);
+    $this->assertSession()->statusCodeEquals(200);
+    unlink($this->siteDirectory . '/.htkey');
+    $this->drupalGet($install_url);
+    $this->assertSession()->statusCodeEquals(403);
+  }
+
+  /**
+   * Tests assertEscaped() and assertUnescaped().
+   *
+   * @see \Drupal\Tests\WebAssert::assertNoEscaped()
+   * @see \Drupal\Tests\WebAssert::assertEscaped()
+   */
+  public function testEscapingAssertions() {
+    $assert = $this->assertSession();
+
+    $this->drupalGet('test-escaped-characters');
+    $assert->assertNoEscaped('<div class="escaped">');
+    $assert->responseContains('<div class="escaped">');
+    $assert->assertEscaped('Escaped: <"\'&>');
+
+    $this->drupalGet('test-escaped-script');
+    $assert->assertNoEscaped('<div class="escaped">');
+    $assert->responseContains('<div class="escaped">');
+    $assert->assertEscaped("<script>alert('XSS');alert(\"XSS\");</script>");
+
+    $this->drupalGet('test-unescaped-script');
+    $assert->assertNoEscaped('<div class="unescaped">');
+    $assert->responseContains('<div class="unescaped">');
+    $assert->responseContains("<script>alert('Marked safe');alert(\"Marked safe\");</script>");
+    $assert->assertNoEscaped("<script>alert('Marked safe');alert(\"Marked safe\");</script>");
+  }
+
+  /**
+   * Tests that deprecation headers do not get duplicated.
+   *
+   * @group legacy
+   *
+   * @see \Drupal\Core\Test\HttpClientMiddleware\TestHttpClientMiddleware::__invoke()
+   */
+  public function testDeprecationHeaders() {
+    $this->drupalGet('/test-deprecations');
+
+    $deprecation_messages = [];
+    foreach ($this->getSession()->getResponseHeaders() as $name => $values) {
+      if (preg_match('/^X-Drupal-Assertion-[0-9]+$/', $name, $matches)) {
+        foreach ($values as $value) {
+          // Call \Drupal\simpletest\WebTestBase::error() with the parameters from
+          // the header.
+          $parameters = unserialize(urldecode($value));
+          if (count($parameters) === 3) {
+            if ($parameters[1] === 'User deprecated function') {
+              $deprecation_messages[] = (string) $parameters[0];
+            }
+          }
+        }
+      }
+    }
+
+    $this->assertContains('Test deprecation message', $deprecation_messages);
+    $test_deprecation_messages = array_filter($deprecation_messages, function ($message) {
+      return $message === 'Test deprecation message';
+    });
+    $this->assertCount(1, $test_deprecation_messages);
   }
 
 }

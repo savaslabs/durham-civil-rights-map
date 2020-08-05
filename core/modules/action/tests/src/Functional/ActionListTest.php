@@ -19,6 +19,11 @@ class ActionListTest extends BrowserTestBase {
   public static $modules = ['action'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Tests the behavior when there are no actions to list in the admin page.
    */
   public function testEmptyActionList() {
@@ -27,11 +32,11 @@ class ActionListTest extends BrowserTestBase {
 
     // Ensure the empty text appears on the action list page.
     /** @var $storage \Drupal\Core\Entity\EntityStorageInterface */
-    $storage = $this->container->get('entity.manager')->getStorage('action');
-    $actions  = $storage->loadMultiple();
+    $storage = $this->container->get('entity_type.manager')->getStorage('action');
+    $actions = $storage->loadMultiple();
     $storage->delete($actions);
     $this->drupalGet('/admin/config/system/actions');
-    $this->assertRaw('There is no Action yet.');
+    $this->assertRaw('There are no actions yet.');
   }
 
 }

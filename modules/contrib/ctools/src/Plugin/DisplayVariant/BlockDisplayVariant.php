@@ -1,21 +1,14 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\ctools\Plugin\DisplayVariant\BlockDisplayVariant.
- */
-
 namespace Drupal\ctools\Plugin\DisplayVariant;
 
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Block\BlockManager;
-use Drupal\Core\Cache\RefinableCacheableDependencyInterface;
 use Drupal\Core\Condition\ConditionManager;
 use Drupal\Core\Display\VariantBase;
 use Drupal\Core\Display\ContextAwareVariantInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\Context\ContextHandlerInterface;
-use Drupal\Core\Render\Element;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Utility\Token;
 use Drupal\ctools\Form\AjaxFormTrait;
@@ -26,7 +19,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Provides a base class for a display variant that simply contains blocks.
  */
-abstract class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInterface, ContainerFactoryPluginInterface, BlockVariantInterface, RefinableCacheableDependencyInterface {
+abstract class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInterface, ContainerFactoryPluginInterface, BlockVariantInterface {
 
   use AjaxFormTrait;
   use BlockVariantTrait;
@@ -213,6 +206,15 @@ abstract class BlockDisplayVariant extends VariantBase implements ContextAwareVa
 
     // Gathered contexts objects should not be serialized.
     if (($key = array_search('contexts', $vars)) !== FALSE) {
+      unset($vars[$key]);
+    }
+
+    // The block plugin collection should also not be serialized, ensure that
+    // configuration is synced back.
+    if (($key = array_search('blockPluginCollection', $vars)) !== FALSE) {
+      if ($this->blockPluginCollection) {
+        $this->configuration['blocks'] = $this->blockPluginCollection->getConfiguration();
+      }
       unset($vars[$key]);
     }
 

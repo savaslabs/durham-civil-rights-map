@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @coversDefaultClass \Drupal\Component\Annotation\Plugin\Discovery\AnnotatedClassDiscovery
  * @group Annotation
+ * @runTestsInSeparateProcesses
  */
 class AnnotatedClassDiscoveryCachedTest extends TestCase {
 
@@ -31,7 +32,7 @@ class AnnotatedClassDiscoveryCachedTest extends TestCase {
    */
   public function testGetDefinitions() {
     // Path to the classes which we'll discover and parse annotation.
-    $discovery_path  = __DIR__ . '/Fixtures';
+    $discovery_path = __DIR__ . '/Fixtures';
     // File path that should be discovered within that directory.
     $file_path = $discovery_path . '/PluginNamespace/DiscoveryTest1.php';
 

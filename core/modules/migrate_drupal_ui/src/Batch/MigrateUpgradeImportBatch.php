@@ -9,11 +9,13 @@ use Drupal\Core\Url;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Event\MigrateEvents;
 use Drupal\migrate\Event\MigrateIdMapMessageEvent;
+use Drupal\migrate\Event\MigrateImportEvent;
 use Drupal\migrate\Event\MigrateMapDeleteEvent;
 use Drupal\migrate\Event\MigrateMapSaveEvent;
 use Drupal\migrate\Event\MigratePostRowSaveEvent;
 use Drupal\migrate\Event\MigrateRowDeleteEvent;
 use Drupal\migrate\MigrateExecutable;
+use Drupal\migrate_drupal\Plugin\MigrationWithFollowUpInterface;
 
 /**
  * Runs a single migration batch.
@@ -56,6 +58,13 @@ class MigrateUpgradeImportBatch {
   protected static $messages;
 
   /**
+   * The follow-up migrations.
+   *
+   * @var \Drupal\migrate\Plugin\MigrationInterface[]
+   */
+  protected static $followUpMigrations;
+
+  /**
    * Runs a single migrate batch import.
    *
    * @param int[] $initial_ids
@@ -69,6 +78,7 @@ class MigrateUpgradeImportBatch {
     if (!static::$listenersAdded) {
       $event_dispatcher = \Drupal::service('event_dispatcher');
       $event_dispatcher->addListener(MigrateEvents::POST_ROW_SAVE, [static::class, 'onPostRowSave']);
+      $event_dispatcher->addListener(MigrateEvents::POST_IMPORT, [static::class, 'onPostImport']);
       $event_dispatcher->addListener(MigrateEvents::MAP_SAVE, [static::class, 'onMapSave']);
       $event_dispatcher->addListener(MigrateEvents::IDMAP_MESSAGE, [static::class, 'onIdMapMessage']);
 
@@ -138,6 +148,25 @@ class MigrateUpgradeImportBatch {
           \Drupal::logger('migrate_drupal_ui')->notice($message);
           $context['sandbox']['num_processed'] = 0;
           $context['results']['successes']++;
+
+          // If the completed migration has any follow-up migrations, add them
+          // to the batch migrations.
+          // @see onPostImport()
+          if (!empty(static::$followUpMigrations)) {
+            foreach (static::$followUpMigrations as $migration_id => $migration) {
+              if (!in_array($migration_id, $context['sandbox']['migration_ids'], TRUE)) {
+                // Add the follow-up migration ID to the batch migration IDs for
+                // later execution.
+                $context['sandbox']['migration_ids'][] = $migration_id;
+                // Increase the number of migrations in the batch to update the
+                // progress bar and keep it accurate.
+                $context['sandbox']['max']++;
+                // Unset the follow-up migration to make sure it won't get added
+                // to the batch twice.
+                unset(static::$followUpMigrations[$migration_id]);
+              }
+            }
+          }
           break;
 
         case MigrationInterface::RESULT_INCOMPLETE:
@@ -228,24 +257,24 @@ class MigrateUpgradeImportBatch {
 
     // If we had any successes log that for the user.
     if ($successes > 0) {
-      drupal_set_message(\Drupal::translation()
+      \Drupal::messenger()->addStatus(\Drupal::translation()
         ->formatPlural($successes, 'Completed 1 upgrade task successfully', 'Completed @count upgrade tasks successfully'));
     }
     // If we had failures, log them and show the migration failed.
     if ($failures > 0) {
-      drupal_set_message(\Drupal::translation()
+      \Drupal::messenger()->addError(\Drupal::translation()
         ->formatPlural($failures, '1 upgrade failed', '@count upgrades failed'));
-      drupal_set_message(t('Upgrade process not completed'), 'error');
+      \Drupal::messenger()->addError(t('Upgrade process not completed'));
     }
     else {
       // Everything went off without a hitch. We may not have had successes
       // but we didn't have failures so this is fine.
-      drupal_set_message(t('Congratulations, you upgraded Drupal!'));
+      \Drupal::messenger()->addStatus(t('Congratulations, you upgraded Drupal!'));
     }
 
     if (\Drupal::moduleHandler()->moduleExists('dblog')) {
       $url = Url::fromRoute('migrate_drupal_ui.log');
-      drupal_set_message(Link::fromTextAndUrl(new TranslatableMarkup('Review the detailed upgrade log'), $url), $failures ? 'error' : 'status');
+      \Drupal::messenger()->addMessage(Link::fromTextAndUrl(new TranslatableMarkup('Review the detailed upgrade log'), $url), $failures ? 'error' : 'status');
     }
   }
 
@@ -259,6 +288,24 @@ class MigrateUpgradeImportBatch {
     // We want to interrupt this batch and start a fresh one.
     if ((time() - REQUEST_TIME) > static::$maxExecTime) {
       $event->getMigration()->interruptMigration(MigrationInterface::RESULT_INCOMPLETE);
+    }
+  }
+
+  /**
+   * Adds follow-up migrations.
+   *
+   * @param \Drupal\migrate\Event\MigrateImportEvent $event
+   *   The import event.
+   */
+  public static function onPostImport(MigrateImportEvent $event) {
+    $migration = $event->getMigration();
+    if ($migration instanceof MigrationWithFollowUpInterface) {
+      // After the migration on which they depend has been successfully
+      // executed, the follow-up migrations are immediately added to the batch
+      // and removed from the $followUpMigrations property. This means that the
+      // $followUpMigrations property is always empty at this point and it's OK
+      // to override it with the next follow-up migrations.
+      static::$followUpMigrations = $migration->generateFollowUpMigrations();
     }
   }
 

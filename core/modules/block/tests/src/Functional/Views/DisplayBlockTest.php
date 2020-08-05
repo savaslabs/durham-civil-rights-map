@@ -2,7 +2,10 @@
 
 namespace Drupal\Tests\block\Functional\Views;
 
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Site\Settings;
 use Drupal\Core\Url;
 use Drupal\Tests\block\Functional\AssertBlockAppearsTrait;
 use Drupal\Tests\system\Functional\Cache\AssertPageCacheContextsAndTagsTrait;
@@ -29,6 +32,11 @@ class DisplayBlockTest extends ViewTestBase {
    * @var array
    */
   public static $modules = ['node', 'block_test_views', 'test_page_test', 'contextual', 'views_ui'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
 
   /**
    * Views used by this test.
@@ -68,10 +76,10 @@ class DisplayBlockTest extends ViewTestBase {
     // Test that the block was given a default category corresponding to its
     // base table.
     $arguments = [
-      ':href' => \Drupal::Url('block.admin_add', [
+      ':href' => Url::fromRoute('block.admin_add', [
         'plugin_id' => 'views_block:' . $edit['id'] . '-block_1',
         'theme' => 'classy',
-      ]),
+      ])->toString(),
       ':category' => 'Lists (Views)',
     ];
     $this->drupalGet('admin/structure/block');
@@ -105,20 +113,20 @@ class DisplayBlockTest extends ViewTestBase {
     $this->assertTrue(!empty($elements), 'The test block appears in the custom category.');
 
     $arguments = [
-      ':href' => \Drupal::Url('block.admin_add', [
+      ':href' => Url::fromRoute('block.admin_add', [
         'plugin_id' => 'views_block:' . $edit['id'] . '-block_2',
         'theme' => 'classy',
-      ]),
+      ])->toString(),
       ':category' => 'Lists (Views)',
     ];
     $elements = $this->xpath($pattern, $arguments);
     $this->assertTrue(!empty($elements), 'The first duplicated test block remains in the original category.');
 
     $arguments = [
-      ':href' => \Drupal::Url('block.admin_add', [
+      ':href' => Url::fromRoute('block.admin_add', [
         'plugin_id' => 'views_block:' . $edit['id'] . '-block_3',
         'theme' => 'classy',
-      ]),
+      ])->toString(),
       ':category' => $category,
     ];
     $elements = $this->xpath($pattern, $arguments);
@@ -154,10 +162,10 @@ class DisplayBlockTest extends ViewTestBase {
     $view->displayHandlers->remove('block_1');
     $view->storage->save();
 
-    $this->assertFalse($block_storage->load($block_1->id()), 'The block for this display was removed.');
-    $this->assertFalse($block_storage->load($block_2->id()), 'The block for this display was removed.');
-    $this->assertTrue($block_storage->load($block_3->id()), 'A block from another view was unaffected.');
-    $this->assertTrue($block_storage->load($block_4->id()), 'A block from another view was unaffected.');
+    $this->assertNull($block_storage->load($block_1->id()), 'The block for this display was removed.');
+    $this->assertNull($block_storage->load($block_2->id()), 'The block for this display was removed.');
+    $this->assertNotEmpty($block_storage->load($block_3->id()), 'A block from another view was unaffected.');
+    $this->assertNotEmpty($block_storage->load($block_4->id()), 'A block from another view was unaffected.');
     $this->drupalGet('test-page');
     $this->assertNoBlockAppears($block_1);
     $this->assertNoBlockAppears($block_2);
@@ -171,8 +179,8 @@ class DisplayBlockTest extends ViewTestBase {
     $view->displayHandlers->remove('block_1');
     $view->storage->save();
 
-    $this->assertFalse($block_storage->load($block_3->id()), 'The block for this display was removed.');
-    $this->assertTrue($block_storage->load($block_4->id()), 'A block from another display on the same view was unaffected.');
+    $this->assertNull($block_storage->load($block_3->id()), 'The block for this display was removed.');
+    $this->assertNotEmpty($block_storage->load($block_4->id()), 'A block from another display on the same view was unaffected.');
     $this->drupalGet('test-page');
     $this->assertNoBlockAppears($block_3);
     $this->assertBlockAppears($block_4);
@@ -360,14 +368,16 @@ class DisplayBlockTest extends ViewTestBase {
     $this->drupalGet('test-page');
 
     $id = 'block:block=' . $block->id() . ':langcode=en|entity.view.edit_form:view=test_view_block:location=block&name=test_view_block&display_id=block_1&langcode=en';
+    $id_token = Crypt::hmacBase64($id, Settings::getHashSalt() . $this->container->get('private_key')->get());
     $cached_id = 'block:block=' . $cached_block->id() . ':langcode=en|entity.view.edit_form:view=test_view_block:location=block&name=test_view_block&display_id=block_1&langcode=en';
+    $cached_id_token = Crypt::hmacBase64($cached_id, Settings::getHashSalt() . $this->container->get('private_key')->get());
     // @see \Drupal\contextual\Tests\ContextualDynamicContextTest:assertContextualLinkPlaceHolder()
-    $this->assertRaw('<div' . new Attribute(['data-contextual-id' => $id]) . '></div>', format_string('Contextual link placeholder with id @id exists.', ['@id' => $id]));
-    $this->assertRaw('<div' . new Attribute(['data-contextual-id' => $cached_id]) . '></div>', format_string('Contextual link placeholder with id @id exists.', ['@id' => $cached_id]));
+    $this->assertRaw('<div' . new Attribute(['data-contextual-id' => $id, 'data-contextual-token' => $id_token]) . '></div>', new FormattableMarkup('Contextual link placeholder with id @id exists.', ['@id' => $id]));
+    $this->assertRaw('<div' . new Attribute(['data-contextual-id' => $cached_id, 'data-contextual-token' => $cached_id_token]) . '></div>', new FormattableMarkup('Contextual link placeholder with id @id exists.', ['@id' => $cached_id]));
 
     // Get server-rendered contextual links.
     // @see \Drupal\contextual\Tests\ContextualDynamicContextTest:renderContextualLinks()
-    $post = ['ids[0]' => $id, 'ids[1]' => $cached_id];
+    $post = ['ids[0]' => $id, 'ids[1]' => $cached_id, 'tokens[0]' => $id_token, 'tokens[1]' => $cached_id_token];
     $url = 'contextual/render?_format=json,destination=test-page';
     $this->getSession()->getDriver()->getClient()->request('POST', $url, $post);
     $this->assertResponse(200);

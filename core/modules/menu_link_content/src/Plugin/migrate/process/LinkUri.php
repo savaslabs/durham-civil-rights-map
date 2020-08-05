@@ -12,7 +12,32 @@ use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Processes a link path into an 'internal:' or 'entity:' URI.
+ * Generates an internal URI from the source value.
+ *
+ * Converts the source path value to an 'entity:', 'internal:' or 'base:' URI.
+ *
+ * Available configuration keys:
+ * - source: A source path to be converted into an URI.
+ * - validate_route: (optional) Whether the plugin should validate that the URI
+ *   derived from the source link path has a valid Drupal route.
+ *   - TRUE: Throw a MigrateException if the resulting URI is not routed. This
+ *     value is the default.
+ *   - FALSE: Return the URI for the unrouted path.
+ *
+ * Examples:
+ *
+ * @code
+ * process:
+ *   link/uri:
+ *     plugin: link_uri
+ *     validate_route: false
+ *     source: link_path
+ * @endcode
+ *
+ * This will set the uri property of link to the internal notation of link_path
+ * without validating if the resulting URI is valid. For example, if the
+ * 'link_path' property is 'node/12', the uri property value of link will be
+ * 'entity:node/12'.
  *
  * @MigrateProcessPlugin(
  *   id = "link_uri"
@@ -40,6 +65,9 @@ class LinkUri extends ProcessPluginBase implements ContainerFactoryPluginInterfa
    *   The entity type manager, used to fetch entity link templates.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager) {
+    $configuration += [
+      'validate_route' => TRUE,
+    ];
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeManager = $entity_type_manager;
   }
@@ -60,8 +88,12 @@ class LinkUri extends ProcessPluginBase implements ContainerFactoryPluginInterfa
    * {@inheritdoc}
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
-    list($path) = $value;
-    $path = ltrim($path, '/');
+    if (is_array($value)) {
+      $value = reset($value);
+      @trigger_error('Passing an array as source value into the link_uri migrate process plugin is deprecated in drupal:8.8.0. The possibility to pass an array as source value to the plugin will be removed in drupal:9.0.0. Pass a string value instead. See https://www.drupal.org/node/3043694', E_USER_DEPRECATED);
+    }
+
+    $path = ltrim($value, '/');
 
     if (parse_url($path, PHP_URL_SCHEME) === NULL) {
       if ($path == '<front>') {
@@ -82,7 +114,15 @@ class LinkUri extends ProcessPluginBase implements ContainerFactoryPluginInterfa
         }
       }
       else {
-        throw new MigrateException(sprintf('The path "%s" failed validation.', $path));
+        // If the URL is not routed, we might want to get something back to do
+        // other processing. If this is the case, the "validate_route"
+        // configuration option can be set to FALSE to return the URI.
+        if (!$this->configuration['validate_route']) {
+          return $url->getUri();
+        }
+        else {
+          throw new MigrateException(sprintf('The path "%s" failed validation.', $path));
+        }
       }
     }
     return $path;

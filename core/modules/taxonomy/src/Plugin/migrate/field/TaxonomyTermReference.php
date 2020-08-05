@@ -24,13 +24,15 @@ class TaxonomyTermReference extends FieldPluginBase {
   public function getFieldFormatterMap() {
     return [
       'taxonomy_term_reference_link' => 'entity_reference_label',
+      'i18n_taxonomy_term_reference_link' => 'entity_reference_label',
+      'entityreference_entity_view' => 'entity_reference_entity_view',
     ];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function processFieldValues(MigrationInterface $migration, $field_name, $data) {
+  public function defineValueProcessPipeline(MigrationInterface $migration, $field_name, $data) {
     $process = [
       'plugin' => 'sub_process',
       'source' => $field_name,

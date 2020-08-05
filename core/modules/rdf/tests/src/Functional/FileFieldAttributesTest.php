@@ -2,7 +2,8 @@
 
 namespace Drupal\Tests\rdf\Functional;
 
-use Drupal\file\Tests\FileFieldTestBase;
+use Drupal\Core\Url;
+use Drupal\Tests\file\Functional\FileFieldTestBase;
 use Drupal\file\Entity\File;
 
 /**
@@ -18,6 +19,11 @@ class FileFieldAttributesTest extends FileFieldTestBase {
    * @var array
    */
   public static $modules = ['rdf', 'file'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The name of the file field used in the test.
@@ -42,14 +48,15 @@ class FileFieldAttributesTest extends FileFieldTestBase {
 
   protected function setUp() {
     parent::setUp();
-    $node_storage = $this->container->get('entity.manager')->getStorage('node');
+    $node_storage = $this->container->get('entity_type.manager')->getStorage('node');
     $this->fieldName = strtolower($this->randomMachineName());
 
     $type_name = 'article';
     $this->createFileField($this->fieldName, 'node', $type_name);
 
     // Set the teaser display to show this field.
-    entity_get_display('node', 'article', 'teaser')
+    \Drupal::service('entity_display.repository')
+      ->getViewDisplay('node', 'article', 'teaser')
       ->setComponent($this->fieldName, ['type' => 'file_default'])
       ->save();
 
@@ -75,16 +82,18 @@ class FileFieldAttributesTest extends FileFieldTestBase {
    */
   public function testNodeTeaser() {
     // Render the teaser.
-    $node_render_array = entity_view_multiple([$this->node], 'teaser');
+    $node_render_array = \Drupal::entityTypeManager()
+      ->getViewBuilder('node')
+      ->view($this->node, 'teaser');
     $html = \Drupal::service('renderer')->renderRoot($node_render_array);
 
     // Parses front page where the node is displayed in its teaser form.
     $parser = new \EasyRdf_Parser_Rdfa();
     $graph = new \EasyRdf_Graph();
-    $base_uri = \Drupal::url('<front>', [], ['absolute' => TRUE]);
+    $base_uri = Url::fromRoute('<front>', [], ['absolute' => TRUE])->toString();
     $parser->parse($graph, $html, 'rdfa', $base_uri);
 
-    $node_uri = $this->node->url('canonical', ['absolute' => TRUE]);
+    $node_uri = $this->node->toUrl('canonical', ['absolute' => TRUE])->toString();
     $file_uri = file_create_url($this->file->getFileUri());
 
     // Node relation to attached file.

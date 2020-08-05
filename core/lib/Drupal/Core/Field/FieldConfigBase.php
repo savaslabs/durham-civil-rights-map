@@ -12,6 +12,8 @@ use Drupal\Core\Field\TypedData\FieldItemDataDefinition;
  */
 abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigInterface {
 
+  use FieldInputValueNormalizerTrait;
+
   /**
    * The field ID.
    *
@@ -244,7 +246,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
     $this->addDependencies($definition['class']::calculateDependencies($this));
 
     // Create dependency on the bundle.
-    $bundle_config_dependency = $this->entityManager()->getDefinition($this->entity_type)->getBundleConfigDependency($this->bundle);
+    $bundle_config_dependency = $this->entityTypeManager()->getDefinition($this->entity_type)->getBundleConfigDependency($this->bundle);
     $this->addDependency($bundle_config_dependency['type'], $bundle_config_dependency['name']);
 
     return $this;
@@ -262,7 +264,6 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
     }
     return $changed;
   }
-
 
   /**
    * {@inheritdoc}
@@ -282,12 +283,12 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    */
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     // Clear the cache.
-    $this->entityManager()->clearCachedFieldDefinitions();
+    \Drupal::service('entity_field.manager')->clearCachedFieldDefinitions();
 
     // Invalidate the render cache for all affected entities.
     $entity_type = $this->getFieldStorageDefinition()->getTargetEntityTypeId();
-    if ($this->entityManager()->hasHandler($entity_type, 'view_builder')) {
-      $this->entityManager()->getViewBuilder($entity_type)->resetCache();
+    if ($this->entityTypeManager()->hasHandler($entity_type, 'view_builder')) {
+      $this->entityTypeManager()->getViewBuilder($entity_type)->resetCache();
     }
   }
 
@@ -394,6 +395,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
     // Allow custom default values function.
     if ($callback = $this->getDefaultValueCallback()) {
       $value = call_user_func($callback, $entity, $this);
+      $value = $this->normalizeValue($value, $this->getFieldStorageDefinition()->getMainPropertyName());
     }
     else {
       $value = $this->getDefaultValueLiteral();
@@ -414,18 +416,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    * {@inheritdoc}
    */
   public function setDefaultValue($value) {
-    if (!is_array($value)) {
-      if ($value === NULL) {
-        $value = [];
-      }
-      $key = $this->getFieldStorageDefinition()->getPropertyNames()[0];
-      // Convert to the multi value format to support fields with a cardinality
-      // greater than 1.
-      $value = [
-        [$key => $value],
-      ];
-    }
-    $this->default_value = $value;
+    $this->default_value = $this->normalizeValue($value, $this->getFieldStorageDefinition()->getMainPropertyName());
     return $this;
   }
 
@@ -449,7 +440,7 @@ abstract class FieldConfigBase extends ConfigEntityBase implements FieldConfigIn
    *
    * Using the Serialize interface and serialize() / unserialize() methods
    * breaks entity forms in PHP 5.4.
-   * @todo Investigate in https://www.drupal.org/node/2074253.
+   * @todo Investigate in https://www.drupal.org/node/1977206.
    */
   public function __sleep() {
     // Only serialize necessary properties, excluding those that can be

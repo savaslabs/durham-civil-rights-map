@@ -3,6 +3,7 @@
 namespace Drupal\Core\Config;
 
 use Drupal\Core\Config\Importer\MissingContentEvent;
+use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Extension\ModuleInstallerInterface;
 use Drupal\Core\Extension\ThemeHandlerInterface;
@@ -159,6 +160,13 @@ class ConfigImporter {
   protected $moduleInstaller;
 
   /**
+   * The module extension list.
+   *
+   * @var \Drupal\Core\Extension\ModuleExtensionList
+   */
+  protected $moduleExtensionList;
+
+  /**
    * Constructs a configuration import object.
    *
    * @param \Drupal\Core\Config\StorageComparerInterface $storage_comparer
@@ -180,8 +188,18 @@ class ConfigImporter {
    *   The theme handler
    * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
    *   The string translation service.
+   * @param \Drupal\Core\Extension\ModuleExtensionList|null $extension_list_module
+   *   The module extension list. This is left optional for BC reasons, but the
+   *   optional usage is deprecated and will become required in Drupal 9.0.0.
+   *
+   * @todo Remove null default value https://www.drupal.org/node/2947083
    */
-  public function __construct(StorageComparerInterface $storage_comparer, EventDispatcherInterface $event_dispatcher, ConfigManagerInterface $config_manager, LockBackendInterface $lock, TypedConfigManagerInterface $typed_config, ModuleHandlerInterface $module_handler, ModuleInstallerInterface $module_installer, ThemeHandlerInterface $theme_handler, TranslationInterface $string_translation) {
+  public function __construct(StorageComparerInterface $storage_comparer, EventDispatcherInterface $event_dispatcher, ConfigManagerInterface $config_manager, LockBackendInterface $lock, TypedConfigManagerInterface $typed_config, ModuleHandlerInterface $module_handler, ModuleInstallerInterface $module_installer, ThemeHandlerInterface $theme_handler, TranslationInterface $string_translation, ModuleExtensionList $extension_list_module = NULL) {
+    if ($extension_list_module === NULL) {
+      @trigger_error('Invoking the ConfigImporter constructor without the module extension list parameter is deprecated in Drupal 8.8.0 and will no longer be supported in Drupal 9.0.0. The extension list parameter is now required in the ConfigImporter constructor. See https://www.drupal.org/node/2943918', E_USER_DEPRECATED);
+      $extension_list_module = \Drupal::service('extension.list.module');
+    }
+    $this->moduleExtensionList = $extension_list_module;
     $this->storageComparer = $storage_comparer;
     $this->eventDispatcher = $event_dispatcher;
     $this->configManager = $config_manager;
@@ -230,7 +248,7 @@ class ConfigImporter {
   /**
    * Resets the storage comparer and processed list.
    *
-   * @return \Drupal\Core\Config\ConfigImporter
+   * @return $this
    *   The ConfigImporter instance.
    */
   public function reset() {
@@ -369,7 +387,7 @@ class ConfigImporter {
     }
 
     // Get a list of modules with dependency weights as values.
-    $module_data = system_rebuild_module_data();
+    $module_data = $this->moduleExtensionList->getList();
     // Set the actual module weights.
     $module_list = array_combine(array_keys($module_data), array_keys($module_data));
     $module_list = array_map(function ($module) use ($module_data) {
@@ -404,6 +422,14 @@ class ConfigImporter {
     // in alphabetical order).
     $module_list = array_reverse($module_list);
     $this->extensionChangelist['module']['install'] = array_intersect(array_keys($module_list), $install);
+
+    // If we're installing the install profile ensure it comes last. This will
+    // occur when installing a site from configuration.
+    $install_profile_key = array_search($new_extensions['profile'], $this->extensionChangelist['module']['install'], TRUE);
+    if ($install_profile_key !== FALSE) {
+      unset($this->extensionChangelist['module']['install'][$install_profile_key]);
+      $this->extensionChangelist['module']['install'][] = $new_extensions['profile'];
+    }
 
     // Work out what themes to install and to uninstall.
     $this->extensionChangelist['theme']['install'] = array_keys(array_diff_key($new_extensions['theme'], $current_extensions['theme']));
@@ -449,7 +475,7 @@ class ConfigImporter {
   /**
    * Imports the changelist to the target storage.
    *
-   * @return \Drupal\Core\Config\ConfigImporter
+   * @return $this
    *   The ConfigImporter instance.
    *
    * @throws \Drupal\Core\Config\ConfigException
@@ -725,7 +751,8 @@ class ConfigImporter {
       }
       $this->eventDispatcher->dispatch(ConfigEvents::IMPORT_VALIDATE, new ConfigImporterEvent($this));
       if (count($this->getErrors())) {
-        throw new ConfigImporterException('There were errors validating the config synchronization.');
+        $errors = array_merge(['There were errors validating the config synchronization.'], $this->getErrors());
+        throw new ConfigImporterException(implode(PHP_EOL, $errors));
       }
       else {
         $this->validated = TRUE;
@@ -802,7 +829,7 @@ class ConfigImporter {
         $this->configManager->getConfigFactory()->reset('system.theme');
         $this->processedSystemTheme = TRUE;
       }
-      $this->themeHandler->$op([$name]);
+      \Drupal::service('theme_installer')->$op([$name]);
     }
 
     $this->setProcessedExtension($type, $op, $name);
@@ -858,8 +885,8 @@ class ConfigImporter {
           // If the target already exists, use the entity storage to delete it
           // again, if is a simple config, delete it directly.
           if ($entity_type_id = $this->configManager->getEntityTypeIdByName($name)) {
-            $entity_storage = $this->configManager->getEntityManager()->getStorage($entity_type_id);
-            $entity_type = $this->configManager->getEntityManager()->getDefinition($entity_type_id);
+            $entity_storage = $this->configManager->getEntityTypeManager()->getStorage($entity_type_id);
+            $entity_type = $this->configManager->getEntityTypeManager()->getDefinition($entity_type_id);
             $entity = $entity_storage->load($entity_storage->getIDFromConfigName($name, $entity_type->getConfigPrefix()));
             $entity->delete();
             $this->logError($this->t('Deleted and replaced configuration entity "@name"', ['@name' => $name]));
@@ -961,7 +988,7 @@ class ConfigImporter {
       }
 
       $method = 'import' . ucfirst($op);
-      $entity_storage = $this->configManager->getEntityManager()->getStorage($entity_type);
+      $entity_storage = $this->configManager->getEntityTypeManager()->getStorage($entity_type);
       // Call to the configuration entity's storage to handle the configuration
       // change.
       if (!($entity_storage instanceof ImportableEntityStorageInterface)) {
@@ -1007,7 +1034,7 @@ class ConfigImporter {
       $new_config->setData($data);
     }
 
-    $entity_storage = $this->configManager->getEntityManager()->getStorage($entity_type_id);
+    $entity_storage = $this->configManager->getEntityTypeManager()->getStorage($entity_type_id);
     // Call to the configuration entity's storage to handle the configuration
     // change.
     if (!($entity_storage instanceof ImportableEntityStorageInterface)) {

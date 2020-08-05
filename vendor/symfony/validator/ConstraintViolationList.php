@@ -21,14 +21,14 @@ class ConstraintViolationList implements \IteratorAggregate, ConstraintViolation
     /**
      * @var ConstraintViolationInterface[]
      */
-    private $violations = array();
+    private $violations = [];
 
     /**
      * Creates a new constraint violation list.
      *
      * @param ConstraintViolationInterface[] $violations The constraint violations to add to the list
      */
-    public function __construct(array $violations = array())
+    public function __construct(array $violations = [])
     {
         foreach ($violations as $violation) {
             $this->add($violation);
@@ -120,7 +120,7 @@ class ConstraintViolationList implements \IteratorAggregate, ConstraintViolation
      */
     public function count()
     {
-        return count($this->violations);
+        return \count($this->violations);
     }
 
     /**
@@ -169,9 +169,9 @@ class ConstraintViolationList implements \IteratorAggregate, ConstraintViolation
     public function findByCodes($codes)
     {
         $codes = (array) $codes;
-        $violations = array();
+        $violations = [];
         foreach ($this as $violation) {
-            if (in_array($violation->getCode(), $codes, true)) {
+            if (\in_array($violation->getCode(), $codes, true)) {
                 $violations[] = $violation;
             }
         }

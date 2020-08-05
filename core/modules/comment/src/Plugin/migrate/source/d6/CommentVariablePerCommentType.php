@@ -10,7 +10,7 @@ namespace Drupal\comment\Plugin\migrate\source\d6;
  *   source_module = "comment"
  * )
  *
- * @deprecated in Drupal 8.4.x, to be removed before Drupal 9.0.x. Use
+ * @deprecated in drupal:8.4.0 and is removed from drupal:9.0.0. Use
  * \Drupal\node\Plugin\migrate\source\d6\NodeType instead.
  */
 class CommentVariablePerCommentType extends CommentVariable {
@@ -31,7 +31,7 @@ class CommentVariablePerCommentType extends CommentVariable {
         $return['comment'] = [
           'comment_type' => 'comment',
           'label' => $this->t('Default comments'),
-          'description' => $this->t('Allows commenting on content')
+          'description' => $this->t('Allows commenting on content'),
         ];
       }
       else {
@@ -39,7 +39,7 @@ class CommentVariablePerCommentType extends CommentVariable {
         $return['comment_no_subject'] = [
           'comment_type' => 'comment_no_subject',
           'label' => $this->t('Comments without subject field'),
-          'description' => $this->t('Allows commenting on content, comments without subject field')
+          'description' => $this->t('Allows commenting on content, comments without subject field'),
         ];
       }
     }

@@ -59,7 +59,7 @@ class UserPermissionsForm extends FormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('user.permissions'),
-      $container->get('entity.manager')->getStorage('user_role'),
+      $container->get('entity_type.manager')->getStorage('user_role'),
       $container->get('module_handler')
     );
   }
@@ -216,7 +216,7 @@ class UserPermissionsForm extends FormBase {
       user_role_change_permissions($role_name, (array) $form_state->getValue($role_name));
     }
 
-    drupal_set_message($this->t('The changes have been saved.'));
+    $this->messenger()->addStatus($this->t('The changes have been saved.'));
   }
 
 }

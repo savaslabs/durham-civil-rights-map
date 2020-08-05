@@ -62,7 +62,7 @@ class ViewPreviewForm extends ViewFormBase {
         'preview' => $view->renderPreview($this->displayID, $args),
       ];
     }
-    $uri = $view->urlInfo('preview-form');
+    $uri = $view->toUrl('preview-form');
     $uri->setRouteParameter('display_id', $this->displayID);
     $form['#action'] = $uri->toString();
 
@@ -77,7 +77,7 @@ class ViewPreviewForm extends ViewFormBase {
     return [
       '#attributes' => [
         'id' => 'preview-submit-wrapper',
-        'class' => ['preview-submit-wrapper']
+        'class' => ['preview-submit-wrapper'],
       ],
       'button' => [
         '#type' => 'submit',

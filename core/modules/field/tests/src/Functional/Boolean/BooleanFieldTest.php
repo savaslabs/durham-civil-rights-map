@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\field\Functional\Boolean;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\entity_test\Entity\EntityTest;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field\Entity\FieldConfig;
@@ -26,6 +25,11 @@ class BooleanFieldTest extends BrowserTestBase {
     'options',
     'field_test_boolean_access_denied',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
 
   /**
    * A field to use in this test class.
@@ -64,7 +68,7 @@ class BooleanFieldTest extends BrowserTestBase {
     $label = $this->randomMachineName();
 
     // Create a field with settings to validate.
-    $field_name = Unicode::strtolower($this->randomMachineName());
+    $field_name = mb_strtolower($this->randomMachineName());
     $this->fieldStorage = FieldStorageConfig::create([
       'field_name' => $field_name,
       'entity_type' => 'entity_test',
@@ -84,14 +88,17 @@ class BooleanFieldTest extends BrowserTestBase {
     ]);
     $this->field->save();
 
+    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+    $display_repository = \Drupal::service('entity_display.repository');
+
     // Create a form display for the default form mode.
-    entity_get_form_display('entity_test', 'entity_test', 'default')
+    $display_repository->getFormDisplay('entity_test', 'entity_test')
       ->setComponent($field_name, [
         'type' => 'boolean_checkbox',
       ])
       ->save();
     // Create a display for the full view mode.
-    entity_get_display('entity_test', 'entity_test', 'full')
+    $display_repository->getViewDisplay('entity_test', 'entity_test', 'full')
       ->setComponent($field_name, [
         'type' => 'boolean',
       ])
@@ -118,12 +125,12 @@ class BooleanFieldTest extends BrowserTestBase {
     $this->assertRaw('<div class="field__item">' . $on . '</div>');
 
     // Test with "On" label option.
-    entity_get_form_display('entity_test', 'entity_test', 'default')
+    $display_repository->getFormDisplay('entity_test', 'entity_test')
       ->setComponent($field_name, [
         'type' => 'boolean_checkbox',
         'settings' => [
           'display_label' => FALSE,
-        ]
+        ],
       ])
       ->save();
 
@@ -204,15 +211,18 @@ class BooleanFieldTest extends BrowserTestBase {
     ]);
     $this->field->save();
 
+    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+    $display_repository = \Drupal::service('entity_display.repository');
+
     // Create a form display for the default form mode.
-    entity_get_form_display('entity_test', 'entity_test', 'default')
+    $display_repository->getFormDisplay('entity_test', 'entity_test')
       ->setComponent($field_name, [
         'type' => 'boolean_checkbox',
       ])
       ->save();
 
     // Create a display for the full view mode.
-    entity_get_display('entity_test', 'entity_test', 'full')
+    $display_repository->getViewDisplay('entity_test', 'entity_test', 'full')
       ->setComponent($field_name, [
         'type' => 'boolean',
       ])

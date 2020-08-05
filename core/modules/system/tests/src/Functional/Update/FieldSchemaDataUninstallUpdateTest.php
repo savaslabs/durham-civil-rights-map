@@ -10,8 +10,14 @@ use Drupal\FunctionalTests\Update\UpdatePathTestBase;
  * @see https://www.drupal.org/node/2573667
  *
  * @group Update
+ * @group legacy
  */
 class FieldSchemaDataUninstallUpdateTest extends UpdatePathTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

@@ -20,7 +20,6 @@ class RewindableGenerator implements \IteratorAggregate, \Countable
     private $count;
 
     /**
-     * @param callable     $generator
      * @param int|callable $count
      */
     public function __construct(callable $generator, $count)
@@ -38,7 +37,7 @@ class RewindableGenerator implements \IteratorAggregate, \Countable
 
     public function count()
     {
-        if (is_callable($count = $this->count)) {
+        if (\is_callable($count = $this->count)) {
             $this->count = $count();
         }
 

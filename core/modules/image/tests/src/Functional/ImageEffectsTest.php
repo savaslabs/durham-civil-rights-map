@@ -20,6 +20,11 @@ class ImageEffectsTest extends ToolkitTestBase {
   public static $modules = ['image', 'image_test', 'image_module_test'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * The image effect manager.
    *
    * @var \Drupal\image\ImageEffectManager
@@ -111,8 +116,29 @@ class ImageEffectsTest extends ToolkitTestBase {
 
     // Check the parameters.
     $calls = $this->imageTestGetAllCalls();
-    $this->assertEqual($calls['scale_and_crop'][0][0], 5, 'Width was computed and passed correctly');
-    $this->assertEqual($calls['scale_and_crop'][0][1], 10, 'Height was computed and passed correctly');
+    $this->assertEqual($calls['scale_and_crop'][0][0], 7.5, 'X was computed and passed correctly');
+    $this->assertEqual($calls['scale_and_crop'][0][1], 0, 'Y was computed and passed correctly');
+    $this->assertEqual($calls['scale_and_crop'][0][2], 5, 'Width was computed and passed correctly');
+    $this->assertEqual($calls['scale_and_crop'][0][3], 10, 'Height was computed and passed correctly');
+  }
+
+  /**
+   * Test the image_scale_and_crop_effect() function with an anchor.
+   */
+  public function testScaleAndCropEffectWithAnchor() {
+    $this->assertImageEffect('image_scale_and_crop', [
+      'anchor' => 'top-1',
+      'width' => 5,
+      'height' => 10,
+    ]);
+    $this->assertToolkitOperationsCalled(['scale_and_crop']);
+
+    // Check the parameters.
+    $calls = $this->imageTestGetAllCalls();
+    $this->assertEqual($calls['scale_and_crop'][0][0], 0, 'X was computed and passed correctly');
+    $this->assertEqual($calls['scale_and_crop'][0][1], 1, 'Y was computed and passed correctly');
+    $this->assertEqual($calls['scale_and_crop'][0][2], 5, 'Width was computed and passed correctly');
+    $this->assertEqual($calls['scale_and_crop'][0][3], 10, 'Height was computed and passed correctly');
   }
 
   /**

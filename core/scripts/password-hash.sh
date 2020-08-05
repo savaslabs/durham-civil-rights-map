@@ -7,6 +7,8 @@
  *
  * @param password1 [password2 [password3 ...]]
  *  Plain-text passwords in quotes (or with spaces backslash escaped).
+ *
+ * @todo Port to a console command. https://www.drupal.org/node/2289409
  */
 
 use Drupal\Core\DrupalKernel;
@@ -17,7 +19,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 if (version_compare(PHP_VERSION, '5.4.5') < 0) {
-  $version  = PHP_VERSION;
+  $version = PHP_VERSION;
   echo <<<EOF
 
 ERROR: This script requires at least PHP version 5.4.5. You invoked it with

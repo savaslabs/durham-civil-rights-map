@@ -4,7 +4,7 @@ migration_tags:
   - Drupal 7
   - Configuration
 class: Drupal\migrate_drupal\Plugin\migrate\FieldMigration
-field_plugin_method: processFieldFormatter
+field_plugin_method: alterFieldFormatterMigration
 source:
   plugin: d7_field_instance_per_view_mode
   constants:
@@ -80,6 +80,12 @@ process:
     -
       plugin: skip_on_empty
       method: row
+  hidden:
+    plugin: static_map
+    source: "@options/type"
+    map:
+      hidden: true
+    default_value: false
   "options/settings":
     plugin: default_value
     source: 'formatter/settings'

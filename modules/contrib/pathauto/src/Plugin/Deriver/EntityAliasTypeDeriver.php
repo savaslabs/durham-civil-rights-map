@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\pathauto\Plugin\Deriver\EntityAliasTypeDeriver.
- */
 
 namespace Drupal\pathauto\Plugin\Deriver;
 
@@ -11,6 +7,7 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Plugin\Context\ContextDefinition;
+use Drupal\Core\Plugin\Context\EntityContextDefinition;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
@@ -30,6 +27,8 @@ class EntityAliasTypeDeriver extends DeriverBase implements ContainerDeriverInte
   protected $entityTypeManager;
 
   /**
+   * The entity field manager.
+   *
    * @var \Drupal\Core\Entity\EntityFieldManagerInterface
    */
   protected $entityFieldManager;
@@ -48,7 +47,7 @@ class EntityAliasTypeDeriver extends DeriverBase implements ContainerDeriverInte
    *   The entity field manager.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
    *   The string translation service.
-   * @apram \Drupal\Token\TokenEntityMapperInterface $token_entity_mapper
+   * @param \Drupal\Token\TokenEntityMapperInterface $token_entity_mapper
    *   The token entity mapper.
    */
   public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, TranslationInterface $string_translation, TokenEntityMapperInterface $token_entity_mapper) {
@@ -81,7 +80,6 @@ class EntityAliasTypeDeriver extends DeriverBase implements ContainerDeriverInte
         if (!isset($base_fields['path'])) {
           // The entity type does not have a path field and is therefore not
           // supported.
-          // @todo: Add a UI to enable that base field on any content entity.
           continue;
         }
         $this->derivatives[$entity_type_id] = $base_plugin_definition;
@@ -89,7 +87,7 @@ class EntityAliasTypeDeriver extends DeriverBase implements ContainerDeriverInte
         $this->derivatives[$entity_type_id]['types'] = [$this->tokenEntityMapper->getTokenTypeForEntityType($entity_type_id)];
         $this->derivatives[$entity_type_id]['provider'] = $entity_type->getProvider();
         $this->derivatives[$entity_type_id]['context'] = [
-          $entity_type_id => new ContextDefinition("entity:$entity_type_id", $this->t('@label being aliased', ['@label' => $entity_type->getLabel()]))
+          $entity_type_id => EntityContextDefinition::fromEntityType($entity_type)->setLabel($this->t('@label being aliased', ['@label' => $entity_type->getLabel()]))
         ];
       }
     }

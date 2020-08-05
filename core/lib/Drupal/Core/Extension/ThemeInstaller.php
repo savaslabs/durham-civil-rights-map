@@ -7,6 +7,7 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\ConfigInstallerInterface;
 use Drupal\Core\Config\ConfigManagerInterface;
+use Drupal\Core\Extension\Exception\UnknownExtensionException;
 use Drupal\Core\Routing\RouteBuilderInterface;
 use Drupal\Core\State\StateInterface;
 use Psr\Log\LoggerInterface;
@@ -111,7 +112,7 @@ class ThemeInstaller implements ThemeInstallerInterface {
 
       if ($missing = array_diff_key($theme_list, $theme_data)) {
         // One or more of the given themes doesn't exist.
-        throw new \InvalidArgumentException('Unknown themes: ' . implode(', ', $missing) . '.');
+        throw new UnknownExtensionException('Unknown themes: ' . implode(', ', $missing) . '.');
       }
 
       // Only process themes that are not installed currently.
@@ -173,22 +174,12 @@ class ThemeInstaller implements ThemeInstallerInterface {
         ->set("theme.$key", 0)
         ->save(TRUE);
 
-      // Add the theme to the current list.
-      // @todo Remove all code that relies on $status property.
-      $theme_data[$key]->status = 1;
-      $this->themeHandler->addTheme($theme_data[$key]);
-
-      // Update the current theme data accordingly.
-      $current_theme_data = $this->state->get('system.theme.data', []);
-      $current_theme_data[$key] = $theme_data[$key];
-      $this->state->set('system.theme.data', $current_theme_data);
-
       // Reset theme settings.
       $theme_settings = &drupal_static('theme_get_setting');
       unset($theme_settings[$key]);
 
-      // @todo Remove system_list().
-      $this->systemListReset();
+      // Reset theme listing.
+      $this->themeHandler->reset();
 
       // Only install default configuration if this theme has not been installed
       // already.
@@ -221,7 +212,7 @@ class ThemeInstaller implements ThemeInstallerInterface {
     $list = $this->themeHandler->listInfo();
     foreach ($theme_list as $key) {
       if (!isset($list[$key])) {
-        throw new \InvalidArgumentException("Unknown theme: $key.");
+        throw new UnknownExtensionException("Unknown theme: $key.");
       }
       if ($key === $theme_config->get('default')) {
         throw new \InvalidArgumentException("The current default theme $key cannot be uninstalled.");
@@ -244,13 +235,9 @@ class ThemeInstaller implements ThemeInstallerInterface {
     }
 
     $this->cssCollectionOptimizer->deleteAll();
-    $current_theme_data = $this->state->get('system.theme.data', []);
     foreach ($theme_list as $key) {
       // The value is not used; the weight is ignored for themes currently.
       $extension_config->clear("theme.$key");
-
-      // Update the current theme data accordingly.
-      unset($current_theme_data[$key]);
 
       // Reset theme settings.
       $theme_settings = &drupal_static('theme_get_setting');
@@ -263,11 +250,10 @@ class ThemeInstaller implements ThemeInstallerInterface {
     // Don't check schema when uninstalling a theme since we are only clearing
     // keys.
     $extension_config->save(TRUE);
-    $this->state->set('system.theme.data', $current_theme_data);
 
-    // @todo Remove system_list().
-    $this->themeHandler->refreshInfo();
+    // Refresh theme info.
     $this->resetSystem();
+    $this->themeHandler->reset();
 
     $this->moduleHandler->invokeAll('themes_uninstalled', [$theme_list]);
   }
@@ -279,7 +265,6 @@ class ThemeInstaller implements ThemeInstallerInterface {
     if ($this->routeBuilder) {
       $this->routeBuilder->setRebuildNeeded();
     }
-    $this->systemListReset();
 
     // @todo It feels wrong to have the requirement to clear the local tasks
     //   cache here.
@@ -292,13 +277,6 @@ class ThemeInstaller implements ThemeInstallerInterface {
    */
   protected function themeRegistryRebuild() {
     drupal_theme_rebuild();
-  }
-
-  /**
-   * Wraps system_list_reset().
-   */
-  protected function systemListReset() {
-    system_list_reset();
   }
 
 }

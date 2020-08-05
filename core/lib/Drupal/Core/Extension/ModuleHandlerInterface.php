@@ -61,7 +61,7 @@ interface ModuleHandlerInterface {
    * @return \Drupal\Core\Extension\Extension
    *   An extension object.
    *
-   * @throws \InvalidArgumentException
+   * @throws \Drupal\Core\Extension\Exception\UnknownExtensionException
    *   Thrown when the requested module does not exist.
    */
   public function getModule($name);
@@ -310,7 +310,7 @@ interface ModuleHandlerInterface {
    *   $this->alter('mymodule_data', $alterable1, $alterable2, $context);
    * @endcode
    *
-   * Note that objects are always passed by reference in PHP5. If it is absolutely
+   * Note that objects are always passed by reference. If it is absolutely
    * required that no implementation alters a passed object in $context, then an
    * object needs to be cloned:
    * @code

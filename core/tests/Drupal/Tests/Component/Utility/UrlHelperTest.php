@@ -311,6 +311,42 @@ class UrlHelperTest extends TestCase {
           'fragment' => 'footer',
         ],
       ],
+      'URL with two question marks, not encoded' => [
+        'http://www.example.com/my/path?destination=home&search=http://www.example.com/search?limit=10#footer',
+        [
+          'path' => 'http://www.example.com/my/path',
+          'query' => [
+            'destination' => 'home',
+            'search' => 'http://www.example.com/search?limit=10',
+          ],
+          'fragment' => 'footer',
+        ],
+      ],
+      'URL with three question marks, not encoded' => [
+        'http://www.example.com/my/path?destination=home&search=http://www.example.com/search?limit=10&referer=http://www.example.com/my/path?destination=home&other#footer',
+        [
+          'path' => 'http://www.example.com/my/path',
+          'query' => [
+            'destination' => 'home',
+            'search' => 'http://www.example.com/search?limit=10',
+            'referer' => 'http://www.example.com/my/path?destination=home',
+            'other' => '',
+          ],
+          'fragment' => 'footer',
+        ],
+      ],
+      'URL with three question marks, encoded' => [
+        'http://www.example.com/my/path?destination=home&search=http://www.example.com/search?limit=10&referer=http%3A%2F%2Fwww.example.com%2Fmy%2Fpath%3Fdestination%3Dhome%26other#footer',
+        [
+          'path' => 'http://www.example.com/my/path',
+          'query' => [
+            'destination' => 'home',
+            'search' => 'http://www.example.com/search?limit=10',
+            'referer' => 'http://www.example.com/my/path?destination=home&other',
+          ],
+          'fragment' => 'footer',
+        ],
+      ],
     ];
   }
 
@@ -563,6 +599,10 @@ class UrlHelperTest extends TestCase {
       ['http://example.com/foo', 'http://example.com/bar', FALSE],
       ['http://example.com', 'http://example.com/bar', FALSE],
       ['http://example.com/bar', 'http://example.com/bar/', FALSE],
+      // Ensure \ is normalised to / since some browsers do that.
+      ['http://www.example.ca\@example.com', 'http://example.com', FALSE],
+      // Some browsers ignore or strip leading control characters.
+      ["\x00//www.example.ca", 'http://example.com', FALSE],
     ];
   }
 
@@ -578,12 +618,7 @@ class UrlHelperTest extends TestCase {
    * @dataProvider providerTestExternalIsLocalInvalid
    */
   public function testExternalIsLocalInvalid($url, $base_url) {
-    if (method_exists($this, 'expectException')) {
-      $this->expectException(\InvalidArgumentException::class);
-    }
-    else {
-      $this->setExpectedException(\InvalidArgumentException::class);
-    }
+    $this->expectException(\InvalidArgumentException::class);
     UrlHelper::externalIsLocal($url, $base_url);
   }
 

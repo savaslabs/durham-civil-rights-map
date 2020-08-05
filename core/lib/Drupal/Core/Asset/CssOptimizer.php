@@ -3,6 +3,7 @@
 namespace Drupal\Core\Asset;
 
 use Drupal\Component\Utility\Unicode;
+use Drupal\Core\StreamWrapper\StreamWrapperManager;
 
 /**
  * Optimizes a CSS asset.
@@ -103,7 +104,7 @@ class CssOptimizer implements AssetOptimizerInterface {
 
     // Stylesheets are relative one to each other. Start by adding a base path
     // prefix provided by the parent stylesheet (if necessary).
-    if ($basepath && !file_uri_scheme($file)) {
+    if ($basepath && !StreamWrapperManager::getScheme($file)) {
       $file = $basepath . '/' . $file;
     }
     // Store the parent base path to restore it later.
@@ -119,7 +120,7 @@ class CssOptimizer implements AssetOptimizerInterface {
       // If a BOM is found, convert the file to UTF-8, then use substr() to
       // remove the BOM from the result.
       if ($encoding = (Unicode::encodingFromBOM($contents))) {
-        $contents = Unicode::substr(Unicode::convertToUtf8($contents, $encoding), 1);
+        $contents = mb_substr(Unicode::convertToUtf8($contents, $encoding), 1);
       }
       // If no BOM, check for fallback encoding. Per CSS spec the regex is very strict.
       elseif (preg_match('/^@charset "([^"]+)";/', $contents, $matches)) {
@@ -189,7 +190,7 @@ class CssOptimizer implements AssetOptimizerInterface {
     if ($optimize) {
       // Perform some safe CSS optimizations.
       // Regexp to match comment blocks.
-      $comment     = '/\*[^*]*\*+(?:[^/*][^*]*\*+)*/';
+      $comment = '/\*[^*]*\*+(?:[^/*][^*]*\*+)*/';
       // Regexp to match double quoted strings.
       $double_quot = '"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"';
       // Regexp to match single quoted strings.

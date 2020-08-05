@@ -34,7 +34,7 @@ class RequestSanitizer {
    * @param string[] $whitelist
    *   An array of keys to whitelist as safe. See default.settings.php.
    * @param bool $log_sanitized_keys
-   *   (optional) Set to TRUE to log an keys that are sanitized.
+   *   (optional) Set to TRUE to log keys that are sanitized.
    *
    * @return \Symfony\Component\HttpFoundation\Request
    *   The sanitized request.
@@ -90,7 +90,8 @@ class RequestSanitizer {
     }
 
     if ($bag->has('destination')) {
-      $destination_dangerous_keys = static::checkDestination($bag->get('destination'), $whitelist);
+      $destination = $bag->get('destination');
+      $destination_dangerous_keys = static::checkDestination($destination, $whitelist);
       if (!empty($destination_dangerous_keys)) {
         // The destination is removed rather than sanitized because the URL
         // generator service is not available and this method is called very
@@ -99,6 +100,16 @@ class RequestSanitizer {
         $sanitized = TRUE;
         if ($log_sanitized_keys) {
           trigger_error(sprintf('Potentially unsafe destination removed from %s parameter bag because it contained the following keys: %s', $bag_name, implode(', ', $destination_dangerous_keys)));
+        }
+      }
+      // Sanitize the destination parameter (which is often used for redirects)
+      // to prevent open redirect attacks leading to other domains.
+      if (UrlHelper::isExternal($destination)) {
+        // The destination is removed because it is an external URL.
+        $bag->remove('destination');
+        $sanitized = TRUE;
+        if ($log_sanitized_keys) {
+          trigger_error(sprintf('Potentially unsafe destination removed from %s parameter bag because it points to an external URL.', $bag_name));
         }
       }
     }

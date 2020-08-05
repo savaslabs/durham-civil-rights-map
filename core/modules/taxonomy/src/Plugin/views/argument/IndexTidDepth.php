@@ -2,6 +2,7 @@
 
 namespace Drupal\taxonomy\Plugin\views\argument;
 
+use Drupal\Core\Database\Database;
 use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -39,7 +40,12 @@ class IndexTidDepth extends ArgumentPluginBase implements ContainerFactoryPlugin
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity.manager')->getStorage('taxonomy_term'));
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('entity_type.manager')->getStorage('taxonomy_term')
+    );
   }
 
   protected function defineOptions() {
@@ -105,24 +111,25 @@ class IndexTidDepth extends ArgumentPluginBase implements ContainerFactoryPlugin
       $tids = $this->argument;
     }
     // Now build the subqueries.
-    $subquery = db_select('taxonomy_index', 'tn');
+    $subquery = Database::getConnection()->select('taxonomy_index', 'tn');
     $subquery->addField('tn', 'nid');
     $where = (new Condition('OR'))->condition('tn.tid', $tids, $operator);
     $last = "tn";
 
     if ($this->options['depth'] > 0) {
-      $subquery->leftJoin('taxonomy_term_hierarchy', 'th', "th.tid = tn.tid");
+      $subquery->leftJoin('taxonomy_term__parent', 'th', "th.entity_id = tn.tid");
       $last = "th";
       foreach (range(1, abs($this->options['depth'])) as $count) {
-        $subquery->leftJoin('taxonomy_term_hierarchy', "th$count", "$last.parent = th$count.tid");
-        $where->condition("th$count.tid", $tids, $operator);
+        $subquery->leftJoin('taxonomy_term__parent', "th$count", "$last.parent_target_id = th$count.entity_id");
+        $where->condition("th$count.entity_id", $tids, $operator);
         $last = "th$count";
       }
     }
     elseif ($this->options['depth'] < 0) {
       foreach (range(1, abs($this->options['depth'])) as $count) {
-        $subquery->leftJoin('taxonomy_term_hierarchy', "th$count", "$last.tid = th$count.parent");
-        $where->condition("th$count.tid", $tids, $operator);
+        $field = $count == 1 ? 'tid' : 'entity_id';
+        $subquery->leftJoin('taxonomy_term__parent', "th$count", "$last.$field = th$count.parent_target_id");
+        $where->condition("th$count.entity_id", $tids, $operator);
         $last = "th$count";
       }
     }

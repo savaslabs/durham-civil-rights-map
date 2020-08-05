@@ -7,19 +7,52 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FormatterPluginManager;
 use Drupal\Core\Plugin\Context\ContextDefinition;
+use Drupal\Core\Form\EnforcedResponseException;
+use Drupal\Core\Plugin\Context\EntityContextDefinition;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
 use Drupal\layout_builder\Plugin\Block\FieldBlock;
+use Prophecy\Argument;
+use Prophecy\Promise\PromiseInterface;
+use Prophecy\Promise\ReturnPromise;
+use Prophecy\Promise\ThrowPromise;
 use Prophecy\Prophecy\ProphecyInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @coversDefaultClass \Drupal\layout_builder\Plugin\Block\FieldBlock
  * @group Field
  */
 class FieldBlockTest extends EntityKernelTestBase {
+
+  /**
+   * The entity field manager.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
+
+  /**
+   * The logger.
+   *
+   * @var \Psr\Log\LoggerInterface
+   */
+  protected $logger;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    parent::setUp();
+
+    $this->entityFieldManager = $this->prophesize(EntityFieldManagerInterface::class);
+    $this->logger = $this->prophesize(LoggerInterface::class);
+  }
 
   /**
    * Tests entity access.
@@ -176,11 +209,11 @@ class FieldBlockTest extends EntityKernelTestBase {
       'category' => 'Test',
       'admin_label' => 'Test Block',
       'bundles' => ['entity_test'],
-      'context' => [
-        'entity' => new ContextDefinition('entity:entity_test', 'Test', TRUE),
+      'context_definitions' => [
+        'entity' => EntityContextDefinition::fromEntityTypeId('entity_test')->setLabel('Test'),
+        'view_mode' => new ContextDefinition('string'),
       ],
     ];
-    $entity_field_manager = $this->prophesize(EntityFieldManagerInterface::class);
     $formatter_manager = $this->prophesize(FormatterPluginManager::class);
     $module_handler = $this->prophesize(ModuleHandlerInterface::class);
 
@@ -188,12 +221,90 @@ class FieldBlockTest extends EntityKernelTestBase {
       $configuration,
       'field_block:entity_test:entity_test:the_field_name',
       $plugin_definition,
-      $entity_field_manager->reveal(),
+      $this->entityFieldManager->reveal(),
       $formatter_manager->reveal(),
-      $module_handler->reveal()
+      $module_handler->reveal(),
+      $this->logger->reveal()
     );
     $block->setContextValue('entity', $entity_prophecy->reveal());
+    $block->setContextValue('view_mode', 'default');
     return $block;
+  }
+
+  /**
+   * @covers ::build
+   * @dataProvider providerTestBuild
+   */
+  public function testBuild(PromiseInterface $promise, $expected_markup, $log_message = '', $log_arguments = []) {
+    $entity = $this->prophesize(FieldableEntityInterface::class);
+    $field = $this->prophesize(FieldItemListInterface::class);
+    $entity->get('the_field_name')->willReturn($field->reveal());
+    $field->view(Argument::type('array'))->will($promise);
+
+    $field_definition = $this->prophesize(FieldDefinitionInterface::class);
+    $field_definition->getLabel()->willReturn('The Field Label');
+    $this->entityFieldManager->getFieldDefinitions('entity_test', 'entity_test')->willReturn(['the_field_name' => $field_definition]);
+
+    if ($log_message) {
+      $this->logger->warning($log_message, $log_arguments)->shouldBeCalled();
+    }
+    else {
+      $this->logger->warning(Argument::cetera())->shouldNotBeCalled();
+    }
+
+    $block = $this->getTestBlock($entity);
+    $expected = [
+      '#cache' => [
+        'contexts' => [],
+        'tags' => [],
+        'max-age' => 0,
+      ],
+    ];
+    if ($expected_markup) {
+      $expected['content']['#markup'] = $expected_markup;
+    }
+
+    $actual = $block->build();
+    $this->assertEquals($expected, $actual);
+  }
+
+  /**
+   * Provides test data for ::testBuild().
+   */
+  public function providerTestBuild() {
+    $data = [];
+    $data['array'] = [
+      new ReturnPromise([['content' => ['#markup' => 'The field value']]]),
+      'The field value',
+    ];
+    $data['empty array'] = [
+      new ReturnPromise([[]]),
+      '',
+    ];
+    $data['exception'] = [
+      new ThrowPromise(new \Exception('The exception message')),
+      '',
+      'The field "%field" failed to render with the error of "%error".',
+      ['%field' => 'the_field_name', '%error' => 'The exception message'],
+    ];
+    return $data;
+  }
+
+  /**
+   * Tests a field block that throws a form exception.
+   *
+   * @todo Remove in https://www.drupal.org/project/drupal/issues/2367555.
+   */
+  public function testBuildWithFormException() {
+    $field = $this->prophesize(FieldItemListInterface::class);
+    $field->view(Argument::type('array'))->willThrow(new EnforcedResponseException(new Response()));
+
+    $entity = $this->prophesize(FieldableEntityInterface::class);
+    $entity->get('the_field_name')->willReturn($field->reveal());
+
+    $block = $this->getTestBlock($entity);
+    $this->expectException(EnforcedResponseException::class);
+    $block->build();
   }
 
 }

@@ -8,6 +8,7 @@ use Drupal\FunctionalTests\Update\UpdatePathTestBase;
  * Tests user email token upgrade path.
  *
  * @group Update
+ * @group legacy
  */
 class UserUpdateEmailToken extends UpdatePathTestBase {
 
@@ -26,10 +27,10 @@ class UserUpdateEmailToken extends UpdatePathTestBase {
    */
   public function testEmailToken() {
     $mail = \Drupal::config('user.mail')->get('status_blocked');
-    $this->assertTrue(strpos($mail['body'], '[site:account-name]'));
+    $this->assertContains('[site:account-name]', $mail['body']);
     $this->runUpdates();
     $mail = \Drupal::config('user.mail')->get('status_blocked');
-    $this->assertFalse(strpos($mail['body'], '[site:account-name]'));
+    $this->assertNotContains('[site:account-name]', $mail['body']);
   }
 
 }

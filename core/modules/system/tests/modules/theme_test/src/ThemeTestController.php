@@ -119,7 +119,6 @@ class ThemeTestController extends ControllerBase {
     return ['#theme' => 'theme_test_function_suggestions'];
   }
 
-
   /**
    * Menu callback for testing includes with suggestion alter hooks.
    */
@@ -156,6 +155,16 @@ class ThemeTestController extends ControllerBase {
         '#foo' => 'monkey',
       ],
       ['#theme' => 'theme_test_preprocess_suggestions__kitten__flamingo'],
+    ];
+  }
+
+  /**
+   * Controller for testing a namespaced class in a theme.
+   */
+  public function testThemeClass() {
+    return [
+      '#theme' => 'theme_test_theme_class',
+      '#title' => 'Testing loading a class from a .theme file',
     ];
   }
 

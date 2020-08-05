@@ -1,9 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\pathauto\AliasCleanerInterface
- */
 namespace Drupal\pathauto;
 
 /**
@@ -71,13 +67,13 @@ interface AliasCleanerInterface {
    * @return string
    *   The cleaned string.
    */
-  public function cleanString($string, array $options = array());
+  public function cleanString($string, array $options = []);
 
   /**
    * Return an array of arrays for punctuation values.
    *
-   * Returns an array of arrays for punctuation values keyed by a name, including
-   * the value and a textual description.
+   * Returns an array of arrays for punctuation values keyed by a name,
+   * including the value and a textual description.
    * Can and should be expanded to include "all" non text punctuation values.
    *
    * @return array
@@ -97,10 +93,11 @@ interface AliasCleanerInterface {
    * @param array $options
    *   An array of options used to generate the replacements.
    */
-  public function cleanTokenValues(&$replacements, $data = array(), $options = array());
+  public function cleanTokenValues(&$replacements, $data = [], $options = []);
 
   /**
    * Resets internal caches.
    */
   public function resetCaches();
+
 }

@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\update\Functional;
 
+use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\Core\Utility\ProjectInfo;
 
@@ -19,6 +20,11 @@ class UpdateContribTest extends UpdateTestBase {
    * @var array
    */
   public static $modules = ['update_test', 'update', 'aaa_update_test', 'bbb_update_test', 'ccc_update_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   protected function setUp() {
     parent::setUp();
@@ -46,12 +52,12 @@ class UpdateContribTest extends UpdateTestBase {
     // Cannot use $this->standardTests() because we need to check for the
     // 'No available releases found' string.
     $this->assertRaw('<h3>' . t('Drupal core') . '</h3>');
-    $this->assertRaw(\Drupal::l(t('Drupal'), Url::fromUri('http://example.com/project/drupal')));
+    $this->assertRaw(Link::fromTextAndUrl(t('Drupal'), Url::fromUri('http://example.com/project/drupal'))->toString());
     $this->assertText(t('Up to date'));
     $this->assertRaw('<h3>' . t('Modules') . '</h3>');
     $this->assertNoText(t('Update available'));
     $this->assertText(t('No available releases found'));
-    $this->assertNoRaw(\Drupal::l(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test')));
+    $this->assertNoRaw(Link::fromTextAndUrl(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test'))->toString());
 
     $available = update_get_available();
     $this->assertFalse(isset($available['aaa_update_test']['fetch_status']), 'Results are cached even if no releases are available.');
@@ -61,7 +67,7 @@ class UpdateContribTest extends UpdateTestBase {
    * Tests the basic functionality of a contrib module on the status report.
    */
   public function testUpdateContribBasic() {
-    $project_link = \Drupal::l(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test'));
+    $project_link = Link::fromTextAndUrl(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test'))->toString();
     $system_info = [
       '#all' => [
         'version' => '8.0.0',
@@ -120,7 +126,7 @@ class UpdateContribTest extends UpdateTestBase {
    * project. We need to make sure that we see the "BBB" project before the
    * "CCC" project, even though "CCC" includes a module that's processed first
    * if you sort alphabetically by module name (which is the order we see things
-   * inside system_rebuild_module_data() for example).
+   * inside \Drupal\Core\Extension\ExtensionList::getList() for example).
    */
   public function testUpdateContribOrder() {
     // We want core to be version 8.0.0.
@@ -167,10 +173,10 @@ class UpdateContribTest extends UpdateTestBase {
     $this->assertText(t('CCC Update test'));
     // We want aaa_update_test included in the ccc_update_test project, not as
     // its own project on the report.
-    $this->assertNoRaw(\Drupal::l(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test')), 'Link to aaa_update_test project does not appear.');
+    $this->assertNoRaw(Link::fromTextAndUrl(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test'))->toString(), 'Link to aaa_update_test project does not appear.');
     // The other two should be listed as projects.
-    $this->assertRaw(\Drupal::l(t('BBB Update test'), Url::fromUri('http://example.com/project/bbb_update_test')), 'Link to bbb_update_test project appears.');
-    $this->assertRaw(\Drupal::l(t('CCC Update test'), Url::fromUri('http://example.com/project/ccc_update_test')), 'Link to bbb_update_test project appears.');
+    $this->assertRaw(Link::fromTextAndUrl(t('BBB Update test'), Url::fromUri('http://example.com/project/bbb_update_test'))->toString(), 'Link to bbb_update_test project appears.');
+    $this->assertRaw(Link::fromTextAndUrl(t('CCC Update test'), Url::fromUri('http://example.com/project/ccc_update_test'))->toString(), 'Link to bbb_update_test project appears.');
 
     // We want to make sure we see the BBB project before the CCC project.
     // Instead of just searching for 'BBB Update test' or something, we want
@@ -178,7 +184,7 @@ class UpdateContribTest extends UpdateTestBase {
     // we're really testing that the project listings are in the right order.
     $bbb_project_link = '<div class="project-update__title"><a href="http://example.com/project/bbb_update_test">BBB Update test</a>';
     $ccc_project_link = '<div class="project-update__title"><a href="http://example.com/project/ccc_update_test">CCC Update test</a>';
-    $this->assertTrue(strpos($this->getRawContent(), $bbb_project_link) < strpos($this->getRawContent(), $ccc_project_link), "'BBB Update test' project is listed before the 'CCC Update test' project");
+    $this->assertTrue(strpos($this->getSession()->getPage()->getContent(), $bbb_project_link) < strpos($this->getSession()->getPage()->getContent(), $ccc_project_link), "'BBB Update test' project is listed before the 'CCC Update test' project");
   }
 
   /**
@@ -188,7 +194,7 @@ class UpdateContribTest extends UpdateTestBase {
     // @todo https://www.drupal.org/node/2338175 base themes have to be
     //  installed.
     // Only install the subtheme, not the base theme.
-    \Drupal::service('theme_handler')->install(['update_test_subtheme']);
+    \Drupal::service('theme_installer')->install(['update_test_subtheme']);
 
     // Define the initial state for core and the subtheme.
     $system_info = [
@@ -217,7 +223,7 @@ class UpdateContribTest extends UpdateTestBase {
     ];
     $this->refreshUpdateStatus($xml_mapping);
     $this->assertText(t('Security update required!'));
-    $this->assertRaw(\Drupal::l(t('Update test base theme'), Url::fromUri('http://example.com/project/update_test_basetheme')), 'Link to the Update test base theme project appears.');
+    $this->assertRaw(Link::fromTextAndUrl(t('Update test base theme'), Url::fromUri('http://example.com/project/update_test_basetheme'))->toString(), 'Link to the Update test base theme project appears.');
   }
 
   /**
@@ -267,8 +273,8 @@ class UpdateContribTest extends UpdateTestBase {
       'update_test_subtheme' => '1_0',
       'update_test_basetheme' => '1_1-sec',
     ];
-    $base_theme_project_link = \Drupal::l(t('Update test base theme'), Url::fromUri('http://example.com/project/update_test_basetheme'));
-    $sub_theme_project_link = \Drupal::l(t('Update test subtheme'), Url::fromUri('http://example.com/project/update_test_subtheme'));
+    $base_theme_project_link = Link::fromTextAndUrl(t('Update test base theme'), Url::fromUri('http://example.com/project/update_test_basetheme'))->toString();
+    $sub_theme_project_link = Link::fromTextAndUrl(t('Update test subtheme'), Url::fromUri('http://example.com/project/update_test_subtheme'))->toString();
     foreach ([TRUE, FALSE] as $check_disabled) {
       $update_settings->set('check.disabled_extensions', $check_disabled)->save();
       $this->refreshUpdateStatus($xml_mapping);
@@ -295,7 +301,7 @@ class UpdateContribTest extends UpdateTestBase {
     module_load_include('compare.inc', 'update');
 
     // Install the subtheme.
-    \Drupal::service('theme_handler')->install(['update_test_subtheme']);
+    \Drupal::service('theme_installer')->install(['update_test_subtheme']);
 
     // Add a project and initial state for base theme and subtheme.
     $system_info = [
@@ -373,9 +379,9 @@ class UpdateContribTest extends UpdateTestBase {
     $this->assertUniqueText(t('Failed to get available update data for one project.'));
 
     // The other two should be listed as projects.
-    $this->assertRaw(\Drupal::l(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test')), 'Link to aaa_update_test project appears.');
-    $this->assertNoRaw(\Drupal::l(t('BBB Update test'), Url::fromUri('http://example.com/project/bbb_update_test')), 'Link to bbb_update_test project does not appear.');
-    $this->assertRaw(\Drupal::l(t('CCC Update test'), Url::fromUri('http://example.com/project/ccc_update_test')), 'Link to bbb_update_test project appears.');
+    $this->assertRaw(Link::fromTextAndUrl(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test'))->toString(), 'Link to aaa_update_test project appears.');
+    $this->assertNoRaw(Link::fromTextAndUrl(t('BBB Update test'), Url::fromUri('http://example.com/project/bbb_update_test'))->toString(), 'Link to bbb_update_test project does not appear.');
+    $this->assertRaw(Link::fromTextAndUrl(t('CCC Update test'), Url::fromUri('http://example.com/project/ccc_update_test'))->toString(), 'Link to bbb_update_test project appears.');
   }
 
   /**
@@ -417,7 +423,7 @@ class UpdateContribTest extends UpdateTestBase {
     $this->drupalGet('admin/reports/updates');
     $this->assertRaw('<h3>' . t('Modules') . '</h3>');
     $this->assertText(t('Security update required!'));
-    $this->assertRaw(\Drupal::l(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test')), 'Link to aaa_update_test project appears.');
+    $this->assertRaw(Link::fromTextAndUrl(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test'))->toString(), 'Link to aaa_update_test project appears.');
 
     // Visit the reports page again without the altering and make sure the
     // status is back to normal.
@@ -425,7 +431,7 @@ class UpdateContribTest extends UpdateTestBase {
     $this->drupalGet('admin/reports/updates');
     $this->assertRaw('<h3>' . t('Modules') . '</h3>');
     $this->assertNoText(t('Security update required!'));
-    $this->assertRaw(\Drupal::l(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test')), 'Link to aaa_update_test project appears.');
+    $this->assertRaw(Link::fromTextAndUrl(t('AAA Update test'), Url::fromUri('http://example.com/project/aaa_update_test'))->toString(), 'Link to aaa_update_test project appears.');
 
     // Turn the altering back on and visit the Update manager UI.
     $update_test_config->set('update_status', $update_status)->save();
@@ -436,6 +442,132 @@ class UpdateContribTest extends UpdateTestBase {
     $update_test_config->set('update_status', [])->save();
     $this->drupalGet('admin/modules/update');
     $this->assertNoText(t('Security update'));
+  }
+
+  /**
+   * Tests update status of security releases.
+   *
+   * @param string $module_version
+   *   The module version the site is using.
+   * @param string[] $expected_security_releases
+   *   The security releases, if any, that the status report should recommend.
+   * @param string $expected_update_message_type
+   *   The type of update message expected.
+   * @param string $fixture
+   *   The fixture file to use.
+   *
+   * @dataProvider securityUpdateAvailabilityProvider
+   */
+  public function testSecurityUpdateAvailability($module_version, array $expected_security_releases, $expected_update_message_type, $fixture) {
+    $system_info = [
+      '#all' => [
+        'version' => '8.0.0',
+      ],
+      'aaa_update_test' => [
+        'project' => 'aaa_update_test',
+        'version' => $module_version,
+        'hidden' => FALSE,
+      ],
+    ];
+    $this->config('update_test.settings')->set('system_info', $system_info)->save();
+    $this->refreshUpdateStatus(['drupal' => '0.0', 'aaa_update_test' => $fixture]);
+    $this->assertSecurityUpdates('aaa_update_test', $expected_security_releases, $expected_update_message_type, 'table.update:nth-of-type(2)');
+  }
+
+  /**
+   * Data provider method for testSecurityUpdateAvailability().
+   *
+   * These test cases rely on the following fixtures containing the following
+   * releases:
+   * - aaa_update_test.sec.8.x-1.2.xml
+   *   - 8.x-1.2 Security update
+   *   - 8.x-1.1 Insecure
+   *   - 8.x-1.0 Insecure
+   * - aaa_update_test.sec.8.x-1.1_8.x-1.2.xml
+   *   - 8.x-1.2 Security update
+   *   - 8.x-1.1 Security update, Insecure
+   *   - 8.x-1.0 Insecure
+   * - aaa_update_test.sec.8.x-1.2_8.x-2.2.xml
+   *   - 8.x-3.0-beta2
+   *   - 8.x-3.0-beta1 Insecure
+   *   - 8.x-2.2 Security update
+   *   - 8.x-2.1 Security update, Insecure
+   *   - 8.x-2.0 Insecure
+   *   - 8.x-1.2 Security update
+   *   - 8.x-1.1 Insecure
+   *   - 8.x-1.0 Insecure
+   * - aaa_update_test.sec.8.x-2.2_1.x_secure.xml
+   *   - 8.x-2.2 Security update
+   *   - 8.x-2.1 Security update, Insecure
+   *   - 8.x-2.0 Insecure
+   *   - 8.x-1.2
+   *   - 8.x-1.1
+   *   - 8.x-1.0
+   */
+  public function securityUpdateAvailabilityProvider() {
+    return [
+      // Security releases available for module major release 1.
+      // No releases for next major.
+      '8.x-1.0, 8.x-1.2' => [
+        'module_patch_version' => '8.x-1.0',
+        'expected_security_releases' => ['8.x-1.2'],
+        'expected_update_message_type' => static::SECURITY_UPDATE_REQUIRED,
+        'fixture' => 'sec.8.x-1.2',
+      ],
+      // Two security releases available for module major release 1.
+      // 8.x-1.1 security release marked as insecure.
+      // No releases for next major.
+      '8.x-1.0, 8.x-1.1 8.x-1.2' => [
+        'module_patch_version' => '8.x-1.0',
+        'expected_security_releases' => ['8.x-1.2'],
+        'expected_update_message_type' => static::SECURITY_UPDATE_REQUIRED,
+        'fixture' => 'sec.8.x-1.1_8.x-1.2',
+      ],
+      // Security release available for module major release 2.
+      // No releases for next major.
+      '8.x-2.0, 8.x-2.2' => [
+        'module_patch_version' => '8.x-2.0',
+        'expected_security_releases' => ['8.x-2.2'],
+        'expected_update_message_type' => static::SECURITY_UPDATE_REQUIRED,
+        'fixture' => 'sec.8.x-2.2_1.x_secure',
+      ],
+      '8.x-2.2, 8.x-1.2 8.x-2.2' => [
+        'module_patch_version' => '8.x-2.2',
+        'expected_security_releases' => [],
+        'expected_update_message_type' => static::UPDATE_NONE,
+        'fixture' => 'sec.8.x-1.2_8.x-2.2',
+      ],
+      // Security release available for module major release 1.
+      // Security release also available for next major.
+      '8.x-1.0, 8.x-1.2 8.x-2.2' => [
+        'module_patch_version' => '8.x-1.0',
+        'expected_security_releases' => ['8.x-1.2'],
+        'expected_update_message_type' => static::SECURITY_UPDATE_REQUIRED,
+        'fixture' => 'sec.8.x-1.2_8.x-2.2',
+      ],
+      // No security release available for module major release 1 but 1.x
+      // releases are not marked as insecure.
+      // Security release available for next major.
+      '8.x-1.0, 8.x-2.2, not insecure' => [
+        'module_patch_version' => '8.x-1.0',
+        'expected_security_releases' => [],
+        'expected_update_message_type' => static::UPDATE_AVAILABLE,
+        'fixture' => 'sec.8.x-2.2_1.x_secure',
+      ],
+      // On latest security release for module major release 1.
+      // Security release also available for next major.
+      '8.x-1.2, 8.x-1.2 8.x-2.2' => [
+        'module_patch_version' => '8.x-1.2',
+        'expected_security_release' => [],
+        'expected_update_message_type' => static::UPDATE_NONE,
+        'fixture' => 'sec.8.x-1.2_8.x-2.2',
+      ],
+      // @todo In https://www.drupal.org/node/2865920 add test cases:
+      //   - 8.x-2.0 using fixture 'sec.8.x-1.2_8.x-2.2' to ensure that 8.x-2.2
+      //     is the only security update.
+      //   - 8.x-3.0-beta1 using fixture 'sec.8.x-1.2_8.x-2.2' to ensure that
+      //     8.x-2.2 is the  only security update.
+    ];
   }
 
 }

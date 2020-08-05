@@ -23,10 +23,11 @@ interface ThemeHandlerInterface {
    * @throws \Drupal\Core\Extension\ExtensionNameLengthException
    *   Thrown when the theme name is to long.
    *
-   * @deprecated in Drupal 8.0.x-dev and will be removed before Drupal 9.0.0.
+   * @deprecated in drupal:8.0.0 and is removed from drupal:9.0.0.
    *   Use the theme_installer service instead.
    *
-   * @see \Drupal\Core\Extension\ThemeInstallerInterface::install
+   * @see https://www.drupal.org/node/3017233
+   * @see \Drupal\Core\Extension\ThemeInstallerInterface::install()
    */
   public function install(array $theme_list, $install_dependencies = TRUE);
 
@@ -39,15 +40,15 @@ interface ThemeHandlerInterface {
    * @param array $theme_list
    *   The themes to uninstall.
    *
-   * @throws \InvalidArgumentException
-   *   Thrown when you uninstall an not installed theme.
+   * @throws \Drupal\Core\Extension\Exception\UninstalledExtensionException
+   *   Thrown when you try to uninstall a theme that wasn't installed.
    *
-   * @see hook_themes_uninstalled()
-   *
-   * @deprecated in Drupal 8.0.x-dev and will be removed before Drupal 9.0.0.
+   * @deprecated in drupal:8.0.0 and is removed from drupal:9.0.0.
    *   Use the theme_installer service instead.
    *
-   * @see \Drupal\Core\Extension\ThemeInstallerInterface::uninstall
+   * @see https://www.drupal.org/node/3017233
+   * @see hook_themes_uninstalled()
+   * @see \Drupal\Core\Extension\ThemeInstallerInterface::uninstall()
    */
   public function uninstall(array $theme_list);
 
@@ -56,8 +57,8 @@ interface ThemeHandlerInterface {
    *
    * @return \Drupal\Core\Extension\Extension[]
    *   An associative array of the currently installed themes. The keys are the
-   *   themes' machine names and the values are objects having the following
-   *   properties:
+   *   themes' machine names and the values are Extension objects having the
+   *   following properties:
    *   - filename: The filepath and name of the .info.yml file.
    *   - name: The machine name of the theme.
    *   - status: 1 for installed, 0 for uninstalled themes.
@@ -91,7 +92,6 @@ interface ThemeHandlerInterface {
    *     the system that declare this theme as their base theme.
    */
   public function listInfo();
-
 
   /**
    * Adds a theme extension to the internal listing.
@@ -147,6 +147,9 @@ interface ThemeHandlerInterface {
    *
    * @return string
    *   Returns the human readable name of the theme.
+   *
+   * @throws \Drupal\Core\Extension\Exception\UnknownExtensionException
+   *   When the specified theme does not exist.
    */
   public function getName($theme);
 
@@ -166,14 +169,10 @@ interface ThemeHandlerInterface {
    *
    * @return $this
    *
-   * @deprecated in Drupal 8.2.x-dev and will be removed before Drupal 9.0.0.
-   *   Use
-   *   @code
-   *     \Drupal::configFactory()
-   *       ->getEditable('system.theme')
-   *       ->set('default', $theme)
-   *       ->save();
-   *   @endcode
+   * @deprecated in drupal:8.2.0 and is removed from drupal:9.0.0. Use the
+   *   configuration system to edit the system.theme config directly.
+   *
+   * @see https://www.drupal.org/node/3082630
    */
   public function setDefault($theme);
 
@@ -207,7 +206,7 @@ interface ThemeHandlerInterface {
    * @return \Drupal\Core\Extension\Extension
    *   An extension object.
    *
-   * @throws \InvalidArgumentException
+   * @throws \Drupal\Core\Extension\Extension\UnknownExtensionException
    *   Thrown when the requested theme does not exist.
    */
   public function getTheme($name);

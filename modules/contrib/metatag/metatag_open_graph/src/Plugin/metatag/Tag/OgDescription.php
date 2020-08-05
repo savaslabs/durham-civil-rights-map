@@ -1,12 +1,8 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag_open_graph\Plugin\metatag\Tag\OgDescription.
- */
 
 namespace Drupal\metatag_open_graph\Plugin\metatag\Tag;
 
-use \Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
+use Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
 
 /**
  * The Open Graph "Description" meta tag.
@@ -19,9 +15,11 @@ use \Drupal\metatag\Plugin\metatag\Tag\MetaPropertyBase;
  *   group = "open_graph",
  *   weight = 6,
  *   type = "label",
- *   multiple = FALSE
+ *   secure = FALSE,
+ *   multiple = FALSE,
+ *   long = TRUE,
  * )
  */
 class OgDescription extends MetaPropertyBase {
-  // Nothing here yet. Just a placeholder class for a plugin.
+
 }

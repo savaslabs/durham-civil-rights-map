@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\views_ui\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests views creation wizard.
@@ -10,12 +10,17 @@ use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
  * @see core/modules/views_ui/js/views-admin.js
  * @group views_ui
  */
-class ViewsWizardTest extends JavascriptTestBase {
+class ViewsWizardTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
    */
   public static $modules = ['node', 'views', 'views_ui', 'block', 'user'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

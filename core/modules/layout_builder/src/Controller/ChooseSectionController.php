@@ -2,11 +2,13 @@
 
 namespace Drupal\layout_builder\Controller;
 
+use Drupal\Core\Ajax\AjaxHelperTrait;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Layout\LayoutPluginManagerInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
+use Drupal\layout_builder\LayoutBuilderHighlightTrait;
 use Drupal\layout_builder\SectionStorageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -14,10 +16,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Defines a controller to choose a new section.
  *
  * @internal
+ *   Controller classes are internal.
  */
 class ChooseSectionController implements ContainerInjectionInterface {
 
   use AjaxHelperTrait;
+  use LayoutBuilderHighlightTrait;
   use StringTranslationTrait;
 
   /**
@@ -58,10 +62,9 @@ class ChooseSectionController implements ContainerInjectionInterface {
    *   The render array.
    */
   public function build(SectionStorageInterface $section_storage, $delta) {
-    $output['#title'] = $this->t('Choose a layout');
-
     $items = [];
-    foreach ($this->layoutManager->getDefinitions() as $plugin_id => $definition) {
+    $definitions = $this->layoutManager->getFilteredDefinitions('layout_builder', [], ['section_storage' => $section_storage]);
+    foreach ($definitions as $plugin_id => $definition) {
       $layout = $this->layoutManager->createInstance($plugin_id);
       $item = [
         '#type' => 'link',
@@ -96,6 +99,7 @@ class ChooseSectionController implements ContainerInjectionInterface {
         'class' => [
           'layout-selection',
         ],
+        'data-layout-builder-target-highlight-id' => $this->sectionAddHighlightId($delta),
       ],
     ];
 

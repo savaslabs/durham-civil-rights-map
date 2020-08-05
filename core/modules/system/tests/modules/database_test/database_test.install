@@ -47,8 +47,46 @@ function database_test_schema() {
     ],
     'primary key' => ['id'],
     'unique keys' => [
-      'name' => ['name']
+      'name' => ['name'],
     ],
+    'indexes' => [
+      'ages' => ['age'],
+    ],
+  ];
+
+  $schema['test_classtype'] = [
+    'description' => 'A duplicate version of the test table, used for fetch_style PDO::FETCH_CLASSTYPE tests.',
+    'fields' => [
+      'classname' => [
+        'description' => "A custom class name",
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'name' => [
+        'description' => "A person's name",
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'age' => [
+        'description' => "The person's age",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'job' => [
+        'description' => "The person's job",
+        'type' => 'varchar_ascii',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+    ],
+    'primary key' => ['job'],
     'indexes' => [
       'ages' => ['age'],
     ],
@@ -148,7 +186,7 @@ function database_test_schema() {
       ],
       'blob2' => [
         'description' => 'A second BLOB field.',
-        'type' => 'blob'
+        'type' => 'blob',
       ],
     ],
     'primary key' => ['id'],
@@ -212,7 +250,7 @@ function database_test_schema() {
     ],
     'primary key' => ['id'],
     'unique keys' => [
-      'name' => ['name']
+      'name' => ['name'],
     ],
     'indexes' => [
       'ages' => ['age'],
@@ -242,7 +280,7 @@ function database_test_schema() {
     ],
     'primary key' => ['id'],
     'unique keys' => [
-      'name' => ['name']
+      'name' => ['name'],
     ],
   ];
 
@@ -285,6 +323,10 @@ function database_test_schema() {
       ],
       'offset' => [
         'description' => 'A column with preserved name.',
+        'type' => 'text',
+      ],
+      'function' => [
+        'description' => 'A column with reserved name in MySQL 8.',
         'type' => 'text',
       ],
     ],

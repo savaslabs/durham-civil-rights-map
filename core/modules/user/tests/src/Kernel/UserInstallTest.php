@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\user\Kernel;
 
+use Drupal\Core\Database\Database;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
@@ -28,12 +29,11 @@ class UserInstallTest extends KernelTestBase {
     user_install();
   }
 
-
   /**
    * Test that the initial users have correct values.
    */
   public function testUserInstall() {
-    $result = db_query('SELECT u.uid, u.uuid, u.langcode, uf.status FROM {users} u INNER JOIN {users_field_data} uf ON u.uid=uf.uid ORDER BY u.uid')
+    $result = Database::getConnection()->query('SELECT u.uid, u.uuid, u.langcode, uf.status FROM {users} u INNER JOIN {users_field_data} uf ON u.uid=uf.uid ORDER BY u.uid')
       ->fetchAllAssoc('uid');
     $anon = $result[0];
     $admin = $result[1];

@@ -22,6 +22,11 @@ class ForumIntegrationTest extends ViewTestBase {
   public static $modules = ['forum_test_views'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Views used by this test.
    *
    * @var array
@@ -34,17 +39,16 @@ class ForumIntegrationTest extends ViewTestBase {
     ViewTestData::createTestViews(get_class($this), ['forum_test_views']);
   }
 
-
   /**
    * Tests the integration.
    */
   public function testForumIntegration() {
     // Create a forum.
-    $entity_manager = $this->container->get('entity.manager');
-    $term = $entity_manager->getStorage('taxonomy_term')->create(['vid' => 'forums', 'name' => $this->randomMachineName()]);
+    $entity_type_manager = $this->container->get('entity_type.manager');
+    $term = $entity_type_manager->getStorage('taxonomy_term')->create(['vid' => 'forums', 'name' => $this->randomMachineName()]);
     $term->save();
 
-    $comment_storage = $entity_manager->getStorage('comment');
+    $comment_storage = $entity_type_manager->getStorage('comment');
 
     // Create some nodes which are part of this forum with some comments.
     $nodes = [];
@@ -72,17 +76,17 @@ class ForumIntegrationTest extends ViewTestBase {
     $expected_result[] = [
       'nid' => $nodes[0]->id(),
       'sticky' => NodeInterface::STICKY,
-      'comment_count' => 1.
+      'comment_count' => 1.,
     ];
     $expected_result[] = [
       'nid' => $nodes[1]->id(),
       'sticky' => NodeInterface::NOT_STICKY,
-      'comment_count' => 2.
+      'comment_count' => 2.,
     ];
     $expected_result[] = [
       'nid' => $nodes[2]->id(),
       'sticky' => NodeInterface::NOT_STICKY,
-      'comment_count' => 3.
+      'comment_count' => 3.,
     ];
     $column_map = [
       'nid' => 'nid',

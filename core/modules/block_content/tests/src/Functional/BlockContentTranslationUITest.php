@@ -4,8 +4,8 @@ namespace Drupal\Tests\block_content\Functional;
 
 use Drupal\block_content\Entity\BlockContent;
 use Drupal\block_content\Entity\BlockContentType;
-use Drupal\Component\Utility\Unicode;
-use Drupal\content_translation\Tests\ContentTranslationUITestBase;
+use Drupal\Core\Database\Database;
+use Drupal\Tests\content_translation\Functional\ContentTranslationUITestBase;
 
 /**
  * Tests the block content translation UI.
@@ -24,8 +24,13 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
     'content_translation',
     'block',
     'field_ui',
-    'block_content'
+    'block_content',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
 
   /**
    * {@inheritdoc}
@@ -60,7 +65,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
     $bundle = BlockContentType::create([
       'id' => $this->bundle,
       'label' => $this->bundle,
-      'revision' => FALSE
+      'revision' => FALSE,
     ]);
     $bundle->save();
   }
@@ -73,7 +78,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
       'translate any entity',
       'access administration pages',
       'administer blocks',
-      'administer block_content fields'
+      'administer block_content fields',
     ]);
   }
 
@@ -96,7 +101,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
     $block_content = BlockContent::create([
       'info' => $title,
       'type' => $bundle,
-      'langcode' => 'en'
+      'langcode' => 'en',
     ]);
     $block_content->save();
     return $block_content;
@@ -106,7 +111,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
    * {@inheritdoc}
    */
   protected function getNewEntityValues($langcode) {
-    return ['info' => Unicode::strtolower($this->randomMachineName())] + parent::getNewEntityValues($langcode);
+    return ['info' => mb_strtolower($this->randomMachineName())] + parent::getNewEntityValues($langcode);
   }
 
   /**
@@ -133,7 +138,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
     // as in the original language.
     $default_langcode = $this->langcodes[0];
     $values = $this->getNewEntityValues($default_langcode);
-    $storage = \Drupal::entityManager()->getStorage($this->entityTypeId);
+    $storage = \Drupal::entityTypeManager()->getStorage($this->entityTypeId);
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $entity = $storage->create(['type' => 'basic'] + $values);
     $entity->save();
@@ -162,7 +167,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
     $bundle = BlockContentType::create([
       'id' => $disabled_bundle,
       'label' => $disabled_bundle,
-      'revision' => FALSE
+      'revision' => FALSE,
     ]);
     $bundle->save();
 
@@ -171,7 +176,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
     $disabled_block_content = $this->createBlockContent(FALSE, $bundle->id());
 
     // Make sure that only a single row was inserted into the block table.
-    $rows = db_query('SELECT * FROM {block_content_field_data} WHERE id = :id', [':id' => $enabled_block_content->id()])->fetchAll();
+    $rows = Database::getConnection()->query('SELECT * FROM {block_content_field_data} WHERE id = :id', [':id' => $enabled_block_content->id()])->fetchAll();
     $this->assertEqual(1, count($rows));
   }
 
@@ -189,7 +194,7 @@ class BlockContentTranslationUITest extends ContentTranslationUITestBase {
       // We only want to test the title for non-english translations.
       if ($langcode != 'en') {
         $options = ['language' => $languages[$langcode]];
-        $url = $entity->urlInfo('edit-form', $options);
+        $url = $entity->toUrl('edit-form', $options);
         $this->drupalGet($url);
 
         $title = t('<em>Edit @type</em> @title [%language translation]', [

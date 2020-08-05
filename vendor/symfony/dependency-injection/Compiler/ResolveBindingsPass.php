@@ -15,32 +15,44 @@ use Symfony\Component\DependencyInjection\Argument\BoundArgument;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 use Symfony\Component\DependencyInjection\LazyProxy\ProxyHelper;
-use Symfony\Component\DependencyInjection\TypedReference;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\DependencyInjection\TypedReference;
 
 /**
  * @author Guilhem Niot <guilhem.niot@gmail.com>
  */
 class ResolveBindingsPass extends AbstractRecursivePass
 {
-    private $usedBindings = array();
-    private $unusedBindings = array();
+    private $usedBindings = [];
+    private $unusedBindings = [];
+    private $errorMessages = [];
 
     /**
      * {@inheritdoc}
      */
     public function process(ContainerBuilder $container)
     {
+        $this->usedBindings = $container->getRemovedBindingIds();
+
         try {
             parent::process($container);
 
             foreach ($this->unusedBindings as list($key, $serviceId)) {
-                throw new InvalidArgumentException(sprintf('Unused binding "%s" in service "%s".', $key, $serviceId));
+                $message = sprintf('Unused binding "%s" in service "%s".', $key, $serviceId);
+                if ($this->errorMessages) {
+                    $message .= sprintf("\nCould be related to%s:", 1 < \count($this->errorMessages) ? ' one of' : '');
+                }
+                foreach ($this->errorMessages as $m) {
+                    $message .= "\n - ".$m;
+                }
+                throw new InvalidArgumentException($message);
             }
         } finally {
-            $this->usedBindings = array();
-            $this->unusedBindings = array();
+            $this->usedBindings = [];
+            $this->unusedBindings = [];
+            $this->errorMessages = [];
         }
     }
 
@@ -49,7 +61,7 @@ class ResolveBindingsPass extends AbstractRecursivePass
      */
     protected function processValue($value, $isRoot = false)
     {
-        if ($value instanceof TypedReference && $value->getType() === (string) $value) {
+        if ($value instanceof TypedReference && $value->getType() === $this->container->normalizeId($value)) {
             // Already checked
             $bindings = $this->container->getDefinition($this->currentId)->getBindings();
 
@@ -70,7 +82,7 @@ class ResolveBindingsPass extends AbstractRecursivePass
                 $this->usedBindings[$bindingId] = true;
                 unset($this->unusedBindings[$bindingId]);
             } elseif (!isset($this->usedBindings[$bindingId])) {
-                $this->unusedBindings[$bindingId] = array($key, $this->currentId);
+                $this->unusedBindings[$bindingId] = [$key, $this->currentId];
             }
 
             if (isset($key[0]) && '$' === $key[0]) {
@@ -78,7 +90,7 @@ class ResolveBindingsPass extends AbstractRecursivePass
             }
 
             if (null !== $bindingValue && !$bindingValue instanceof Reference && !$bindingValue instanceof Definition) {
-                throw new InvalidArgumentException(sprintf('Invalid value for binding key "%s" for service "%s": expected null, an instance of %s or an instance of %s, %s given.', $key, $this->currentId, Reference::class, Definition::class, gettype($bindingValue)));
+                throw new InvalidArgumentException(sprintf('Invalid value for binding key "%s" for service "%s": expected null, an instance of %s or an instance of %s, %s given.', $key, $this->currentId, Reference::class, Definition::class, \gettype($bindingValue)));
             }
         }
 
@@ -88,8 +100,15 @@ class ResolveBindingsPass extends AbstractRecursivePass
 
         $calls = $value->getMethodCalls();
 
-        if ($constructor = $this->getConstructor($value, false)) {
-            $calls[] = array($constructor, $value->getArguments());
+        try {
+            if ($constructor = $this->getConstructor($value, false)) {
+                $calls[] = [$constructor, $value->getArguments()];
+            }
+        } catch (RuntimeException $e) {
+            $this->errorMessages[] = $e->getMessage();
+            $this->container->getDefinition($this->currentId)->addError($e->getMessage());
+
+            return parent::processValue($value, $isRoot);
         }
 
         foreach ($calls as $i => $call) {
@@ -98,15 +117,22 @@ class ResolveBindingsPass extends AbstractRecursivePass
             if ($method instanceof \ReflectionFunctionAbstract) {
                 $reflectionMethod = $method;
             } else {
-                $reflectionMethod = $this->getReflectionMethod($value, $method);
+                try {
+                    $reflectionMethod = $this->getReflectionMethod($value, $method);
+                } catch (RuntimeException $e) {
+                    if ($value->getFactory()) {
+                        continue;
+                    }
+                    throw $e;
+                }
             }
 
             foreach ($reflectionMethod->getParameters() as $key => $parameter) {
-                if (array_key_exists($key, $arguments) && '' !== $arguments[$key]) {
+                if (\array_key_exists($key, $arguments) && '' !== $arguments[$key]) {
                     continue;
                 }
 
-                if (array_key_exists('$'.$parameter->name, $bindings)) {
+                if (\array_key_exists('$'.$parameter->name, $bindings)) {
                     $arguments[$key] = $this->getBindingValue($bindings['$'.$parameter->name]);
 
                     continue;

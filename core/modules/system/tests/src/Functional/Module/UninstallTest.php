@@ -3,7 +3,7 @@
 namespace Drupal\Tests\system\Functional\Module;
 
 use Drupal\Core\Cache\Cache;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Entity\EntityMalformedException;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
@@ -24,6 +24,11 @@ class UninstallTest extends BrowserTestBase {
   public static $modules = ['module_test', 'user', 'views', 'node'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Tests the hook_modules_uninstalled() of the user module.
    */
   public function testUserPermsUninstalled() {
@@ -32,7 +37,7 @@ class UninstallTest extends BrowserTestBase {
     $this->container->get('module_installer')->uninstall(['module_test']);
 
     // Are the perms defined by module_test removed?
-    $this->assertFalse(user_roles(FALSE, 'module_test perm'), 'Permissions were all removed.');
+    $this->assertEmpty(user_roles(FALSE, 'module_test perm'), 'Permissions were all removed.');
   }
 
   /**
@@ -56,6 +61,17 @@ class UninstallTest extends BrowserTestBase {
 
     $this->drupalGet('admin/modules/uninstall');
     $this->assertTitle(t('Uninstall') . ' | Drupal');
+
+    foreach (\Drupal::service('extension.list.module')->getAllInstalledInfo() as $module => $info) {
+      $field_name = "uninstall[$module]";
+      if (!empty($info['required'])) {
+        // A required module should not be listed on the uninstall page.
+        $this->assertSession()->fieldNotExists($field_name);
+      }
+      else {
+        $this->assertSession()->fieldExists($field_name);
+      }
+    }
 
     // Be sure labels are rendered properly.
     // @see regression https://www.drupal.org/node/2512106
@@ -93,7 +109,7 @@ class UninstallTest extends BrowserTestBase {
     }
     $entity_types = array_unique($entity_types);
     foreach ($entity_types as $entity_type_id) {
-      $entity_type = \Drupal::entityManager()->getDefinition($entity_type_id);
+      $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
       // Add h3's since the entity type label is often repeated in the entity
       // labels.
       $this->assertRaw('<h3>' . $entity_type->getLabel() . '</h3>');
@@ -103,7 +119,7 @@ class UninstallTest extends BrowserTestBase {
     // cleared during the uninstall.
     \Drupal::cache()->set('uninstall_test', 'test_uninstall_page', Cache::PERMANENT);
     $cached = \Drupal::cache()->get('uninstall_test');
-    $this->assertEqual($cached->data, 'test_uninstall_page', SafeMarkup::format('Cache entry found: @bin', ['@bin' => $cached->data]));
+    $this->assertEqual($cached->data, 'test_uninstall_page', new FormattableMarkup('Cache entry found: @bin', ['@bin' => $cached->data]));
 
     $this->drupalPostForm(NULL, NULL, t('Uninstall'));
     $this->assertText(t('The selected modules have been uninstalled.'), 'Modules status has been updated.');

@@ -2,16 +2,31 @@
 
 namespace Drupal\Tests\search\Functional;
 
+use Drupal\Tests\BrowserTestBase;
+
 /**
  * Tests that searching for a phrase gets the correct page count.
  *
  * @group search
  */
-class SearchExactTest extends SearchTestBase {
+class SearchExactTest extends BrowserTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected static $modules = ['node', 'search'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   /**
    * Tests that the correct number of pager links are found for both keywords and phrases.
    */
   public function testExactQuery() {
+    $this->drupalCreateContentType(['type' => 'page', 'name' => 'Basic page']);
+
     // Log in with sufficient privileges.
     $user = $this->drupalCreateUser(['create page content', 'search content']);
     $this->drupalLogin($user);
@@ -36,7 +51,6 @@ class SearchExactTest extends SearchTestBase {
 
     // Update the search index.
     $this->container->get('plugin.manager.search')->createInstance('node_search')->updateIndex();
-    search_update_totals();
 
     // Refresh variables after the treatment.
     $this->refreshVariables();
@@ -62,8 +76,8 @@ class SearchExactTest extends SearchTestBase {
 
     $edit = ['keys' => 'Druplicon'];
     $this->drupalPostForm('search/node', $edit, t('Search'));
-    $this->assertText($user->getUsername(), 'Basic page node displays author name when post settings are on.');
-    $this->assertText(format_date($node->getChangedTime(), 'short'), 'Basic page node displays post date when post settings are on.');
+    $this->assertText($user->getAccountName(), 'Basic page node displays author name when post settings are on.');
+    $this->assertText($this->container->get('date.formatter')->format($node->getChangedTime(), 'short'), 'Basic page node displays post date when post settings are on.');
 
     // Check that with post settings turned off the user and changed date
     // information is not displayed.
@@ -71,8 +85,8 @@ class SearchExactTest extends SearchTestBase {
     $node_type_config->save();
     $edit = ['keys' => 'Druplicon'];
     $this->drupalPostForm('search/node', $edit, t('Search'));
-    $this->assertNoText($user->getUsername(), 'Basic page node does not display author name when post settings are off.');
-    $this->assertNoText(format_date($node->getChangedTime(), 'short'), 'Basic page node does not display post date when post settings are off.');
+    $this->assertNoText($user->getAccountName(), 'Basic page node does not display author name when post settings are off.');
+    $this->assertNoText($this->container->get('date.formatter')->format($node->getChangedTime(), 'short'), 'Basic page node does not display post date when post settings are off.');
 
   }
 

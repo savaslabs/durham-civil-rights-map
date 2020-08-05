@@ -5,7 +5,7 @@ namespace Drupal\Tests\field\Functional\EntityReference;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\Tests\BrowserTestBase;
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
+use Drupal\Tests\field\Traits\EntityReferenceTestTrait;
 
 /**
  * Tests possible XSS security issues in entity references.
@@ -22,6 +22,11 @@ class EntityReferenceXSSTest extends BrowserTestBase {
    * @var array
    */
   protected static $modules = ['node'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests markup is escaped in the entity reference select and label formatter.
@@ -60,7 +65,7 @@ class EntityReferenceXSSTest extends BrowserTestBase {
 
     $edit = [
       'title[0][value]' => $this->randomString(),
-      'entity_reference_test' => $referenced_node->id()
+      'entity_reference_test' => $referenced_node->id(),
     ];
     $this->drupalPostForm(NULL, $edit, 'Save');
     $this->assertEscaped($referenced_node->getTitle());

@@ -2,17 +2,20 @@
 
 namespace Drupal\image\Tests;
 
+@trigger_error('The ' . __NAMESPACE__ . '\ImageFieldTestBase class is deprecated in Drupal 8.5.x and will be removed before Drupal 9.0.0. Use \Drupal\Tests\image\Functional\ImageFieldTestBase instead. See https://www.drupal.org/node/2863626.', E_USER_DEPRECATED);
+
 use Drupal\Tests\image\Kernel\ImageFieldCreationTrait;
 use Drupal\simpletest\WebTestBase;
 
 /**
  * TODO: Test the following functions.
  *
- * image.effects.inc:
+ * In file:
+ * - image.effects.inc:
  *   image_style_generate()
  *   \Drupal\image\ImageStyleInterface::createDerivative()
  *
- * image.module:
+ * - image.module:
  *   image_style_options()
  *   \Drupal\image\ImageStyleInterface::flush()
  *   image_filter_keyword()
@@ -21,7 +24,7 @@ use Drupal\simpletest\WebTestBase;
 /**
  * This class provides methods specifically for testing Image's field handling.
  *
- * @deprecated Scheduled for removal in Drupal 9.0.0.
+ * @deprecated in drupal:8.?.? and is removed from drupal:9.0.0.
  *   Use \Drupal\Tests\image\Functional\ImageFieldTestBase instead.
  */
 abstract class ImageFieldTestBase extends WebTestBase {
@@ -106,7 +109,7 @@ abstract class ImageFieldTestBase extends WebTestBase {
    * Retrieves the fid of the last inserted file.
    */
   protected function getLastFileId() {
-    return (int) db_query('SELECT MAX(fid) FROM {file_managed}')->fetchField();
+    return (int) \Drupal::entityQueryAggregate('file')->aggregate('fid', 'max')->execute()[0]['fid_max'];
   }
 
 }

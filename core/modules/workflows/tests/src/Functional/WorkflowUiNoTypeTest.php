@@ -21,6 +21,11 @@ class WorkflowUiNoTypeTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
     // We're testing local actions.
@@ -49,7 +54,7 @@ class WorkflowUiNoTypeTest extends BrowserTestBase {
     $this->drupalGet('admin/config/workflow/workflows');
     $this->assertSession()->pageTextNotContains('There are no workflow types available. In order to create workflows you need to install a module that provides a workflow type. For example, the Content Moderation module provides a workflow type that enables workflows for content entities.');
     $this->assertSession()->linkExists('Add workflow');
-    $this->assertSession()->pageTextContains('There is no Workflow yet.');
+    $this->assertSession()->pageTextContains('There are no workflows yet.');
   }
 
 }

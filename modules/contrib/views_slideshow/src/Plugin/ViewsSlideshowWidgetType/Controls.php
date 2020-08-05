@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\views_slideshow\ViewsSlideshowWidgetType\Controls.
- */
-
 namespace Drupal\views_slideshow\Plugin\ViewsSlideshowWidgetType;
 
 use Drupal\Core\Form\FormStateInterface;
@@ -27,8 +22,7 @@ class Controls extends ViewsSlideshowWidgetTypeBase {
    */
   public function defaultConfiguration() {
     return parent::defaultConfiguration() + [
-      'hide_on_single_slide' => array('default' => 0),
-      'type' => array('default' => 0),
+      'type' => ['default' => 0],
     ];
   }
 
@@ -36,49 +30,37 @@ class Controls extends ViewsSlideshowWidgetTypeBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    /** @var \Drupal\Component\Plugin\PluginManagerInterface */
+    $form = parent::buildConfigurationForm($form, $form_state);
+
+    /* @var \Drupal\Component\Plugin\PluginManagerInterface */
     $widgetManager = \Drupal::service('plugin.manager.views_slideshow.widget');
 
     $widgets = $widgetManager->getDefinitions($this->getPluginId());
 
     if (!empty($widgets)) {
-      $options = array();
+      $options = [];
       foreach ($widgets as $widgetId => $widgetInfo) {
         $options[$widgetId] = $widgetInfo['label'];
       }
 
       // Need to wrap this so it indents correctly.
-      $form['views_slideshow_controls_wrapper'] = array(
+      $form['views_slideshow_controls_wrapper'] = [
         '#markup' => '<div class="vs-dependent">',
-      );
-
-      // Add field to see if they would like to hide controls if there is only one
-      // slide.
-      $form['hide_on_single_slide'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Hide controls if there is only one slide'),
-        '#default_value' => $this->getConfiguration()['hide_on_single_slide'],
-        '#description' => t('Should the controls be hidden if there is only one slide.'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
+      ];
 
       // Create the widget type field.
-      $form['type'] = array(
+      $form['type'] = [
         '#type' => 'select',
-        '#title' => t('Controls Type'),
-        '#description' => t('Style of the controls'),
+        '#title' => $this->t('Controls Type'),
+        '#description' => $this->t('Style of the controls'),
         '#default_value' => $this->getConfiguration()['type'],
         '#options' => $options,
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
+        '#states' => [
+          'visible' => [
+            ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => ['checked' => TRUE],
+          ],
+        ],
+      ];
 
       foreach ($widgets as $widget_id => $widget_info) {
         // Get the current configuration of this widget.
@@ -94,16 +76,17 @@ class Controls extends ViewsSlideshowWidgetTypeBase {
         $form[$widget_id] = $instance->buildConfigurationForm($form[$widget_id], $form_state);
       }
 
-      $form['controls_wrapper_close'] = array(
+      $form['controls_wrapper_close'] = [
         '#markup' => '</div>',
-      );
+      ];
     }
     else {
-      $form['enable_controls'] = array(
+      $form['enable_controls'] = [
         '#markup' => 'There are no controls available.',
-      );
+      ];
     }
 
     return $form;
   }
+
 }

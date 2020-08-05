@@ -9,8 +9,14 @@ use Drupal\FunctionalTests\Update\UpdatePathTestBase;
  * Tests system_update_8300().
  *
  * @group Update
+ * @group legacy
  */
 class InstallProfileSystemInstall8300Test extends UpdatePathTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -23,13 +29,15 @@ class InstallProfileSystemInstall8300Test extends UpdatePathTestBase {
 
   /**
    * Ensures that the system_update_8300() runs as expected.
+   *
+   * @expectedDeprecation To access the install profile in Drupal 8 use \Drupal::installProfile() or inject the install_profile container parameter into your service. See https://www.drupal.org/node/2538996
    */
   public function testUpdate() {
     // Ensure the BC layers work and settings.php and configuration is in the
     // expected state before updating.
     $this->assertEqual('standard', \Drupal::installProfile());
     $this->assertEqual('standard', Settings::get('install_profile'), 'The install profile has not been written to settings.php.');
-    $this->assertFalse($this->config('core.extension')->get('profile'), 'The install profile is not present in core.extension configuration.');
+    $this->assertNull($this->config('core.extension')->get('profile'), 'The install profile is not present in core.extension configuration.');
 
     $this->runUpdates();
     // Confirm that Drupal recognizes this distribution as the current profile.

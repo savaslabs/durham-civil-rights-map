@@ -32,7 +32,7 @@ abstract class AccessResult implements AccessResultInterface, RefinableCacheable
    * Creates an AccessResultInterface object with isNeutral() === TRUE.
    *
    * @param string|null $reason
-   *   (optional) The reason why access is forbidden. Intended for developers,
+   *   (optional) The reason why access is neutral. Intended for developers,
    *   hence not translatable.
    *
    * @return \Drupal\Core\Access\AccessResultNeutral
@@ -286,7 +286,7 @@ abstract class AccessResult implements AccessResultInterface, RefinableCacheable
    *
    * @return $this
    *
-   * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0. Use
+   * @deprecated in drupal:8.0.0 and is removed from drupal:9.0.0. Use
    *   ::addCacheableDependency() instead.
    */
   public function cacheUntilEntityChanges(EntityInterface $entity) {
@@ -301,10 +301,11 @@ abstract class AccessResult implements AccessResultInterface, RefinableCacheable
    *
    * @return $this
    *
-   * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0. Use
-   *   ::addCacheableDependency() instead.
+   * @deprecated in drupal:8.0.0 and is removed from drupal:9.0.0. Use
+   *   \Drupal\Core\Access\AccessResult::addCacheableDependency() instead.
    */
   public function cacheUntilConfigurationChanges(ConfigBase $configuration) {
+    @trigger_error(__METHOD__ . ' is deprecated in drupal:8.0.0 and is removed in drupal:9.0.0. Use \Drupal\Core\Access\AccessResult::addCacheableDependency() instead.', E_USER_DEPRECATED);
     return $this->addCacheableDependency($configuration);
   }
 
@@ -336,10 +337,10 @@ abstract class AccessResult implements AccessResultInterface, RefinableCacheable
         $merge_other = TRUE;
       }
 
-      if ($this->isForbidden() && $this instanceof AccessResultReasonInterface) {
+      if ($this->isForbidden() && $this instanceof AccessResultReasonInterface && !is_null($this->getReason())) {
         $result->setReason($this->getReason());
       }
-      elseif ($other->isForbidden() && $other instanceof AccessResultReasonInterface) {
+      elseif ($other->isForbidden() && $other instanceof AccessResultReasonInterface && !is_null($other->getReason())) {
         $result->setReason($other->getReason());
       }
     }
@@ -353,14 +354,13 @@ abstract class AccessResult implements AccessResultInterface, RefinableCacheable
       $result = static::neutral();
       if (!$this->isNeutral() || ($this->getCacheMaxAge() === 0 && $other->isNeutral()) || ($this->getCacheMaxAge() !== 0 && $other instanceof CacheableDependencyInterface && $other->getCacheMaxAge() !== 0)) {
         $merge_other = TRUE;
-        if ($other instanceof AccessResultReasonInterface) {
-          $result->setReason($other->getReason());
-        }
       }
-      else {
-        if ($this instanceof AccessResultReasonInterface) {
-          $result->setReason($this->getReason());
-        }
+
+      if ($this instanceof AccessResultReasonInterface && !is_null($this->getReason())) {
+        $result->setReason($this->getReason());
+      }
+      elseif ($other instanceof AccessResultReasonInterface && !is_null($other->getReason())) {
+        $result->setReason($other->getReason());
       }
     }
     $result->inheritCacheability($this);
@@ -427,9 +427,9 @@ abstract class AccessResult implements AccessResultInterface, RefinableCacheable
   /**
    * Inherits the cacheability of the other access result, if any.
    *
-   * inheritCacheability() differs from addCacheableDependency() in how it
-   * handles max-age, because it is designed to inherit the cacheability of the
-   * second operand in the andIf() and orIf() operations. There, the situation
+   * This method differs from addCacheableDependency() in how it handles
+   * max-age, because it is designed to inherit the cacheability of the second
+   * operand in the andIf() and orIf() operations. There, the situation
    * "allowed, max-age=0 OR allowed, max-age=1000" needs to yield max-age 1000
    * as the end result.
    *

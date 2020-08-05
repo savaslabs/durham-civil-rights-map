@@ -45,10 +45,10 @@ $x-wide:   new-breakpoint(min-width em(960px, $font-size) $grid-columns);
 // Fonts -----------------------------------------------------------------------
 
 // Noto Serif (headings)
-@import url(http://fonts.googleapis.com/css?family=Noto+Serif:400,700);
+@import url(https://fonts.googleapis.com/css?family=Noto+Serif:400,700);
 
 // Open Sans (copytext)
-@import url(http://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400);
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400);
 
 // Font Awesome (icons)
 @import 'lib/font-awesome/font-awesome';

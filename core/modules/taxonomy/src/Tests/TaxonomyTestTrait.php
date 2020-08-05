@@ -2,9 +2,8 @@
 
 namespace Drupal\taxonomy\Tests;
 
-@trigger_error(__NAMESPACE__ . '\TaxonomyTestTrait is deprecated in Drupal 8.4.0 and will be removed before Drupal 9.0.0. Instead, use \Drupal\Tests\taxonomy\Functional\TaxonomyTestTrait', E_USER_DEPRECATED);
+@trigger_error(__NAMESPACE__ . '\TaxonomyTestTrait is deprecated in Drupal 8.4.0 and will be removed before Drupal 9.0.0. Instead, use \Drupal\Tests\taxonomy\Traits\TaxonomyTestTrait instead', E_USER_DEPRECATED);
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\taxonomy\Entity\Term;
@@ -12,8 +11,8 @@ use Drupal\taxonomy\Entity\Term;
 /**
  * Provides common helper methods for Taxonomy module tests.
  *
- * @deprecated in Drupal 8.4.0 and will be removed before Drupal 9.0.0.
- * Use \Drupal\Tests\taxonomy\Functional\TaxonomyTestTrait
+ * @deprecated in drupal:8.4.0 and is removed from drupal:9.0.0.
+ *   Use \Drupal\Tests\taxonomy\Traits\TaxonomyTestTrait instead.
  */
 trait TaxonomyTestTrait {
 
@@ -25,7 +24,7 @@ trait TaxonomyTestTrait {
     $vocabulary = Vocabulary::create([
       'name' => $this->randomMachineName(),
       'description' => $this->randomMachineName(),
-      'vid' => Unicode::strtolower($this->randomMachineName()),
+      'vid' => mb_strtolower($this->randomMachineName()),
       'langcode' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
       'weight' => mt_rand(0, 10),
     ]);

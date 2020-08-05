@@ -49,6 +49,27 @@ class PathWidget extends WidgetBase {
       '#type' => 'value',
       '#value' => $items[$delta]->langcode,
     ];
+
+    // If the advanced settings tabs-set is available (normally rendered in the
+    // second column on wide-resolutions), place the field as a details element
+    // in this tab-set.
+    if (isset($form['advanced'])) {
+      $element += [
+        '#type' => 'details',
+        '#title' => t('URL path settings'),
+        '#open' => !empty($items[$delta]->alias),
+        '#group' => 'advanced',
+        '#access' => $entity->get('path')->access('edit'),
+        '#attributes' => [
+          'class' => ['path-form'],
+        ],
+        '#attached' => [
+          'library' => ['path/drupal.path'],
+        ],
+      ];
+      $element['#weight'] = 30;
+    }
+
     return $element;
   }
 
@@ -66,15 +87,22 @@ class PathWidget extends WidgetBase {
     if (!empty($alias)) {
       $form_state->setValueForElement($element['alias'], $alias);
 
-      // Validate that the submitted alias does not exist yet.
-      $is_exists = \Drupal::service('path.alias_storage')->aliasExists($alias, $element['langcode']['#value'], $element['source']['#value']);
-      if ($is_exists) {
-        $form_state->setError($element['alias'], t('The alias is already in use.'));
-      }
-    }
+      /** @var \Drupal\path_alias\PathAliasInterface $path_alias */
+      $path_alias = \Drupal::entityTypeManager()->getStorage('path_alias')->create([
+        'path' => $element['source']['#value'],
+        'alias' => $alias,
+        'langcode' => $element['langcode']['#value'],
+      ]);
+      $violations = $path_alias->validate();
 
-    if ($alias && $alias[0] !== '/') {
-      $form_state->setError($element['alias'], t('The alias needs to start with a slash.'));
+      foreach ($violations as $violation) {
+        // Newly created entities do not have a system path yet, so we need to
+        // disregard some violations.
+        if (!$path_alias->getPath() && $violation->getPropertyPath() === 'path') {
+          continue;
+        }
+        $form_state->setError($element['alias'], $violation->getMessage());
+      }
     }
   }
 

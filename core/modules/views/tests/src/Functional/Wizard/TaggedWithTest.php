@@ -4,8 +4,8 @@ namespace Drupal\Tests\views\Functional\Wizard;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\field\Entity\FieldConfig;
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\Tests\field\Traits\EntityReferenceTestTrait;
 
 /**
  * Tests the ability of the views wizard to create views filtered by taxonomy.
@@ -22,6 +22,11 @@ class TaggedWithTest extends WizardTestBase {
    * @var array
    */
   public static $modules = ['taxonomy'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Node type with an autocomplete tagging field.
@@ -91,19 +96,21 @@ class TaggedWithTest extends WizardTestBase {
     ];
     $this->createEntityReferenceField('node', $this->nodeTypeWithTags->id(), $this->tagFieldName, NULL, 'taxonomy_term', 'default', $handler_settings, FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED);
 
-    entity_get_form_display('node', $this->nodeTypeWithTags->id(), 'default')
+    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+    $display_repository = \Drupal::service('entity_display.repository');
+    $display_repository->getFormDisplay('node', $this->nodeTypeWithTags->id())
       ->setComponent($this->tagFieldName, [
         'type' => 'entity_reference_autocomplete_tags',
       ])
       ->save();
 
-    entity_get_display('node', $this->nodeTypeWithTags->id(), 'default')
+    $display_repository->getViewDisplay('node', $this->nodeTypeWithTags->id())
       ->setComponent($this->tagFieldName, [
         'type' => 'entity_reference_label',
         'weight' => 10,
       ])
       ->save();
-    entity_get_display('node', $this->nodeTypeWithTags->id(), 'teaser')
+    $display_repository->getViewDisplay('node', $this->nodeTypeWithTags->id(), 'teaser')
       ->setComponent('field_views_testing_tags', [
         'type' => 'entity_reference_label',
         'weight' => 10,
@@ -212,7 +219,8 @@ class TaggedWithTest extends WizardTestBase {
         ],
       ],
     ])->save();
-    entity_get_form_display('node', $this->nodeTypeWithoutTags->id(), 'default')
+    \Drupal::service('entity_display.repository')
+      ->getFormDisplay('node', $this->nodeTypeWithoutTags->id())
       ->setComponent($this->tagFieldName, [
         'type' => 'entity_reference_autocomplete_tags',
       ])

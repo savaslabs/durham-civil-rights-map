@@ -3,7 +3,6 @@
 namespace Drupal\Tests\media\Functional;
 
 use Behat\Mink\Element\NodeElement;
-use Drupal\media\Entity\Media;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Url;
 use Drupal\field\Entity\FieldConfig;
@@ -29,6 +28,11 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
     $this->drupalPlaceBlock('local_actions_block');
@@ -43,8 +47,7 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     $page = $session->getPage();
     $assert_session = $this->assertSession();
 
-    $media_type = $this->createMediaType([
-      'new_revision' => FALSE,
+    $media_type = $this->createMediaType('test', [
       'queue_thumbnail_downloads' => FALSE,
     ]);
 
@@ -61,15 +64,17 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     $source_field = $this->randomString();
     $page->fillField('field_media_test[0][value]', $source_field);
     $page->pressButton('Save');
-    $media_id = $this->container->get('entity.query')->get('media')->execute();
+    $media_id = $this->container->get('entity_type.manager')
+      ->getStorage('media')
+      ->getQuery()
+      ->execute();
     $media_id = reset($media_id);
     /** @var \Drupal\media\MediaInterface $media */
     $media = $this->container->get('entity_type.manager')
       ->getStorage('media')
       ->loadUnchanged($media_id);
-    $this->assertEquals($media->getRevisionLogMessage(), $revision_log_message);
-    $this->assertEquals($media->getName(), $media_name);
-    $assert_session->titleEquals($media_name . ' | Drupal');
+    $this->assertSame($media->getRevisionLogMessage(), $revision_log_message);
+    $this->assertSame($media->getName(), $media_name);
 
     // Tests media edit form.
     $media_type->setNewRevision(FALSE);
@@ -84,8 +89,7 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     $media = $this->container->get('entity_type.manager')
       ->getStorage('media')
       ->loadUnchanged($media_id);
-    $this->assertEquals($media->getName(), $media_name2);
-    $assert_session->titleEquals($media_name2 . ' | Drupal');
+    $this->assertSame($media->getName(), $media_name2);
 
     // Test that there is no empty vertical tabs element, if the container is
     // empty (see #2750697).
@@ -111,12 +115,13 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     $page->fillField('name[0][value]', $media_name);
     $page->fillField('revision_log_message[0][value]', $revision_log_message);
     $page->pressButton('Save');
-    $assert_session->titleEquals($media_name . ' | Drupal');
+    $this->drupalGet('media/' . $media_id);
+    $assert_session->statusCodeEquals(404);
     /** @var \Drupal\media\MediaInterface $media */
     $media = $this->container->get('entity_type.manager')
       ->getStorage('media')
       ->loadUnchanged($media_id);
-    $this->assertEquals($media->getRevisionLogMessage(), $revision_log_message);
+    $this->assertSame($media->getRevisionLogMessage(), $revision_log_message);
     $this->assertNotEquals($previous_revision_id, $media->getRevisionId());
 
     // Test the status checkbox.
@@ -135,11 +140,11 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     $assert_session->pageTextContains('This action cannot be undone');
     $page->pressButton('Delete');
     $media_id = \Drupal::entityQuery('media')->execute();
-    $this->assertFalse($media_id);
+    $this->assertEmpty($media_id);
   }
 
   /**
-   * Tests the "media/add" and "media/mid" pages.
+   * Tests the "media/add" page.
    *
    * Tests if the "media/add" page gives you a selecting option if there are
    * multiple media types available.
@@ -148,10 +153,10 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     $assert_session = $this->assertSession();
 
     // Tests and creates the first media type.
-    $first_media_type = $this->createMediaType(['description' => $this->randomMachineName(32)]);
+    $first_media_type = $this->createMediaType('test', ['description' => $this->randomMachineName()]);
 
     // Test and create a second media type.
-    $second_media_type = $this->createMediaType(['description' => $this->randomMachineName(32)]);
+    $second_media_type = $this->createMediaType('test', ['description' => $this->randomMachineName()]);
 
     // Test if media/add displays two media type options.
     $this->drupalGet('media/add');
@@ -162,22 +167,6 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     // Checks for the second media type.
     $assert_session->pageTextContains($second_media_type->label());
     $assert_session->pageTextContains($second_media_type->getDescription());
-
-    // Continue testing media type filter.
-    $first_media_item = Media::create(['bundle' => $first_media_type->id()]);
-    $first_media_item->save();
-    $second_media_item = Media::create(['bundle' => $second_media_type->id()]);
-    $second_media_item->save();
-
-    // Go to first media item.
-    $this->drupalGet('media/' . $first_media_item->id());
-    $assert_session->statusCodeEquals(200);
-    $assert_session->pageTextContains($first_media_item->getName());
-
-    // Go to second media item.
-    $this->drupalGet('media/' . $second_media_item->id());
-    $assert_session->statusCodeEquals(200);
-    $assert_session->pageTextContains($second_media_item->getName());
   }
 
   /**
@@ -242,7 +231,7 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
       // Unlimited value field.
       'unlimited_value:single_type:create_list' => [FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED, [TRUE], TRUE],
       // Unlimited value field with the tags widget.
-      'unlimited_value:single_type:create_list' => [FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED, [TRUE], TRUE, 'entity_reference_autocomplete_tags'],
+      'unlimited_value:single_type:create_list:tags' => [FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED, [TRUE], TRUE, 'entity_reference_autocomplete_tags'],
     ];
   }
 
@@ -280,7 +269,10 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
         $create_media_types[] = "media_type_$id";
         $permissions[] = "create media_type_$id media";
       }
-      $this->createMediaType(['bundle' => "media_type_$id"]);
+      $this->createMediaType('test', [
+        'id' => "media_type_$id",
+        'label' => "media_type_$id",
+      ]);
       $media_types["media_type_$id"] = "media_type_$id";
     }
 
@@ -428,6 +420,49 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
   }
 
   /**
+   * Tests the redirect URL after creating a media item.
+   */
+  public function testMediaCreateRedirect() {
+    $session = $this->getSession();
+    $page = $session->getPage();
+    $assert_session = $this->assertSession();
+
+    $this->createMediaType('test', [
+      'queue_thumbnail_downloads' => FALSE,
+    ]);
+
+    // Test a redirect to the media canonical URL for a user without the 'access
+    // media overview' permission.
+    $this->drupalLogin($this->drupalCreateUser([
+      'view media',
+      'create media',
+    ]));
+    $this->drupalGet('media/add');
+    $page->fillField('name[0][value]', $this->randomMachineName());
+    $page->fillField('field_media_test[0][value]', $this->randomString());
+    $page->pressButton('Save');
+    $media_id = $this->container->get('entity_type.manager')
+      ->getStorage('media')
+      ->getQuery()
+      ->execute();
+    $media_id = reset($media_id);
+    $assert_session->addressEquals("media/$media_id/edit");
+
+    // Test a redirect to the media overview for a user with the 'access media
+    // overview' permission.
+    $this->drupalLogin($this->drupalCreateUser([
+      'view media',
+      'create media',
+      'access media overview',
+    ]));
+    $this->drupalGet('media/add');
+    $page->fillField('name[0][value]', $this->randomMachineName());
+    $page->fillField('field_media_test[0][value]', $this->randomString());
+    $page->pressButton('Save');
+    $assert_session->addressEquals('admin/content/media');
+  }
+
+  /**
    * Asserts that the given texts are present exactly once.
    *
    * @param string[] $texts
@@ -480,7 +515,7 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
 
     $this->assertNotEmpty($link);
     foreach ($attributes as $attribute => $value) {
-      $this->assertEquals($link->getAttribute($attribute), $value);
+      $this->assertSame($link->getAttribute($attribute), $value);
     }
   }
 
@@ -509,7 +544,7 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     $this->container->get('module_installer')->uninstall(['views']);
 
     // Create a media type and media item.
-    $media_type = $this->createMediaType();
+    $media_type = $this->createMediaType('test');
     $media = $media_storage->create([
       'bundle' => $media_type->id(),
       'name' => 'Unnamed',

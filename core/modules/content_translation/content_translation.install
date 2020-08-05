@@ -6,6 +6,7 @@
  */
 
 use Drupal\Core\Entity\Sql\SqlEntityStorageInterface;
+use Drupal\Core\Installer\InstallerKernel;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
 
@@ -17,20 +18,26 @@ function content_translation_install() {
   // hook_module_implements_alter() is run among the last ones.
   module_set_weight('content_translation', 10);
 
+  // Skip the guidance messages about enabling translation features if the
+  // module was installed in the Drupal installation process.
+  if (InstallerKernel::installationAttempted()) {
+    return;
+  }
+
   // Translation works when at least two languages are added.
   if (count(\Drupal::languageManager()->getLanguages()) < 2) {
     $t_args = [
-      ':language_url' => Url::fromRoute('entity.configurable_language.collection')->toString()
+      ':language_url' => Url::fromRoute('entity.configurable_language.collection')->toString(),
     ];
     $message = t('This site has only a single language enabled. <a href=":language_url">Add at least one more language</a> in order to translate content.', $t_args);
-    drupal_set_message($message, 'warning');
+    \Drupal::messenger()->addWarning($message);
   }
   // Point the user to the content translation settings.
   $t_args = [
-    ':settings_url' => Url::fromRoute('language.content_settings_page')->toString()
+    ':settings_url' => Url::fromRoute('language.content_settings_page')->toString(),
   ];
   $message = t('<a href=":settings_url">Enable translation</a> for <em>content types</em>, <em>taxonomy vocabularies</em>, <em>accounts</em>, or any other element you wish to translate.', $t_args);
-  drupal_set_message($message, 'warning');
+  \Drupal::messenger()->addWarning($message);
 }
 
 /**

@@ -2,8 +2,11 @@
 
 namespace Drupal\Tests\aggregator\Functional;
 
+use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Core\Url;
 use Drupal\aggregator\Entity\Feed;
 use Drupal\Component\Utility\Html;
+use Drupal\node\NodeInterface;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\aggregator\FeedInterface;
 
@@ -61,15 +64,15 @@ abstract class AggregatorTestBase extends BrowserTestBase {
   public function createFeed($feed_url = NULL, array $edit = []) {
     $edit = $this->getFeedEditArray($feed_url, $edit);
     $this->drupalPostForm('aggregator/sources/add', $edit, t('Save'));
-    $this->assertText(t('The feed @name has been added.', ['@name' => $edit['title[0][value]']]), format_string('The feed @name has been added.', ['@name' => $edit['title[0][value]']]));
+    $this->assertText(t('The feed @name has been added.', ['@name' => $edit['title[0][value]']]), new FormattableMarkup('The feed @name has been added.', ['@name' => $edit['title[0][value]']]));
 
     // Verify that the creation message contains a link to a feed.
     $view_link = $this->xpath('//div[@class="messages"]//a[contains(@href, :href)]', [':href' => 'aggregator/sources/']);
     $this->assert(isset($view_link), 'The message area contains a link to a feed');
 
-    $fid = db_query("SELECT fid FROM {aggregator_feed} WHERE title = :title AND url = :url", [':title' => $edit['title[0][value]'], ':url' => $edit['url[0][value]']])->fetchField();
-    $this->assertTrue(!empty($fid), 'The feed found in database.');
-    return Feed::load($fid);
+    $fids = \Drupal::entityQuery('aggregator_feed')->condition('title', $edit['title[0][value]'])->condition('url', $edit['url[0][value]'])->execute();
+    $this->assertNotEmpty($fids, 'The feed found in database.');
+    return Feed::load(array_values($fids)[0]);
   }
 
   /**
@@ -98,10 +101,10 @@ abstract class AggregatorTestBase extends BrowserTestBase {
   public function getFeedEditArray($feed_url = NULL, array $edit = []) {
     $feed_name = $this->randomMachineName(10);
     if (!$feed_url) {
-      $feed_url = \Drupal::url('view.frontpage.feed_1', [], [
+      $feed_url = Url::fromRoute('view.frontpage.feed_1', [], [
         'query' => ['feed' => $feed_name],
         'absolute' => TRUE,
-      ]);
+      ])->toString();
     }
     $edit += [
       'title[0][value]' => $feed_name,
@@ -126,10 +129,10 @@ abstract class AggregatorTestBase extends BrowserTestBase {
   public function getFeedEditObject($feed_url = NULL, array $values = []) {
     $feed_name = $this->randomMachineName(10);
     if (!$feed_url) {
-      $feed_url = \Drupal::url('view.frontpage.feed_1', [
+      $feed_url = Url::fromRoute('view.frontpage.feed_1', [
         'query' => ['feed' => $feed_name],
         'absolute' => TRUE,
-      ]);
+      ])->toString();
     }
     $values += [
       'title' => $feed_name,
@@ -146,9 +149,16 @@ abstract class AggregatorTestBase extends BrowserTestBase {
    *   Number of feed items on default feed created by createFeed().
    */
   public function getDefaultFeedItemCount() {
-    // Our tests are based off of rss.xml, so let's find out how many elements should be related.
-    $feed_count = db_query_range('SELECT COUNT(DISTINCT nid) FROM {node_field_data} n WHERE n.promote = 1 AND n.status = 1', 0, $this->config('system.rss')->get('items.limit'))->fetchField();
-    return $feed_count > 10 ? 10 : $feed_count;
+    // Our tests are based off of rss.xml, so let's find out how many elements
+    // should be related.
+    $feed_count = \Drupal::entityQuery('node')
+      ->condition('promote', NodeInterface::PROMOTED)
+      ->condition('status', NodeInterface::PUBLISHED)
+      ->accessCheck(FALSE)
+      ->range(0, $this->config('system.rss')->get('items.limit'))
+      ->count()
+      ->execute();
+    return min($feed_count, 10);
   }
 
   /**
@@ -165,7 +175,7 @@ abstract class AggregatorTestBase extends BrowserTestBase {
   public function updateFeedItems(FeedInterface $feed, $expected_count = NULL) {
     // First, let's ensure we can get to the rss xml.
     $this->drupalGet($feed->getUrl());
-    $this->assertResponse(200, format_string(':url is reachable.', [':url' => $feed->getUrl()]));
+    $this->assertResponse(200, new FormattableMarkup(':url is reachable.', [':url' => $feed->getUrl()]));
 
     // Attempt to access the update link directly without an access token.
     $this->drupalGet('admin/config/services/aggregator/update/' . $feed->id());
@@ -176,15 +186,15 @@ abstract class AggregatorTestBase extends BrowserTestBase {
     $this->clickLink('Update items');
 
     // Ensure we have the right number of items.
-    $result = db_query('SELECT iid FROM {aggregator_item} WHERE fid = :fid', [':fid' => $feed->id()]);
+    $iids = \Drupal::entityQuery('aggregator_item')->condition('fid', $feed->id())->execute();
     $feed->items = [];
-    foreach ($result as $item) {
-      $feed->items[] = $item->iid;
+    foreach ($iids as $iid) {
+      $feed->items[] = $iid;
     }
 
     if ($expected_count !== NULL) {
       $feed->item_count = count($feed->items);
-      $this->assertEqual($expected_count, $feed->item_count, format_string('Total items in feed equal to the total items in database (@val1 != @val2)', ['@val1' => $expected_count, '@val2' => $feed->item_count]));
+      $this->assertEqual($expected_count, $feed->item_count, new FormattableMarkup('Total items in feed equal to the total items in database (@val1 != @val2)', ['@val1' => $expected_count, '@val2' => $feed->item_count]));
     }
   }
 
@@ -208,12 +218,13 @@ abstract class AggregatorTestBase extends BrowserTestBase {
    *   Expected number of feed items.
    */
   public function updateAndDelete(FeedInterface $feed, $expected_count) {
+    $count_query = \Drupal::entityQuery('aggregator_item')->condition('fid', $feed->id())->count();
     $this->updateFeedItems($feed, $expected_count);
-    $count = db_query('SELECT COUNT(*) FROM {aggregator_item} WHERE fid = :fid', [':fid' => $feed->id()])->fetchField();
-    $this->assertTrue($count);
+    $count = $count_query->execute();
+    $this->assertGreaterThan(0, $count);
     $this->deleteFeedItems($feed);
-    $count = db_query('SELECT COUNT(*) FROM {aggregator_item} WHERE fid = :fid', [':fid' => $feed->id()])->fetchField();
-    $this->assertTrue($count == 0);
+    $count = $count_query->execute();
+    $this->assertEquals(0, $count);
   }
 
   /**
@@ -228,7 +239,7 @@ abstract class AggregatorTestBase extends BrowserTestBase {
    *   TRUE if feed is unique.
    */
   public function uniqueFeed($feed_name, $feed_url) {
-    $result = db_query("SELECT COUNT(*) FROM {aggregator_feed} WHERE title = :title AND url = :url", [':title' => $feed_name, ':url' => $feed_url])->fetchField();
+    $result = \Drupal::entityQuery('aggregator_feed')->condition('title', $feed_name)->condition('url', $feed_url)->count()->execute();
     return (1 == $result);
   }
 
@@ -272,7 +283,7 @@ EOF;
 
     $path = 'public://valid-opml.xml';
     // Add the UTF-8 byte order mark.
-    return file_unmanaged_save_data(chr(239) . chr(187) . chr(191) . $opml, $path);
+    return \Drupal::service('file_system')->saveData(chr(239) . chr(187) . chr(191) . $opml, $path);
   }
 
   /**
@@ -289,7 +300,7 @@ EOF;
 EOF;
 
     $path = 'public://invalid-opml.xml';
-    return file_unmanaged_save_data($opml, $path);
+    return \Drupal::service('file_system')->saveData($opml, $path);
   }
 
   /**
@@ -311,7 +322,7 @@ EOF;
 EOF;
 
     $path = 'public://empty-opml.xml';
-    return file_unmanaged_save_data($opml, $path);
+    return \Drupal::service('file_system')->saveData($opml, $path);
   }
 
   /**

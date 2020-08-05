@@ -55,7 +55,7 @@ class MigrateField extends Plugin {
    * Identifies the system providing the data the field plugin will read.
    *
    * The source_module is expected to be the name of a Drupal module that must
-   * must be installed in the source database.
+   * be installed in the source database.
    *
    * @var string
    */
@@ -70,5 +70,16 @@ class MigrateField extends Plugin {
    * @var string
    */
   public $destination_module;
+
+  /**
+   * The weight of this plugin relative to other plugins.
+   *
+   * The weight of this plugin relative to other plugins servicing the same
+   * field type and core version.  The lowest weighted applicable plugin will be
+   * used for each field.
+   *
+   * @var int
+   */
+  public $weight = 0;
 
 }

@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\locale\Functional;
 
+use Drupal\Core\Database\Database;
 use Drupal\Tests\Traits\Core\CronRunTrait;
 
 /**
@@ -14,6 +15,11 @@ class LocaleUpdateCronTest extends LocaleUpdateBase {
   use CronRunTrait;
 
   protected $batchOutput = [];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -51,7 +57,7 @@ class LocaleUpdateCronTest extends LocaleUpdateBase {
 
     // Prepare for test: Simulate that the file has not been checked for a long
     // time. Set the last_check timestamp to zero.
-    $query = db_update('locale_file');
+    $query = Database::getConnection()->update('locale_file');
     $query->fields(['last_checked' => 0]);
     $query->condition('project', 'contrib_module_two');
     $query->condition('langcode', 'de');
@@ -84,7 +90,7 @@ class LocaleUpdateCronTest extends LocaleUpdateBase {
 
     // Check whether tasks are added to the queue.
     $queue = \Drupal::queue('locale_translation', TRUE);
-    $this->assertEqual($queue->numberOfItems(), 3, 'Queue holds tasks for one project.');
+    $this->assertEqual($queue->numberOfItems(), 2, 'Queue holds tasks for one project.');
     $item = $queue->claimItem();
     $queue->releaseItem($item);
     $this->assertEqual($item->data[1][0], 'contrib_module_two', 'Queue holds tasks for contrib module one.');
@@ -95,7 +101,7 @@ class LocaleUpdateCronTest extends LocaleUpdateBase {
 
     // Check whether no more tasks are added to the queue.
     $queue = \Drupal::queue('locale_translation', TRUE);
-    $this->assertEqual($queue->numberOfItems(), 3, 'Queue holds tasks for one project.');
+    $this->assertEqual($queue->numberOfItems(), 2, 'Queue holds tasks for one project.');
 
     // Ensure last checked is updated to a greater time than the initial value.
     sleep(1);

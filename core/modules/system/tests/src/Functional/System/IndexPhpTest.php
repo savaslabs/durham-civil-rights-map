@@ -10,6 +10,12 @@ use Drupal\Tests\BrowserTestBase;
  * @group system
  */
 class IndexPhpTest extends BrowserTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   protected function setUp() {
     parent::setUp();
   }

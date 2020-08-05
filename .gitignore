@@ -45,7 +45,6 @@ sites/simpletest
 ######################
 .DS_Store*
 ehthumbs.db
-Icon
 
 Thumbs.db
 ._*
@@ -61,3 +60,8 @@ Thumbs.db
 # Things in the core directory that Drupal 8 commits in the repository.
 !core/**/*.gz
 
+
+settings.local.php
+modules/drupalaid-dev
+sites/all/modules/drupalaid-dev
+sites/default/config_drupalaid

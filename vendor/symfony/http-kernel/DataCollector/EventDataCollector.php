@@ -11,10 +11,10 @@
 
 namespace Symfony\Component\HttpKernel\DataCollector;
 
+use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcherInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcherInterface;
 
 /**
  * EventDataCollector.
@@ -38,15 +38,15 @@ class EventDataCollector extends DataCollector implements LateDataCollectorInter
      */
     public function collect(Request $request, Response $response, \Exception $exception = null)
     {
-        $this->data = array(
-            'called_listeners' => array(),
-            'not_called_listeners' => array(),
-        );
+        $this->data = [
+            'called_listeners' => [],
+            'not_called_listeners' => [],
+        ];
     }
 
     public function reset()
     {
-        $this->data = array();
+        $this->data = [];
 
         if ($this->dispatcher instanceof TraceableEventDispatcherInterface) {
             if (!method_exists($this->dispatcher, 'reset')) {

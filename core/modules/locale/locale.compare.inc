@@ -69,7 +69,7 @@ function locale_translation_build_projects() {
     $data += [
       'name' => $name,
       'version' => isset($data['info']['version']) ? $data['info']['version'] : '',
-      'core' => isset($data['info']['core']) ? $data['info']['core'] : \Drupal::CORE_COMPATIBILITY,
+      'core' => 'all',
       // A project can provide the path and filename pattern to download the
       // gettext file. Use the default if not.
       'server_pattern' => isset($data['info']['interface translation server pattern']) && $data['info']['interface translation server pattern'] ? $data['info']['interface translation server pattern'] : $default_server['pattern'],
@@ -103,7 +103,7 @@ function locale_translation_project_list() {
       'interface translation project',
       'interface translation server pattern',
     ];
-    $module_data = _locale_translation_prepare_project_list(system_rebuild_module_data(), 'module');
+    $module_data = _locale_translation_prepare_project_list(\Drupal::service('extension.list.module')->getList(), 'module');
     $theme_data = _locale_translation_prepare_project_list(\Drupal::service('theme_handler')->rebuildThemeData(), 'theme');
     $project_info = new ProjectInfo();
     $project_info->processInfoList($projects, $module_data, 'module', TRUE, $additional_whitelist);
@@ -161,7 +161,7 @@ function locale_translation_default_translation_server() {
   // An additional check is required here. During the upgrade process
   // \Drupal::config()->get() returns NULL. We use the defined value as
   // fallback.
-  $pattern  = $pattern ? $pattern : LOCALE_TRANSLATION_DEFAULT_SERVER_PATTERN;
+  $pattern = $pattern ? $pattern : LOCALE_TRANSLATION_DEFAULT_SERVER_PATTERN;
 
   return [
     'pattern' => $pattern,

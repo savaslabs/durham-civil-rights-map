@@ -11,8 +11,8 @@
 
 namespace Symfony\Component\DependencyInjection\Compiler;
 
-use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ChildDefinition;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 
 /**
@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
  */
 class ResolveClassPass implements CompilerPassInterface
 {
-    private $changes = array();
+    private $changes = [];
 
     /**
      * {@inheritdoc}
@@ -49,7 +49,7 @@ class ResolveClassPass implements CompilerPassInterface
     public function getChanges()
     {
         $changes = $this->changes;
-        $this->changes = array();
+        $this->changes = [];
 
         return $changes;
     }

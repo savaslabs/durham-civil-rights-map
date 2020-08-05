@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\filter\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\filter\Entity\FilterFormat;
 use Drupal\Tests\BrowserTestBase;
 
@@ -21,6 +20,11 @@ class FilterDefaultFormatTest extends BrowserTestBase {
   public static $modules = ['filter'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Tests if the default text format is accessible to users.
    */
   public function testDefaultTextFormats() {
@@ -31,7 +35,7 @@ class FilterDefaultFormatTest extends BrowserTestBase {
     $formats = [];
     for ($i = 0; $i < 2; $i++) {
       $edit = [
-        'format' => Unicode::strtolower($this->randomMachineName()),
+        'format' => mb_strtolower($this->randomMachineName()),
         'name' => $this->randomMachineName(),
       ];
       $this->drupalPostForm('admin/config/content/formats/add', $edit, t('Save configuration'));

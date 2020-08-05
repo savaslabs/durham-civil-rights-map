@@ -50,7 +50,6 @@ class NodeAccessControlHandler extends EntityAccessControlHandler implements Nod
     );
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -81,7 +80,7 @@ class NodeAccessControlHandler extends EntityAccessControlHandler implements Nod
       return $return_as_object ? $result : $result->isAllowed();
     }
     if (!$account->hasPermission('access content')) {
-      $result = AccessResult::forbidden()->cachePerPermissions();
+      $result = AccessResult::forbidden("The 'access content' permission is required.")->cachePerPermissions();
       return $return_as_object ? $result : $result->isAllowed();
     }
 
@@ -138,7 +137,7 @@ class NodeAccessControlHandler extends EntityAccessControlHandler implements Nod
       if ($account->hasPermission('administer nodes')) {
         return AccessResult::allowed()->cachePerPermissions();
       }
-      return AccessResult::allowedIf($items->getEntity()->type->entity->isNewRevision())->cachePerPermissions();
+      return AccessResult::allowedIf($items->getEntity()->type->entity->shouldCreateNewRevision())->cachePerPermissions();
     }
     return parent::checkFieldAccess($operation, $field_definition, $account, $items);
   }

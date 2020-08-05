@@ -9,7 +9,6 @@ namespace Drupal\Tests\views\Kernel;
  */
 use Drupal\views\Plugin\views\filter\Standard;
 use Drupal\views\Views;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Render\FormattableMarkup;
 
 class ModuleTest extends ViewsKernelTestBase {
@@ -29,7 +28,7 @@ class ModuleTest extends ViewsKernelTestBase {
   public static $modules = ['field', 'user', 'block'];
 
   /**
-   * Stores the last triggered error, for example via debug().
+   * Stores the last triggered error.
    *
    * @var string
    *
@@ -38,9 +37,9 @@ class ModuleTest extends ViewsKernelTestBase {
   protected $lastErrorMessage;
 
   /**
-   * Tests the views_get_handler method.
+   * Tests the  ViewsHandlerManager::getHandler() method.
    *
-   * @see views_get_handler()
+   * @see \Drupal\views\Plugin\ViewsHandlerManager::getHandler()
    */
   public function testViewsGetHandler() {
     $types = ['field', 'area', 'filter'];
@@ -90,7 +89,7 @@ class ModuleTest extends ViewsKernelTestBase {
       'field' => 'field_invalid',
     ];
     $this->container->get('plugin.manager.views.field')->getHandler($item);
-    $this->assertTrue(strpos($this->lastErrorMessage, format_string("Missing handler: @table @field @type", ['@table' => 'views_test_data', '@field' => 'field_invalid', '@type' => 'field'])) !== FALSE, 'An invalid field name throws a debug message.');
+    $this->assertTrue(strpos($this->lastErrorMessage, new FormattableMarkup("Missing handler: @table @field @type", ['@table' => 'views_test_data', '@field' => 'field_invalid', '@type' => 'field'])) !== FALSE, 'An invalid field name throws a debug message.');
     unset($this->lastErrorMessage);
 
     $item = [
@@ -98,7 +97,7 @@ class ModuleTest extends ViewsKernelTestBase {
       'field' => 'id',
     ];
     $this->container->get('plugin.manager.views.filter')->getHandler($item);
-    $this->assertEqual(strpos($this->lastErrorMessage, format_string("Missing handler: @table @field @type", ['@table' => 'table_invalid', '@field' => 'id', '@type' => 'filter'])) !== FALSE, 'An invalid table name throws a debug message.');
+    $this->assertEqual(strpos($this->lastErrorMessage, new FormattableMarkup("Missing handler: @table @field @type", ['@table' => 'table_invalid', '@field' => 'id', '@type' => 'filter'])) !== FALSE, 'An invalid table name throws a debug message.');
     unset($this->lastErrorMessage);
 
     $item = [
@@ -106,7 +105,7 @@ class ModuleTest extends ViewsKernelTestBase {
       'field' => 'id',
     ];
     $this->container->get('plugin.manager.views.filter')->getHandler($item);
-    $this->assertEqual(strpos($this->lastErrorMessage, format_string("Missing handler: @table @field @type", ['@table' => 'table_invalid', '@field' => 'id', '@type' => 'filter'])) !== FALSE, 'An invalid table name throws a debug message.');
+    $this->assertEqual(strpos($this->lastErrorMessage, new FormattableMarkup("Missing handler: @table @field @type", ['@table' => 'table_invalid', '@field' => 'id', '@type' => 'filter'])) !== FALSE, 'An invalid table name throws a debug message.');
     unset($this->lastErrorMessage);
 
     restore_error_handler();
@@ -140,8 +139,9 @@ class ModuleTest extends ViewsKernelTestBase {
    */
   public function testLoadFunctions() {
     $this->enableModules(['text', 'node']);
+    $this->installEntitySchema('node');
     $this->installConfig(['node']);
-    $storage = $this->container->get('entity.manager')->getStorage('view');
+    $storage = $this->container->get('entity_type.manager')->getStorage('view');
 
     // Test views_view_is_enabled/disabled.
     $archive = $storage->load('archive');
@@ -256,7 +256,7 @@ class ModuleTest extends ViewsKernelTestBase {
       list($plugin_type, $plugin_id) = explode(':', $key);
       $plugin_def = $this->container->get("plugin.manager.views.$plugin_type")->getDefinition($plugin_id);
 
-      $this->assertTrue(isset($plugin_list[$key]), SafeMarkup::format('The expected @key plugin list key was found.', ['@key' => $key]));
+      $this->assertTrue(isset($plugin_list[$key]), new FormattableMarkup('The expected @key plugin list key was found.', ['@key' => $key]));
       $plugin_details = $plugin_list[$key];
 
       $this->assertEqual($plugin_details['type'], $plugin_type, 'The expected plugin type was found.');

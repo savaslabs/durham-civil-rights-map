@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains: \Drupal\pathauto\Plugin\Action\UpdateAction
- */
 
 namespace Drupal\pathauto\Plugin\Action;
 
@@ -26,7 +22,7 @@ class UpdateAction extends ActionBase {
    */
   public function execute($entity = NULL) {
     $entity->path->pathauto = PathautoState::CREATE;
-    \Drupal::service('pathauto.generator')->updateEntityAlias($entity, 'bulkupdate', array('message' => TRUE));
+    \Drupal::service('pathauto.generator')->updateEntityAlias($entity, 'bulkupdate', ['message' => TRUE]);
   }
 
   /**
@@ -36,4 +32,5 @@ class UpdateAction extends ActionBase {
     $result = AccessResult::allowedIfHasPermission($account, 'create url aliases');
     return $return_as_object ? $result : $result->isAllowed();
   }
+
 }

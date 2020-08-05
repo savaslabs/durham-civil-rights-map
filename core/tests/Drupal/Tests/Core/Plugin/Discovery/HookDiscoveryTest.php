@@ -15,7 +15,7 @@ class HookDiscoveryTest extends UnitTestCase {
   /**
    * The mocked module handler.
    *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $moduleHandler;
 
@@ -30,7 +30,7 @@ class HookDiscoveryTest extends UnitTestCase {
    * {@inheritdoc}
    */
   protected function setUp() {
-    $this->moduleHandler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
+    $this->moduleHandler = $this->createMock('Drupal\Core\Extension\ModuleHandlerInterface');
     $this->hookDiscovery = new HookDiscovery($this->moduleHandler, 'test_plugin');
   }
 
@@ -125,7 +125,7 @@ class HookDiscoveryTest extends UnitTestCase {
       ->method('getImplementations')
       ->will($this->returnValue([]));
 
-    $this->setExpectedException(PluginNotFoundException::class);
+    $this->expectException(PluginNotFoundException::class);
     $this->hookDiscovery->getDefinition('test_non_existant', TRUE);
   }
 
@@ -135,6 +135,7 @@ class HookDiscoveryTest extends UnitTestCase {
       'test_id_2' => ['class' => 'Drupal\plugin_test\Plugin\plugin_test\fruit\Orange'],
     ];
   }
+
   protected function hookDiscoveryTest2TestPlugin() {
     return [
       'test_id_3' => ['class' => 'Drupal\plugin_test\Plugin\plugin_test\fruit\Cherry'],

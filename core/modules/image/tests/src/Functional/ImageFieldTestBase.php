@@ -8,11 +8,12 @@ use Drupal\Tests\BrowserTestBase;
 /**
  * TODO: Test the following functions.
  *
- * image.effects.inc:
+ * In file:
+ * - image.effects.inc:
  *   image_style_generate()
  *   \Drupal\image\ImageStyleInterface::createDerivative()
  *
- * image.module:
+ * - image.module:
  *   image_style_options()
  *   \Drupal\image\ImageStyleInterface::flush()
  *   image_filter_keyword()
@@ -87,10 +88,10 @@ abstract class ImageFieldTestBase extends BrowserTestBase {
       'title[0][value]' => $this->randomMachineName(),
     ];
     $edit['files[' . $field_name . '_0]'] = \Drupal::service('file_system')->realpath($image->uri);
-    $this->drupalPostForm('node/add/' . $type, $edit, t('Save and publish'));
+    $this->drupalPostForm('node/add/' . $type, $edit, t('Save'));
     if ($alt) {
       // Add alt text.
-      $this->drupalPostForm(NULL, [$field_name . '[0][alt]' => $alt], t('Save and publish'));
+      $this->drupalPostForm(NULL, [$field_name . '[0][alt]' => $alt], t('Save'));
     }
 
     // Retrieve ID of the newly created node from the current URL.
@@ -103,7 +104,7 @@ abstract class ImageFieldTestBase extends BrowserTestBase {
    * Retrieves the fid of the last inserted file.
    */
   protected function getLastFileId() {
-    return (int) db_query('SELECT MAX(fid) FROM {file_managed}')->fetchField();
+    return (int) \Drupal::entityQueryAggregate('file')->aggregate('fid', 'max')->execute()[0]['fid_max'];
   }
 
 }

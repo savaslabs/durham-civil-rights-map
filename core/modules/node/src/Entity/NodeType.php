@@ -12,6 +12,13 @@ use Drupal\node\NodeTypeInterface;
  * @ConfigEntityType(
  *   id = "node_type",
  *   label = @Translation("Content type"),
+ *   label_collection = @Translation("Content types"),
+ *   label_singular = @Translation("content type"),
+ *   label_plural = @Translation("content types"),
+ *   label_count = @PluralTranslation(
+ *     singular = "@count content type",
+ *     plural = "@count content types",
+ *   ),
  *   handlers = {
  *     "access" = "Drupal\node\NodeTypeAccessControlHandler",
  *     "form" = {
@@ -118,7 +125,8 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
    * {@inheritdoc}
    */
   public function isNewRevision() {
-    return $this->new_revision;
+    @trigger_error('NodeType::isNewRevision is deprecated in drupal:8.3.0 and is removed from drupal:9.0.0. Use Drupal\Core\Entity\RevisionableEntityBundleInterface::shouldCreateNewRevision() instead. See https://www.drupal.org/node/3067365', E_USER_DEPRECATED);
+    return $this->shouldCreateNewRevision();
   }
 
   /**
@@ -179,7 +187,7 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
     if ($update && $this->getOriginalId() != $this->id()) {
       $update_count = node_type_update_nodes($this->getOriginalId(), $this->id());
       if ($update_count) {
-        drupal_set_message(\Drupal::translation()->formatPlural($update_count,
+        \Drupal::messenger()->addStatus(\Drupal::translation()->formatPlural($update_count,
           'Changed the content type of 1 post from %old-type to %type.',
           'Changed the content type of @count posts from %old-type to %type.',
           [
@@ -191,7 +199,7 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
     if ($update) {
       // Clear the cached field definitions as some settings affect the field
       // definitions.
-      $this->entityManager()->clearCachedFieldDefinitions();
+      \Drupal::service('entity_field.manager')->clearCachedFieldDefinitions();
     }
   }
 
@@ -209,7 +217,7 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
    * {@inheritdoc}
    */
   public function shouldCreateNewRevision() {
-    return $this->isNewRevision();
+    return $this->new_revision;
   }
 
 }

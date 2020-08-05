@@ -26,6 +26,7 @@ class MigrateBlockTest extends MigrateDrupal6TestBase {
     'aggregator',
     'book',
     'forum',
+    'path_alias',
     'statistics',
   ];
 
@@ -38,8 +39,8 @@ class MigrateBlockTest extends MigrateDrupal6TestBase {
     // Install the themes used for this test.
     $this->container->get('theme_installer')->install(['bartik', 'test_theme']);
 
-    $this->installConfig(['block_content']);
     $this->installEntitySchema('block_content');
+    $this->installConfig(['block_content']);
 
     // Set Bartik as the default public theme.
     $config = $this->config('system.theme');
@@ -116,10 +117,11 @@ class MigrateBlockTest extends MigrateDrupal6TestBase {
     $visibility = [];
     $settings = [
       'id' => 'system_menu_block',
-      'label' => '',
+      'label' => 'zu - Navigation',
       'provider' => 'system',
-      'label_display' => '0',
+      'label_display' => 'visible',
       'level' => 1,
+      'expand_all_items' => FALSE,
       'depth' => 0,
     ];
     $this->assertEntity('user_1', $visibility, 'sidebar_first', 'bartik', -11, $settings);

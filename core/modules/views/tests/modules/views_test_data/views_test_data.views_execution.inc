@@ -54,7 +54,7 @@ function views_test_data_views_pre_render(ViewExecutable $view) {
   if (isset($view) && ($view->storage->id() == 'test_cache_header_storage')) {
     $view->element['#attached']['library'][] = 'views_test_data/test';
     $view->element['#attached']['drupalSettings']['foo'] = 'bar';
-    $view->element['#attached']['placeholders']['non-existing-placeholder-just-for-testing-purposes']['#lazy_builder'] = ['views_test_data_placeholders', ['bar']];
+    $view->element['#attached']['placeholders']['non-existing-placeholder-just-for-testing-purposes']['#lazy_builder'] = ['Drupal\views_test_data\Controller\ViewsTestDataController::placeholderLazyBuilder', ['bar']];
     $view->element['#cache']['tags'][] = 'views_test_data:1';
     $view->build_info['pre_render_called'] = TRUE;
   }
@@ -62,18 +62,15 @@ function views_test_data_views_pre_render(ViewExecutable $view) {
 }
 
 /**
- * #lazy_builder callback; for testing purposes only.
- */
-function views_test_data_placeholders() {
-  // No-op.
-  return [];
-}
-
-/**
  * Implements hook_views_post_render().
  */
 function views_test_data_views_post_render(ViewExecutable $view, &$output, CachePluginBase $cache) {
   \Drupal::state()->set('views_hook_test_views_post_render', TRUE);
+  if ($view->storage->id() === 'test_page_display' && $view->current_display === 'empty_row') {
+    for ($i = 0; $i < 5; $i++) {
+      $output['#rows'][0]['#rows'][] = [];
+    }
+  }
 }
 
 /**

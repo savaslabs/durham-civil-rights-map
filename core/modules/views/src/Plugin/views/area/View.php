@@ -56,7 +56,7 @@ class View extends AreaPluginBase {
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager')->getStorage('view')
+      $container->get('entity_type.manager')->getStorage('view')
     );
   }
 
@@ -118,7 +118,7 @@ class View extends AreaPluginBase {
       // Check if the view is part of the parent views of this view
       $search = "$view_name:$display_id";
       if (in_array($search, $this->view->parent_views)) {
-        drupal_set_message(t("Recursion detected in view @view display @display.", ['@view' => $view_name, '@display' => $display_id]), 'error');
+        \Drupal::messenger()->addError(t("Recursion detected in view @view display @display.", ['@view' => $view_name, '@display' => $display_id]));
       }
       else {
         if (!empty($this->options['inherit_arguments']) && !empty($this->view->args)) {

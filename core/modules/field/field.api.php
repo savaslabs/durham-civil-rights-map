@@ -43,7 +43,6 @@
  * @see plugin_api
  */
 
-
 /**
  * Perform alterations on Field API field types.
  *
@@ -293,7 +292,7 @@ function hook_field_widget_multivalue_WIDGET_TYPE_form_alter(array &$elements, \
   // Code here will only act on widgets of type WIDGET_TYPE. For example,
   // hook_field_widget_multivalue_mymodule_autocomplete_form_alter() will only
   // act on widgets of type 'mymodule_autocomplete'.
-  // Change the autcomplete route for each autocomplete element within the
+  // Change the autocomplete route for each autocomplete element within the
   // multivalue widget.
   foreach (Element::children($elements) as $delta => $element) {
     $elements[$delta]['#autocomplete_route_name'] = 'mymodule.autocomplete_route';
@@ -394,7 +393,7 @@ function hook_field_info_max_weight($entity_type, $bundle, $context, $context_mo
  *   The field storage being purged.
  */
 function hook_field_purge_field_storage(\Drupal\field\Entity\FieldStorageConfig $field_storage) {
-  db_delete('my_module_field_storage_info')
+  \Drupal::database()->delete('my_module_field_storage_info')
     ->condition('uuid', $field_storage->uuid())
     ->execute();
 }
@@ -411,7 +410,7 @@ function hook_field_purge_field_storage(\Drupal\field\Entity\FieldStorageConfig 
  *   The field being purged.
  */
 function hook_field_purge_field(\Drupal\field\Entity\FieldConfig $field) {
-  db_delete('my_module_field_info')
+  \Drupal::database()->delete('my_module_field_info')
     ->condition('id', $field->id())
     ->execute();
 }

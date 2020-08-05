@@ -346,7 +346,7 @@ class FileWidget extends WidgetBase implements ContainerFactoryPluginInterface {
     array_pop($array_parents);
     $previously_uploaded_count = count(Element::children(NestedArray::getValue($form, $array_parents))) - 1;
 
-    $field_storage_definitions = \Drupal::entityManager()->getFieldStorageDefinitions($element['#entity_type']);
+    $field_storage_definitions = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions($element['#entity_type']);
     $field_storage = $field_storage_definitions[$element['#field_name']];
     $newly_uploaded_count = count($values['fids']);
     $total_uploaded_count = $newly_uploaded_count + $previously_uploaded_count;
@@ -365,7 +365,7 @@ class FileWidget extends WidgetBase implements ContainerFactoryPluginInterface {
         '%list' => implode(', ', $removed_names),
       ];
       $message = t('Field %field can only hold @max values but there were @count uploaded. The following files have been omitted as a result: %list.', $args);
-      drupal_set_message($message, 'warning');
+      \Drupal::messenger()->addWarning($message);
       $values['fids'] = array_slice($values['fids'], 0, $keep);
       NestedArray::setValue($form_state->getValues(), $element['#parents'], $values);
     }

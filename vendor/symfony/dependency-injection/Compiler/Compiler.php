@@ -22,7 +22,7 @@ use Symfony\Component\DependencyInjection\Exception\EnvParameterException;
 class Compiler
 {
     private $passConfig;
-    private $log = array();
+    private $log = [];
     private $loggingFormatter;
     private $serviceReferenceGraph;
 
@@ -73,16 +73,15 @@ class Compiler
     /**
      * Adds a pass to the PassConfig.
      *
-     * @param CompilerPassInterface $pass     A compiler pass
-     * @param string                $type     The type of the pass
-     * @param int                   $priority Used to sort the passes
+     * @param CompilerPassInterface $pass A compiler pass
+     * @param string                $type The type of the pass
      */
     public function addPass(CompilerPassInterface $pass, $type = PassConfig::TYPE_BEFORE_OPTIMIZATION/*, int $priority = 0*/)
     {
-        if (func_num_args() >= 3) {
+        if (\func_num_args() >= 3) {
             $priority = func_get_arg(2);
         } else {
-            if (__CLASS__ !== get_class($this)) {
+            if (__CLASS__ !== \get_class($this)) {
                 $r = new \ReflectionMethod($this, __FUNCTION__);
                 if (__CLASS__ !== $r->getDeclaringClass()->getName()) {
                     @trigger_error(sprintf('Method %s() will have a third `int $priority = 0` argument in version 4.0. Not defining it is deprecated since Symfony 3.2.', __METHOD__), E_USER_DEPRECATED);
@@ -115,10 +114,10 @@ class Compiler
     public function log(CompilerPassInterface $pass, $message)
     {
         if (false !== strpos($message, "\n")) {
-            $message = str_replace("\n", "\n".get_class($pass).': ', trim($message));
+            $message = str_replace("\n", "\n".\get_class($pass).': ', trim($message));
         }
 
-        $this->log[] = get_class($pass).': '.$message;
+        $this->log[] = \get_class($pass).': '.$message;
     }
 
     /**
@@ -141,7 +140,7 @@ class Compiler
                 $pass->process($container);
             }
         } catch (\Exception $e) {
-            $usedEnvs = array();
+            $usedEnvs = [];
             $prev = $e;
 
             do {

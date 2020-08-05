@@ -15,8 +15,13 @@ class ConfigTranslationDateFormatUiTest extends BrowserTestBase {
   public static $modules = [
     'language',
     'config_translation',
-    'system'
+    'system',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   protected function setUp() {
     parent::setUp();

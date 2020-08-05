@@ -3,14 +3,15 @@
 namespace Drupal\FunctionalJavascriptTests\Tests;
 
 use Behat\Mink\Element\NodeElement;
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Behat\Mink\Exception\ElementHtmlException;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests for the JSWebAssert class.
  *
  * @group javascript
  */
-class JSWebAssertTest extends JavascriptTestBase {
+class JSWebAssertTest extends WebDriverTestBase {
 
   /**
    * Required modules.
@@ -18,6 +19,11 @@ class JSWebAssertTest extends JavascriptTestBase {
    * @var array
    */
   public static $modules = ['js_webassert_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests that JSWebAssert assertions work correctly.
@@ -28,6 +34,22 @@ class JSWebAssertTest extends JavascriptTestBase {
     $session = $this->getSession();
     $assert_session = $this->assertSession();
     $page = $session->getPage();
+
+    $assert_session->elementExists('css', '[data-drupal-selector="edit-test-assert-no-element-after-wait-pass"]');
+    $page->findButton('Test assertNoElementAfterWait: pass')->press();
+    $assert_session->assertNoElementAfterWait('css', '[data-drupal-selector="edit-test-assert-no-element-after-wait-pass"]', 1000);
+
+    $assert_session->elementExists('css', '[data-drupal-selector="edit-test-assert-no-element-after-wait-fail"]');
+    $page->findButton('Test assertNoElementAfterWait: fail')->press();
+    try {
+      $assert_session->assertNoElementAfterWait('css', '[data-drupal-selector="edit-test-assert-no-element-after-wait-fail"]', 500, 'Element exists on page after too short wait.');
+      $this->fail('Element not exists on page after too short wait.');
+    }
+    catch (ElementHtmlException $e) {
+      $this->assertSame('Element exists on page after too short wait.', $e->getMessage());
+    }
+
+    $assert_session->assertNoElementAfterWait('css', '[data-drupal-selector="edit-test-assert-no-element-after-wait-fail"]', 2500, 'Element remove after another wait.ss');
 
     $test_button = $page->findButton('Add button');
     $test_link = $page->findButton('Add link');

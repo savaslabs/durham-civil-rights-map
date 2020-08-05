@@ -193,7 +193,7 @@ class CommentViewsData extends EntityViewsData {
     unset($data['comment_field_data']['thread']['filter']);
     unset($data['comment_field_data']['thread']['argument']);
 
-    $entities_types = \Drupal::entityManager()->getDefinitions();
+    $entities_types = \Drupal::entityTypeManager()->getDefinitions();
 
     // Provide a relationship for each entity type except comment.
     foreach ($entities_types as $type => $entity_type) {
@@ -214,7 +214,7 @@ class CommentViewsData extends EntityViewsData {
               [
                 'field' => 'entity_type',
                 'value' => $type,
-                'table' => 'comment_field_data'
+                'table' => 'comment_field_data',
               ],
             ],
           ],
@@ -235,7 +235,7 @@ class CommentViewsData extends EntityViewsData {
 
     // Define the base group of this table. Fields that don't have a group defined
     // will go into this field by default.
-    $data['comment_entity_statistics']['table']['group']  = $this->t('Comment Statistics');
+    $data['comment_entity_statistics']['table']['group'] = $this->t('Comment Statistics');
 
     // Provide a relationship for each entity type except comment.
     foreach ($entities_types as $type => $entity_type) {

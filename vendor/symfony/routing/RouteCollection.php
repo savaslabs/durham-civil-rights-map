@@ -28,12 +28,12 @@ class RouteCollection implements \IteratorAggregate, \Countable
     /**
      * @var Route[]
      */
-    private $routes = array();
+    private $routes = [];
 
     /**
      * @var array
      */
-    private $resources = array();
+    private $resources = [];
 
     public function __clone()
     {
@@ -63,7 +63,7 @@ class RouteCollection implements \IteratorAggregate, \Countable
      */
     public function count()
     {
-        return count($this->routes);
+        return \count($this->routes);
     }
 
     /**
@@ -117,7 +117,7 @@ class RouteCollection implements \IteratorAggregate, \Countable
      * Adds a route collection at the end of the current set by appending all
      * routes of the added collection.
      */
-    public function addCollection(RouteCollection $collection)
+    public function addCollection(self $collection)
     {
         // we need to remove all routes with the same names first because just replacing them
         // would not place the new route at the end of the merged array
@@ -138,7 +138,7 @@ class RouteCollection implements \IteratorAggregate, \Countable
      * @param array  $defaults     An array of default values
      * @param array  $requirements An array of requirements
      */
-    public function addPrefix($prefix, array $defaults = array(), array $requirements = array())
+    public function addPrefix($prefix, array $defaults = [], array $requirements = [])
     {
         $prefix = trim(trim($prefix), '/');
 
@@ -160,7 +160,7 @@ class RouteCollection implements \IteratorAggregate, \Countable
      * @param array  $defaults     An array of default values
      * @param array  $requirements An array of requirements
      */
-    public function setHost($pattern, array $defaults = array(), array $requirements = array())
+    public function setHost($pattern, array $defaults = [], array $requirements = [])
     {
         foreach ($this->routes as $route) {
             $route->setHost($pattern);

@@ -2,19 +2,24 @@
 
 namespace Drupal\Tests\system\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests that dialog links use different renderer services.
  *
  * @group system
  */
-class ModalRendererTest extends JavascriptTestBase {
+class ModalRendererTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
    */
   public static $modules = ['system', 'dialog_renderer_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests that links respect 'data-dialog-renderer' attribute.

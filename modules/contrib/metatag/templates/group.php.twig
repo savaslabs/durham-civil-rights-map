@@ -1,7 +1,6 @@
 {% extends "generator.php.twig" %}
 
-{% block file_path %}
-\Drupal\{{ module }}\Plugin\metatag\Group\{{ class_name }}.
+{% block prefix %}{{ prefix }}
 {% endblock %}
 
 {% block namespace_class %}
@@ -9,7 +8,7 @@ namespace Drupal\{{ module }}\Plugin\metatag\Group;
 {% endblock %}
 
 {% block use_class %}
-use \Drupal\metatag\Plugin\metatag\Group\{{ base_class }};
+use Drupal\metatag\Plugin\metatag\Group\{{ base_class }};
 {% endblock %}
 
 {% block class_declaration %}

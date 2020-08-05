@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\token\TokenInterface
- */
-
 namespace Drupal\token;
 
 interface TokenInterface {
@@ -37,8 +32,6 @@ interface TokenInterface {
    *
    * @see hook_token_info()
    * @see hook_token_info_alter()
-   *
-   * @deprecated
    */
   public function getTokenInfo($token_type, $token);
 

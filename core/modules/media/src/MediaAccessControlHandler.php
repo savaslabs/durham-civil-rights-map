@@ -24,11 +24,28 @@ class MediaAccessControlHandler extends EntityAccessControlHandler {
     $is_owner = ($account->id() && $account->id() === $entity->getOwnerId());
     switch ($operation) {
       case 'view':
-        $access_result = AccessResult::allowedIf($account->hasPermission('view media') && $entity->isPublished())
-          ->cachePerPermissions()
-          ->addCacheableDependency($entity);
-        if (!$access_result->isAllowed()) {
-          $access_result->setReason("The 'view media' permission is required and the media item must be published.");
+        if ($entity->isPublished()) {
+          $access_result = AccessResult::allowedIf($account->hasPermission('view media'))
+            ->cachePerPermissions()
+            ->addCacheableDependency($entity);
+          if (!$access_result->isAllowed()) {
+            $access_result->setReason("The 'view media' permission is required when the media item is published.");
+          }
+        }
+        elseif ($account->hasPermission('view own unpublished media')) {
+          $access_result = AccessResult::allowedIf($is_owner)
+            ->cachePerPermissions()
+            ->cachePerUser()
+            ->addCacheableDependency($entity);
+          if (!$access_result->isAllowed()) {
+            $access_result->setReason("The user must be the owner and the 'view own unpublished media' permission is required when the media item is unpublished.");
+          }
+        }
+        else {
+          $access_result = AccessResult::neutral()
+            ->cachePerPermissions()
+            ->addCacheableDependency($entity)
+            ->setReason("The user must be the owner and the 'view own unpublished media' permission is required when the media item is unpublished.");
         }
         return $access_result;
 
@@ -47,7 +64,7 @@ class MediaAccessControlHandler extends EntityAccessControlHandler {
         if ($account->hasPermission('update media') && $is_owner) {
           return AccessResult::allowed()->cachePerPermissions()->cachePerUser()->addCacheableDependency($entity);
         }
-        return AccessResult::neutral()->cachePerPermissions();
+        return AccessResult::neutral("The following permissions are required: 'update any media' OR 'update own media' OR '$type: edit any media' OR '$type: edit own media'.")->cachePerPermissions();
 
       case 'delete':
         if ($account->hasPermission('delete any ' . $type . ' media')) {
@@ -64,7 +81,7 @@ class MediaAccessControlHandler extends EntityAccessControlHandler {
         if ($account->hasPermission('delete media') && $is_owner) {
           return AccessResult::allowed()->cachePerPermissions()->cachePerUser()->addCacheableDependency($entity);
         }
-        return AccessResult::neutral()->cachePerPermissions();
+        return AccessResult::neutral("The following permissions are required: 'delete any media' OR 'delete own media' OR '$type: delete any media' OR '$type: delete own media'.")->cachePerPermissions();
 
       default:
         return AccessResult::neutral()->cachePerPermissions();

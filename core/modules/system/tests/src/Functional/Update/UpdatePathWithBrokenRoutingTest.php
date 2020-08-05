@@ -8,8 +8,14 @@ use Drupal\FunctionalTests\Update\UpdatePathTestBase;
  * Tests the update path with a broken router.
  *
  * @group Update
+ * @group legacy
  */
 class UpdatePathWithBrokenRoutingTest extends UpdatePathTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

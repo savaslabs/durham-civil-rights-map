@@ -28,7 +28,7 @@ abstract class ViewsKernelTestBase extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'views', 'views_test_config', 'views_test_data', 'user'];
+  public static $modules = ['path_alias', 'system', 'views', 'views_test_config', 'views_test_data', 'user'];
 
   /**
    * {@inheritdoc}
@@ -41,13 +41,14 @@ abstract class ViewsKernelTestBase extends KernelTestBase {
   protected function setUp($import_test_views = TRUE) {
     parent::setUp();
 
-    $this->installSchema('system', ['router', 'sequences', 'key_value_expire']);
+    $this->installSchema('system', ['sequences', 'key_value_expire']);
     $this->setUpFixtures();
 
     if ($import_test_views) {
       ViewTestData::createTestViews(get_class($this), ['views_test_config']);
     }
   }
+
   /**
    * Sets up the configuration and schema of views and views_test_data modules.
    *
@@ -64,6 +65,7 @@ abstract class ViewsKernelTestBase extends KernelTestBase {
     // Define the schema and views data variable before enabling the test module.
     $state->set('views_test_data_schema', $this->schemaDefinition());
     $state->set('views_test_data_views_data', $this->viewsData());
+    $this->container->get('views.views_data')->clear();
 
     $this->installConfig(['views', 'views_test_config', 'views_test_data']);
     foreach ($this->schemaDefinition() as $table => $schema) {

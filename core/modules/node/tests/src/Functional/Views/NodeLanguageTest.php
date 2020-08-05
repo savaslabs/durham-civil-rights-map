@@ -22,6 +22,11 @@ class NodeLanguageTest extends NodeTestBase {
   public static $modules = ['language', 'node_test_views'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Views used by this test.
    *
    * @var array
@@ -75,7 +80,7 @@ class NodeLanguageTest extends NodeTestBase {
       ],
       'fr' => [
         'Premier nœud fr',
-      ]
+      ],
     ];
 
     // Create nodes with translations.

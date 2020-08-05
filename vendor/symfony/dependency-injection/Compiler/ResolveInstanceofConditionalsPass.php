@@ -14,8 +14,8 @@ namespace Symfony\Component\DependencyInjection\Compiler;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 
 /**
  * Applies instanceof conditionals to definitions.
@@ -50,7 +50,7 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
     private function processDefinition(ContainerBuilder $container, $id, Definition $definition)
     {
         $instanceofConditionals = $definition->getInstanceofConditionals();
-        $autoconfiguredInstanceof = $definition->isAutoconfigured() ? $container->getAutoconfiguredInstanceof() : array();
+        $autoconfiguredInstanceof = $definition->isAutoconfigured() ? $container->getAutoconfiguredInstanceof() : [];
         if (!$instanceofConditionals && !$autoconfiguredInstanceof) {
             return $definition;
         }
@@ -61,9 +61,9 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
 
         $conditionals = $this->mergeConditionals($autoconfiguredInstanceof, $instanceofConditionals, $container);
 
-        $definition->setInstanceofConditionals(array());
+        $definition->setInstanceofConditionals([]);
         $parent = $shared = null;
-        $instanceofTags = array();
+        $instanceofTags = [];
 
         foreach ($conditionals as $interface => $instanceofDefs) {
             if ($interface !== $class && (!$container->getReflectionClass($class, false))) {
@@ -81,7 +81,7 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
                 $parent = 'instanceof.'.$interface.'.'.$key.'.'.$id;
                 $container->setDefinition($parent, $instanceofDef);
                 $instanceofTags[] = $instanceofDef->getTags();
-                $instanceofDef->setTags(array());
+                $instanceofDef->setTags([]);
 
                 if (isset($instanceofDef->getChanges()['shared'])) {
                     $shared = $instanceofDef->isShared();
@@ -94,7 +94,7 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
             $abstract = $container->setDefinition('abstract.instanceof.'.$id, $definition);
 
             // cast Definition to ChildDefinition
-            $definition->setBindings(array());
+            $definition->setBindings([]);
             $definition = serialize($definition);
             $definition = substr_replace($definition, '53', 2, 2);
             $definition = substr_replace($definition, 'Child', 44, 0);
@@ -105,11 +105,11 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
                 $definition->setShared($shared);
             }
 
-            $i = count($instanceofTags);
+            $i = \count($instanceofTags);
             while (0 <= --$i) {
                 foreach ($instanceofTags[$i] as $k => $v) {
                     foreach ($v as $v) {
-                        if ($definition->hasTag($k) && in_array($v, $definition->getTag($k))) {
+                        if ($definition->hasTag($k) && \in_array($v, $definition->getTag($k))) {
                             continue;
                         }
                         $definition->addTag($k, $v);
@@ -117,13 +117,15 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
                 }
             }
 
+            $definition->setBindings($bindings);
+
             // reset fields with "merge" behavior
             $abstract
-                ->setBindings($bindings)
-                ->setArguments(array())
-                ->setMethodCalls(array())
+                ->setBindings([])
+                ->setArguments([])
+                ->setMethodCalls([])
                 ->setDecoratedService(null)
-                ->setTags(array())
+                ->setTags([])
                 ->setAbstract(true);
         }
 
@@ -133,7 +135,7 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
     private function mergeConditionals(array $autoconfiguredInstanceof, array $instanceofConditionals, ContainerBuilder $container)
     {
         // make each value an array of ChildDefinition
-        $conditionals = array_map(function ($childDef) { return array($childDef); }, $autoconfiguredInstanceof);
+        $conditionals = array_map(function ($childDef) { return [$childDef]; }, $autoconfiguredInstanceof);
 
         foreach ($instanceofConditionals as $interface => $instanceofDef) {
             // make sure the interface/class exists (but don't validate automaticInstanceofConditionals)
@@ -142,7 +144,7 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
             }
 
             if (!isset($autoconfiguredInstanceof[$interface])) {
-                $conditionals[$interface] = array();
+                $conditionals[$interface] = [];
             }
 
             $conditionals[$interface][] = $instanceofDef;

@@ -2,14 +2,14 @@
 
 namespace Drupal\Tests\config_translation\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Translate settings and entities to various languages.
  *
  * @group config_translation
  */
-class ConfigTranslationUiTest extends JavascriptTestBase {
+class ConfigTranslationUiTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
@@ -21,6 +21,11 @@ class ConfigTranslationUiTest extends JavascriptTestBase {
     'views',
     'views_ui',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests that contextual link related to views.

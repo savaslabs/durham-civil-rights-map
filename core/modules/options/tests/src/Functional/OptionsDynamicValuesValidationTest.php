@@ -8,6 +8,12 @@ namespace Drupal\Tests\options\Functional;
  * @group options
  */
 class OptionsDynamicValuesValidationTest extends OptionsDynamicValuesTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   /**
    * Test that allowed values function gets the entity.
    */

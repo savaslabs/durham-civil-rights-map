@@ -1,14 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\token\Kernel\TokenKernelTestBase.
- */
-
 namespace Drupal\Tests\token\Kernel;
 
 use Drupal\KernelTests\KernelTestBase as BaseKernelTestBase;
-use Drupal\token\Tests\TokenTestTrait;
+use Drupal\Tests\token\Functional\TokenTestTrait;
 
 /**
  * Helper test class with some added functions for testing.
@@ -30,7 +25,9 @@ abstract class KernelTestBase extends BaseKernelTestBase {
   protected function setUp() {
     parent::setUp();
 
-    $this->installSchema('system', ['router', 'url_alias']);
+    if (\Drupal::entityTypeManager()->hasDefinition('path_alias')) {
+      $this->installEntitySchema('path_alias');
+    }
     \Drupal::service('router.builder')->rebuild();
     $this->installConfig(['system']);
   }

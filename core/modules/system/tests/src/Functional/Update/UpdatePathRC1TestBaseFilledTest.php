@@ -10,8 +10,14 @@ use Drupal\user\Entity\User;
  * Runs UpdatePathTestBaseTest with a RC1 dump filled with content.
  *
  * @group Update
+ * @group legacy
  */
 class UpdatePathRC1TestBaseFilledTest extends UpdatePathRC1TestBaseTest {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -378,7 +384,6 @@ class UpdatePathRC1TestBaseFilledTest extends UpdatePathRC1TestBaseTest {
       'search',
       'serialization',
       'shortcut',
-      'simpletest',
       'statistics',
       'syslog',
       'system',

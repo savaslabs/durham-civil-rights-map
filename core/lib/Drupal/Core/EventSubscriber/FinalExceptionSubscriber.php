@@ -2,7 +2,7 @@
 
 namespace Drupal\Core\EventSubscriber;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Utility\Error;
@@ -98,10 +98,10 @@ class FinalExceptionSubscriber implements EventSubscriberInterface {
       if (!$this->isErrorLevelVerbose()) {
         // Without verbose logging, use a simple message.
 
-        // We call SafeMarkup::format directly here, rather than use t() since
-        // we are in the middle of error handling, and we don't want t() to
-        // cause further errors.
-        $message = SafeMarkup::format('%type: @message in %function (line %line of %file).', $error);
+        // We use \Drupal\Component\Render\FormattableMarkup directly here,
+        // rather than use t() since we are in the middle of error handling, and
+        // we don't want t() to cause further errors.
+        $message = new FormattableMarkup('%type: @message in %function (line %line of %file).', $error);
       }
       else {
         // With verbose logging, we will also include a backtrace.
@@ -119,13 +119,14 @@ class FinalExceptionSubscriber implements EventSubscriberInterface {
 
         // Generate a backtrace containing only scalar argument values.
         $error['@backtrace'] = Error::formatBacktrace($backtrace);
-        $message = SafeMarkup::format('%type: @message in %function (line %line of %file). <pre class="backtrace">@backtrace</pre>', $error);
+        $message = new FormattableMarkup('%type: @message in %function (line %line of %file). <pre class="backtrace">@backtrace</pre>', $error);
       }
     }
 
+    $content_type = $event->getRequest()->getRequestFormat() == 'html' ? 'text/html' : 'text/plain';
     $content = $this->t('The website encountered an unexpected error. Please try again later.');
     $content .= $message ? '</br></br>' . $message : '';
-    $response = new Response($content, 500, ['Content-Type' => 'text/plain']);
+    $response = new Response($content, 500, ['Content-Type' => $content_type]);
 
     if ($exception instanceof HttpExceptionInterface) {
       $response->setStatusCode($exception->getStatusCode());

@@ -23,6 +23,11 @@ class WorkflowUiTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
     // We're testing local actions.
@@ -90,11 +95,18 @@ class WorkflowUiTest extends BrowserTestBase {
     ])->save();
 
     $this->drupalLogin($this->createUser(['administer workflows']));
+
     $this->drupalPostForm('admin/config/workflow/workflows/manage/test_workflow/add_state', [
       'label' => 'Test State',
       'id' => 'Invalid ID',
     ], 'Save');
     $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->pageTextContains('The machine-readable name must contain only lowercase letters, numbers, and underscores.');
+
+    $this->drupalPostForm('admin/config/workflow/workflows/manage/test_workflow/add_transition', [
+      'label' => 'Test Transition',
+      'id' => 'Invalid ID',
+    ], 'Save');
     $this->assertSession()->pageTextContains('The machine-readable name must contain only lowercase letters, numbers, and underscores.');
   }
 
@@ -109,7 +121,7 @@ class WorkflowUiTest extends BrowserTestBase {
     $this->assertSession()->linkByHrefExists('admin/config/workflow/workflows');
     $this->clickLink('Workflows');
     $this->assertSession()->pageTextContains('Workflows');
-    $this->assertSession()->pageTextContains('There is no Workflow yet.');
+    $this->assertSession()->pageTextContains('There are no workflows yet.');
     $this->clickLink('Add workflow');
     $this->submitForm(['label' => 'Test', 'id' => 'test', 'workflow_type' => 'workflow_type_test'], 'Save');
     $this->assertSession()->pageTextContains('Created the Test Workflow.');
@@ -253,7 +265,7 @@ class WorkflowUiTest extends BrowserTestBase {
     $this->assertSession()->pageTextContains('Are you sure you want to delete Test?');
     $this->submitForm([], 'Delete');
     $this->assertSession()->pageTextContains('Workflow Test deleted.');
-    $this->assertSession()->pageTextContains('There is no Workflow yet.');
+    $this->assertSession()->pageTextContains('There are no workflows yet.');
     $this->assertNull($workflow_storage->loadUnchanged('test'), 'The test workflow has been deleted');
 
     // Ensure that workflow types with default configuration are initialized
@@ -389,6 +401,21 @@ class WorkflowUiTest extends BrowserTestBase {
     foreach ($elements as $key => $element) {
       $this->assertEquals($expected_transitions[$key], $element->find('xpath', 'td')->getText());
     }
+
+    // Ensure that there are enough weights to satisfy the potential number of
+    // states and transitions.
+    $this->assertSession()
+      ->selectExists('states[three][weight]')
+      ->selectOption('2');
+    $this->assertSession()
+      ->selectExists('states[three][weight]')
+      ->selectOption('-2');
+    $this->assertSession()
+      ->selectExists('transitions[three][weight]')
+      ->selectOption('2');
+    $this->assertSession()
+      ->selectExists('transitions[three][weight]')
+      ->selectOption('-2');
   }
 
 }

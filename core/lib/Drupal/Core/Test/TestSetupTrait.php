@@ -67,13 +67,6 @@ trait TestSetupTrait {
   protected $privateFilesDirectory;
 
   /**
-   * The original installation profile.
-   *
-   * @var string
-   */
-  protected $originalProfile;
-
-  /**
    * Set to TRUE to strict check all configuration saved.
    *
    * @see \Drupal\Core\Config\Testing\ConfigSchemaChecker
@@ -158,6 +151,9 @@ trait TestSetupTrait {
     // If the test is run with argument dburl then use it.
     $db_url = getenv('SIMPLETEST_DB');
     if (!empty($db_url)) {
+      // Ensure no existing database gets in the way. If a default database
+      // exists already it must be removed.
+      Database::removeConnection('default');
       $database = Database::convertDbUrlToConnectionInfo($db_url, isset($this->root) ? $this->root : DRUPAL_ROOT);
       Database::addConnectionInfo('default', 'default', $database);
     }

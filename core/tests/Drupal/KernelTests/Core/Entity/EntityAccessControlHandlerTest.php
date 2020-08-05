@@ -2,6 +2,7 @@
 
 namespace Drupal\KernelTests\Core\Entity;
 
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessibleInterface;
@@ -40,7 +41,7 @@ class EntityAccessControlHandlerTest extends EntityLanguageTestBase {
    */
   public function assertEntityAccess($ops, AccessibleInterface $object, AccountInterface $account = NULL) {
     foreach ($ops as $op => $result) {
-      $message = format_string("Entity access returns @result with operation '@op'.", [
+      $message = new FormattableMarkup("Entity access returns @result with operation '@op'.", [
         '@result' => !isset($result) ? 'null' : ($result ? 'true' : 'false'),
         '@op' => $op,
       ]);
@@ -174,7 +175,7 @@ class EntityAccessControlHandlerTest extends EntityLanguageTestBase {
 
     // Check that the default access control handler is used for entities that don't
     // have a specific access control handler defined.
-    $handler = $this->container->get('entity.manager')->getAccessControlHandler('entity_test_default_access');
+    $handler = $this->container->get('entity_type.manager')->getAccessControlHandler('entity_test_default_access');
     $this->assertTrue($handler instanceof EntityAccessControlHandler, 'The default entity handler is used for the entity_test_default_access entity type.');
 
     $entity = EntityTestDefaultAccess::create();
@@ -334,13 +335,13 @@ class EntityAccessControlHandlerTest extends EntityLanguageTestBase {
     $this->assertFalse($entity->get('uuid')->access('edit'));
     $access_result = $entity->get('uuid')->access('edit', NULL, TRUE);
     $this->assertTrue($access_result->isForbidden());
-    $this->assertEquals('The entity UUID cannot be changed', $access_result->getReason());
+    $this->assertEquals('The entity UUID cannot be changed.', $access_result->getReason());
 
     // Ensure the ID is still not allowed to be edited.
     $this->assertFalse($entity->get('id')->access('edit'));
     $access_result = $entity->get('id')->access('edit', NULL, TRUE);
     $this->assertTrue($access_result->isForbidden());
-    $this->assertEquals('The entity ID cannot be changed', $access_result->getReason());
+    $this->assertEquals('The entity ID cannot be changed.', $access_result->getReason());
   }
 
   public function providerTestFieldAccess() {
@@ -351,7 +352,7 @@ class EntityAccessControlHandlerTest extends EntityLanguageTestBase {
           'name' => 'A test entity',
           'uuid' => '60e3a179-79ed-4653-ad52-5e614c8e8fbe',
         ],
-        FALSE
+        FALSE,
       ],
       'string ID entity' => [
         EntityTestStringId::class,
@@ -360,7 +361,7 @@ class EntityAccessControlHandlerTest extends EntityLanguageTestBase {
           'name' => 'A test entity',
           'uuid' => '60e3a179-79ed-4653-ad52-5e614c8e8fbe',
         ],
-        TRUE
+        TRUE,
       ],
     ];
   }

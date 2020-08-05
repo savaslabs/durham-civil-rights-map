@@ -6,6 +6,8 @@ use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateFormatterInterface;
+use Drupal\Core\Flood\FloodInterface;
+use Drupal\Core\Url;
 use Drupal\user\Form\UserPasswordResetForm;
 use Drupal\user\UserDataInterface;
 use Drupal\user\UserInterface;
@@ -49,6 +51,13 @@ class UserController extends ControllerBase {
   protected $logger;
 
   /**
+   * The flood service.
+   *
+   * @var \Drupal\Core\Flood\FloodInterface
+   */
+  protected $flood;
+
+  /**
    * Constructs a UserController object.
    *
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
@@ -59,12 +68,19 @@ class UserController extends ControllerBase {
    *   The user data service.
    * @param \Psr\Log\LoggerInterface $logger
    *   A logger instance.
+   * @param \Drupal\Core\Flood\FloodInterface $flood
+   *   The flood service.
    */
-  public function __construct(DateFormatterInterface $date_formatter, UserStorageInterface $user_storage, UserDataInterface $user_data, LoggerInterface $logger) {
+  public function __construct(DateFormatterInterface $date_formatter, UserStorageInterface $user_storage, UserDataInterface $user_data, LoggerInterface $logger, FloodInterface $flood = NULL) {
     $this->dateFormatter = $date_formatter;
     $this->userStorage = $user_storage;
     $this->userData = $user_data;
     $this->logger = $logger;
+    if (!$flood) {
+      @trigger_error('Calling ' . __METHOD__ . ' without the $flood parameter is deprecated in drupal:8.8.0 and is required in drupal:9.0.0. See https://www.drupal.org/node/1681832', E_USER_DEPRECATED);
+      $flood = \Drupal::service('flood');
+    }
+    $this->flood = $flood;
   }
 
   /**
@@ -73,9 +89,10 @@ class UserController extends ControllerBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('date.formatter'),
-      $container->get('entity.manager')->getStorage('user'),
+      $container->get('entity_type.manager')->getStorage('user'),
       $container->get('user.data'),
-      $container->get('logger.factory')->get('user')
+      $container->get('logger.factory')->get('user'),
+      $container->get('flood')
     );
   }
 
@@ -120,12 +137,17 @@ class UserController extends ControllerBase {
       else {
         /** @var \Drupal\user\UserInterface $reset_link_user */
         if ($reset_link_user = $this->userStorage->load($uid)) {
-          drupal_set_message($this->t('Another user (%other_user) is already logged into the site on this computer, but you tried to use a one-time link for user %resetting_user. Please <a href=":logout">log out</a> and try using the link again.',
-            ['%other_user' => $account->getUsername(), '%resetting_user' => $reset_link_user->getUsername(), ':logout' => $this->url('user.logout')]), 'warning');
+          $this->messenger()
+            ->addWarning($this->t('Another user (%other_user) is already logged into the site on this computer, but you tried to use a one-time link for user %resetting_user. Please <a href=":logout">log out</a> and try using the link again.',
+              [
+                '%other_user' => $account->getAccountName(),
+                '%resetting_user' => $reset_link_user->getAccountName(),
+                ':logout' => Url::fromRoute('user.logout')->toString(),
+              ]));
         }
         else {
           // Invalid one-time link specifies an unknown user.
-          drupal_set_message($this->t('The one-time login link you clicked is invalid.'), 'error');
+          $this->messenger()->addError($this->t('The one-time login link you clicked is invalid.'));
         }
         return $this->redirect('<front>');
       }
@@ -218,17 +240,19 @@ class UserController extends ControllerBase {
     $timeout = $this->config('user.settings')->get('password_reset_timeout');
     // No time out for first time login.
     if ($user->getLastLoginTime() && $current - $timestamp > $timeout) {
-      drupal_set_message($this->t('You have tried to use a one-time login link that has expired. Please request a new one using the form below.'), 'error');
+      $this->messenger()->addError($this->t('You have tried to use a one-time login link that has expired. Please request a new one using the form below.'));
       return $this->redirect('user.pass');
     }
-    elseif ($user->isAuthenticated() && ($timestamp >= $user->getLastLoginTime()) && ($timestamp <= $current) && Crypt::hashEquals($hash, user_pass_rehash($user, $timestamp))) {
+    elseif ($user->isAuthenticated() && ($timestamp >= $user->getLastLoginTime()) && ($timestamp <= $current) && hash_equals($hash, user_pass_rehash($user, $timestamp))) {
       user_login_finalize($user);
       $this->logger->notice('User %name used one-time login link at time %timestamp.', ['%name' => $user->getDisplayName(), '%timestamp' => $timestamp]);
-      drupal_set_message($this->t('You have just used your one-time login link. It is no longer necessary to use this link to log in. Please change your password.'));
+      $this->messenger()->addStatus($this->t('You have just used your one-time login link. It is no longer necessary to use this link to log in. Please change your password.'));
       // Let the user's password be changed without the current password
       // check.
       $token = Crypt::randomBytesBase64(55);
       $_SESSION['pass_reset_' . $user->id()] = $token;
+      // Clear any flood events for this user.
+      $this->flood->clear('user.password_request_user', $uid);
       return $this->redirect(
         'entity.user.edit_form',
         ['user' => $user->id()],
@@ -239,7 +263,7 @@ class UserController extends ControllerBase {
       );
     }
 
-    drupal_set_message($this->t('You have tried to use a one-time login link that has either been used or is no longer valid. Please request a new one using the form below.'), 'error');
+    $this->messenger()->addError($this->t('You have tried to use a one-time login link that has either been used or is no longer valid. Please request a new one using the form below.'));
     return $this->redirect('user.pass');
   }
 
@@ -258,6 +282,21 @@ class UserController extends ControllerBase {
   }
 
   /**
+   * Redirects users to their profile edit page.
+   *
+   * This controller assumes that it is only invoked for authenticated users.
+   * This is enforced for the 'user.well-known.change_password' route with the
+   * '_user_is_logged_in' requirement.
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   Returns a redirect to the profile edit form of the currently logged in
+   *   user.
+   */
+  public function userEditPage() {
+    return $this->redirect('entity.user.edit_form', ['user' => $this->currentUser()->id()], [], 301);
+  }
+
+  /**
    * Route title callback.
    *
    * @param \Drupal\user\UserInterface $user
@@ -268,7 +307,7 @@ class UserController extends ControllerBase {
    *   NULL.
    */
   public function userTitle(UserInterface $user = NULL) {
-    return $user ? ['#markup' => $user->getUsername(), '#allowed_tags' => Xss::getHtmlTagList()] : '';
+    return $user ? ['#markup' => $user->getDisplayName(), '#allowed_tags' => Xss::getHtmlTagList()] : '';
   }
 
   /**
@@ -304,7 +343,7 @@ class UserController extends ControllerBase {
     $account_data = $this->userData->get('user', $user->id());
     if (isset($account_data['cancel_method']) && !empty($timestamp) && !empty($hashed_pass)) {
       // Validate expiration and hashed password/login.
-      if ($timestamp <= $current && $current - $timestamp < $timeout && $user->id() && $timestamp >= $user->getLastLoginTime() && Crypt::hashEquals($hashed_pass, user_pass_rehash($user, $timestamp))) {
+      if ($timestamp <= $current && $current - $timestamp < $timeout && $user->id() && $timestamp >= $user->getLastLoginTime() && hash_equals($hashed_pass, user_pass_rehash($user, $timestamp))) {
         $edit = [
           'user_cancel_notify' => isset($account_data['cancel_notify']) ? $account_data['cancel_notify'] : $this->config('user.settings')->get('notify.status_canceled'),
         ];
@@ -312,10 +351,10 @@ class UserController extends ControllerBase {
         // Since user_cancel() is not invoked via Form API, batch processing
         // needs to be invoked manually and should redirect to the front page
         // after completion.
-        return batch_process('');
+        return batch_process('<front>');
       }
       else {
-        drupal_set_message(t('You have tried to use an account cancellation link that has expired. Please request a new one using the form below.'), 'error');
+        $this->messenger()->addError($this->t('You have tried to use an account cancellation link that has expired. Please request a new one using the form below.'));
         return $this->redirect('entity.user.cancel_form', ['user' => $user->id()], ['absolute' => TRUE]);
       }
     }

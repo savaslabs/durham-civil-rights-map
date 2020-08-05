@@ -23,13 +23,12 @@ class NodeListBuilderTest extends KernelTestBase {
     $this->installEntitySchema('node');
   }
 
-
   /**
    * Tests that the correct cache contexts are set.
    */
   public function testCacheContexts() {
     /** @var \Drupal\Core\Entity\EntityListBuilderInterface $list_builder */
-    $list_builder = $this->container->get('entity.manager')->getListBuilder('node');
+    $list_builder = $this->container->get('entity_type.manager')->getListBuilder('node');
 
     $build = $list_builder->render();
     $this->container->get('renderer')->renderRoot($build);

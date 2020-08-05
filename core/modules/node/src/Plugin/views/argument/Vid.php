@@ -29,7 +29,7 @@ class Vid extends NumericArgument {
   protected $nodeStorage;
 
   /**
-   * Constructs a Drupal\Component\Plugin\PluginBase object.
+   * Constructs a \Drupal\node\Plugin\views\argument\Vid object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -58,7 +58,7 @@ class Vid extends NumericArgument {
       $plugin_id,
       $plugin_definition,
       $container->get('database'),
-      $container->get('entity.manager')->getStorage('node')
+      $container->get('entity_type.manager')->getStorage('node')
     );
   }
 

@@ -2,14 +2,14 @@
 
 namespace Drupal\FunctionalJavascriptTests\Ajax;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests the compatibility of the ajax.es6.js file.
  *
  * @group Ajax
  */
-class BackwardCompatibilityTest extends JavascriptTestBase {
+class BackwardCompatibilityTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
@@ -17,6 +17,11 @@ class BackwardCompatibilityTest extends JavascriptTestBase {
   public static $modules = [
     'js_ajax_test',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Ensures Drupal.Ajax.element_settings BC layer.

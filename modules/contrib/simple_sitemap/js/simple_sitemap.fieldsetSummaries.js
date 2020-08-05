@@ -7,20 +7,22 @@
   "use strict";
 
   Drupal.behaviors.simple_sitemapFieldsetSummaries = {
-    attach: function(context) {
-      $(context).find('#edit-simple-sitemap').drupalSetSummary(function (context) {
-        var vals = [];
-        if ($(context).find('#edit-simple-sitemap-index-content-1').is(':checked')) {
+    attach: function(context, settings) {
+      $(context).find('#edit-simple-sitemap').drupalSetSummary(function(context) {
+        var enabledVariants = [];
+        $('input:radio.enabled-for-variant').each(function() {
+          if ($(this).is(':checked') && $(this).val() == 1) {
+            enabledVariants.push($(this).attr('class').split(' ')[1])
+          }
+        });
 
-          // Display summary of the settings in tabs.
-          vals.push(Drupal.t('Included in sitemap'));
-          vals.push(Drupal.t('Priority') + ' ' + $('#edit-simple-sitemap-priority option:selected', context).text());
+        if (enabledVariants.length > 0) {
+          return Drupal.t('Included in sitemap variants: ') + enabledVariants.join(', ');
         }
         else {
-          // Display summary of the settings in tabs.
-          vals.push(Drupal.t('Excluded from sitemap'));
+          return Drupal.t('Excluded from all sitemap variants');
         }
-        return vals.join('<br />');
+
       });
     }
   };

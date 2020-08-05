@@ -11,6 +11,7 @@ use Drupal\Component\Render\MarkupInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Security\TrustedCallbackInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Template\Attribute;
@@ -89,6 +90,26 @@ class RendererTest extends RendererTestBase {
       ['#markup' => 'foo'],
       'foo',
     ];
+    // Basic #markup based renderable array with value '0'.
+    $data[] = [
+      ['#markup' => '0'],
+      '0',
+    ];
+    // Basic #markup based renderable array with value 0.
+    $data[] = [
+      ['#markup' => 0],
+      '0',
+    ];
+    // Basic #markup based renderable array with value ''.
+    $data[] = [
+      ['#markup' => ''],
+      '',
+    ];
+    // Basic #markup based renderable array with value NULL.
+    $data[] = [
+      ['#markup' => NULL],
+      '',
+    ];
     // Basic #plain_text based renderable array.
     $data[] = [
       ['#plain_text' => 'foo'],
@@ -103,6 +124,26 @@ class RendererTest extends RendererTestBase {
     $data[] = [
       ['#plain_text' => Markup::create('<em>foo</em>')],
       '&lt;em&gt;foo&lt;/em&gt;',
+    ];
+    // #plain_text based renderable array with value '0'.
+    $data[] = [
+      ['#plain_text' => '0'],
+      '0',
+    ];
+    // #plain_text based renderable array with value 0.
+    $data[] = [
+      ['#plain_text' => 0],
+      '0',
+    ];
+    // #plain_text based renderable array with value ''.
+    $data[] = [
+      ['#plain_text' => ''],
+      '',
+    ];
+    // #plain_text based renderable array with value NULL.
+    $data[] = [
+      ['#plain_text' => NULL],
+      '',
     ];
     // Renderable child element.
     $data[] = [
@@ -180,7 +221,7 @@ class RendererTest extends RendererTestBase {
         '#pre_render' => [function ($elements) {
           $elements['#markup'] .= '<script>alert("bar");</script>';
           return $elements;
-        }
+        },
         ],
       ],
       'fooalert("bar");',
@@ -193,7 +234,7 @@ class RendererTest extends RendererTestBase {
         '#pre_render' => [function ($elements) {
           $elements['#markup'] .= '<script>alert("bar");</script>';
           return $elements;
-        }
+        },
         ],
       ],
       'foo<script>alert("bar");</script>',
@@ -206,7 +247,7 @@ class RendererTest extends RendererTestBase {
         '#pre_render' => [function ($elements) {
           $elements['#plain_text'] .= '<script>alert("bar");</script>';
           return $elements;
-        }
+        },
         ],
       ],
       'foo&lt;script&gt;alert(&quot;bar&quot;);&lt;/script&gt;',
@@ -508,7 +549,7 @@ class RendererTest extends RendererTestBase {
     $build = [
       '#access_callback' => function () use ($access) {
         return $access;
-      }
+      },
     ];
 
     $this->assertAccess($build, $access);
@@ -527,7 +568,7 @@ class RendererTest extends RendererTestBase {
       '#access' => $access,
       '#access_callback' => function () {
         return TRUE;
-      }
+      },
     ];
 
     $this->assertAccess($build, $access);
@@ -613,7 +654,7 @@ class RendererTest extends RendererTestBase {
         [
           '#markup' => 'kittens',
           '#cache' => [
-            'tags' => ['kittens-147']
+            'tags' => ['kittens-147'],
           ],
         ],
       ],
@@ -961,7 +1002,7 @@ class RendererTest extends RendererTestBase {
             'contexts' => ['theme'],
             'tags' => ['bar'],
             'max-age' => 600,
-          ]
+          ],
         ],
         new TestCacheableDependency(['user.roles'], ['foo'], Cache::PERMANENT),
         [
@@ -979,7 +1020,7 @@ class RendererTest extends RendererTestBase {
             'contexts' => ['theme'],
             'tags' => ['bar'],
             'max-age' => 600,
-          ]
+          ],
         ],
         new \stdClass(),
         [
@@ -995,7 +1036,7 @@ class RendererTest extends RendererTestBase {
 
 }
 
-class TestAccessClass {
+class TestAccessClass implements TrustedCallbackInterface {
 
   public static function accessTrue() {
     return TRUE;
@@ -1013,13 +1054,27 @@ class TestAccessClass {
     return AccessResult::forbidden();
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public static function trustedCallbacks() {
+    return ['accessTrue', 'accessFalse', 'accessResultAllowed', 'accessResultForbidden'];
+  }
+
 }
 
-class TestCallables {
+class TestCallables implements TrustedCallbackInterface {
 
   public function preRenderPrinted($elements) {
     $elements['#printed'] = TRUE;
     return $elements;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function trustedCallbacks() {
+    return ['preRenderPrinted'];
   }
 
 }

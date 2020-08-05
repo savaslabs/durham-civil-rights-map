@@ -18,7 +18,7 @@ use Drupal\Core\Render\Markup;
  * @see https://www.drupal.org/node/2774931
  * @see https://www.drupal.org/node/2928994
  *
- * @deprecated in Drupal 8.5.0 and will be removed before Drupal 9.0.0.
+ * @deprecated in drupal:8.5.0 and is removed from drupal:9.0.0.
  *   Use \Drupal\Core\Messenger\Messenger instead.
  */
 class LegacyMessenger implements MessengerInterface {
@@ -180,7 +180,7 @@ class LegacyMessenger implements MessengerInterface {
   public function deleteByType($type) {
     // Proxy to the Messenger service, if it exists.
     if ($messenger = $this->getMessengerService()) {
-      return $messenger->messagesByType($type);
+      return $messenger->deleteByType($type);
     }
 
     $messages = static::$messages[$type];

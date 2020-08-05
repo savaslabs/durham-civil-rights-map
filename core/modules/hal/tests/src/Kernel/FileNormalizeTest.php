@@ -26,7 +26,6 @@ class FileNormalizeTest extends NormalizerTestBase {
     $this->installEntitySchema('file');
   }
 
-
   /**
    * Tests the normalize function.
    */
@@ -46,7 +45,7 @@ class FileNormalizeTest extends NormalizerTestBase {
       'uri' => [
         [
           'value' => $file->getFileUri(),
-          'url' => file_url_transform_relative(file_create_url($file->getFileUri())),
+          'url' => $file->createFileUrl(),
         ],
       ],
     ];

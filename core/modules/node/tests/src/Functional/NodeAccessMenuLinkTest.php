@@ -19,6 +19,11 @@ class NodeAccessMenuLinkTest extends NodeTestBase {
   public static $modules = ['menu_ui', 'block'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * A user with permission to manage menu links and create nodes.
    *
    * @var \Drupal\user\UserInterface
@@ -33,7 +38,7 @@ class NodeAccessMenuLinkTest extends NodeTestBase {
     $this->contentAdminUser = $this->drupalCreateUser([
       'access content',
       'administer content types',
-      'administer menu'
+      'administer menu',
     ]);
 
     $this->config('user.role.' . RoleInterface::ANONYMOUS_ID)->set('permissions', [])->save();

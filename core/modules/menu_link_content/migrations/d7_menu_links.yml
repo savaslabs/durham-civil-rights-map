@@ -23,8 +23,7 @@ process:
       method: row
   'link/uri':
     plugin: link_uri
-    source:
-      - link_path
+    source: link_path
   'link/options': options
   route:
     plugin: route
@@ -52,3 +51,5 @@ destination:
 migration_dependencies:
   required:
     - d7_menu
+  optional:
+    - d7_node

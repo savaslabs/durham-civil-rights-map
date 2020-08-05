@@ -5,7 +5,7 @@ namespace Drupal\Tests\node\Functional;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
-use Drupal\system\Tests\Entity\EntityWithUriCacheTagsTestBase;
+use Drupal\Tests\system\Functional\Entity\EntityWithUriCacheTagsTestBase;
 
 /**
  * Tests the Node entity's cache tags.
@@ -22,6 +22,11 @@ class NodeCacheTagsTest extends EntityWithUriCacheTagsTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function createEntity() {
     // Create a "Camelids" node type.
     NodeType::create([
@@ -32,7 +37,7 @@ class NodeCacheTagsTest extends EntityWithUriCacheTagsTestBase {
     // Create a "Llama" node.
     $node = Node::create(['type' => 'camelids']);
     $node->setTitle('Llama')
-      ->setPublished(TRUE)
+      ->setPublished()
       ->save();
 
     return $node;
@@ -44,6 +49,7 @@ class NodeCacheTagsTest extends EntityWithUriCacheTagsTestBase {
   protected function getDefaultCacheContexts() {
     $defaults = parent::getDefaultCacheContexts();
     // @see \Drupal\node\Controller\NodeViewController::view()
+    $defaults[] = 'url.site';
     $defaults[] = 'user.roles:anonymous';
     return $defaults;
   }

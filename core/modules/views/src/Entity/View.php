@@ -19,6 +19,14 @@ use Drupal\views\ViewEntityInterface;
  * @ConfigEntityType(
  *   id = "view",
  *   label = @Translation("View", context = "View entity type"),
+ *   label_collection = @Translation("Views", context = "View entity type"),
+ *   label_singular = @Translation("view", context = "View entity type"),
+ *   label_plural = @Translation("views", context = "View entity type"),
+ *   label_count = @PluralTranslation(
+ *     singular = "@count view",
+ *     plural = "@count views",
+ *     context = "View entity type",
+ *   ),
  *   admin_permission = "administer views",
  *   entity_keys = {
  *     "id" = "id",
@@ -33,7 +41,6 @@ use Drupal\views\ViewEntityInterface;
  *     "tag",
  *     "base_table",
  *     "base_field",
- *     "core",
  *     "display",
  *   }
  * )
@@ -56,6 +63,8 @@ class View extends ConfigEntityBase implements ViewEntityInterface {
 
   /**
    * The label of the view.
+   *
+   * @var string
    */
   protected $label;
 
@@ -75,13 +84,6 @@ class View extends ConfigEntityBase implements ViewEntityInterface {
    * @var string
    */
   protected $tag = '';
-
-  /**
-   * The core version the view was created for.
-   *
-   * @var string
-   */
-  protected $core = \Drupal::CORE_COMPATIBILITY;
 
   /**
    * Stores all display handlers of this view.
@@ -293,14 +295,18 @@ class View extends ConfigEntityBase implements ViewEntityInterface {
 
     $displays = $this->get('display');
 
+    // @todo Remove this line and support for pre-8.3 table names in Drupal 9.
+    // @see https://www.drupal.org/project/drupal/issues/3069405 .
     $this->fixTableNames($displays);
 
     // Sort the displays.
     ksort($displays);
     $this->set('display', ['default' => $displays['default']] + $displays);
 
-    // @todo Check whether isSyncing is needed.
-    if (!$this->isSyncing()) {
+    // Calculating the cacheability metadata is only needed when the view is
+    // saved through the UI or API. It should not be done when we are syncing
+    // configuration or installing modules.
+    if (!$this->isSyncing() && !$this->hasTrustedData()) {
       $this->addCacheMetadata();
     }
   }
@@ -316,7 +322,9 @@ class View extends ConfigEntityBase implements ViewEntityInterface {
    * @param array &$displays
    *   An array containing display handlers of a view.
    *
-   * @deprecated in Drupal 8.3.0, will be removed in Drupal 9.0.0.
+   * @todo Remove this method and its usage in Drupal 9. See
+   *   https://www.drupal.org/project/drupal/issues/3069405.
+   * @see https://www.drupal.org/node/2831499
    */
   private function fixTableNames(array &$displays) {
     // Fix wrong table names for entity revision metadata fields.
@@ -335,6 +343,7 @@ class View extends ConfigEntityBase implements ViewEntityInterface {
               // Check if this is a revision metadata field and if it uses the
               // wrong table.
               if (in_array($property_data['field'], $revision_metadata_fields) && $property_data['table'] != $revision_table) {
+                @trigger_error('Support for pre-8.3.0 revision table names in imported views is deprecated in drupal:8.3.0 and is removed from drupal:9.0.0. Imported views must reference the correct tables. See https://www.drupal.org/node/2831499', E_USER_DEPRECATED);
                 $displays[$display]['display_options']['fields'][$property_name]['table'] = $revision_table;
               }
             }
@@ -421,7 +430,7 @@ class View extends ConfigEntityBase implements ViewEntityInterface {
           'position' => 0,
           'display_options' => [],
         ],
-      ]
+      ],
     ];
   }
 

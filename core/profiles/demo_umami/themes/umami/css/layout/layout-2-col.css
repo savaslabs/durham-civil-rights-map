@@ -12,8 +12,13 @@
     justify-content: space-between;
   }
 
+  .two-columns .main .layout-content {
+    flex: 1 1 75%;
+  }
+
   .layout-sidebar {
-    min-width: 300px;
+    flex: 0 0 25%;
     width: 25%;
+    min-width: 300px;
   }
 }

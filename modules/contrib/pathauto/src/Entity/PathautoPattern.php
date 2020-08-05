@@ -1,16 +1,12 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\pathauto\Entity\PathautoPattern.
- */
-
 namespace Drupal\pathauto\Entity;
 
 use Drupal\Component\Plugin\Exception\ContextException;
 use Drupal\Core\Condition\ConditionPluginCollection;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Plugin\Context\Context;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Plugin\DefaultSingleLazyPluginCollection;
 use Drupal\pathauto\PathautoPatternInterface;
@@ -25,6 +21,7 @@ use Drupal\pathauto\PathautoPatternInterface;
  *     "list_builder" = "Drupal\pathauto\PathautoPatternListBuilder",
  *     "form" = {
  *       "default" = "Drupal\pathauto\Form\PatternEditForm",
+ *       "duplicate" = "Drupal\pathauto\Form\PatternDuplicateForm",
  *       "delete" = "Drupal\Core\Entity\EntityDeleteForm",
  *       "enable" = "Drupal\pathauto\Form\PatternEnableForm",
  *       "disable" = "Drupal\pathauto\Form\PatternDisableForm"
@@ -61,7 +58,8 @@ use Drupal\pathauto\PathautoPatternInterface;
  *     "edit-form" = "/admin/config/search/path/patterns/{pathauto_pattern}",
  *     "delete-form" = "/admin/config/search/path/patterns/{pathauto_pattern}/delete",
  *     "enable" = "/admin/config/search/path/patterns/{pathauto_pattern}/enable",
- *     "disable" = "/admin/config/search/path/patterns/{pathauto_pattern}/disable"
+ *     "disable" = "/admin/config/search/path/patterns/{pathauto_pattern}/disable",
+ *     "duplicate-form" = "/admin/config/search/path/patterns/{pathauto_pattern}/duplicate"
  *   }
  * )
  */
@@ -350,6 +348,17 @@ class PathautoPattern extends ConfigEntityBase implements PathautoPatternInterfa
       $context_handler = \Drupal::service('context.handler');
       $conditions = $this->getSelectionConditions();
       foreach ($conditions as $condition) {
+
+        // As the context object is kept and only the value is switched out,
+        // it can over time grow to a huge number of cache contexts. Reset it
+        // if there are 100 cache tags to prevent cache tag merging getting too
+        // slow.
+        foreach ($condition->getContextDefinitions() as $name => $context_definition) {
+          if (count($condition->getContext($name)->getCacheTags()) > 100) {
+            $condition->setContext($name, new Context($context_definition));
+          }
+        }
+
         if ($condition instanceof ContextAwarePluginInterface) {
           try {
             $context_handler->applyContextMapping($condition, $contexts);

@@ -12,8 +12,8 @@
 namespace Symfony\Component\EventDispatcher\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -28,7 +28,7 @@ class RegisterListenersPass implements CompilerPassInterface
     protected $listenerTag;
     protected $subscriberTag;
 
-    private $hotPathEvents = array();
+    private $hotPathEvents = [];
     private $hotPathTagName;
 
     /**
@@ -68,14 +68,14 @@ class RegisterListenersPass implements CompilerPassInterface
                 }
 
                 if (!isset($event['method'])) {
-                    $event['method'] = 'on'.preg_replace_callback(array(
+                    $event['method'] = 'on'.preg_replace_callback([
                         '/(?<=\b)[a-z]/i',
                         '/[^a-z0-9]/i',
-                    ), function ($matches) { return strtoupper($matches[0]); }, $event['event']);
+                    ], function ($matches) { return strtoupper($matches[0]); }, $event['event']);
                     $event['method'] = preg_replace('/[^a-z0-9]/i', '', $event['method']);
                 }
 
-                $definition->addMethodCall('addListener', array($event['event'], array(new ServiceClosureArgument(new Reference($id)), $event['method']), $priority));
+                $definition->addMethodCall('addListener', [$event['event'], [new ServiceClosureArgument(new Reference($id)), $event['method']], $priority]);
 
                 if (isset($this->hotPathEvents[$event['event']])) {
                     $container->getDefinition($id)->addTag($this->hotPathTagName);
@@ -89,29 +89,27 @@ class RegisterListenersPass implements CompilerPassInterface
             $def = $container->getDefinition($id);
 
             // We must assume that the class value has been correctly filled, even if the service is created by a factory
-            $class = $container->getParameterBag()->resolveValue($def->getClass());
-            $interface = 'Symfony\Component\EventDispatcher\EventSubscriberInterface';
+            $class = $def->getClass();
 
-            if (!is_subclass_of($class, $interface)) {
-                if (!class_exists($class, false)) {
-                    throw new InvalidArgumentException(sprintf('Class "%s" used for service "%s" cannot be found.', $class, $id));
-                }
-
-                throw new InvalidArgumentException(sprintf('Service "%s" must implement interface "%s".', $id, $interface));
+            if (!$r = $container->getReflectionClass($class)) {
+                throw new InvalidArgumentException(sprintf('Class "%s" used for service "%s" cannot be found.', $class, $id));
             }
-            $container->addObjectResource($class);
+            if (!$r->isSubclassOf(EventSubscriberInterface::class)) {
+                throw new InvalidArgumentException(sprintf('Service "%s" must implement interface "%s".', $id, EventSubscriberInterface::class));
+            }
+            $class = $r->name;
 
             ExtractingEventDispatcher::$subscriber = $class;
             $extractingDispatcher->addSubscriber($extractingDispatcher);
             foreach ($extractingDispatcher->listeners as $args) {
-                $args[1] = array(new ServiceClosureArgument(new Reference($id)), $args[1]);
+                $args[1] = [new ServiceClosureArgument(new Reference($id)), $args[1]];
                 $definition->addMethodCall('addListener', $args);
 
                 if (isset($this->hotPathEvents[$args[0]])) {
-                    $container->getDefinition($id)->addTag('container.hot_path');
+                    $container->getDefinition($id)->addTag($this->hotPathTagName);
                 }
             }
-            $extractingDispatcher->listeners = array();
+            $extractingDispatcher->listeners = [];
         }
     }
 }
@@ -121,18 +119,18 @@ class RegisterListenersPass implements CompilerPassInterface
  */
 class ExtractingEventDispatcher extends EventDispatcher implements EventSubscriberInterface
 {
-    public $listeners = array();
+    public $listeners = [];
 
     public static $subscriber;
 
     public function addListener($eventName, $listener, $priority = 0)
     {
-        $this->listeners[] = array($eventName, $listener[1], $priority);
+        $this->listeners[] = [$eventName, $listener[1], $priority];
     }
 
     public static function getSubscribedEvents()
     {
-        $callback = array(self::$subscriber, 'getSubscribedEvents');
+        $callback = [self::$subscriber, 'getSubscribedEvents'];
 
         return $callback();
     }

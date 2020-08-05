@@ -6,8 +6,14 @@ namespace Drupal\Tests\system\Functional\Update;
  * Runs MenuTreeSerializationTitleTest with a dump filled with content.
  *
  * @group Update
+ * @group legacy
  */
 class MenuTreeSerializationTitleFilledTest extends MenuTreeSerializationTitleTest {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

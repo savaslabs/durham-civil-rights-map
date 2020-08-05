@@ -134,15 +134,39 @@ libraries-override:
       theme:
         css/language.admin.css: css/language/language.admin.css
 
+  layout_builder/drupal.layout_builder:
+    css:
+      theme:
+        css/layout-builder.css: css/layout_builder/layout-builder.css
+
   locale/drupal.locale.admin:
     css:
       component:
         css/locale.admin.css: css/locale/locale.admin.css
 
+  media/filter.caption:
+    css:
+      component:
+        css/filter.caption.css: css/media/filter.caption.css
+
+  media/oembed.formatter:
+    css:
+      component:
+        css/oembed.formatter.css: css/media/oembed.formatter.css
+  media/oembed.frame:
+    css:
+      component:
+        css/oembed.frame.css: css/media/oembed.frame.css
+
   menu_ui/drupal.menu_ui.adminforms:
     css:
       theme:
         css/menu_ui.admin.css: css/menu_ui/menu_ui.admin.css
+
+  migrate_drupal_ui/base:
+    css:
+      component:
+        css/components/upgrade-analysis-report-tables.css: css/migrate_drupal_ui/components/upgrade-analysis-report-tables.css
 
   node/drupal.node:
     css:
@@ -279,3 +303,9 @@ libraries-override:
       theme:
         css/views_ui.admin.theme.css: css/views_ui/views_ui.admin.theme.css
         css/views_ui.contextual.css: css/views_ui/views_ui.contextual.css
+
+libraries-extend:
+  core/drupal.ajax:
+    - stable/drupal.ajax
+  user/drupal.user:
+    - stable/drupal.user

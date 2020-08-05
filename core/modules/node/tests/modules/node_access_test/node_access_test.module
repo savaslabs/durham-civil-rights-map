@@ -52,7 +52,7 @@ use Drupal\node\NodeInterface;
 function node_access_test_node_grants($account, $op) {
   $grants = [];
   $grants['node_access_test_author'] = [$account->id()];
-  if ($op == 'view' && $account->hasPermission('node test view', $account)) {
+  if ($op == 'view' && $account->hasPermission('node test view')) {
     $grants['node_access_test'] = [8888, 8889];
   }
 
@@ -135,7 +135,8 @@ function node_access_test_add_field(NodeTypeInterface $type) {
   $field->save();
 
   // Assign widget settings for the 'default' form mode.
-  entity_get_form_display('node', $type->id(), 'default')
+  \Drupal::service('entity_display.repository')
+    ->getFormDisplay('node', $type->id())
     ->setComponent('private', [
       'type' => 'number',
     ])

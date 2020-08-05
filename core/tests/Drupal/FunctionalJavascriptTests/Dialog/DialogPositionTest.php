@@ -2,19 +2,24 @@
 
 namespace Drupal\FunctionalJavascriptTests\Dialog;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests the JavaScript functionality of the dialog position.
  *
  * @group dialog
  */
-class DialogPositionTest extends JavascriptTestBase {
+class DialogPositionTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
    */
   public static $modules = ['block'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests if the dialog UI works properly with block layout page.

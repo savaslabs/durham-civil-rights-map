@@ -1,11 +1,6 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag\Plugin\metatag\Group\Basic.
- */
 
 namespace Drupal\metatag\Plugin\metatag\Group;
-
 
 /**
  * The basic group.

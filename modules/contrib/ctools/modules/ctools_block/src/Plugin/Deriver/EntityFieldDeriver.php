@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\ctools\Plugin\Derivative\EntityFieldDeriver.
- */
-
 namespace Drupal\ctools_block\Plugin\Deriver;
 
 use Drupal\Core\Plugin\Context\ContextDefinition;
@@ -19,21 +14,29 @@ class EntityFieldDeriver extends EntityDeriverBase {
    * {@inheritdoc}
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
-    $entity_type_labels = $this->entityManager->getEntityTypeLabels();
-    foreach ($this->entityManager->getFieldMap() as $entity_type_id => $entity_field_map) {
-      foreach ($this->entityManager->getFieldStorageDefinitions($entity_type_id) as $field_definition) {
-        $field_name = $field_definition->getName();
+    $entity_type_labels = $this->entityTypeRepository->getEntityTypeLabels();
+    foreach ($this->entityFieldManager->getFieldMap() as $entity_type_id => $entity_field_map) {
+      foreach ($this->entityFieldManager->getFieldStorageDefinitions($entity_type_id) as $field_storage_definition) {
+        $field_name = $field_storage_definition->getName();
+
+        // The blocks are based on fields. However, we are looping through field
+        // storages for which no fields may exist. If that is the case, skip
+        // this field storage.
+        if (!isset($entity_field_map[$field_name])) {
+          continue;
+        }
+
         $field_info = $entity_field_map[$field_name];
         $derivative_id = $entity_type_id . ":" . $field_name;
 
         // Get the admin label for both base and configurable fields.
-        if ($field_definition->isBaseField()) {
-          $admin_label = $field_definition->getLabel();
+        if ($field_storage_definition->isBaseField()) {
+          $admin_label = $field_storage_definition->getLabel();
         }
         else {
           // We take the field label used on the first bundle.
           $first_bundle = reset($field_info['bundles']);
-          $bundle_field_definitions = $this->entityManager->getFieldDefinitions($entity_type_id, $first_bundle);
+          $bundle_field_definitions = $this->entityFieldManager->getFieldDefinitions($entity_type_id, $first_bundle);
 
           // The field storage config may exist, but it's possible that no
           // fields are actually using it. If that's the case, skip to the next

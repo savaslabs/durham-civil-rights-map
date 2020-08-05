@@ -1,11 +1,6 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag\Plugin\metatag\Group\Advanced.
- */
 
 namespace Drupal\metatag\Plugin\metatag\Group;
-
 
 /**
  * The advanced group.

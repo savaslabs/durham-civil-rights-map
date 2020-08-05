@@ -2,9 +2,8 @@
 
 namespace Drupal\KernelTests\Core\Routing;
 
-use Drupal\Core\Cache\MemoryBackend;
 use Drupal\Core\KeyValueStore\KeyValueMemoryFactory;
-use Drupal\Core\Lock\NullLockBackend;
+use Drupal\Core\Routing\RouteCompiler;
 use Drupal\Core\State\State;
 use Drupal\KernelTests\KernelTestBase;
 use Symfony\Component\Routing\Route;
@@ -38,7 +37,7 @@ class MatcherDumperTest extends KernelTestBase {
     parent::setUp();
 
     $this->fixtures = new RoutingFixtures();
-    $this->state = new State(new KeyValueMemoryFactory(), new MemoryBackend('test'), new NullLockBackend());
+    $this->state = new State(new KeyValueMemoryFactory());
   }
 
   /**
@@ -100,7 +99,7 @@ class MatcherDumperTest extends KernelTestBase {
     foreach ($collection_routes as $name => $route) {
       if (empty($dumper_routes[$name])) {
         $success = FALSE;
-        $this->fail(t('Not all routes found in the dumper.'));
+        $this->fail('Not all routes found in the dumper.');
       }
     }
 
@@ -117,7 +116,7 @@ class MatcherDumperTest extends KernelTestBase {
     $dumper = new MatcherDumper($connection, $this->state, 'test_routes');
 
     $route = new Route('/test/{my}/path');
-    $route->setOption('compiler_class', 'Drupal\Core\Routing\RouteCompiler');
+    $route->setOption('compiler_class', RouteCompiler::class);
     $collection = new RouteCollection();
     $collection->add('test_route', $route);
 

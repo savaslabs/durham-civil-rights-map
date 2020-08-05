@@ -15,10 +15,10 @@ class ContentTypeHeaderMatcher implements FilterInterface {
    * {@inheritdoc}
    */
   public function filter(RouteCollection $collection, Request $request) {
-    // The Content-type header does not make sense on GET requests, because GET
-    // requests do not carry any content. Nothing to filter in this case. Same
-    // for all other safe methods.
-    if ($request->isMethodSafe(FALSE)) {
+    // The Content-type header does not make sense on GET or DELETE requests,
+    // because they do not carry any content. Nothing to filter in this case.
+    // Same for all other safe methods.
+    if ($request->isMethodSafe(FALSE) || $request->isMethod('DELETE')) {
       return $collection;
     }
 
@@ -42,7 +42,7 @@ class ContentTypeHeaderMatcher implements FilterInterface {
     // We do not throw a
     // \Symfony\Component\Routing\Exception\ResourceNotFoundException here
     // because we don't want to return a 404 status code, but rather a 415.
-    if (!$request->headers->has('Content-Type')) {
+    if (!$request->headers->get('Content-Type', FALSE)) {
       throw new UnsupportedMediaTypeHttpException('No "Content-Type" request header specified');
     }
     else {

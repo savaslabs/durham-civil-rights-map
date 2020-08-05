@@ -27,6 +27,11 @@ class DisplayAttachmentTest extends ViewTestBase {
    */
   public static $modules = ['node', 'views'];
 
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
+
   protected function setUp($import_test_views = TRUE) {
     parent::setUp($import_test_views);
 
@@ -35,7 +40,6 @@ class DisplayAttachmentTest extends ViewTestBase {
     $admin_user = $this->drupalCreateUser(['administer site configuration']);
     $this->drupalLogin($admin_user);
   }
-
 
   /**
    * Tests the attachment plugin.

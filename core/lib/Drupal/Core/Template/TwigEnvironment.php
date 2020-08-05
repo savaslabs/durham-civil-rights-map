@@ -3,6 +3,7 @@
 namespace Drupal\Core\Template;
 
 use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\Core\PhpStorage\PhpStorageFactory;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\State\StateInterface;
 
@@ -17,12 +18,29 @@ use Drupal\Core\State\StateInterface;
 class TwigEnvironment extends \Twig_Environment {
 
   /**
+   * Key name of the Twig cache prefix metadata key-value pair in State.
+   */
+  const CACHE_PREFIX_METADATA_KEY = 'twig_extension_hash_prefix';
+
+  /**
+   * The state service.
+   *
+   * @var \Drupal\Core\State\StateInterface
+   */
+  protected $state;
+
+  /**
    * Static cache of template classes.
    *
    * @var array
    */
   protected $templateClasses;
 
+  /**
+   * The template cache filename prefix.
+   *
+   * @var string
+   */
   protected $twigCachePrefix = '';
 
   /**
@@ -42,9 +60,12 @@ class TwigEnvironment extends \Twig_Environment {
    * @param array $options
    *   The options for the Twig environment.
    */
-  public function __construct($root, CacheBackendInterface $cache, $twig_extension_hash, StateInterface $state, \Twig_LoaderInterface $loader = NULL, $options = []) {
+  public function __construct($root, CacheBackendInterface $cache, $twig_extension_hash, StateInterface $state, \Twig_LoaderInterface $loader = NULL, array $options = []) {
+    $this->state = $state;
+
     // Ensure that twig.engine is loaded, given that it is needed to render a
     // template because functions like TwigExtension::escapeFilter() are called.
+    // @todo remove in Drupal 9.0.0 https://www.drupal.org/node/3011393.
     require_once $root . '/core/themes/engines/twig/twig.engine';
 
     $this->templateClasses = [];
@@ -57,13 +78,8 @@ class TwigEnvironment extends \Twig_Environment {
     ];
     // Ensure autoescaping is always on.
     $options['autoescape'] = 'html';
-
-    $policy = new TwigSandboxPolicy();
-    $sandbox = new \Twig_Extension_Sandbox($policy, TRUE);
-    $this->addExtension($sandbox);
-
     if ($options['cache'] === TRUE) {
-      $current = $state->get('twig_extension_hash_prefix', ['twig_extension_hash' => '']);
+      $current = $state->get(static::CACHE_PREFIX_METADATA_KEY, ['twig_extension_hash' => '']);
       if ($current['twig_extension_hash'] !== $twig_extension_hash || empty($current['twig_cache_prefix'])) {
         $current = [
           'twig_extension_hash' => $twig_extension_hash,
@@ -71,15 +87,29 @@ class TwigEnvironment extends \Twig_Environment {
           'twig_cache_prefix' => uniqid(),
 
         ];
-        $state->set('twig_extension_hash_prefix', $current);
+        $state->set(static::CACHE_PREFIX_METADATA_KEY, $current);
       }
       $this->twigCachePrefix = $current['twig_cache_prefix'];
 
       $options['cache'] = new TwigPhpStorageCache($cache, $this->twigCachePrefix);
     }
 
-    $this->loader = $loader;
-    parent::__construct($this->loader, $options);
+    $this->setLoader($loader);
+    parent::__construct($this->getLoader(), $options);
+    $policy = new TwigSandboxPolicy();
+    $sandbox = new \Twig_Extension_Sandbox($policy, TRUE);
+    $this->addExtension($sandbox);
+  }
+
+  /**
+   * Invalidates all compiled Twig templates.
+   *
+   * @see \drupal_flush_all_caches
+   */
+  public function invalidate() {
+    PhpStorageFactory::get('twig')->deleteAll();
+    $this->templateClasses = [];
+    $this->state->delete(static::CACHE_PREFIX_METADATA_KEY);
   }
 
   /**
@@ -110,7 +140,7 @@ class TwigEnvironment extends \Twig_Environment {
     // node.html.twig for the output of each node and the same compiled class.
     $cache_index = $name . (NULL === $index ? '' : '_' . $index);
     if (!isset($this->templateClasses[$cache_index])) {
-      $this->templateClasses[$cache_index] = $this->templateClassPrefix . hash('sha256', $this->loader->getCacheKey($name)) . (NULL === $index ? '' : '_' . $index);
+      $this->templateClasses[$cache_index] = parent::getTemplateClass($name, $index);
     }
     return $this->templateClasses[$cache_index];
   }
@@ -140,7 +170,7 @@ class TwigEnvironment extends \Twig_Environment {
   public function renderInline($template_string, array $context = []) {
     // Prefix all inline templates with a special comment.
     $template_string = '{# inline_template_start #}' . $template_string;
-    return Markup::create($this->loadTemplate($template_string, NULL)->render($context));
+    return Markup::create($this->createTemplate($template_string)->render($context));
   }
 
 }

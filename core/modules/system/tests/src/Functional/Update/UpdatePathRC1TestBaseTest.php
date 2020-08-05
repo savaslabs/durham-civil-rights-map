@@ -9,6 +9,7 @@ use Drupal\FunctionalTests\Update\UpdatePathTestBase;
  * Tests the update path base class with the RC1 database dump.
  *
  * @group Update
+ * @group legacy
  */
 class UpdatePathRC1TestBaseTest extends UpdatePathTestBase {
 
@@ -16,6 +17,11 @@ class UpdatePathRC1TestBaseTest extends UpdatePathTestBase {
    * {@inheritdoc}
    */
   protected static $modules = ['update_test_schema'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -61,7 +67,7 @@ class UpdatePathRC1TestBaseTest extends UpdatePathTestBase {
     $this->assertText('Site-Install');
     $extensions = \Drupal::service('config.storage')->read('core.extension');
     $this->assertTrue(isset($extensions['theme']['stable']), 'Stable is installed after updating.');
-    $blocks = \Drupal::entityManager()->getStorage('block')->loadByProperties(['theme' => 'stable']);
+    $blocks = \Drupal::entityTypeManager()->getStorage('block')->loadByProperties(['theme' => 'stable']);
     $this->assertTrue(empty($blocks), 'No blocks have been placed for Stable.');
   }
 

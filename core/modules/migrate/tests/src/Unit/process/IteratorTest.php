@@ -18,7 +18,7 @@ class IteratorTest extends MigrateTestCase {
   /**
    * The iterator plugin being tested.
    *
-   * @var \Drupal\migrate\Plugin\migrate\process\TestIterator
+   * @var \Drupal\migrate\Plugin\migrate\process\Iterator
    */
   protected $plugin;
 
@@ -33,6 +33,7 @@ class IteratorTest extends MigrateTestCase {
    * Tests the iterator process plugin.
    *
    * @group legacy
+   * @expectedDeprecation The Drupal\migrate\Plugin\migrate\process\Iterator is deprecated in Drupal 8.4.x and will be removed before Drupal 9.0.0. Instead, use Drupal\migrate\Plugin\migrate\process\SubProcess
    */
   public function testIterator() {
     $migration = $this->getMigration();
@@ -58,8 +59,8 @@ class IteratorTest extends MigrateTestCase {
     $migration->expects($this->at(2))
       ->method('getProcessPlugins')
       ->will($this->returnValue($key_plugin));
-    $event_dispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
-    $migrate_executable = new MigrateExecutable($migration, $this->getMock('Drupal\migrate\MigrateMessageInterface'), $event_dispatcher);
+    $event_dispatcher = $this->createMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
+    $migrate_executable = new MigrateExecutable($migration, $this->createMock('Drupal\migrate\MigrateMessageInterface'), $event_dispatcher);
 
     // The current value of the pipeline.
     $current_value = [

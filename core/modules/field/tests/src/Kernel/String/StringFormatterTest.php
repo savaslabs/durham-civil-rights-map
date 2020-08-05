@@ -3,7 +3,6 @@
 namespace Drupal\Tests\field\Kernel\String;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\entity_test\Entity\EntityTestRev;
@@ -24,6 +23,13 @@ class StringFormatterTest extends KernelTestBase {
    * @var array
    */
   public static $modules = ['field', 'text', 'entity_test', 'system', 'filter', 'user'];
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
 
   /**
    * @var string
@@ -58,7 +64,7 @@ class StringFormatterTest extends KernelTestBase {
 
     $this->entityType = 'entity_test_rev';
     $this->bundle = $this->entityType;
-    $this->fieldName = Unicode::strtolower($this->randomMachineName());
+    $this->fieldName = mb_strtolower($this->randomMachineName());
 
     $field_storage = FieldStorageConfig::create([
       'field_name' => $this->fieldName,
@@ -74,12 +80,15 @@ class StringFormatterTest extends KernelTestBase {
     ]);
     $instance->save();
 
-    $this->display = entity_get_display($this->entityType, $this->bundle, 'default')
+    $this->display = \Drupal::service('entity_display.repository')
+      ->getViewDisplay($this->entityType, $this->bundle)
       ->setComponent($this->fieldName, [
         'type' => 'string',
         'settings' => [],
       ]);
     $this->display->save();
+
+    $this->entityTypeManager = \Drupal::entityTypeManager();
   }
 
   /**
@@ -134,11 +143,11 @@ class StringFormatterTest extends KernelTestBase {
 
     $this->renderEntityFields($entity, $this->display);
     $this->assertLink($value, 0);
-    $this->assertLinkByHref($entity->url());
+    $this->assertLinkByHref($entity->toUrl()->toString());
 
-    // $entity->url('revision') falls back to the canonical URL if this is no
+    // $entity->toUrl('revision') falls back to the canonical URL if this is no
     // revision.
-    $this->assertLinkByHref($entity->url('revision'));
+    $this->assertLinkByHref($entity->toUrl('revision')->toString());
 
     // Make the entity a new revision.
     $old_revision_id = $entity->getRevisionId();
@@ -146,15 +155,28 @@ class StringFormatterTest extends KernelTestBase {
     $value2 = $this->randomMachineName();
     $entity->{$this->fieldName}->value = $value2;
     $entity->save();
-    $entity_new_revision = \Drupal::entityManager()->getStorage('entity_test_rev')->loadRevision($old_revision_id);
+    $entity_new_revision = $this->entityTypeManager->getStorage('entity_test_rev')->loadRevision($old_revision_id);
 
     $this->renderEntityFields($entity, $this->display);
     $this->assertLink($value2, 0);
-    $this->assertLinkByHref($entity->url('revision'));
+    $this->assertLinkByHref($entity->toUrl('revision')->toString());
 
     $this->renderEntityFields($entity_new_revision, $this->display);
     $this->assertLink($value, 0);
     $this->assertLinkByHref('/entity_test_rev/' . $entity_new_revision->id() . '/revision/' . $entity_new_revision->getRevisionId() . '/view');
+
+    // Check that linking to a revisionable entity works if the entity type does
+    // not specify a 'revision' link template.
+    $entity_type = clone $this->entityTypeManager->getDefinition('entity_test_rev');
+    $link_templates = $entity_type->getLinkTemplates();
+    unset($link_templates['revision']);
+    $entity_type->set('links', $link_templates);
+    \Drupal::state()->set('entity_test_rev.entity_type', $entity_type);
+    $this->entityTypeManager->clearCachedDefinitions();
+
+    $this->renderEntityFields($entity_new_revision, $this->display);
+    $this->assertLink($value, 0);
+    $this->assertLinkByHref($entity->toUrl('canonical')->toString());
   }
 
 }

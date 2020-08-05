@@ -5,6 +5,7 @@
  * Adds contextual links to perform actions related to elements on a page.
  */
 
+use Drupal\Core\Url;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Language\LanguageInterface;
@@ -86,11 +87,11 @@ function contextual_help($route_name, RouteMatchInterface $route_match) {
       $sample_picture = [
         '#theme' => 'image',
         '#uri' => 'core/misc/icons/bebebe/pencil.svg',
-        '#alt' => t('contextual links button')
+        '#alt' => t('contextual links button'),
       ];
       $sample_picture = \Drupal::service('renderer')->render($sample_picture);
       $output .= '<li>' . t('Hovering over the area of interest will temporarily make the contextual links button visible (which looks like a pencil in most themes, and is normally displayed in the upper right corner of the area). The icon typically looks like this: @picture', ['@picture' => $sample_picture]) . '</li>';
-      $output .= '<li>' . t('If you have the <a href=":toolbar">Toolbar module</a> enabled, clicking the contextual links button in the toolbar (which looks like a pencil) will make all contextual links buttons on the page visible. Clicking this button again will toggle them to invisible.', [':toolbar' => (\Drupal::moduleHandler()->moduleExists('toolbar')) ? \Drupal::url('help.page', ['name' => 'toolbar']) : '#']) . '</li>';
+      $output .= '<li>' . t('If you have the <a href=":toolbar">Toolbar module</a> enabled, clicking the contextual links button in the toolbar (which looks like a pencil) will make all contextual links buttons on the page visible. Clicking this button again will toggle them to invisible.', [':toolbar' => (\Drupal::moduleHandler()->moduleExists('toolbar')) ? Url::fromRoute('help.page', ['name' => 'toolbar'])->toString() : '#']) . '</li>';
       $output .= '</ol>';
       $output .= t('Once the contextual links button for the area of interest is visible, click the button to display the links.');
       $output .= '</dd>';
@@ -191,13 +192,19 @@ function _contextual_links_to_id($contextual_links) {
 /**
  * Unserializes the result of _contextual_links_to_id().
  *
- * @see _contextual_links_to_id
+ * Note that $id is user input. Before calling this method the ID should be
+ * checked against the token stored in the 'data-contextual-token' attribute
+ * which is passed via the 'tokens' request parameter to
+ * \Drupal\contextual\ContextualController::render().
  *
  * @param string $id
  *   A serialized representation of a #contextual_links property value array.
  *
  * @return array
  *   The value for a #contextual_links property.
+ *
+ * @see _contextual_links_to_id()
+ * @see \Drupal\contextual\ContextualController::render()
  */
 function _contextual_id_to_links($id) {
   $contextual_links = [];

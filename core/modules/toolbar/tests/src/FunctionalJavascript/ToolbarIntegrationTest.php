@@ -2,19 +2,24 @@
 
 namespace Drupal\Tests\toolbar\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests the JavaScript functionality of the toolbar.
  *
  * @group toolbar
  */
-class ToolbarIntegrationTest extends JavascriptTestBase {
+class ToolbarIntegrationTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
    */
   public static $modules = ['toolbar', 'node'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests if the toolbar can be toggled with JavaScript.
@@ -27,7 +32,12 @@ class ToolbarIntegrationTest extends JavascriptTestBase {
     ]);
     $this->drupalLogin($admin_user);
 
+    // Set size for horizontal toolbar.
+    $this->getSession()->resizeWindow(1200, 600);
     $this->drupalGet('<front>');
+    $this->assertNotEmpty($this->assertSession()->waitForElement('css', 'body.toolbar-horizontal'));
+    $this->assertNotEmpty($this->assertSession()->waitForElementVisible('css', '.toolbar-tray'));
+
     $page = $this->getSession()->getPage();
 
     // Test that it is possible to toggle the toolbar tray.

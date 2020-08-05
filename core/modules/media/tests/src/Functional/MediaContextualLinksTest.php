@@ -19,11 +19,23 @@ class MediaContextualLinksTest extends MediaFunctionalTestBase {
   ];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Tests contextual links.
    */
   public function testMediaContextualLinks() {
+    \Drupal::configFactory()
+      ->getEditable('media.settings')
+      ->set('standalone_url', TRUE)
+      ->save(TRUE);
+
+    $this->container->get('router.builder')->rebuild();
+
     // Create a media type.
-    $mediaType = $this->createMediaType();
+    $mediaType = $this->createMediaType('test');
 
     // Create a media item.
     $media = Media::create([

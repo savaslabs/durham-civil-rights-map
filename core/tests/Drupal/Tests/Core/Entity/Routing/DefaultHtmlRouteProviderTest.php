@@ -218,7 +218,7 @@ class DefaultHtmlRouteProviderTest extends UnitTestCase {
     $entity_type1->hasLinkTemplate('canonical')->willReturn(FALSE);
     $data['no_canonical_link_template'] = [NULL, $entity_type1->reveal()];
 
-    $entity_type2 = $this->getEntityType();;
+    $entity_type2 = $this->getEntityType();
     $entity_type2->hasLinkTemplate('canonical')->willReturn(TRUE);
     $entity_type2->hasViewBuilderClass()->willReturn(FALSE);
     $data['no_view_builder'] = [NULL, $entity_type2->reveal()];
@@ -356,15 +356,19 @@ class TestDefaultHtmlRouteProvider extends DefaultHtmlRouteProvider {
   public function getEntityTypeIdKeyType(EntityTypeInterface $entity_type) {
     return parent::getEntityTypeIdKeyType($entity_type);
   }
+
   public function getAddPageRoute(EntityTypeInterface $entity_type) {
     return parent::getAddPageRoute($entity_type);
   }
+
   public function getAddFormRoute(EntityTypeInterface $entity_type) {
     return parent::getAddFormRoute($entity_type);
   }
+
   public function getCanonicalRoute(EntityTypeInterface $entity_type) {
     return parent::getCanonicalRoute($entity_type);
   }
+
   public function getCollectionRoute(EntityTypeInterface $entity_type) {
     return parent::getCollectionRoute($entity_type);
   }

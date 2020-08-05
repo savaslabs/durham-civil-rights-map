@@ -3,11 +3,6 @@
 namespace Drupal\Core\Plugin\Context;
 
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Drupal\Core\Entity\ContentEntityStorageInterface;
-use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
-use Drupal\Core\Entity\Plugin\Validation\Constraint\BundleConstraint;
-use Drupal\Core\Entity\Plugin\Validation\Constraint\EntityTypeConstraint;
-use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 use Drupal\Core\TypedData\TypedDataTrait;
 
 /**
@@ -15,7 +10,9 @@ use Drupal\Core\TypedData\TypedDataTrait;
  */
 class ContextDefinition implements ContextDefinitionInterface {
 
-  use DependencySerializationTrait;
+  use DependencySerializationTrait {
+    __sleep as traitSleep;
+  }
 
   use TypedDataTrait;
 
@@ -73,6 +70,38 @@ class ContextDefinition implements ContextDefinitionInterface {
   protected $constraints = [];
 
   /**
+   * An EntityContextDefinition instance, for backwards compatibility.
+   *
+   * If this context is created with a data type that starts with 'entity:',
+   * this property will be an instance of EntityContextDefinition, and certain
+   * methods of this object will delegate to their overridden counterparts in
+   * $this->entityContextDefinition.
+   *
+   * This property should be kept private so that it is only accessible to this
+   * class for backwards compatibility reasons. It will be removed in Drupal 9.
+   *
+   * @deprecated
+   *   Constructing a context definition for an entity type (i.e., the data type
+   *   begins with 'entity:') is deprecated in Drupal 8.6.0. Instead, use
+   *   the static factory methods of EntityContextDefinition to create context
+   *   definitions for entity types, or the static ::create() method of this
+   *   class for any other data type. See https://www.drupal.org/node/2976400
+   *   for more information.
+   *
+   * @see ::__construct()
+   * @see ::__sleep()
+   * @see ::__wakeup()
+   * @see ::getConstraintObjects()
+   * @see ::getSampleValues()
+   * @see ::initializeEntityContextDefinition()
+   * @see https://www.drupal.org/node/2932462
+   * @see https://www.drupal.org/node/2976400
+   *
+   * @var \Drupal\Core\Plugin\Context\EntityContextDefinition
+   */
+  private $entityContextDefinition;
+
+  /**
    * Creates a new context definition.
    *
    * @param string $data_type
@@ -111,6 +140,11 @@ class ContextDefinition implements ContextDefinitionInterface {
     $this->isMultiple = $multiple;
     $this->description = $description;
     $this->defaultValue = $default_value;
+
+    if (strpos($data_type, 'entity:') === 0 && !($this instanceof EntityContextDefinition)) {
+      @trigger_error('Constructing a ContextDefinition object for an entity type is deprecated in Drupal 8.6.0. Use ' . __NAMESPACE__ . '\EntityContextDefinition instead. See https://www.drupal.org/node/2976400 for more information.', E_USER_DEPRECATED);
+      $this->initializeEntityContextDefinition();
+    }
   }
 
   /**
@@ -207,6 +241,12 @@ class ContextDefinition implements ContextDefinitionInterface {
    * {@inheritdoc}
    */
   public function getConstraints() {
+    // If the backwards compatibility layer is present, delegate to that.
+    $this->initializeEntityContextDefinition();
+    if ($this->entityContextDefinition) {
+      return $this->entityContextDefinition->getConstraints();
+    }
+
     // @todo Apply defaults.
     return $this->constraints;
   }
@@ -215,6 +255,12 @@ class ContextDefinition implements ContextDefinitionInterface {
    * {@inheritdoc}
    */
   public function getConstraint($constraint_name) {
+    // If the backwards compatibility layer is present, delegate to that.
+    $this->initializeEntityContextDefinition();
+    if ($this->entityContextDefinition) {
+      return $this->entityContextDefinition->getConstraint($constraint_name);
+    }
+
     $constraints = $this->getConstraints();
     return isset($constraints[$constraint_name]) ? $constraints[$constraint_name] : NULL;
   }
@@ -223,6 +269,12 @@ class ContextDefinition implements ContextDefinitionInterface {
    * {@inheritdoc}
    */
   public function setConstraints(array $constraints) {
+    // If the backwards compatibility layer is present, delegate to that.
+    $this->initializeEntityContextDefinition();
+    if ($this->entityContextDefinition) {
+      $this->entityContextDefinition->setConstraints($constraints);
+    }
+
     $this->constraints = $constraints;
     return $this;
   }
@@ -231,6 +283,12 @@ class ContextDefinition implements ContextDefinitionInterface {
    * {@inheritdoc}
    */
   public function addConstraint($constraint_name, $options = NULL) {
+    // If the backwards compatibility layer is present, delegate to that.
+    $this->initializeEntityContextDefinition();
+    if ($this->entityContextDefinition) {
+      $this->entityContextDefinition->addConstraint($constraint_name, $options);
+    }
+
     $this->constraints[$constraint_name] = $options;
     return $this;
   }
@@ -258,13 +316,35 @@ class ContextDefinition implements ContextDefinitionInterface {
   }
 
   /**
+   * Checks if this definition's data type matches that of the given context.
+   *
+   * @param \Drupal\Core\Plugin\Context\ContextInterface $context
+   *   The context to test against.
+   *
+   * @return bool
+   *   TRUE if the data types match, otherwise FALSE.
+   */
+  protected function dataTypeMatches(ContextInterface $context) {
+    $this_type = $this->getDataType();
+    $that_type = $context->getContextDefinition()->getDataType();
+
+    return (
+      // 'any' means all data types are supported.
+      $this_type === 'any' ||
+      $this_type === $that_type ||
+      // Allow a more generic data type like 'entity' to be fulfilled by a more
+      // specific data type like 'entity:user'. However, if this type is more
+      // specific, do not consider a more generic type to be a match.
+      strpos($that_type, "$this_type:") === 0
+    );
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function isSatisfiedBy(ContextInterface $context) {
     $definition = $context->getContextDefinition();
-    // If the data types do not match, this context is invalid unless the
-    // expected data type is any, which means all data types are supported.
-    if ($this->getDataType() != 'any' && $definition->getDataType() != $this->getDataType()) {
+    if (!$this->dataTypeMatches($context)) {
       return FALSE;
     }
 
@@ -273,8 +353,14 @@ class ContextDefinition implements ContextDefinitionInterface {
     if ($context->hasContextValue()) {
       $values = [$context->getContextData()];
     }
-    elseif ($definition instanceof static) {
-      $values = $definition->getSampleValues();
+    elseif ($definition instanceof self) {
+      $this->initializeEntityContextDefinition();
+      if ($this->entityContextDefinition) {
+        $values = $this->entityContextDefinition->getSampleValues();
+      }
+      else {
+        $values = $definition->getSampleValues();
+      }
     }
     else {
       $values = [];
@@ -282,7 +368,14 @@ class ContextDefinition implements ContextDefinitionInterface {
 
     $validator = $this->getTypedDataManager()->getValidator();
     foreach ($values as $value) {
-      $violations = $validator->validate($value, array_values($this->getConstraintObjects()));
+      $constraints = array_values($this->getConstraintObjects());
+      $violations = $validator->validate($value, $constraints);
+      foreach ($violations as $delta => $violation) {
+        // Remove any violation that does not correspond to the constraints.
+        if (!in_array($violation->getConstraint(), $constraints)) {
+          $violations->remove($delta);
+        }
+      }
       // If a value has no violations then the requirement is satisfied.
       if (!$violations->count()) {
         return TRUE;
@@ -302,33 +395,6 @@ class ContextDefinition implements ContextDefinitionInterface {
    *   The set of typed data object.
    */
   protected function getSampleValues() {
-    // @todo Move the entity specific logic out of this class in
-    //   https://www.drupal.org/node/2932462.
-    // Get the constraints from the context's definition.
-    $constraints = $this->getConstraintObjects();
-    // If constraints include EntityType, we generate an entity or adapter.
-    if (!empty($constraints['EntityType']) && $constraints['EntityType'] instanceof EntityTypeConstraint) {
-      $entity_type_manager = \Drupal::entityTypeManager();
-      $entity_type_id = $constraints['EntityType']->type;
-      $storage = $entity_type_manager->getStorage($entity_type_id);
-      // If the storage can generate a sample entity we might delegate to that.
-      if ($storage instanceof ContentEntityStorageInterface) {
-        if (!empty($constraints['Bundle']) && $constraints['Bundle'] instanceof BundleConstraint) {
-          foreach ($constraints['Bundle']->bundle as $bundle) {
-            // We have a bundle, we are bundleable and we can generate a sample.
-            yield EntityAdapter::createFromEntity($storage->createWithSampleValues($bundle));
-          }
-          return;
-        }
-      }
-
-      // Either no bundle, or not bundleable, so generate an entity adapter.
-      $definition = EntityDataDefinition::create($entity_type_id);
-      yield new EntityAdapter($definition);
-      return;
-    }
-
-    // No entity related constraints, so generate a basic typed data object.
     yield $this->getTypedDataManager()->create($this->getDataDefinition());
   }
 
@@ -339,15 +405,13 @@ class ContextDefinition implements ContextDefinitionInterface {
    *   A list of applied constraints for the context definition.
    */
   protected function getConstraintObjects() {
-    $constraint_definitions = $this->getConstraints();
-
-    // @todo Move the entity specific logic out of this class in
-    //   https://www.drupal.org/node/2932462.
-    // If the data type is an entity, manually add one to the constraints array.
-    if (strpos($this->getDataType(), 'entity:') === 0) {
-      $entity_type_id = substr($this->getDataType(), 7);
-      $constraint_definitions['EntityType'] = ['type' => $entity_type_id];
+    // If the backwards compatibility layer is present, delegate to that.
+    $this->initializeEntityContextDefinition();
+    if ($this->entityContextDefinition) {
+      return $this->entityContextDefinition->getConstraintObjects();
     }
+
+    $constraint_definitions = $this->getConstraints();
 
     $validation_constraint_manager = $this->getTypedDataManager()->getValidationConstraintManager();
     $constraints = [];
@@ -356,6 +420,34 @@ class ContextDefinition implements ContextDefinitionInterface {
     }
 
     return $constraints;
+  }
+
+  /**
+   * Implements magic __sleep() method.
+   */
+  public function __sleep() {
+    return array_diff($this->traitSleep(), ['entityContextDefinition']);
+  }
+
+  /**
+   * Initializes $this->entityContextDefinition for backwards compatibility.
+   *
+   * This method should be kept private so that it is only accessible to this
+   * class for backwards compatibility reasons. It will be removed in Drupal 9.
+   *
+   * @deprecated
+   */
+  private function initializeEntityContextDefinition() {
+    if (!$this instanceof EntityContextDefinition && strpos($this->getDataType(), 'entity:') === 0 && !$this->entityContextDefinition) {
+      $this->entityContextDefinition = EntityContextDefinition::create()
+        ->setDataType($this->getDataType())
+        ->setLabel($this->getLabel())
+        ->setRequired($this->isRequired())
+        ->setMultiple($this->isMultiple())
+        ->setDescription($this->getDescription())
+        ->setConstraints($this->constraints)
+        ->setDefaultValue($this->getDefaultValue());
+    }
   }
 
 }

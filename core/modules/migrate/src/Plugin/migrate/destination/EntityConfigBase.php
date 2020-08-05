@@ -72,7 +72,7 @@ class EntityConfigBase extends Entity {
   /**
    * The configuration factory.
    *
-   * @var \Drupal\Core\Config\ConfigFactoryInterface;
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $configFactory;
 
@@ -112,8 +112,8 @@ class EntityConfigBase extends Entity {
       $plugin_id,
       $plugin_definition,
       $migration,
-      $container->get('entity.manager')->getStorage($entity_type_id),
-      array_keys($container->get('entity.manager')->getBundleInfo($entity_type_id)),
+      $container->get('entity_type.manager')->getStorage($entity_type_id),
+      array_keys($container->get('entity_type.bundle.info')->getBundleInfo($entity_type_id)),
       $container->get('language_manager'),
       $container->get('config.factory')
     );
@@ -268,7 +268,7 @@ class EntityConfigBase extends Entity {
       // The entity id does not include the langcode.
       $id_values = [];
       foreach ($destination_identifier as $key => $value) {
-        if ($this->isTranslationDestination() && $key == 'langcode') {
+        if ($this->isTranslationDestination() && $key === 'langcode') {
           continue;
         }
         $id_values[] = $value;

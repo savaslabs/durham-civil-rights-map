@@ -1,12 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\ctools\Form\ManageConditions.
- */
-
 namespace Drupal\ctools\Form;
-
 
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Component\Serialization\Json;
@@ -17,6 +11,7 @@ use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Form\FormBuilder;
 
 abstract class ManageConditions extends FormBase {
 
@@ -26,16 +21,27 @@ abstract class ManageConditions extends FormBase {
   protected $manager;
 
   /**
+   * The builder of form.
+   *
+   * @var \Drupal\Core\Form\FormBuilder
+   */
+  protected $formBuilder;
+
+  /**
    * @var string
    */
   protected $machine_name;
 
   public static function create(ContainerInterface $container) {
-    return new static($container->get('plugin.manager.condition'));
+    return new static(
+      $container->get('plugin.manager.condition'),
+      $container->get('form_builder')
+    );
   }
 
-  function __construct(PluginManagerInterface $manager) {
+  function __construct(PluginManagerInterface $manager, FormBuilder $form_builder) {
     $this->manager = $manager;
+    $this->formBuilder = $form_builder;
   }
 
   /**
@@ -64,7 +70,7 @@ abstract class ManageConditions extends FormBase {
       '#theme' => 'table',
       '#header' => array($this->t('Plugin Id'), $this->t('Summary'), $this->t('Operations')),
       '#rows' => $this->renderRows($cached_values),
-      '#empty' => t('No required conditions have been configured.')
+      '#empty' => $this->t('No required conditions have been configured.')
     );
     $form['conditions'] = [
       '#type' => 'select',
@@ -73,7 +79,7 @@ abstract class ManageConditions extends FormBase {
     $form['add'] = [
       '#type' => 'submit',
       '#name' => 'add',
-      '#value' => t('Add Condition'),
+      '#value' => $this->t('Add Condition'),
       '#ajax' => [
         'callback' => [$this, 'add'],
         'event' => 'click',
@@ -96,11 +102,18 @@ abstract class ManageConditions extends FormBase {
 
   public function add(array &$form, FormStateInterface $form_state) {
     $condition = $form_state->getValue('conditions');
-    $content = \Drupal::formBuilder()->getForm($this->getConditionClass(), $condition, $this->getTempstoreId(), $this->machine_name);
+    $content = $this->formBuilder->getForm($this->getConditionClass(), $condition, $this->getTempstoreId(), $this->machine_name);
     $content['#attached']['library'][] = 'core/drupal.dialog.ajax';
     $cached_values = $form_state->getTemporaryValue('wizard');
     list(, $route_parameters) = $this->getOperationsRouteInfo($cached_values, $this->machine_name, $form_state->getValue('conditions'));
-    $content['submit']['#attached']['drupalSettings']['ajax'][$content['submit']['#id']]['url'] = $this->url($this->getAddRoute($cached_values), $route_parameters, ['query' => [FormBuilderInterface::AJAX_FORM_REQUEST => TRUE]]);
+    $route_name = $this->getAddRoute($cached_values);
+    $route_options = [
+      'query' => [
+        FormBuilderInterface::AJAX_FORM_REQUEST => TRUE,
+      ],
+    ];
+    $url = Url::fromRoute($route_name, $route_parameters, $route_options);
+    $content['submit']['#attached']['drupalSettings']['ajax'][$content['submit']['#id']]['url'] = $url->toString();
     $response = new AjaxResponse();
     $response->addCommand(new OpenModalDialogCommand($this->t('Configure Required Context'), $content, array('width' => '700')));
     return $response;
@@ -134,7 +147,7 @@ abstract class ManageConditions extends FormBase {
 
   protected function getOperations($route_name_base, array $route_parameters = array()) {
     $operations['edit'] = array(
-      'title' => t('Edit'),
+      'title' => $this->t('Edit'),
       'url' => new Url($route_name_base . '.edit', $route_parameters),
       'weight' => 10,
       'attributes' => array(
@@ -147,7 +160,7 @@ abstract class ManageConditions extends FormBase {
     );
     $route_parameters['id'] = $route_parameters['condition'];
     $operations['delete'] = array(
-      'title' => t('Delete'),
+      'title' => $this->t('Delete'),
       'url' => new Url($route_name_base . '.delete', $route_parameters),
       'weight' => 100,
       'attributes' => array(
@@ -191,7 +204,7 @@ abstract class ManageConditions extends FormBase {
    * Document the route name and parameters for edit/delete context operations.
    *
    * The route name returned from this method is used as a "base" to which
-   * ".edit" and ".delete" are appeneded in the getOperations() method.
+   * ".edit" and ".delete" are appended in the getOperations() method.
    * Subclassing '\Drupal\ctools\Form\ConditionConfigure' and
    * '\Drupal\ctools\Form\ConditionDelete' should set you up for using this
    * approach quite seamlessly.

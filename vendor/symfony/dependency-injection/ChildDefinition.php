@@ -71,7 +71,7 @@ class ChildDefinition extends Definition
      */
     public function getArgument($index)
     {
-        if (array_key_exists('index_'.$index, $this->arguments)) {
+        if (\array_key_exists('index_'.$index, $this->arguments)) {
             return $this->arguments['index_'.$index];
         }
 
@@ -89,13 +89,13 @@ class ChildDefinition extends Definition
      * @param int|string $index
      * @param mixed      $value
      *
-     * @return self the current instance
+     * @return $this
      *
      * @throws InvalidArgumentException when $index isn't an integer
      */
     public function replaceArgument($index, $value)
     {
-        if (is_int($index)) {
+        if (\is_int($index)) {
             $this->arguments['index_'.$index] = $value;
         } elseif (0 === strpos($index, '$')) {
             $this->arguments[$index] = $value;
@@ -120,14 +120,6 @@ class ChildDefinition extends Definition
     public function setInstanceofConditionals(array $instanceof)
     {
         throw new BadMethodCallException('A ChildDefinition cannot have instanceof conditionals set on it.');
-    }
-
-    /**
-     * @internal
-     */
-    public function setBindings(array $bindings)
-    {
-        throw new BadMethodCallException('A ChildDefinition cannot have bindings set on it.');
     }
 }
 

@@ -1,13 +1,12 @@
 <?php
-/**
- * @file
- * Provides Drupal\views_slideshow\ViewsSlideshowSkinBase.
- */
 
 namespace Drupal\views_slideshow;
 
 use Drupal\Component\Plugin\PluginBase;
 
+/**
+ * Provides basic functionality for Views slideshow skins.
+ */
 abstract class ViewsSlideshowSkinBase extends PluginBase implements ViewsSlideshowSkinInterface {
 
   /**
@@ -30,4 +29,5 @@ abstract class ViewsSlideshowSkinBase extends PluginBase implements ViewsSlidesh
   public function getLibraries() {
     return $this->pluginDefinition['libraries'];
   }
+
 }

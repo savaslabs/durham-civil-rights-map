@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\metatag\Plugin\metatag\Tag\ImageSrc.
- */
 
 namespace Drupal\metatag\Plugin\metatag\Tag;
 
@@ -17,9 +13,10 @@ namespace Drupal\metatag\Plugin\metatag\Tag;
  *   group = "advanced",
  *   weight = 4,
  *   type = "image",
+ *   secure = FALSE,
  *   multiple = FALSE
  * )
  */
-class ImageSrc extends MetaNameBase {
+class ImageSrc extends LinkRelBase {
   // Nothing here yet. Just a placeholder class for a plugin.
 }

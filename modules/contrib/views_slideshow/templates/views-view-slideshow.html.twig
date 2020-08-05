@@ -1,3 +1,19 @@
+{#
+/**
+ * @file
+ * Default theme implementation for a views slideshow.
+ *
+ * Available variables:
+ * - bottom_widget_rendered: Widget under the slideshow with controls/data.
+ * - skin: The skin being applied to the slideshow.
+ * - slideshow: The slideshow.
+ * - top_widget_rendered: Widget above the slideshow with controls/data.
+ *
+ * @see _views_slideshow_preprocess_views_view_slideshow()
+ *
+ * @ingroup vss_templates
+ */
+#}
 {% if slideshow %}
   <div class="skin-{{ skin }}">
     {% if top_widget_rendered %}

@@ -53,6 +53,8 @@ if (file_exists($pantheon_services_file)) {
  * another environment.
  */
 $settings['file_private_path'] = 'sites/default/files/private';
+$settings['file_temp_path'] = $_SERVER['HOME'] .'/tmp';
+
 
 // Check to see if we are serving an installer page.
 $is_installer_url = (strpos($_SERVER['SCRIPT_NAME'], '/core/install.php') === 0);
@@ -71,14 +73,10 @@ $is_installer_url = (strpos($_SERVER['SCRIPT_NAME'], '/core/install.php') === 0)
  *
  */
 if ($is_installer_url) {
-  $config_directories = array(
-    CONFIG_SYNC_DIRECTORY => 'sites/default/files',
-  );
+  $settings['config_sync_directory'] =  'sites/default/files';
 }
 else {
-  $config_directories = array(
-    CONFIG_SYNC_DIRECTORY => 'sites/default/config',
-  );
+  $settings['config_sync_directory'] = 'sites/default/config';
 }
 
 
@@ -150,7 +148,7 @@ if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
  *
  */
 if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
-  $config['system.file']['path']['temporary'] = $_SERVER['HOME'] .'/tmp';
+  $settings["file_temp_path"] = $_SERVER['HOME'] .'/tmp';
 }
 
 /**
@@ -178,6 +176,15 @@ if (isset($_ENV['PANTHEON_ROLLING_TMP']) && isset($_ENV['PANTHEON_DEPLOYMENT_IDE
  */
 if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
   $GLOBALS['conf']['container_service_providers']['PantheonServiceProvider'] = '\Pantheon\Internal\PantheonServiceProvider';
+}
+
+/**
+ * "Trusted host settings" are not necessary on Pantheon; traffic will only
+ * be routed to your site if the host settings match a domain configured for
+ * your site in the dashboard.
+ */
+if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
+  $settings['trusted_host_patterns'][] = '.*';
 }
 
 /**

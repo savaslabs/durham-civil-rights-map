@@ -10,6 +10,12 @@ use Drupal\Tests\BrowserTestBase;
  * @group system
  */
 class AdminMetaTagTest extends BrowserTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   /**
    * Verify that the meta tag HTML is generated correctly.
    */

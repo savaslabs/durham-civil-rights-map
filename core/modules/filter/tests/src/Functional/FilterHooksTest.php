@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\filter\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\user\RoleInterface;
 
@@ -19,6 +18,11 @@ class FilterHooksTest extends BrowserTestBase {
    * @var array
    */
   public static $modules = ['node', 'filter_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests hooks on format management.
@@ -38,7 +42,7 @@ class FilterHooksTest extends BrowserTestBase {
     // Add a text format.
     $name = $this->randomMachineName();
     $edit = [];
-    $edit['format'] = Unicode::strtolower($this->randomMachineName());
+    $edit['format'] = mb_strtolower($this->randomMachineName());
     $edit['name'] = $name;
     $edit['roles[' . RoleInterface::ANONYMOUS_ID . ']'] = 1;
     $this->drupalPostForm('admin/config/content/formats/add', $edit, t('Save configuration'));

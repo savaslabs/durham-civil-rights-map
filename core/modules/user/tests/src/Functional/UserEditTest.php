@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\user\Functional;
 
+use Drupal\Core\Cache\Cache;
 use Drupal\Tests\BrowserTestBase;
 
 /**
@@ -10,6 +11,11 @@ use Drupal\Tests\BrowserTestBase;
  * @group user
  */
 class UserEditTest extends BrowserTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Test user edit page.
@@ -21,7 +27,7 @@ class UserEditTest extends BrowserTestBase {
     $this->drupalLogin($user1);
 
     // Test that error message appears when attempting to use a non-unique user name.
-    $edit['name'] = $user2->getUsername();
+    $edit['name'] = $user2->getAccountName();
     $this->drupalPostForm("user/" . $user1->id() . "/edit", $edit, t('Save'));
     $this->assertRaw(t('The username %name is already taken.', ['%name' => $edit['name']]));
 
@@ -29,8 +35,14 @@ class UserEditTest extends BrowserTestBase {
     // is the raw value and not a formatted one.
     \Drupal::state()->set('user_hooks_test_user_format_name_alter', TRUE);
     \Drupal::service('module_installer')->install(['user_hooks_test']);
+    Cache::invalidateTags(['rendered']);
     $this->drupalGet('user/' . $user1->id() . '/edit');
     $this->assertFieldByName('name', $user1->getAccountName());
+
+    // Ensure the formatted name is displayed when expected.
+    $this->drupalGet('user/' . $user1->id());
+    $this->assertSession()->responseContains($user1->getDisplayName());
+    $this->assertSession()->titleEquals(strip_tags($user1->getDisplayName()) . ' | Drupal');
 
     // Check that filling out a single password field does not validate.
     $edit = [];
@@ -142,6 +154,24 @@ class UserEditTest extends BrowserTestBase {
     $user1->save();
     $this->drupalPostForm("user/" . $user1->id() . "/edit", ['mail' => ''], t('Save'));
     $this->assertRaw(t("The changes have been saved."));
+  }
+
+  /**
+   * Tests well known change password route redirects to user edit form.
+   */
+  public function testUserWellKnownChangePasswordAuth() {
+    $account = $this->drupalCreateUser([]);
+    $this->drupalLogin($account);
+    $this->drupalGet('.well-known/change-password');
+    $this->assertSession()->addressEquals("user/" . $account->id() . "/edit");
+  }
+
+  /**
+   * Tests well known change password route returns 403 to anonymous user.
+   */
+  public function testUserWellKnownChangePasswordAnon() {
+    $this->drupalGet('.well-known/change-password');
+    $this->assertSession()->statusCodeEquals(403);
   }
 
 }

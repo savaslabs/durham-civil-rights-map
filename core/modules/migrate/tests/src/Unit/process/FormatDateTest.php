@@ -23,7 +23,8 @@ class FormatDateTest extends MigrateProcessTestCase {
       'to_format' => 'Y-m-d',
     ];
 
-    $this->setExpectedException(MigrateException::class, 'Format date plugin is missing from_format configuration.');
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage('Format date plugin is missing from_format configuration.');
     $this->plugin = new FormatDate($configuration, 'test_format_date', []);
     $this->plugin->transform('01/05/1955', $this->migrateExecutable, $this->row, 'field_date');
   }
@@ -37,7 +38,8 @@ class FormatDateTest extends MigrateProcessTestCase {
       'to_format' => '',
     ];
 
-    $this->setExpectedException(MigrateException::class, 'Format date plugin is missing to_format configuration.');
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage('Format date plugin is missing to_format configuration.');
     $this->plugin = new FormatDate($configuration, 'test_format_date', []);
     $this->plugin->transform('01/05/1955', $this->migrateExecutable, $this->row, 'field_date');
   }
@@ -51,9 +53,25 @@ class FormatDateTest extends MigrateProcessTestCase {
       'to_format' => 'Y-m-d',
     ];
 
-    $this->setExpectedException(MigrateException::class, 'Format date plugin could not transform "January 5, 1955" using the format "m/d/Y". Error: The date cannot be created from a format.');
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage("Format date plugin could not transform 'January 5, 1955' using the format 'm/d/Y' for destination 'field_date'. Error: The date cannot be created from a format.");
     $this->plugin = new FormatDate($configuration, 'test_format_date', []);
     $this->plugin->transform('January 5, 1955', $this->migrateExecutable, $this->row, 'field_date');
+  }
+
+  /**
+   * Tests that an unexpected date value will throw an exception.
+   */
+  public function testMigrateExceptionUnexpectedValue() {
+    $configuration = [
+      'from_format' => 'm/d/Y',
+      'to_format' => 'Y-m-d',
+    ];
+
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage("Format date plugin could not transform '01/05/55' using the format 'm/d/Y' for destination 'field_date'. Error: The created date does not match the input value.");
+    $this->plugin = new FormatDate($configuration, 'test_format_date', []);
+    $this->plugin->transform('01/05/55', $this->migrateExecutable, $this->row, 'field_date');
   }
 
   /**
@@ -85,7 +103,7 @@ class FormatDateTest extends MigrateProcessTestCase {
           'timezone' => 'America/Managua',
         ],
         'value' => '2004-12-19T10:19:42-0600',
-        'expected' => '2004-12-19T10:19:42-06:00 -06:00'
+        'expected' => '2004-12-19T10:19:42-06:00 -06:00',
       ],
     ];
   }
@@ -174,6 +192,42 @@ class FormatDateTest extends MigrateProcessTestCase {
         // Unit tests use Australia/Sydney timezone, so date value will be
         // converted from Australia/Sydney to America/Managua timezone.
         'expected' => '2004-12-18 17:19:42 America/Managua',
+      ],
+      'integer_0' => [
+        'configuration' => [
+          'from_format' => 'U',
+          'to_format' => 'Y-m-d',
+        ],
+        'value' => 0,
+        'expected' => '1970-01-01',
+      ],
+      'string_0' => [
+        'configuration' => [
+          'from_format' => 'U',
+          'to_format' => 'Y-m-d',
+        ],
+        'value' => '0',
+        'expected' => '1970-01-01',
+      ],
+      'zeros' => [
+        'configuration' => [
+          'from_format' => 'Y-m-d H:i:s',
+          'to_format' => 'Y-m-d H:i:s e',
+          'settings' => ['validate_format' => FALSE],
+        ],
+        'value' => '0000-00-00 00:00:00',
+        'expected' => '-0001-11-30 00:00:00 Australia/Sydney',
+      ],
+      'zeros_same_timezone' => [
+        'configuration' => [
+          'from_format' => 'Y-m-d H:i:s',
+          'to_format' => 'Y-m-d H:i:s',
+          'settings' => ['validate_format' => FALSE],
+          'from_timezone' => 'UTC',
+          'to_timezone' => 'UTC',
+        ],
+        'value' => '0000-00-00 00:00:00',
+        'expected' => '-0001-11-30 00:00:00',
       ],
     ];
   }

@@ -1,12 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\token\Kernel\FileTest.
- */
 namespace Drupal\Tests\token\Kernel;
-use Drupal\taxonomy\Entity\Vocabulary;
 
+use Drupal\file\Entity\File;
 /**
  * Tests file tokens.
  *
@@ -19,7 +15,7 @@ class FileTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = array('file');
+  public static $modules = ['file'];
 
   /**
    * {@inheritdoc}
@@ -31,30 +27,31 @@ class FileTest extends KernelTestBase {
 
   function testFileTokens() {
     // Create a test file object.
-    $file = entity_create('file', array(
+    $file = File::create([
       'fid' => 1,
       'filename' => 'test.png',
       'filesize' => 100,
       'uri' => 'public://images/test.png',
       'filemime' => 'image/png',
-    ));
+    ]);
 
-    $tokens = array(
+    $tokens = [
       'basename' => 'test.png',
       'extension' => 'png',
       'size-raw' => 100,
-    );
-    $this->assertTokens('file', array('file' => $file), $tokens);
+    ];
+    $this->assertTokens('file', ['file' => $file], $tokens);
 
     // Test a file with no extension and a fake name.
     $file->filename = 'Test PNG image';
     $file->uri = 'public://images/test';
 
-    $tokens = array(
+    $tokens = [
       'basename' => 'test',
       'extension' => '',
       'size-raw' => 100,
-    );
-    $this->assertTokens('file', array('file' => $file), $tokens);
+    ];
+    $this->assertTokens('file', ['file' => $file], $tokens);
   }
+
 }

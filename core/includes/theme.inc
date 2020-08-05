@@ -8,11 +8,11 @@
  * customized by user themes.
  */
 
+use Drupal\Core\Url;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Render\MarkupInterface;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Config\StorageException;
@@ -24,6 +24,7 @@ use Drupal\Core\Theme\ThemeSettings;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Render\Markup;
+use Drupal\Core\Utility\TableSort;
 
 /**
  * @defgroup content_flags Content markers
@@ -99,7 +100,7 @@ function theme_get_registry($complete = TRUE) {
 /**
  * Returns an array of default theme features.
  *
- * @see \Drupal\Core\Extension\ThemeHandler::$defaultFeatures
+ * @see \Drupal\Core\Extension\ThemeExtensionList::$defaults
  */
 function _system_default_theme_features() {
   return [
@@ -215,7 +216,10 @@ function drupal_find_theme_templates($cache, $extension, $path) {
   // Escape the periods in the extension.
   $regex = '/' . str_replace('.', '\.', $extension) . '$/';
   // Get a listing of all template files in the path to search.
-  $files = file_scan_directory($path, $regex, ['key' => 'filename']);
+  $files = [];
+  if (is_dir($path)) {
+    $files = \Drupal::service('file_system')->scanDirectory($path, $regex, ['key' => 'filename']);
+  }
 
   // Find templates that implement registered theme hooks and include that in
   // what is returned so that the registry knows that the theme has this
@@ -344,7 +348,8 @@ function theme_get_setting($setting_name, $theme = NULL) {
 
       // Generate the path to the logo image.
       if ($cache[$theme]->get('logo.use_default')) {
-        $cache[$theme]->set('logo.url', file_url_transform_relative(file_create_url($theme_object->getPath() . '/logo.svg')));
+        $logo = \Drupal::service('theme.initialization')->getActiveThemeByName($theme)->getLogo();
+        $cache[$theme]->set('logo.url', file_url_transform_relative(file_create_url($logo)));
       }
       elseif ($logo_path = $cache[$theme]->get('logo.path')) {
         $cache[$theme]->set('logo.url', file_url_transform_relative(file_create_url($logo_path)));
@@ -485,7 +490,7 @@ function theme_settings_convert_to_config(array $theme_settings, Config $config)
       $config->set('favicon.mimetype', $value);
     }
     elseif (substr($key, 0, 7) == 'toggle_') {
-      $config->set('features.' . Unicode::substr($key, 7), $value);
+      $config->set('features.' . mb_substr($key, 7), $value);
     }
     elseif (!in_array($key, ['theme', 'logo_upload'])) {
       $config->set($key, $value);
@@ -506,17 +511,19 @@ function theme_settings_convert_to_config(array $theme_settings, Config $config)
  *   - text:
  */
 function template_preprocess_time(&$variables) {
+  /** @var \Drupal\Core\Datetime\DateFormatterInterface $date_formatter */
+  $date_formatter = \Drupal::service('date.formatter');
   // Format the 'datetime' attribute based on the timestamp.
   // @see http://www.w3.org/TR/html5-author/the-time-element.html#attr-time-datetime
   if (!isset($variables['attributes']['datetime']) && isset($variables['timestamp'])) {
-    $variables['attributes']['datetime'] = format_date($variables['timestamp'], 'html_datetime', '', 'UTC');
+    $variables['attributes']['datetime'] = $date_formatter->format($variables['timestamp'], 'html_datetime', '', 'UTC');
   }
 
   // If no text was provided, try to auto-generate it.
   if (!isset($variables['text'])) {
     // Format and use a human-readable version of the timestamp, if any.
     if (isset($variables['timestamp'])) {
-      $variables['text'] = format_date($variables['timestamp']);
+      $variables['text'] = $date_formatter->format($variables['timestamp']);
     }
     // Otherwise, use the literal datetime attribute.
     elseif (isset($variables['attributes']['datetime'])) {
@@ -570,6 +577,11 @@ function template_preprocess_datetime_wrapper(&$variables) {
 
   if (!empty($element['#title'])) {
     $variables['title'] = $element['#title'];
+    // If the element title is a string, wrap it a render array so that markup
+    // will not be escaped (but XSS-filtered).
+    if (is_string($variables['title']) && $variables['title'] !== '') {
+      $variables['title'] = ['#markup' => $variables['title']];
+    }
   }
 
   // Suppress error messages.
@@ -624,16 +636,12 @@ function template_preprocess_datetime_wrapper(&$variables) {
  *     of links.
  *   - set_active_class: (optional) Whether each link should compare the
  *     route_name + route_parameters or href (path), language and query options
- *     to the current URL, to determine whether the link is "active". If so, an
- *     "active" class will be applied to the list item containing the link, as
- *     well as the link itself. It is important to use this sparingly since it
- *     is usually unnecessary and requires extra processing.
- *     For anonymous users, the "active" class will be calculated on the server,
- *     because most sites serve each anonymous user the same cached page anyway.
- *     For authenticated users, the "active" class will be calculated on the
- *     client (through JavaScript), only data- attributes are added to list
- *     items and contained links, to prevent breaking the render cache. The
- *     JavaScript is added in system_page_attachments().
+ *     to the current URL, to determine whether the link is "active". If so,
+ *     attributes will be added to the HTML elements for both the link and the
+ *     list item that contains it, which will result in an "is-active" class
+ *     being added to both. The class is added via JavaScript for authenticated
+ *     users (in the active-link library), and via PHP for anonymous users (in
+ *     the \Drupal\Core\EventSubscriber\ActiveLinkResponseFilter class).
  *   - heading: (optional) A heading to precede the links. May be an
  *     associative array or a string. If it's an array, it can have the
  *     following elements:
@@ -693,7 +701,16 @@ function template_preprocess_links(&$variables) {
       ];
 
       // Handle links and ensure that the active class is added on the LIs, but
-      // only if the 'set_active_class' option is not empty.
+      // only if the 'set_active_class' option is not empty. Links templates
+      // duplicate the "is-active" class handling of l() and
+      // LinkGenerator::generate() because they need to be able to set the
+      // "is-active" class not on the links themselves (<a> tags), but on the
+      // list items (<li> tags) that contain the links. This is necessary for
+      // CSS to be able to style list items differently when the link is active,
+      // since CSS does not yet allow one to style list items only if they
+      // contain a certain element with a certain class. That is, we cannot yet
+      // convert this jQuery selector to a CSS selector:
+      // jQuery('li:has("a.is-active")')
       if (isset($link['url'])) {
         if (!empty($variables['set_active_class'])) {
 
@@ -706,6 +723,8 @@ function template_preprocess_links(&$variables) {
 
           // Add a "data-drupal-link-query" attribute to let the
           // drupal.active-link library know the query in a standardized manner.
+          // Only add the data- attribute. The "is-active" class will be
+          // calculated using JavaScript, to prevent breaking the render cache.
           if (!empty($link['query'])) {
             $query = $link['query'];
             ksort($query);
@@ -716,7 +735,10 @@ function template_preprocess_links(&$variables) {
           $url = $link['url'];
           if ($url->isRouted()) {
             // Add a "data-drupal-link-system-path" attribute to let the
-            // drupal.active-link library know the path in a standardized manner.
+            // drupal.active-link library know the path in a standardized
+            // manner. Only add the data- attribute. The "is-active" class will
+            // be calculated using JavaScript, to prevent breaking the render
+            // cache.
             $system_path = $url->getInternalPath();
             // @todo System path is deprecated - use the route name and parameters.
             // Special case for the front page.
@@ -822,6 +844,8 @@ function template_preprocess_image(&$variables) {
  *     - sort: A default sort order for this column ("asc" or "desc"). Only
  *       one column should be given a default sort order because table sorting
  *       only applies to one column at a time.
+ *     - initial_click_sort: Set the initial sort of the column when clicked.
+ *       Defaults to "asc".
  *     - class: An array of values for the 'class' attribute. In particular,
  *       the least important columns that can be hidden on narrow and medium
  *       width screens should have a 'priority-low' class, referenced with the
@@ -929,7 +953,7 @@ function template_preprocess_table(&$variables) {
   $ts = [];
   $header_columns = 0;
   if (!empty($variables['header'])) {
-    $ts = tablesort_init($variables['header']);
+    $ts = TableSort::getContextFromRequest($variables['header'], \Drupal::request());
 
     // Use a separate index with responsive classes as headers
     // may be associative.
@@ -973,9 +997,10 @@ function template_preprocess_table(&$variables) {
           }
         }
 
-        tablesort_header($cell_content, $cell, $variables['header'], $ts);
+        TableSort::header($cell_content, $cell, $variables['header'], $ts);
 
-        // tablesort_header() removes the 'sort' and 'field' keys.
+        // TableSort::header() removes the 'sort', 'initial_click_sort' and
+        // 'field' keys.
         $cell_attributes = new Attribute($cell);
       }
       $variables['header'][$col_key] = [];
@@ -1356,9 +1381,9 @@ function template_preprocess_page(&$variables) {
     }
   }
 
-  $variables['base_path']         = base_path();
-  $variables['front_page']        = \Drupal::url('<front>');
-  $variables['language']          = $language_interface;
+  $variables['base_path'] = base_path();
+  $variables['front_page'] = Url::fromRoute('<front>')->toString();
+  $variables['language'] = $language_interface;
 
   // An exception might be thrown.
   try {
@@ -1591,6 +1616,7 @@ function template_preprocess_field(&$variables, $hook) {
 function template_preprocess_field_multiple_value_form(&$variables) {
   $element = $variables['element'];
   $variables['multiple'] = $element['#cardinality_multiple'];
+  $variables['attributes'] = $element['#attributes'];
 
   if ($variables['multiple']) {
     $table_id = Html::getUniqueId($element['#field_name'] . '_values');

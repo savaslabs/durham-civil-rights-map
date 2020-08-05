@@ -7,7 +7,9 @@ use Drupal\Core\Config\ConfigImporter;
 use Drupal\Core\Config\ConfigImporterEvent;
 use Drupal\Core\Config\ConfigImportValidateEventSubscriberBase;
 use Drupal\Core\Config\ConfigNameException;
+use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Extension\ThemeHandlerInterface;
+use Drupal\Core\Installer\InstallerKernel;
 
 /**
  * Config import subscriber for config import events.
@@ -22,11 +24,11 @@ class ConfigImportSubscriber extends ConfigImportValidateEventSubscriberBase {
   protected $themeData;
 
   /**
-   * Module data.
+   * Module extension list.
    *
-   * @var \Drupal\Core\Extension\Extension[]
+   * @var \Drupal\Core\Extension\ModuleExtensionList
    */
-  protected $moduleData;
+  protected $moduleExtensionList;
 
   /**
    * The theme handler.
@@ -40,9 +42,12 @@ class ConfigImportSubscriber extends ConfigImportValidateEventSubscriberBase {
    *
    * @param \Drupal\Core\Extension\ThemeHandlerInterface $theme_handler
    *   The theme handler.
+   * @param \Drupal\Core\Extension\ModuleExtensionList $extension_list_module
+   *   The module extension list.
    */
-  public function __construct(ThemeHandlerInterface $theme_handler) {
+  public function __construct(ThemeHandlerInterface $theme_handler, ModuleExtensionList $extension_list_module) {
     $this->themeHandler = $theme_handler;
+    $this->moduleExtensionList = $extension_list_module;
   }
 
   /**
@@ -84,8 +89,31 @@ class ConfigImportSubscriber extends ConfigImportValidateEventSubscriberBase {
    */
   protected function validateModules(ConfigImporter $config_importer) {
     $core_extension = $config_importer->getStorageComparer()->getSourceStorage()->read('core.extension');
+
+    // Get the install profile from the site's configuration.
+    $current_core_extension = $config_importer->getStorageComparer()->getTargetStorage()->read('core.extension');
+    $install_profile = isset($current_core_extension['profile']) ? $current_core_extension['profile'] : NULL;
+
+    // Ensure the profile is not changing.
+    if ($install_profile !== $core_extension['profile']) {
+      if (InstallerKernel::installationAttempted()) {
+        $config_importer->logError($this->t('The selected installation profile %install_profile does not match the profile stored in configuration %config_profile.', [
+          '%install_profile' => $install_profile,
+          '%config_profile' => $core_extension['profile'],
+        ]));
+        // If this error has occurred the other checks are irrelevant.
+        return;
+      }
+      else {
+        $config_importer->logError($this->t('Cannot change the install profile from %profile to %new_profile once Drupal is installed.', [
+          '%profile' => $install_profile,
+          '%new_profile' => $core_extension['profile'],
+        ]));
+      }
+    }
+
     // Get a list of modules with dependency weights as values.
-    $module_data = $this->getModuleData();
+    $module_data = $this->moduleExtensionList->getList();
     $nonexistent_modules = array_keys(array_diff_key($core_extension['module'], $module_data));
     foreach ($nonexistent_modules as $module) {
       $config_importer->logError($this->t('Unable to install the %module module since it does not exist.', ['%module' => $module]));
@@ -111,10 +139,6 @@ class ConfigImportSubscriber extends ConfigImportValidateEventSubscriberBase {
       }
     }
 
-    // Get the install profile from the site's configuration.
-    $current_core_extension = $config_importer->getStorageComparer()->getTargetStorage()->read('core.extension');
-    $install_profile = isset($current_core_extension['profile']) ? $current_core_extension['profile'] : NULL;
-
     // Ensure that all modules being uninstalled are not required by modules
     // that will be installed after the import.
     $uninstalls = $config_importer->getExtensionChangelist('module', 'uninstall');
@@ -132,11 +156,6 @@ class ConfigImportSubscriber extends ConfigImportValidateEventSubscriberBase {
     if (in_array($install_profile, $uninstalls, TRUE)) {
       $profile_name = $module_data[$install_profile]->info['name'];
       $config_importer->logError($this->t('Unable to uninstall the %profile profile since it is the install profile.', ['%profile' => $profile_name]));
-    }
-
-    // Ensure the profile is not changing.
-    if ($install_profile !== $core_extension['profile']) {
-      $config_importer->logError($this->t('Cannot change the install profile from %profile to %new_profile once Drupal is installed.', ['%profile' => $install_profile, '%new_profile' => $core_extension['profile']]));
     }
   }
 
@@ -200,7 +219,7 @@ class ConfigImportSubscriber extends ConfigImportValidateEventSubscriberBase {
     ];
 
     $theme_data = $this->getThemeData();
-    $module_data = $this->getModuleData();
+    $module_data = $this->moduleExtensionList->getList();
 
     // Validate the dependencies of all the configuration. We have to validate
     // the entire tree because existing configuration might depend on
@@ -214,19 +233,19 @@ class ConfigImportSubscriber extends ConfigImportValidateEventSubscriberBase {
         if (!isset($core_extension['module'][$owner]) && isset($module_data[$owner])) {
           $message = $this->t('Configuration %name depends on the %owner module that will not be installed after import.', [
             '%name' => $name,
-            '%owner' => $module_data[$owner]->info['name']
+            '%owner' => $module_data[$owner]->info['name'],
           ]);
         }
         elseif (!isset($core_extension['theme'][$owner]) && isset($theme_data[$owner])) {
           $message = $this->t('Configuration %name depends on the %owner theme that will not be installed after import.', [
             '%name' => $name,
-            '%owner' => $theme_data[$owner]->info['name']
+            '%owner' => $theme_data[$owner]->info['name'],
           ]);
         }
         elseif (!isset($core_extension['module'][$owner]) && !isset($core_extension['theme'][$owner])) {
           $message = $this->t('Configuration %name depends on the %owner extension that will not be installed after import.', [
             '%name' => $name,
-            '%owner' => $owner
+            '%owner' => $owner,
           ]);
         }
 
@@ -294,18 +313,6 @@ class ConfigImportSubscriber extends ConfigImportValidateEventSubscriberBase {
       $this->themeData = $this->themeHandler->rebuildThemeData();
     }
     return $this->themeData;
-  }
-
-  /**
-   * Gets module data.
-   *
-   * @return \Drupal\Core\Extension\Extension[]
-   */
-  protected function getModuleData() {
-    if (!isset($this->moduleData)) {
-      $this->moduleData = system_rebuild_module_data();
-    }
-    return $this->moduleData;
   }
 
   /**

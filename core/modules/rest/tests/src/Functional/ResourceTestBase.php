@@ -144,12 +144,12 @@ abstract class ResourceTestBase extends BrowserTestBase {
    * @param string[] $authentication
    *   The allowed authentication providers for this resource.
    */
-  protected function provisionResource($formats = [], $authentication = []) {
+  protected function provisionResource($formats = [], $authentication = [], array $methods = ['GET', 'POST', 'PATCH', 'DELETE']) {
     $this->resourceConfigStorage->create([
       'id' => static::$resourceConfigId,
       'granularity' => RestResourceConfigInterface::RESOURCE_GRANULARITY,
       'configuration' => [
-        'methods' => ['GET', 'POST', 'PATCH', 'DELETE'],
+        'methods' => $methods,
         'formats' => $formats,
         'authentication' => $authentication,
       ],
@@ -348,7 +348,7 @@ abstract class ResourceTestBase extends BrowserTestBase {
     $request_options[RequestOptions::HTTP_ERRORS] = FALSE;
     $request_options[RequestOptions::ALLOW_REDIRECTS] = FALSE;
     $request_options = $this->decorateWithXdebugCookie($request_options);
-    $client = $this->getSession()->getDriver()->getClient()->getClient();
+    $client = $this->getHttpClient();
     return $client->request($method, $url->setAbsolute(TRUE)->toString(), $request_options);
   }
 
@@ -479,6 +479,27 @@ abstract class ResourceTestBase extends BrowserTestBase {
       }
     }
     return $request_options;
+  }
+
+  /**
+   * Recursively sorts an array by key.
+   *
+   * @param array $array
+   *   An array to sort.
+   *
+   * @return array
+   *   The sorted array.
+   */
+  protected static function recursiveKSort(array &$array) {
+    // First, sort the main array.
+    ksort($array);
+
+    // Then check for child arrays.
+    foreach ($array as $key => &$value) {
+      if (is_array($value)) {
+        static::recursiveKSort($value);
+      }
+    }
   }
 
 }

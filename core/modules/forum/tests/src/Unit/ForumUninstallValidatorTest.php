@@ -2,7 +2,8 @@
 
 namespace Drupal\Tests\forum\Unit;
 
-use Drupal\simpletest\AssertHelperTrait;
+use Drupal\Core\Url;
+use Drupal\Tests\AssertHelperTrait;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -14,7 +15,7 @@ class ForumUninstallValidatorTest extends UnitTestCase {
   use AssertHelperTrait;
 
   /**
-   * @var \Drupal\forum\ForumUninstallValidator|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\forum\ForumUninstallValidator|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $forumUninstallValidator;
 
@@ -55,7 +56,7 @@ class ForumUninstallValidatorTest extends UnitTestCase {
       ->method('hasForumNodes')
       ->willReturn(FALSE);
 
-    $vocabulary = $this->getMock('Drupal\taxonomy\VocabularyInterface');
+    $vocabulary = $this->createMock('Drupal\taxonomy\VocabularyInterface');
     $this->forumUninstallValidator->expects($this->once())
       ->method('getForumVocabulary')
       ->willReturn($vocabulary);
@@ -78,7 +79,7 @@ class ForumUninstallValidatorTest extends UnitTestCase {
       ->method('hasForumNodes')
       ->willReturn(TRUE);
 
-    $vocabulary = $this->getMock('Drupal\taxonomy\VocabularyInterface');
+    $vocabulary = $this->createMock('Drupal\taxonomy\VocabularyInterface');
     $this->forumUninstallValidator->expects($this->once())
       ->method('getForumVocabulary')
       ->willReturn($vocabulary);
@@ -103,13 +104,16 @@ class ForumUninstallValidatorTest extends UnitTestCase {
       ->method('hasForumNodes')
       ->willReturn(TRUE);
 
-    $vocabulary = $this->getMock('Drupal\taxonomy\VocabularyInterface');
+    $url = $this->prophesize(Url::class);
+    $url->toString()->willReturn('/path/to/vocabulary/overview');
+
+    $vocabulary = $this->createMock('Drupal\taxonomy\VocabularyInterface');
     $vocabulary->expects($this->once())
       ->method('label')
       ->willReturn('Vocabulary label');
     $vocabulary->expects($this->once())
-      ->method('url')
-      ->willReturn('/path/to/vocabulary/overview');
+      ->method('toUrl')
+      ->willReturn($url->reveal());
     $vocabulary->expects($this->once())
       ->method('access')
       ->willReturn(TRUE);
@@ -138,12 +142,12 @@ class ForumUninstallValidatorTest extends UnitTestCase {
       ->method('hasForumNodes')
       ->willReturn(TRUE);
 
-    $vocabulary = $this->getMock('Drupal\taxonomy\VocabularyInterface');
+    $vocabulary = $this->createMock('Drupal\taxonomy\VocabularyInterface');
     $vocabulary->expects($this->once())
       ->method('label')
       ->willReturn('Vocabulary label');
     $vocabulary->expects($this->never())
-      ->method('url');
+      ->method('toUrl');
     $vocabulary->expects($this->once())
       ->method('access')
       ->willReturn(FALSE);
@@ -172,10 +176,13 @@ class ForumUninstallValidatorTest extends UnitTestCase {
       ->method('hasForumNodes')
       ->willReturn(FALSE);
 
-    $vocabulary = $this->getMock('Drupal\taxonomy\VocabularyInterface');
+    $url = $this->prophesize(Url::class);
+    $url->toString()->willReturn('/path/to/vocabulary/overview');
+
+    $vocabulary = $this->createMock('Drupal\taxonomy\VocabularyInterface');
     $vocabulary->expects($this->once())
-      ->method('url')
-      ->willReturn('/path/to/vocabulary/overview');
+      ->method('toUrl')
+      ->willReturn($url->reveal());
     $vocabulary->expects($this->once())
       ->method('label')
       ->willReturn('Vocabulary label');
@@ -206,12 +213,12 @@ class ForumUninstallValidatorTest extends UnitTestCase {
       ->method('hasForumNodes')
       ->willReturn(FALSE);
 
-    $vocabulary = $this->getMock('Drupal\taxonomy\VocabularyInterface');
+    $vocabulary = $this->createMock('Drupal\taxonomy\VocabularyInterface');
     $vocabulary->expects($this->once())
       ->method('label')
       ->willReturn('Vocabulary label');
     $vocabulary->expects($this->never())
-      ->method('url');
+      ->method('toUrl');
     $vocabulary->expects($this->once())
       ->method('access')
       ->willReturn(FALSE);

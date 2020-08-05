@@ -1,17 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\ctools\Controller\WizardFormController.
- */
-
 namespace Drupal\ctools\Controller;
 
 use Drupal\Core\Controller\ControllerResolverInterface;
 use Drupal\Core\Controller\FormController;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\ctools\Wizard\FormWizardInterface;
 use Drupal\ctools\Wizard\WizardFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -30,7 +24,7 @@ class WizardFormController extends FormController {
   /**
    * Tempstore Factory for keeping track of values in each step of the wizard.
    *
-   * @var \Drupal\user\SharedTempStoreFactory
+   * @var \Drupal\Core\TempStore\SharedTempStoreFactory
    */
   protected $tempstore;
 

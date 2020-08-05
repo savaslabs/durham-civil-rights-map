@@ -86,7 +86,7 @@ class ResolvedLibraryDefinitionsFilesMatchTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system'];
+  public static $modules = ['system', 'user', 'path_alias'];
 
   /**
    * {@inheritdoc}
@@ -99,7 +99,7 @@ class ResolvedLibraryDefinitionsFilesMatchTest extends KernelTestBase {
     $this->container->get('theme_installer')->install($this->allThemes);
 
     // Enable all core modules.
-    $all_modules = system_rebuild_module_data();
+    $all_modules = $this->container->get('extension.list.module')->getList();
     $all_modules = array_filter($all_modules, function ($module) {
       // Filter contrib, hidden, already enabled modules and modules in the
       // Testing package.
@@ -108,12 +108,23 @@ class ResolvedLibraryDefinitionsFilesMatchTest extends KernelTestBase {
       }
       return TRUE;
     });
+
+    // Install the 'user' entity schema because the workspaces module's install
+    // hook creates a workspace with default uid of 1. Then the layout_builder
+    // module's implementation of hook_entity_presave will cause
+    // \Drupal\Core\TypedData\Validation\RecursiveValidator::validate() to run
+    // on the workspace which will fail because the user table is not present.
+    // @todo Remove this in https://www.drupal.org/node/3039217.
+    $this->installEntitySchema('user');
+
     // Remove demo_umami_content module as its install hook creates content
     // that relies on the presence of entity tables and various other elements
     // not present in a kernel test.
     unset($all_modules['demo_umami_content']);
     $this->allModules = array_keys($all_modules);
     $this->allModules[] = 'system';
+    $this->allModules[] = 'user';
+    $this->allModules[] = 'path_alias';
     sort($this->allModules);
     $this->container->get('module_installer')->install($this->allModules);
 
@@ -149,7 +160,6 @@ class ResolvedLibraryDefinitionsFilesMatchTest extends KernelTestBase {
    *   so on.
    */
   protected function verifyLibraryFilesExist($library_definitions) {
-    $root = \Drupal::root();
     foreach ($library_definitions as $extension => $libraries) {
       foreach ($libraries as $library_name => $library) {
         if (in_array("$extension/$library_name", $this->librariesToSkip)) {
@@ -160,7 +170,7 @@ class ResolvedLibraryDefinitionsFilesMatchTest extends KernelTestBase {
         foreach (['css', 'js'] as $asset_type) {
           foreach ($library[$asset_type] as $asset) {
             $file = $asset['data'];
-            $path = $root . '/' . $file;
+            $path = $this->root . '/' . $file;
             // Only check and assert each file path once.
             if (!isset($this->pathsChecked[$path])) {
               $this->assertTrue(is_file($path), "$file file referenced from the $extension/$library_name library exists.");
@@ -192,10 +202,9 @@ class ResolvedLibraryDefinitionsFilesMatchTest extends KernelTestBase {
 
     $libraries['core'] = $this->libraryDiscovery->getLibrariesByExtension('core');
 
-    $root = \Drupal::root();
     foreach ($extensions as $extension_name => $extension) {
       $library_file = $extension->getPath() . '/' . $extension_name . '.libraries.yml';
-      if (is_file($root . '/' . $library_file)) {
+      if (is_file($this->root . '/' . $library_file)) {
         $libraries[$extension_name] = $this->libraryDiscovery->getLibrariesByExtension($extension_name);
       }
     }

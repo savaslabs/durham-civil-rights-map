@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\node\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\Tests\BrowserTestBase;
 
@@ -28,6 +27,11 @@ class NodeTypeTranslationTest extends BrowserTestBase {
     'field_ui',
     'node',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The default language code to use in this test.
@@ -83,6 +87,11 @@ class NodeTypeTranslationTest extends BrowserTestBase {
   protected function installParameters() {
     $parameters = parent::installParameters();
     $parameters['parameters']['langcode'] = $this->defaultLangcode;
+    // Create an empty po file so we don't attempt to download one from
+    // localize.drupal.org. It does not need to match the version exactly as the
+    // multi-lingual system will fallback.
+    \Drupal::service('file_system')->mkdir($this->publicFilesDirectory . '/translations', NULL, TRUE);
+    file_put_contents($this->publicFilesDirectory . "/translations/drupal-8.0.0.{$this->defaultLangcode}.po", '');
     return $parameters;
   }
 
@@ -90,7 +99,7 @@ class NodeTypeTranslationTest extends BrowserTestBase {
    * Tests the node type translation.
    */
   public function testNodeTypeTranslation() {
-    $type = Unicode::strtolower($this->randomMachineName(16));
+    $type = mb_strtolower($this->randomMachineName(16));
     $name = $this->randomString();
     $this->drupalLogin($this->adminUser);
     $this->drupalCreateContentType(['type' => $type, 'name' => $name]);
@@ -124,7 +133,7 @@ class NodeTypeTranslationTest extends BrowserTestBase {
    * Tests the node type title label translation.
    */
   public function testNodeTypeTitleLabelTranslation() {
-    $type = Unicode::strtolower($this->randomMachineName(16));
+    $type = mb_strtolower($this->randomMachineName(16));
     $name = $this->randomString();
     $this->drupalLogin($this->adminUser);
     $this->drupalCreateContentType(['type' => $type, 'name' => $name]);
@@ -154,7 +163,7 @@ class NodeTypeTranslationTest extends BrowserTestBase {
     $this->drupalPostForm(NULL, [], 'Save field settings');
     $this->drupalPostForm(NULL, [], 'Save settings');
 
-    $type = Unicode::strtolower($this->randomMachineName(16));
+    $type = mb_strtolower($this->randomMachineName(16));
     $name = $this->randomString();
     $this->drupalCreateContentType(['type' => $type, 'name' => $name]);
 

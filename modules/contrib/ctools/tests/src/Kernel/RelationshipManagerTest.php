@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\Tests\ctools\Kernel\RelationshipManagerTest.
- */
 
 namespace Drupal\Tests\ctools\Kernel;
 
@@ -10,7 +6,7 @@ use Drupal\Core\Plugin\Context\Context;
 use Drupal\Core\Plugin\Context\ContextDefinition;
 
 /**
- * @coversDefaultClass \Drupal\ctools\Plugin\RelationshipManagerInterface
+ * @coversDefaultClass \Drupal\ctools\Plugin\RelationshipManager
  * @group CTools
  */
 class RelationshipManagerTest extends RelationshipsTestBase {

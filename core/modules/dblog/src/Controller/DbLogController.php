@@ -5,6 +5,7 @@ namespace Drupal\dblog\Controller;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Component\Utility\Xss;
+use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Datetime\DateFormatterInterface;
@@ -14,6 +15,7 @@ use Drupal\Core\Logger\RfcLogLevel;
 use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Link;
 
 /**
  * Returns responses for dblog routes.
@@ -84,7 +86,7 @@ class DbLogController extends ControllerBase {
     $this->moduleHandler = $module_handler;
     $this->dateFormatter = $date_formatter;
     $this->formBuilder = $form_builder;
-    $this->userStorage = $this->entityManager()->getStorage('user');
+    $this->userStorage = $this->entityTypeManager()->getStorage('user');
   }
 
   /**
@@ -113,7 +115,8 @@ class DbLogController extends ControllerBase {
    * Full-length messages can be viewed on the message details page.
    *
    * @return array
-   *   A render array as expected by drupal_render().
+   *   A render array as expected by
+   *   \Drupal\Core\Render\RendererInterface::render().
    *
    * @see Drupal\dblog\Form\DblogClearLogConfirmForm
    * @see Drupal\dblog\Controller\DbLogController::eventDetails()
@@ -185,14 +188,14 @@ class DbLogController extends ControllerBase {
         $log_text = Unicode::truncate($title, 56, TRUE, TRUE);
         // The link generator will escape any unsafe HTML entities in the final
         // text.
-        $message = $this->l($log_text, new Url('dblog.event', ['event_id' => $dblog->wid], [
+        $message = Link::fromTextAndUrl($log_text, new Url('dblog.event', ['event_id' => $dblog->wid], [
           'attributes' => [
             // Provide a title for the link for useful hover hints. The
             // Attribute object will escape any unsafe HTML entities in the
             // final text.
             'title' => $title,
           ],
-        ]));
+        ]))->toString();
       }
       $username = [
         '#theme' => 'username',
@@ -237,7 +240,7 @@ class DbLogController extends ControllerBase {
    *
    * @return array
    *   If the ID is located in the Database Logging table, a build array in the
-   *   format expected by drupal_render();
+   *   format expected by \Drupal\Core\Render\RendererInterface::render().
    */
   public function eventDetails($event_id) {
     $build = [];
@@ -263,11 +266,11 @@ class DbLogController extends ControllerBase {
         ],
         [
           ['data' => $this->t('Location'), 'header' => TRUE],
-          $this->l($dblog->location, $dblog->location ? Url::fromUri($dblog->location) : Url::fromRoute('<none>')),
+          $this->createLink($dblog->location),
         ],
         [
           ['data' => $this->t('Referrer'), 'header' => TRUE],
-          $this->l($dblog->referer, $dblog->referer ? Url::fromUri($dblog->referer) : Url::fromRoute('<none>')),
+          $this->createLink($dblog->referer),
         ],
         [
           ['data' => $this->t('Message'), 'header' => TRUE],
@@ -369,6 +372,23 @@ class DbLogController extends ControllerBase {
   }
 
   /**
+   * Creates a Link object if the provided URI is valid.
+   *
+   * @param string|null $uri
+   *   The uri string to convert into link if valid.
+   *
+   * @return \Drupal\Core\Link|string|null
+   *   Return a Link object if the uri can be converted as a link. In case of
+   *   empty uri or invalid, fallback to the provided $uri.
+   */
+  protected function createLink($uri) {
+    if (UrlHelper::isValid($uri, TRUE)) {
+      return new Link($uri, Url::fromUri($uri));
+    }
+    return $uri;
+  }
+
+  /**
    * Shows the most frequent log messages of a given event type.
    *
    * Messages are not truncated on this page because events detailed herein do
@@ -378,7 +398,8 @@ class DbLogController extends ControllerBase {
    *   Type of database log events to display (e.g., 'search').
    *
    * @return array
-   *   A build array in the format expected by drupal_render().
+   *   A build array in the format expected by
+   *   \Drupal\Core\Render\RendererInterface::render().
    */
   public function topLogMessages($type) {
     $header = [
@@ -411,7 +432,7 @@ class DbLogController extends ControllerBase {
       }
     }
 
-    $build['dblog_top_table']  = [
+    $build['dblog_top_table'] = [
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $rows,

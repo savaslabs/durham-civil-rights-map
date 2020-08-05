@@ -3,7 +3,7 @@
 namespace Drupal\Tests\book\Functional;
 
 use Drupal\Tests\BrowserTestBase;
-use Drupal\workflows\Entity\Workflow;
+use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 
 /**
  * Tests Book and Content Moderation integration.
@@ -13,6 +13,7 @@ use Drupal\workflows\Entity\Workflow;
 class BookContentModerationTest extends BrowserTestBase {
 
   use BookTestTrait;
+  use ContentModerationTestTrait;
 
   /**
    * Modules to install.
@@ -24,13 +25,18 @@ class BookContentModerationTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'classy';
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
 
     $this->drupalPlaceBlock('system_breadcrumb_block');
     $this->drupalPlaceBlock('page_title_block');
 
-    $workflow = Workflow::load('editorial');
+    $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('node', 'book');
     $workflow->save();
 
@@ -64,7 +70,7 @@ class BookContentModerationTest extends BrowserTestBase {
     ];
     $this->drupalPostForm('node/add/book', $edit, t('Save'));
     $node = $this->drupalGetNodeByTitle($edit['title[0][value]']);
-    $this->assertTrue($node);
+    $this->assertNotEmpty($node);
 
     $edit = [
       'moderation_state[0][state]' => 'draft',

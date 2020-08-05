@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\system\Functional\Form;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Component\Serialization\Json;
 use Drupal\Tests\BrowserTestBase;
 
@@ -19,6 +19,11 @@ class ElementsVerticalTabsTest extends BrowserTestBase {
    * @var array
    */
   public static $modules = ['form_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * A user with permission to access vertical_tab_test_tabs.
@@ -89,7 +94,7 @@ class ElementsVerticalTabsTest extends BrowserTestBase {
    */
   public function testDefaultTabCleaned() {
     $values = Json::decode($this->drupalPostForm('form_test/form-state-values-clean', [], t('Submit')));
-    $this->assertFalse(isset($values['vertical_tabs__active_tab']), SafeMarkup::format('%element was removed.', ['%element' => 'vertical_tabs__active_tab']));
+    $this->assertFalse(isset($values['vertical_tabs__active_tab']), new FormattableMarkup('%element was removed.', ['%element' => 'vertical_tabs__active_tab']));
   }
 
 }

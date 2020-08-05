@@ -16,7 +16,6 @@ use Drupal\Core\TypedData\ComputedItemListTrait;
 class ModerationStateFieldItemList extends FieldItemList {
 
   use ComputedItemListTrait {
-    ensureComputedValue as traitEnsureComputedValue;
     get as traitGet;
   }
 
@@ -32,19 +31,6 @@ class ModerationStateFieldItemList extends FieldItemList {
       // An entity can only have a single moderation state.
       $this->list[0] = $this->createItem(0, $moderation_state);
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function ensureComputedValue() {
-    // If the moderation state field is set to an empty value, always recompute
-    // the state. Empty is not a valid moderation state value, when none is
-    // present the default state is used.
-    if (!isset($this->list[0]) || $this->list[0]->isEmpty()) {
-      $this->valueComputed = FALSE;
-    }
-    $this->traitEnsureComputedValue();
   }
 
   /**
@@ -88,7 +74,7 @@ class ModerationStateFieldItemList extends FieldItemList {
     $moderation_info = \Drupal::service('content_moderation.moderation_information');
     $content_moderation_storage = \Drupal::entityTypeManager()->getStorage('content_moderation_state');
 
-    $revisions = \Drupal::service('entity.query')->get('content_moderation_state')
+    $revisions = $content_moderation_storage->getQuery()
       ->condition('content_entity_type_id', $entity->getEntityTypeId())
       ->condition('content_entity_id', $entity->id())
       // Ensure the correct revision is loaded in scenarios where a revision is
@@ -107,7 +93,7 @@ class ModerationStateFieldItemList extends FieldItemList {
     if ($entity->getEntityType()->hasKey('langcode')) {
       $langcode = $entity->language()->getId();
       if (!$content_moderation_state->hasTranslation($langcode)) {
-        $content_moderation_state->addTranslation($langcode);
+        $content_moderation_state->addTranslation($langcode, $content_moderation_state->toArray());
       }
       if ($content_moderation_state->language()->getId() !== $langcode) {
         $content_moderation_state = $content_moderation_state->getTranslation($langcode);
@@ -140,12 +126,12 @@ class ModerationStateFieldItemList extends FieldItemList {
    */
   public function setValue($values, $notify = TRUE) {
     parent::setValue($values, $notify);
+    $this->valueComputed = TRUE;
 
     // If the parent created a field item and if the parent should be notified
     // about the change (e.g. this is not initialized with the current value),
     // update the moderated entity.
     if (isset($this->list[0]) && $notify) {
-      $this->valueComputed = TRUE;
       $this->updateModeratedEntity($this->list[0]->value);
     }
   }
@@ -171,11 +157,13 @@ class ModerationStateFieldItemList extends FieldItemList {
 
       // This entity is default if it is new, the default revision state, or the
       // default revision is not published.
-      $update_default_revision = $entity->isNew()
-        || $current_state->isDefaultRevisionState()
-        || !$content_moderation_info->isDefaultRevisionPublished($entity);
+      if (!$entity->isSyncing()) {
+        $update_default_revision = $entity->isNew()
+          || $current_state->isDefaultRevisionState()
+          || !$content_moderation_info->isDefaultRevisionPublished($entity);
 
-      $entity->isDefaultRevision($update_default_revision);
+        $entity->isDefaultRevision($update_default_revision);
+      }
 
       // Update publishing status if it can be updated and if it needs updating.
       $published_state = $current_state->isPublishedState();

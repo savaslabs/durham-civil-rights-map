@@ -167,9 +167,9 @@ class UrlGenerator implements UrlGeneratorInterface {
    *   The url path, without any base path, without the query string, not URL
    *   encoded.
    *
-   * @throws MissingMandatoryParametersException
+   * @throws \Symfony\Component\Routing\Exception\MissingMandatoryParametersException
    *   When some parameters are missing that are mandatory for the route.
-   * @throws InvalidParameterException
+   * @throws \Symfony\Component\Routing\Exception\InvalidParameterException
    *   When a parameter value for a placeholder is not correct because it does
    *   not match the requirement.
    */
@@ -296,6 +296,11 @@ class UrlGenerator implements UrlGeneratorInterface {
     $options['route'] = $route;
     if ($options['path_processing']) {
       $path = $this->processPath($path, $options, $generated_url);
+    }
+    // Ensure the resulting path has at most one leading slash, to prevent it
+    // becoming an external URL without a protocol like //example.com.
+    if (strpos($path, '//') === 0) {
+      $path = '/' . ltrim($path, '/');
     }
     // The contexts base URL is already encoded
     // (see Symfony\Component\HttpFoundation\Request).

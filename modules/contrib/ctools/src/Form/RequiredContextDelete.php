@@ -1,17 +1,12 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\ctools\Form\RequiredContextDelete.
- */
-
 namespace Drupal\ctools\Form;
 
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\ConfirmFormHelper;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\user\SharedTempStoreFactory;
+use Drupal\Core\TempStore\SharedTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -20,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 abstract class RequiredContextDelete extends ConfirmFormBase {
 
   /**
-   * @var \Drupal\user\SharedTempStoreFactory
+   * @var \Drupal\Core\TempStore\SharedTempStoreFactory
    */
   protected $tempstore;
 
@@ -43,11 +38,11 @@ abstract class RequiredContextDelete extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('user.shared_tempstore'));
+    return new static($container->get('tempstore.shared'));
   }
 
   /**
-   * @param \Drupal\user\SharedTempStoreFactory $tempstore
+   * @param \Drupal\Core\TempStore\SharedTempStoreFactory $tempstore
    */
   function __construct(SharedTempStoreFactory $tempstore) {
     $this->tempstore = $tempstore;

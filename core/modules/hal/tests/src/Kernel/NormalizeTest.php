@@ -70,7 +70,7 @@ class NormalizeTest extends NormalizerTestBase {
       'name' => $this->randomMachineName(),
       'field_test_entity_reference' => [
         'target_id' => $target_entity_en->id(),
-      ]
+      ],
     ];
 
     $entity = EntityTest::create($values);
@@ -201,7 +201,7 @@ class NormalizeTest extends NormalizerTestBase {
    *   The entity URI.
    */
   protected function getEntityUri(EntityInterface $entity) {
-    $url = $entity->urlInfo('canonical', ['absolute' => TRUE]);
+    $url = $entity->toUrl('canonical', ['absolute' => TRUE]);
     return $url->setRouteParameter('_format', 'hal_json')->toString();
   }
 

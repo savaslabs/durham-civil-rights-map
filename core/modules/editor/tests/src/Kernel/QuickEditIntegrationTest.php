@@ -38,7 +38,7 @@ class QuickEditIntegrationTest extends QuickEditTestBase {
   /**
    * The metadata generator object to be tested.
    *
-   * @var \Drupal\quickedit\MetadataGeneratorInterface.php
+   * @var \Drupal\quickedit\MetadataGeneratorInterface
    */
   protected $metadataGenerator;
 
@@ -125,7 +125,9 @@ class QuickEditIntegrationTest extends QuickEditTestBase {
     $storage->resetCache([$entity_id]);
     $entity = $storage->load($entity_id);
     $items = $entity->get($field_name);
-    $options = entity_get_display('entity_test', 'entity_test', $view_mode)->getComponent($field_name);
+    $options = \Drupal::service('entity_display.repository')
+      ->getViewDisplay('entity_test', 'entity_test', $view_mode)
+      ->getComponent($field_name);
     return $this->editorSelector->getEditor($options['type'], $items);
   }
 
@@ -221,7 +223,7 @@ class QuickEditIntegrationTest extends QuickEditTestBase {
       [
         'command' => 'editorGetUntransformedText',
         'data' => 'Test',
-      ]
+      ],
     ];
 
     $ajax_response_attachments_processor = \Drupal::service('ajax_response.attachments_processor');

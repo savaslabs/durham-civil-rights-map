@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\views\Kernel\Plugin;
 
+use Drupal\Core\Url;
 use Drupal\Core\Menu\MenuTreeParameters;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\views\Entity\View;
@@ -30,7 +31,7 @@ class DisplayPageTest extends ViewsKernelTestBase {
    *
    * @var array
    */
-  public static $modules = ['system', 'user', 'field'];
+  public static $modules = ['system', 'user', 'field', 'views_test_data'];
 
   /**
    * The router dumper to get all routes.
@@ -170,7 +171,7 @@ class DisplayPageTest extends ViewsKernelTestBase {
 
     $this->setRawContent($output);
     $result = $this->xpath('//div[@class=:class]/a', [':class' => 'more-link']);
-    $this->assertEqual($result[0]->attributes()->href, \Drupal::url('view.test_display_more.page_1'), 'The right more link is shown.');
+    $this->assertEqual($result[0]->attributes()->href, Url::fromRoute('view.test_display_more.page_1')->toString(), 'The right more link is shown.');
     $this->assertEqual(trim($result[0][0]), $expected_more_text, 'The right link text is shown.');
 
     // Test the renderMoreLink method directly. This could be directly unit
@@ -179,7 +180,7 @@ class DisplayPageTest extends ViewsKernelTestBase {
     $more_link = $renderer->renderRoot($more_link);
     $this->setRawContent($more_link);
     $result = $this->xpath('//div[@class=:class]/a', [':class' => 'more-link']);
-    $this->assertEqual($result[0]->attributes()->href, \Drupal::url('view.test_display_more.page_1'), 'The right more link is shown.');
+    $this->assertEqual($result[0]->attributes()->href, Url::fromRoute('view.test_display_more.page_1')->toString(), 'The right more link is shown.');
     $this->assertEqual(trim($result[0][0]), $expected_more_text, 'The right link text is shown.');
 
     // Test the useMoreText method directly. This could be directly unit
@@ -218,6 +219,42 @@ class DisplayPageTest extends ViewsKernelTestBase {
     // Test the default value of use_more_always.
     $view = View::create()->getExecutable();
     $this->assertTrue($view->getDisplay()->getOption('use_more_always'), 'Always display the more link by default.');
+  }
+
+  /**
+   * Tests the templates with empty rows.
+   */
+  public function testEmptyRow() {
+    $view = Views::getView('test_page_display');
+    $view->initDisplay();
+    $view->newDisplay('page', 'Page', 'empty_row');
+    $view->save();
+
+    $styles = [
+      'default' => '//div[@class="views-row"]',
+      'grid' => '//div[contains(@class, "views-col")]',
+      'html_list' => '//div[@class="item-list"]//li',
+    ];
+
+    $themes = ['bartik', 'classy', 'seven', 'stable', 'stark'];
+
+    foreach ($themes as $theme) {
+      \Drupal::service('theme_installer')->install([$theme]);
+      \Drupal::theme()->setActiveTheme(\Drupal::service('theme.initialization')->initTheme($theme));
+      foreach ($styles as $type => $xpath) {
+        $view = Views::getView('test_page_display');
+        $view->storage->invalidateCaches();
+        $view->initDisplay();
+        $view->setDisplay('empty_row');
+        $view->displayHandlers->get('empty_row')->default_display->options['style']['type'] = $type;
+        $view->initStyle();
+        $this->executeView($view);
+        $output = $view->preview();
+        $output = \Drupal::service('renderer')->renderRoot($output);
+        $this->setRawContent($output);
+        $this->assertCount(5, $this->xpath("{$xpath}[not(text()) and not(node())]"), "Empty rows in theme '$theme', type '$type'.");
+      }
+    }
   }
 
 }

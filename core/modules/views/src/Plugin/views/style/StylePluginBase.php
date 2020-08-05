@@ -457,8 +457,8 @@ abstract class StylePluginBase extends PluginBase {
    */
   public function render() {
     if ($this->usesRowPlugin() && empty($this->view->rowPlugin)) {
-      debug('Drupal\views\Plugin\views\style\StylePluginBase: Missing row plugin');
-      return;
+      trigger_error('Drupal\views\Plugin\views\style\StylePluginBase: Missing row plugin', E_WARNING);
+      return [];
     }
 
     // Group the rows according to the grouping instructions, if specified.
@@ -742,6 +742,15 @@ abstract class StylePluginBase extends PluginBase {
 
       unset($this->view->row_index);
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function trustedCallbacks() {
+    $callbacks = parent::trustedCallbacks();
+    $callbacks[] = 'elementPreRenderRow';
+    return $callbacks;
   }
 
   /**

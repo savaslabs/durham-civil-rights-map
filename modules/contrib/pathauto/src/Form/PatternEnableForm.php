@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\pathauto\Form\PatternEnableForm.
- */
-
 namespace Drupal\pathauto\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
@@ -20,7 +15,7 @@ class PatternEnableForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return $this->t('Are you sure you want to enable the pattern %label?', array('%label' => $this->entity->label()));
+    return $this->t('Are you sure you want to enable the pattern %label?', ['%label' => $this->entity->label()]);
   }
 
   /**
@@ -49,7 +44,9 @@ class PatternEnableForm extends EntityConfirmFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->entity->enable()->save();
-    drupal_set_message($this->t('Enabled pattern %label.', array('%label' => $this->entity->label())));
+    $this->messenger()->addMessage($this->t('Enabled pattern %label.', [
+      '%label' => $this->entity->label(),
+    ]));
 
     $form_state->setRedirectUrl($this->getCancelUrl());
   }

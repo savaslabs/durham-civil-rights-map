@@ -29,7 +29,7 @@ interface MigrateSourceInterface extends \Countable, \Iterator, PluginInspection
   /**
    * Adds additional data to the row.
    *
-   * @param \Drupal\Migrate\Row $row
+   * @param \Drupal\migrate\Row $row
    *   The row object.
    *
    * @return bool
@@ -87,10 +87,10 @@ interface MigrateSourceInterface extends \Countable, \Iterator, PluginInspection
    *
    *   Additional custom keys/values that are not part of field storage
    *   definition can be added as shown below. The most common setting
-   *   passed along to the ID definition is 'alias', used by the SqlBase source
-   *   plugin in order to distinguish between ambiguous column names - for
-   *   example, when a SQL source query joins two tables with the same column
-   *   names.
+   *   passed along to the ID definition is table 'alias', used by the SqlBase
+   *   source plugin in order to distinguish between ambiguous column names -
+   *   for example, when a SQL source query joins two tables with the same
+   *   column names.
    *   @code
    *     return [
    *       'nid' => [

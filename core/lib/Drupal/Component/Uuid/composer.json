@@ -1,6 +1,6 @@
 {
   "name": "drupal/core-uuid",
-  "description": "PHP library for reading PO files.",
+  "description": "UUID generation and validation.",
   "type": "library",
   "license": "GPL-2.0-or-later",
   "support": {
@@ -9,8 +9,7 @@
     "source": "https://www.drupal.org/project/drupal/git-instructions"
   },
   "require": {
-    "php": ">=5.5.9",
-    "drupal/core-utility": "^8.2"
+    "php": ">=7.0.8"
   },
   "autoload": {
     "psr-4": {

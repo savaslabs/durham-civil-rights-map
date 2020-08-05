@@ -15,7 +15,11 @@ class MigrateNodeCounterTest extends MigrateDrupal6TestBase {
    * {@inheritdoc}
    */
   public static $modules = [
+    'content_translation',
+    'language',
     'menu_ui',
+    // Required for translation migrations.
+    'migrate_drupal_multilingual',
     'node',
     'statistics',
     'text',
@@ -29,16 +33,20 @@ class MigrateNodeCounterTest extends MigrateDrupal6TestBase {
 
     $this->installEntitySchema('node');
     $this->installConfig('node');
+    $this->installSchema('node', ['node_access']);
     $this->installSchema('statistics', ['node_counter']);
 
     $this->executeMigrations([
+      'language',
       'd6_filter_format',
       'd6_user_role',
       'd6_node_settings',
       'd6_user',
       'd6_node_type',
+      'd6_language_content_settings',
       'd6_node',
-      'statistics_node_counter'
+      'd6_node_translation',
+      'statistics_node_counter',
     ]);
   }
 
@@ -51,6 +59,13 @@ class MigrateNodeCounterTest extends MigrateDrupal6TestBase {
     $this->assertNodeCounter(3, 1, 0, 1471428153);
     $this->assertNodeCounter(4, 1, 1, 1478755275);
     $this->assertNodeCounter(5, 1, 1, 1478755314);
+    $this->assertNodeCounter(10, 5, 1, 1521137459);
+    $this->assertNodeCounter(12, 3, 0, 1521137469);
+
+    // Tests that translated node counts include all translation counts.
+    $this->executeMigration('statistics_node_translation_counter');
+    $this->assertNodeCounter(10, 8, 2, 1521137463);
+    $this->assertNodeCounter(12, 5, 1, 1521137470);
   }
 
   /**
@@ -68,10 +83,9 @@ class MigrateNodeCounterTest extends MigrateDrupal6TestBase {
   protected function assertNodeCounter($nid, $total_count, $day_count, $timestamp) {
     /** @var \Drupal\statistics\StatisticsViewsResult $statistics */
     $statistics = $this->container->get('statistics.storage.node')->fetchView($nid);
-    // @todo Remove casting after https://www.drupal.org/node/2926069 lands.
-    $this->assertSame($total_count, (int) $statistics->getTotalCount());
-    $this->assertSame($day_count, (int) $statistics->getDayCount());
-    $this->assertSame($timestamp, (int) $statistics->getTimestamp());
+    $this->assertSame($total_count, $statistics->getTotalCount());
+    $this->assertSame($day_count, $statistics->getDayCount());
+    $this->assertSame($timestamp, $statistics->getTimestamp());
   }
 
 }

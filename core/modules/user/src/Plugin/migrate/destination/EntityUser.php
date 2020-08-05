@@ -2,9 +2,8 @@
 
 namespace Drupal\user\Plugin\migrate\destination;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EmailItem;
@@ -12,9 +11,56 @@ use Drupal\Core\Password\PasswordInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Plugin\migrate\destination\EntityContentBase;
 use Drupal\migrate\Row;
+use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
+ * Provides a destination plugin for migrating user entities.
+ *
+ * Example:
+ *
+ * The example below migrates users and preserves original passwords from a
+ * source that has passwords as MD5 hashes without salt. The passwords will be
+ * salted and re-hashed before they are saved to the destination Drupal
+ * database. The MD5 hash used in the example is a hash of 'password'.
+ *
+ * The example uses the EmbeddedDataSource source plugin for the sake of
+ * simplicity. The mapping between old user_ids and new Drupal uids is saved in
+ * the migration map table.
+ * @code
+ * id: custom_user_migration
+ * label: Custom user migration
+ * source:
+ *   plugin: embedded_data
+ *   data_rows:
+ *     -
+ *       user_id: 1
+ *       name: johnsmith
+ *       mail: johnsmith@example.com
+ *       hash: '5f4dcc3b5aa765d61d8327deb882cf99'
+ *   ids:
+ *     user_id:
+ *       type: integer
+ * process:
+ *   name: name
+ *   mail: mail
+ *   pass: hash
+ *   status:
+ *     plugin: default_value
+ *     default_value: 1
+ * destination:
+ *   plugin: entity:user
+ *   md5_passwords: true
+ * @endcode
+ *
+ * For configuration options inherited from the parent class, refer to
+ * \Drupal\migrate\Plugin\migrate\destination\EntityContentBase.
+ *
+ * The example above is about migrating an MD5 password hash. For more examples
+ * on different password hash types and a list of other user properties, refer
+ * to the handbook documentation:
+ * @see https://www.drupal.org/docs/8/api/migrate-api/migrate-destination-plugins-examples/migrating-users
+ *
  * @MigrateDestination(
  *   id = "entity:user"
  * )
@@ -43,15 +89,15 @@ class EntityUser extends EntityContentBase {
    *   The storage for this entity type.
    * @param array $bundles
    *   The list of bundles this entity type has.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager service.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   The entity field manager.
    * @param \Drupal\Core\Field\FieldTypePluginManagerInterface $field_type_manager
    *   The field type plugin manager service.
    * @param \Drupal\Core\Password\PasswordInterface $password
    *   The password service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, EntityStorageInterface $storage, array $bundles, EntityManagerInterface $entity_manager, FieldTypePluginManagerInterface $field_type_manager, PasswordInterface $password) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $migration, $storage, $bundles, $entity_manager, $field_type_manager);
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, EntityStorageInterface $storage, array $bundles, EntityFieldManagerInterface $entity_field_manager, FieldTypePluginManagerInterface $field_type_manager, PasswordInterface $password) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $migration, $storage, $bundles, $entity_field_manager, $field_type_manager);
     $this->password = $password;
   }
 
@@ -65,9 +111,9 @@ class EntityUser extends EntityContentBase {
       $plugin_id,
       $plugin_definition,
       $migration,
-      $container->get('entity.manager')->getStorage($entity_type),
-      array_keys($container->get('entity.manager')->getBundleInfo($entity_type)),
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager')->getStorage($entity_type),
+      array_keys($container->get('entity_type.bundle.info')->getBundleInfo($entity_type)),
+      $container->get('entity_field.manager'),
       $container->get('plugin.manager.field.field_type'),
       $container->get('password')
     );
@@ -111,7 +157,7 @@ class EntityUser extends EntityContentBase {
     // Email address is not defined as required in the base field definition but
     // is effectively required by the UserMailRequired constraint. This means
     // that Entity::processStubRow() did not populate it - we do it here.
-    $field_definitions = $this->entityManager
+    $field_definitions = $this->entityFieldManager
       ->getFieldDefinitions($this->storage->getEntityTypeId(),
         $this->getKey('bundle'));
     $mail = EmailItem::generateSampleValue($field_definitions['mail']);
@@ -122,8 +168,8 @@ class EntityUser extends EntityContentBase {
     if (is_array($name)) {
       $name = reset($name);
     }
-    if (Unicode::strlen($name) > USERNAME_MAX_LENGTH) {
-      $row->setDestinationProperty('name', Unicode::substr($name, 0, USERNAME_MAX_LENGTH));
+    if (mb_strlen($name) > UserInterface::USERNAME_MAX_LENGTH) {
+      $row->setDestinationProperty('name', mb_substr($name, 0, UserInterface::USERNAME_MAX_LENGTH));
     }
   }
 

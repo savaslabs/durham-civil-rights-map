@@ -8,8 +8,14 @@ use Drupal\FunctionalTests\Update\UpdatePathTestBase;
  * Ensures that the automated cron module is not installed on update.
  *
  * @group Update
+ * @group legacy
  */
 class AutomatedCronUpdateWithoutAutomatedCronTest extends UpdatePathTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

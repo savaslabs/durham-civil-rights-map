@@ -14,21 +14,21 @@ class CacheCollectorTest extends UnitTestCase {
   /**
    * The cache backend that should be used.
    *
-   * @var \Drupal\Core\Cache\CacheBackendInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Cache\CacheBackendInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $cacheBackend;
 
   /**
    * The cache tags invalidator.
    *
-   * @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $cacheTagsInvalidator;
 
   /**
    * The lock backend that should be used.
    *
-   * @var \PHPUnit_Framework_MockObject_MockObject
+   * @var \PHPUnit\Framework\MockObject\MockObject
    */
   protected $lock;
 
@@ -50,15 +50,14 @@ class CacheCollectorTest extends UnitTestCase {
    * {@inheritdoc}
    */
   protected function setUp() {
-    $this->cacheBackend = $this->getMock('Drupal\Core\Cache\CacheBackendInterface');
-    $this->cacheTagsInvalidator = $this->getMock('Drupal\Core\Cache\CacheTagsInvalidatorInterface');
-    $this->lock = $this->getMock('Drupal\Core\Lock\LockBackendInterface');
+    $this->cacheBackend = $this->createMock('Drupal\Core\Cache\CacheBackendInterface');
+    $this->cacheTagsInvalidator = $this->createMock('Drupal\Core\Cache\CacheTagsInvalidatorInterface');
+    $this->lock = $this->createMock('Drupal\Core\Lock\LockBackendInterface');
     $this->cid = $this->randomMachineName();
     $this->collector = new CacheCollectorHelper($this->cid, $this->cacheBackend, $this->lock);
 
     $this->getContainerWithCacheTagsInvalidator($this->cacheTagsInvalidator);
   }
-
 
   /**
    * Tests the resolve cache miss function.
@@ -84,7 +83,6 @@ class CacheCollectorTest extends UnitTestCase {
     $this->assertTrue($this->collector->has($key));
     $this->assertEquals($value, $this->collector->get($key));
   }
-
 
   /**
    * Makes sure that NULL is a valid value and is collected.
@@ -191,7 +189,6 @@ class CacheCollectorTest extends UnitTestCase {
     // Destruct the object to trigger the update data process.
     $this->collector->destruct();
   }
-
 
   /**
    * Tests updating the cache when the lock acquire fails.

@@ -10,8 +10,14 @@ use Drupal\FunctionalTests\Update\UpdatePathTestBase;
  * @see system_update_8200()
  *
  * @group Update
+ * @group legacy
  */
 class ConfigOverridesUpdateTest extends UpdatePathTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

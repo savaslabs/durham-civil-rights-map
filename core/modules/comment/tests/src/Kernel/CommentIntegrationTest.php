@@ -2,14 +2,15 @@
 
 namespace Drupal\Tests\comment\Kernel;
 
+use Drupal\comment\Entity\Comment;
 use Drupal\comment\Entity\CommentType;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\Core\Entity\Entity\EntityViewMode;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\Tests\user\Traits\UserCreationTrait;
 
 /**
  * Tests integration of comment with other components.
@@ -17,6 +18,8 @@ use Drupal\KernelTests\KernelTestBase;
  * @group comment
  */
 class CommentIntegrationTest extends KernelTestBase {
+
+  use UserCreationTrait;
 
   /**
    * {@inheritdoc}
@@ -32,11 +35,13 @@ class CommentIntegrationTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('comment');
     $this->installSchema('dblog', ['watchdog']);
+    $this->installSchema('system', ['sequences']);
 
     // Create a new 'comment' comment-type.
     CommentType::create([
       'id' => 'comment',
       'label' => $this->randomString(),
+      'target_entity_type_id' => 'entity_test',
     ])->save();
   }
 
@@ -47,7 +52,7 @@ class CommentIntegrationTest extends KernelTestBase {
    * @see CommentDefaultFormatter::calculateDependencies()
    */
   public function testViewMode() {
-    $mode = Unicode::strtolower($this->randomMachineName());
+    $mode = mb_strtolower($this->randomMachineName());
     // Create a new comment view mode and a view display entity.
     EntityViewMode::create([
       'id' => "comment.$mode",
@@ -64,7 +69,7 @@ class CommentIntegrationTest extends KernelTestBase {
     FieldStorageConfig::create([
       'entity_type' => 'entity_test',
       'type' => 'comment',
-      'field_name' => $field_name = Unicode::strtolower($this->randomMachineName()),
+      'field_name' => $field_name = mb_strtolower($this->randomMachineName()),
       'settings' => [
         'comment_type' => 'comment',
       ],
@@ -133,6 +138,23 @@ class CommentIntegrationTest extends KernelTestBase {
     // Check that the field formatter has been disabled on host view display.
     $this->assertNull($host_display->getComponent($field_name));
     $this->assertTrue($host_display->get('hidden')[$field_name]);
+  }
+
+  /**
+   * Test the default owner of comment entities.
+   */
+  public function testCommentDefaultOwner() {
+    $comment = Comment::create([
+      'comment_type' => 'comment',
+    ]);
+    $this->assertEquals(0, $comment->getOwnerId());
+
+    $user = $this->createUser();
+    $this->container->get('current_user')->setAccount($user);
+    $comment = Comment::create([
+      'comment_type' => 'comment',
+    ]);
+    $this->assertEquals($user->id(), $comment->getOwnerId());
   }
 
 }

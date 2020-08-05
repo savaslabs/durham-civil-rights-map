@@ -200,7 +200,7 @@ class PhpArrayContainer extends Container {
         // The PhpArrayDumper just uses the hash of the private service
         // definition to generate a unique ID.
         //
-        // @see \Drupal\Component\DependecyInjection\Dumper\OptimizedPhpArrayDumper::getPrivateServiceCall
+        // @see \Drupal\Component\DependencyInjection\Dumper\OptimizedPhpArrayDumper::getPrivateServiceCall
         if ($type == 'private_service') {
           $id = $argument->id;
 
@@ -215,6 +215,11 @@ class PhpArrayContainer extends Container {
           if (!empty($argument->shared)) {
             $this->privateServices[$id] = $arguments[$key];
           }
+
+          continue;
+        }
+        elseif ($type == 'raw') {
+          $arguments[$key] = $argument->value;
 
           continue;
         }

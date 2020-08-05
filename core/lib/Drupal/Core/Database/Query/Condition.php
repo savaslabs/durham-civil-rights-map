@@ -61,6 +61,8 @@ class Condition implements ConditionInterface, \Countable {
 
   /**
    * The identifier of the query placeholder this condition has been compiled against.
+   *
+   * @var string
    */
   protected $queryPlaceholderIdentifier;
 
@@ -154,6 +156,13 @@ class Condition implements ConditionInterface, \Countable {
    */
   public function notExists(SelectInterface $select) {
     return $this->condition('', $select, 'NOT EXISTS');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function alwaysFalse() {
+    return $this->where('1 = 0');
   }
 
   /**
@@ -375,7 +384,8 @@ class Condition implements ConditionInterface, \Countable {
     }
     else {
       // We need to upper case because PHP index matches are case sensitive but
-      // do not need the more expensive Unicode::strtoupper() because SQL statements are ASCII.
+      // do not need the more expensive mb_strtoupper() because SQL statements
+      // are ASCII.
       $operator = strtoupper($operator);
       $return = isset(static::$conditionOperatorMap[$operator]) ? static::$conditionOperatorMap[$operator] : [];
     }

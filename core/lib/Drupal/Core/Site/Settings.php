@@ -84,6 +84,9 @@ final class Settings {
    *   The value of the setting, the provided default if not set.
    */
   public static function get($name, $default = NULL) {
+    if ($name === 'install_profile' && isset(self::$instance->storage[$name])) {
+      @trigger_error('To access the install profile in Drupal 8 use \Drupal::installProfile() or inject the install_profile container parameter into your service. See https://www.drupal.org/node/2538996', E_USER_DEPRECATED);
+    }
     return isset(self::$instance->storage[$name]) ? self::$instance->storage[$name] : $default;
   }
 
@@ -124,6 +127,16 @@ final class Settings {
 
     // Initialize Database.
     Database::setMultipleConnectionInfo($databases);
+
+    // For BC ensure the $config_directories global is set both in the global
+    // and settings.
+    if (!isset($settings['config_sync_directory']) && !empty($config_directories['sync'])) {
+      @trigger_error('$config_directories[\'sync\'] has moved to $settings[\'config_sync_directory\']. See https://www.drupal.org/node/3018145.', E_USER_DEPRECATED);
+      $settings['config_sync_directory'] = $config_directories['sync'];
+    }
+    elseif (isset($settings['config_sync_directory'])) {
+      $config_directories['sync'] = $settings['config_sync_directory'];
+    }
 
     // Initialize Settings.
     new Settings($settings);

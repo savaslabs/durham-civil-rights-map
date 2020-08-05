@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains Drupal\views_slideshow\ViewsSlideshowTypePluginManager.
- */
 
 namespace Drupal\views_slideshow;
 
@@ -11,10 +7,10 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
 /**
- * Class ViewsSlideshowTypePluginManager
- * @package Drupal\views_slideshow
+ * Manager for Views Slideshow Type plugins.
  */
 class ViewsSlideshowTypePluginManager extends DefaultPluginManager {
+
   /**
    * Constructs a new ViewsSlideshowTypePluginManager.
    *
@@ -31,4 +27,5 @@ class ViewsSlideshowTypePluginManager extends DefaultPluginManager {
     $this->alterInfo('views_slideshow_type_info');
     $this->setCacheBackend($cache_backend, 'views_slideshow_type');
   }
+
 }

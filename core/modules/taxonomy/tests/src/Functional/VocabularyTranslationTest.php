@@ -2,8 +2,6 @@
 
 namespace Drupal\Tests\taxonomy\Functional;
 
-use Drupal\Component\Utility\Unicode;
-
 /**
  * Tests content translation for vocabularies.
  *
@@ -15,6 +13,11 @@ class VocabularyTranslationTest extends TaxonomyTestBase {
    * {@inheritdoc}
    */
   public static $modules = ['content_translation', 'language'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -39,7 +42,7 @@ class VocabularyTranslationTest extends TaxonomyTestBase {
     $this->assertField('edit-default-language-content-translation', 'The content translation checkbox is present on the page.');
 
     // Create the vocabulary.
-    $vid = Unicode::strtolower($this->randomMachineName());
+    $vid = mb_strtolower($this->randomMachineName());
     $edit['name'] = $this->randomMachineName();
     $edit['description'] = $this->randomMachineName();
     $edit['langcode'] = 'en';

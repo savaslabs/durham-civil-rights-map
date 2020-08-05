@@ -25,10 +25,14 @@ class BlockLanguageTest extends BrowserTestBase {
    */
   public static $modules = ['language', 'block', 'content_translation'];
 
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   protected function setUp() {
     parent::setUp();
 
-    // Create a new user, allow him to manage the blocks and the languages.
     $this->adminUser = $this->drupalCreateUser(['administer blocks', 'administer languages']);
     $this->drupalLogin($this->adminUser);
 
@@ -164,7 +168,7 @@ class BlockLanguageTest extends BrowserTestBase {
 
     // Change visibility to now depend on content language for this block.
     $edit = [
-      'visibility[language][context_mapping][language]' => '@language.current_language_context:language_content'
+      'visibility[language][context_mapping][language]' => '@language.current_language_context:language_content',
     ];
     $this->drupalPostForm('admin/structure/block/manage/' . $block_id, $edit, t('Save block'));
 

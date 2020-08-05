@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\system\Kernel\Extension;
 
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Extension\MissingDependencyException;
 use Drupal\Core\Extension\ModuleUninstallValidatorException;
 use Drupal\entity_test\Entity\EntityTest;
@@ -20,26 +21,10 @@ class ModuleHandlerTest extends KernelTestBase {
   public static $modules = ['system'];
 
   /**
-   * {@inheritdoc}
-   */
-  protected function setUp() {
-    parent::setUp();
-
-    // @todo ModuleInstaller calls system_rebuild_module_data which is part of
-    //   system.module, see https://www.drupal.org/node/2208429.
-    include_once $this->root . '/core/modules/system/system.module';
-
-    // Set up the state values so we know where to find the files when running
-    // drupal_get_filename().
-    // @todo Remove as part of https://www.drupal.org/node/2186491
-    system_rebuild_module_data();
-  }
-
-  /**
    * The basic functionality of retrieving enabled modules.
    */
   public function testModuleList() {
-    $module_list = ['system'];
+    $module_list = ['path_alias', 'system'];
 
     $this->assertModuleList($module_list, 'Initial');
 
@@ -77,7 +62,7 @@ class ModuleHandlerTest extends KernelTestBase {
   protected function assertModuleList(array $expected_values, $condition) {
     $expected_values = array_values(array_unique($expected_values));
     $enabled_modules = array_keys($this->container->get('module_handler')->getModuleList());
-    $this->assertEqual($expected_values, $enabled_modules, format_string('@condition: extension handler returns correct results', ['@condition' => $condition]));
+    $this->assertEqual($expected_values, $enabled_modules, new FormattableMarkup('@condition: extension handler returns correct results', ['@condition' => $condition]));
   }
 
   /**
@@ -105,14 +90,13 @@ class ModuleHandlerTest extends KernelTestBase {
     // Color will depend on Config, which depends on a non-existing module Foo.
     // Nothing should be installed.
     \Drupal::state()->set('module_test.dependency', 'missing dependency');
-    drupal_static_reset('system_rebuild_module_data');
 
     try {
       $result = $this->moduleInstaller()->install(['color']);
-      $this->fail(t('ModuleInstaller::install() throws an exception if dependencies are missing.'));
+      $this->fail('ModuleInstaller::install() throws an exception if dependencies are missing.');
     }
     catch (MissingDependencyException $e) {
-      $this->pass(t('ModuleInstaller::install() throws an exception if dependencies are missing.'));
+      $this->pass('ModuleInstaller::install() throws an exception if dependencies are missing.');
     }
 
     $this->assertFalse($this->moduleHandler()->moduleExists('color'), 'ModuleInstaller::install() aborts if dependencies are missing.');
@@ -120,7 +104,6 @@ class ModuleHandlerTest extends KernelTestBase {
     // Fix the missing dependency.
     // Color module depends on Config. Config depends on Help module.
     \Drupal::state()->set('module_test.dependency', 'dependency');
-    drupal_static_reset('system_rebuild_module_data');
 
     $result = $this->moduleInstaller()->install(['color']);
     $this->assertTrue($result, 'ModuleInstaller::install() returns the correct value.');
@@ -152,7 +135,6 @@ class ModuleHandlerTest extends KernelTestBase {
     // dependency on a specific version of Help module in its info file. Make
     // sure that Drupal\Core\Extension\ModuleInstaller::install() still works.
     \Drupal::state()->set('module_test.dependency', 'version dependency');
-    drupal_static_reset('system_rebuild_module_data');
 
     $result = $this->moduleInstaller()->install(['color']);
     $this->assertTrue($result, 'ModuleInstaller::install() returns the correct value.');
@@ -170,21 +152,26 @@ class ModuleHandlerTest extends KernelTestBase {
 
   /**
    * Tests uninstalling a module that is a "dependency" of a profile.
+   *
+   * Note this test does not trigger the deprecation error because of static
+   * caching in \Drupal\Core\Extension\InfoParser::parse().
+   *
+   * @group legacy
    */
-  public function testUninstallProfileDependency() {
-    $profile = 'testing';
-    $dependency = 'page_cache';
-    $this->setSetting('install_profile', $profile);
+  public function testUninstallProfileDependencyBC() {
+    $profile = 'testing_install_profile_dependencies_bc';
+    $dependency = 'dblog';
+    $this->setInstallProfile($profile);
     // Prime the drupal_get_filename() static cache with the location of the
-    // minimal profile as it is not the currently active profile and we don't
+    // testing profile as it is not the currently active profile and we don't
     // yet have any cached way to retrieve its location.
     // @todo Remove as part of https://www.drupal.org/node/2186491
     drupal_get_filename('profile', $profile, 'core/profiles/' . $profile . '/' . $profile . '.info.yml');
     $this->enableModules(['module_test', $profile]);
 
-    drupal_static_reset('system_rebuild_module_data');
-    $data = system_rebuild_module_data();
-    $this->assertTrue(isset($data[$profile]->requires[$dependency]));
+    $data = \Drupal::service('extension.list.module')->getList();
+    $this->assertFalse(isset($data[$profile]->requires[$dependency]));
+    $this->assertContains($dependency, $data[$profile]->info['install']);
 
     $this->moduleInstaller()->install([$dependency]);
     $this->assertTrue($this->moduleHandler()->moduleExists($dependency));
@@ -202,6 +189,78 @@ class ModuleHandlerTest extends KernelTestBase {
   }
 
   /**
+   * Tests uninstalling a module installed by a profile.
+   */
+  public function testUninstallProfileDependency() {
+    $profile = 'testing_install_profile_dependencies';
+    $dependency = 'dblog';
+    $non_dependency = 'ban';
+    $this->setInstallProfile($profile);
+    // Prime the drupal_get_filename() static cache with the location of the
+    // testing_install_profile_dependencies profile as it is not the currently
+    // active profile and we don't yet have any cached way to retrieve its
+    // location.
+    // @todo Remove as part of https://www.drupal.org/node/2186491
+    drupal_get_filename('profile', $profile, 'core/profiles/' . $profile . '/' . $profile . '.info.yml');
+    $this->enableModules(['module_test', $profile]);
+
+    $data = \Drupal::service('extension.list.module')->reset()->getList();
+    $this->assertArrayHasKey($dependency, $data[$profile]->requires);
+    $this->assertArrayNotHasKey($non_dependency, $data[$profile]->requires);
+
+    $this->moduleInstaller()->install([$dependency, $non_dependency]);
+    $this->assertTrue($this->moduleHandler()->moduleExists($dependency));
+
+    // Uninstall the profile module that is not a dependent.
+    $result = $this->moduleInstaller()->uninstall([$non_dependency]);
+    $this->assertTrue($result, 'ModuleInstaller::uninstall() returns TRUE.');
+    $this->assertFalse($this->moduleHandler()->moduleExists($non_dependency));
+    $this->assertEquals(drupal_get_installed_schema_version($non_dependency), SCHEMA_UNINSTALLED, "$non_dependency module was uninstalled.");
+
+    // Verify that the installation profile itself was not uninstalled.
+    $uninstalled_modules = \Drupal::state()->get('module_test.uninstall_order') ?: [];
+    $this->assertContains($non_dependency, $uninstalled_modules, "$non_dependency module is in the list of uninstalled modules.");
+    $this->assertNotContains($profile, $uninstalled_modules, 'The installation profile is not in the list of uninstalled modules.');
+
+    // Try uninstalling the required module.
+    $this->expectException(ModuleUninstallValidatorException::class);
+    $this->expectExceptionMessage('The following reasons prevent the modules from being uninstalled: The Testing install profile dependencies module is required');
+    $this->moduleInstaller()->uninstall([$dependency]);
+  }
+
+  /**
+   * Tests that a profile can supply only real dependencies
+   */
+  public function testProfileAllDependencies() {
+    $profile = 'testing_install_profile_all_dependencies';
+    $dependencies = ['dblog', 'ban'];
+
+    $this->setInstallProfile($profile);
+    // Prime the drupal_get_filename() static cache with the location of the
+    // testing_install_profile_dependencies profile as it is not the currently
+    // active profile and we don't yet have any cached way to retrieve its
+    // location.
+    // @todo Remove as part of https://www.drupal.org/node/2186491
+    drupal_get_filename('profile', $profile, 'core/profiles/' . $profile . '/' . $profile . '.info.yml');
+    $this->enableModules(['module_test', $profile]);
+
+    $data = \Drupal::service('extension.list.module')->reset()->getList();
+    foreach ($dependencies as $dependency) {
+      $this->assertArrayHasKey($dependency, $data[$profile]->requires);
+    }
+
+    $this->moduleInstaller()->install($dependencies);
+    foreach ($dependencies as $dependency) {
+      $this->assertTrue($this->moduleHandler()->moduleExists($dependency));
+    }
+
+    // Try uninstalling the dependencies.
+    $this->expectException(ModuleUninstallValidatorException::class);
+    $this->expectExceptionMessage('The following reasons prevent the modules from being uninstalled: The Testing install profile all dependencies module is required');
+    $this->moduleInstaller()->uninstall($dependencies);
+  }
+
+  /**
    * Tests uninstalling a module that has content.
    */
   public function testUninstallContentDependency() {
@@ -210,7 +269,7 @@ class ModuleHandlerTest extends KernelTestBase {
     $this->assertTrue($this->moduleHandler()->moduleExists('module_test'), 'Test module is enabled.');
 
     $this->installSchema('user', 'users_data');
-    $entity_types = \Drupal::entityManager()->getDefinitions();
+    $entity_types = \Drupal::entityTypeManager()->getDefinitions();
     foreach ($entity_types as $entity_type) {
       if ('entity_test' == $entity_type->getProvider()) {
         $this->installEntitySchema($entity_type->id());
@@ -221,7 +280,6 @@ class ModuleHandlerTest extends KernelTestBase {
     // entity_test will depend on help. This way help can not be uninstalled
     // when there is test content preventing entity_test from being uninstalled.
     \Drupal::state()->set('module_test.dependency', 'dependency');
-    drupal_static_reset('system_rebuild_module_data');
 
     // Create an entity so that the modules can not be disabled.
     $entity = EntityTest::create(['name' => $this->randomString()]);
@@ -260,7 +318,7 @@ class ModuleHandlerTest extends KernelTestBase {
    */
   public function testModuleMetaData() {
     // Generate the list of available modules.
-    $modules = system_rebuild_module_data();
+    $modules = $this->container->get('extension.list.module')->getList();
     // Check that the mtime field exists for the system module.
     $this->assertTrue(!empty($modules['system']->info['mtime']), 'The system.info.yml file modification time field is present.');
     // Use 0 if mtime isn't present, to avoid an array index notice.

@@ -59,7 +59,7 @@ class ContentTranslationSyncUnitTest extends KernelTestBase {
   protected function setUp() {
     parent::setUp();
 
-    $this->synchronizer = new FieldTranslationSynchronizer($this->container->get('entity.manager'), $this->container->get('plugin.manager.field.field_type'));
+    $this->synchronizer = new FieldTranslationSynchronizer($this->container->get('entity_type.manager'), $this->container->get('plugin.manager.field.field_type'));
     $this->synchronized = ['sync1', 'sync2'];
     $this->columns = array_merge($this->synchronized, ['var1', 'var2']);
     $this->langcodes = ['en', 'it', 'fr', 'de', 'es'];
@@ -249,7 +249,7 @@ class ContentTranslationSyncUnitTest extends KernelTestBase {
       for ($delta = 0; $delta < $this->cardinality; $delta++) {
         foreach ($this->columns as $column) {
           // If the column is synchronized, the value should have been synced,
-          // for unsychronized columns, the value must not change.
+          // for unsynchronized columns, the value must not change.
           $expected_value = in_array($column, $this->synchronized) ? $changed_items[$delta][$column] : $this->unchangedFieldValues[$langcode][$delta][$column];
           $this->assertEqual($field_values[$langcode][$delta][$column], $expected_value, "Differing Item $delta column $column for langcode $langcode synced correctly");
         }

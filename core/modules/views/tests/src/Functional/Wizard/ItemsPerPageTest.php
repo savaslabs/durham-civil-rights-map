@@ -10,6 +10,11 @@ namespace Drupal\Tests\views\Functional\Wizard;
  */
 class ItemsPerPageTest extends WizardTestBase {
 
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   protected function setUp($import_test_views = TRUE) {
     parent::setUp($import_test_views);
 
@@ -57,7 +62,7 @@ class ItemsPerPageTest extends WizardTestBase {
     // appear in the expected order.
     $this->assertUrl($view['page[path]']);
     $this->assertText($view['page[title]']);
-    $content = $this->getRawContent();
+    $content = $this->getSession()->getPage()->getContent();
     $this->assertText($node5->label());
     $this->assertText($node4->label());
     $this->assertText($node3->label());
@@ -80,7 +85,7 @@ class ItemsPerPageTest extends WizardTestBase {
     $this->drupalPlaceBlock("views_block:{$view['id']}-block_1");
 
     $this->drupalGet('user');
-    $content = $this->getRawContent();
+    $content = $this->getSession()->getPage()->getContent();
     $this->assertText($node5->label());
     $this->assertText($node4->label());
     $this->assertText($node3->label());

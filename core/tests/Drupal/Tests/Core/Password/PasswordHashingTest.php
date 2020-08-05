@@ -22,7 +22,7 @@ class PasswordHashingTest extends UnitTestCase {
   /**
    * The user for testing.
    *
-   * @var \PHPUnit_Framework_MockObject_MockObject|\Drupal\user\UserInterface
+   * @var \PHPUnit\Framework\MockObject\MockObject|\Drupal\user\UserInterface
    */
   protected $user;
 
@@ -75,7 +75,6 @@ class PasswordHashingTest extends UnitTestCase {
     $this->assertEquals(PhpassHashedPassword::MIN_HASH_COUNT, $hasher->enforceLog2Boundaries(1), "Min hash count enforced");
     $this->assertEquals(PhpassHashedPassword::MAX_HASH_COUNT, $hasher->enforceLog2Boundaries(100), "Max hash count enforced");
   }
-
 
   /**
    * Test a password needs update.

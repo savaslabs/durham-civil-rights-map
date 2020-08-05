@@ -56,11 +56,8 @@ class StableTemplateOverrideTest extends KernelTestBase {
    * Installs all core modules.
    */
   protected function installAllModules() {
-    // Needed for system_rebuild_module_data().
-    include_once $this->root . '/core/modules/system/system.module';
-
     // Enable all core modules.
-    $all_modules = system_rebuild_module_data();
+    $all_modules = $this->container->get('extension.list.module')->getList();
     $all_modules = array_filter($all_modules, function ($module) {
       // Filter contrib, hidden, experimental, already enabled modules, and
       // modules in the Testing package.
@@ -82,7 +79,7 @@ class StableTemplateOverrideTest extends KernelTestBase {
    * Ensures that Stable overrides all relevant core templates.
    */
   public function testStableTemplateOverrides() {
-    $registry = new Registry(\Drupal::root(), \Drupal::cache(), \Drupal::lock(), \Drupal::moduleHandler(), $this->themeHandler, \Drupal::service('theme.initialization'), 'stable');
+    $registry = new Registry($this->root, \Drupal::cache(), \Drupal::lock(), \Drupal::moduleHandler(), $this->themeHandler, \Drupal::service('theme.initialization'), 'stable');
     $registry->setThemeManager(\Drupal::theme());
 
     $registry_full = $registry->get();

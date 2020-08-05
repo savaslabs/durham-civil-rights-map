@@ -27,7 +27,7 @@ class ExceptionJsonSubscriberTest extends UnitTestCase {
   public function testOn4xx(HttpExceptionInterface $exception, $expected_response_class) {
     $kernel = $this->prophesize(HttpKernelInterface::class);
     $request = Request::create('/test');
-    $event = new GetResponseForExceptionEvent($kernel->reveal(), $request, 'GET', $exception);
+    $event = new GetResponseForExceptionEvent($kernel->reveal(), $request, HttpKernelInterface::MASTER_REQUEST, $exception);
     $subscriber = new ExceptionJsonSubscriber();
     $subscriber->on4xx($event);
     $response = $event->getResponse();
@@ -43,11 +43,11 @@ class ExceptionJsonSubscriberTest extends UnitTestCase {
     return [
       'uncacheable exception' => [
         new MethodNotAllowedHttpException(['POST', 'PUT'], 'test message'),
-        JsonResponse::class
+        JsonResponse::class,
       ],
       'cacheable exception' => [
         new CacheableMethodNotAllowedHttpException((new CacheableMetadata())->setCacheContexts(['route']), ['POST', 'PUT'], 'test message'),
-        CacheableJsonResponse::class
+        CacheableJsonResponse::class,
       ],
     ];
   }

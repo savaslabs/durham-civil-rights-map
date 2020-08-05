@@ -7,15 +7,23 @@ use Drupal\editor\Entity\Editor;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\filter\Entity\FilterFormat;
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 use Drupal\node\Entity\NodeType;
+use Drupal\Tests\ckeditor\Traits\CKEditorTestTrait;
 
 /**
  * Tests the integration of CKEditor.
  *
  * @group ckeditor
  */
-class CKEditorIntegrationTest extends JavascriptTestBase {
+class CKEditorIntegrationTest extends WebDriverTestBase {
+
+  use CKEditorTestTrait;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The account.
@@ -25,9 +33,16 @@ class CKEditorIntegrationTest extends JavascriptTestBase {
   protected $account;
 
   /**
+   * The FilterFormat config entity used for testing.
+   *
+   * @var \Drupal\filter\FilterFormatInterface
+   */
+  protected $filterFormat;
+
+  /**
    * {@inheritdoc}
    */
-  public static $modules = ['node', 'ckeditor', 'filter'];
+  public static $modules = ['node', 'ckeditor', 'filter', 'ckeditor_test'];
 
   /**
    * {@inheritdoc}
@@ -36,12 +51,12 @@ class CKEditorIntegrationTest extends JavascriptTestBase {
     parent::setUp();
 
     // Create a text format and associate CKEditor.
-    $filtered_html_format = FilterFormat::create([
+    $this->filterFormat = FilterFormat::create([
       'format' => 'filtered_html',
       'name' => 'Filtered HTML',
       'weight' => 0,
     ]);
-    $filtered_html_format->save();
+    $this->filterFormat->save();
 
     Editor::create([
       'format' => 'filtered_html',
@@ -92,9 +107,10 @@ class CKEditorIntegrationTest extends JavascriptTestBase {
     $session->getPage();
 
     // Add a bottom margin to the title field to be sure the body field is not
-    // visible. PhantomJS runs with a resolution of 1024x768px.
-    $session->executeScript("document.getElementById('edit-title-0-value').style.marginBottom = '800px';");
+    // visible.
+    $session->executeScript("document.getElementById('edit-title-0-value').style.marginBottom = window.innerHeight*2 +'px';");
 
+    $this->assertSession()->waitForElementVisible('css', $ckeditor_id);
     // Check that the CKEditor-enabled body field is currently not visible in
     // the viewport.
     $web_assert->assertNotVisibleInViewport('css', $ckeditor_id, 'topLeft', 'CKEditor-enabled body field is visible.');
@@ -116,6 +132,85 @@ class CKEditorIntegrationTest extends JavascriptTestBase {
 
     // Check that going back in the history worked.
     self::assertEquals($before_url, $after_url, 'History back works.');
+  }
+
+  /**
+   * Tests if the Image button appears and works as expected.
+   */
+  public function testDrupalImageDialog() {
+    $session = $this->getSession();
+    $web_assert = $this->assertSession();
+
+    $this->drupalGet('node/add/page');
+    $session->getPage();
+
+    // Asserts the Image button is present in the toolbar.
+    $web_assert->elementExists('css', '#cke_edit-body-0-value .cke_button__drupalimage');
+
+    // Asserts the image dialog opens when clicking the Image button.
+    $this->click('.cke_button__drupalimage');
+    $this->assertNotEmpty($web_assert->waitForElement('css', '.ui-dialog'));
+
+    $web_assert->elementContains('css', '.ui-dialog .ui-dialog-titlebar', 'Insert Image');
+  }
+
+  /**
+   * Tests if the Drupal Image Caption plugin appears and works as expected.
+   */
+  public function testDrupalImageCaptionDialog() {
+    $web_assert = $this->assertSession();
+
+    // Disable the caption filter.
+    $this->filterFormat->setFilterConfig('filter_caption', [
+      'status' => FALSE,
+    ]);
+    $this->filterFormat->save();
+
+    // If the caption filter is disabled, its checkbox should be absent.
+    $this->drupalGet('node/add/page');
+    $this->waitForEditor();
+    $this->pressEditorButton('drupalimage');
+    $this->assertNotEmpty($web_assert->waitForElement('css', '.ui-dialog'));
+    $web_assert->elementNotExists('css', '.ui-dialog input[name="attributes[hasCaption]"]');
+
+    // Enable the caption filter again.
+    $this->filterFormat->setFilterConfig('filter_caption', [
+      'status' => TRUE,
+    ]);
+    $this->filterFormat->save();
+
+    // If the caption filter is enabled, its checkbox should be present.
+    $this->drupalGet('node/add/page');
+    $this->waitForEditor();
+    $this->pressEditorButton('drupalimage');
+    $this->assertNotEmpty($web_assert->waitForElement('css', '.ui-dialog'));
+    $web_assert->elementExists('css', '.ui-dialog input[name="attributes[hasCaption]"]');
+  }
+
+  /**
+   * Tests if CKEditor is properly styled inside an off-canvas dialog.
+   */
+  public function testOffCanvasStyles() {
+    $assert_session = $this->assertSession();
+    $page = $this->getSession()->getPage();
+
+    $this->drupalGet('/ckeditor_test/off_canvas');
+
+    // The "Add Node" link triggers an off-canvas dialog with an add node form
+    // that includes CKEditor.
+    $page->clickLink('Add Node');
+    $assert_session->waitForElementVisible('css', '#drupal-off-canvas');
+    $assert_session->assertWaitOnAjaxRequest();
+
+    // Check the background color of two CKEditor elements to confirm they are
+    // not overriden by the off-canvas css reset.
+    $assert_session->elementExists('css', '.cke_top');
+    $ckeditor_top_bg_color = $this->getSession()->evaluateScript('window.getComputedStyle(document.getElementsByClassName(\'cke_top\')[0]).backgroundColor');
+    $this->assertEqual($ckeditor_top_bg_color, 'rgb(248, 248, 248)');
+
+    $assert_session->elementExists('css', '.cke_button__source');
+    $ckeditor_source_button_bg_color = $this->getSession()->evaluateScript('window.getComputedStyle(document.getElementsByClassName(\'cke_button__source\')[0]).backgroundColor');
+    $this->assertEqual($ckeditor_source_button_bg_color, 'rgba(0, 0, 0, 0)');
   }
 
 }

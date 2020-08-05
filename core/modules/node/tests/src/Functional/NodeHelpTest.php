@@ -14,9 +14,14 @@ class NodeHelpTest extends BrowserTestBase {
   /**
    * Modules to enable.
    *
-   * @var array.
+   * @var array
    */
   public static $modules = ['block', 'node', 'help'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The name of the test node type to create.

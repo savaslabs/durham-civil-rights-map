@@ -4,8 +4,10 @@ namespace Drupal\field_ui\Form;
 
 use Drupal\Component\Plugin\Factory\DefaultFactory;
 use Drupal\Component\Plugin\PluginManagerBase;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
@@ -35,6 +37,21 @@ abstract class EntityDisplayFormBase extends EntityForm {
   protected $pluginManager;
 
   /**
+   * The entity display repository.
+   *
+   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
+   */
+  protected $entityDisplayRepository;
+
+
+  /**
+   * The entity field manager.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
+
+  /**
    * A list of field types.
    *
    * @var array
@@ -55,10 +72,24 @@ abstract class EntityDisplayFormBase extends EntityForm {
    *   The field type manager.
    * @param \Drupal\Component\Plugin\PluginManagerBase $plugin_manager
    *   The widget or formatter plugin manager.
+   * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface|null $entity_display_repository
+   *   (optional) The entity display_repository.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface|null $entity_field_manager
+   *   (optional) The entity field manager.
    */
-  public function __construct(FieldTypePluginManagerInterface $field_type_manager, PluginManagerBase $plugin_manager) {
+  public function __construct(FieldTypePluginManagerInterface $field_type_manager, PluginManagerBase $plugin_manager, EntityDisplayRepositoryInterface $entity_display_repository = NULL, EntityFieldManagerInterface $entity_field_manager = NULL) {
     $this->fieldTypes = $field_type_manager->getDefinitions();
     $this->pluginManager = $plugin_manager;
+    if (!$entity_display_repository) {
+      @trigger_error('Calling EntityDisplayFormBase::__construct() with the $entity_display_repository argument is supported in Drupal 8.7.0 and will be required before Drupal 9.0.0. See https://www.drupal.org/node/2549139.', E_USER_DEPRECATED);
+      $entity_display_repository = \Drupal::service('entity_display.repository');
+    }
+    $this->entityDisplayRepository = $entity_display_repository;
+    if (!$entity_field_manager) {
+      @trigger_error('Calling EntityDisplayFormBase::__construct() with the $entity_field_manager argument is supported in Drupal 8.7.0 and will be required before Drupal 9.0.0. See https://www.drupal.org/node/2549139.', E_USER_DEPRECATED);
+      $entity_field_manager = \Drupal::service('entity_field.manager');
+    }
+    $this->entityFieldManager = $entity_field_manager;
   }
 
   /**
@@ -94,11 +125,11 @@ abstract class EntityDisplayFormBase extends EntityForm {
       'content' => [
         'title' => $this->t('Content'),
         'invisible' => TRUE,
-        'message' => $this->t('No field is displayed.')
+        'message' => $this->t('No field is displayed.'),
       ],
       'hidden' => [
         'title' => $this->t('Disabled', [], ['context' => 'Plural']),
-        'message' => $this->t('No field is hidden.')
+        'message' => $this->t('No field is hidden.'),
       ],
     ];
   }
@@ -125,7 +156,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
    */
   protected function getFieldDefinitions() {
     $context = $this->displayContext;
-    return array_filter($this->entityManager->getFieldDefinitions($this->entity->getTargetEntityTypeId(), $this->entity->getTargetBundle()), function (FieldDefinitionInterface $field_definition) use ($context) {
+    return array_filter($this->entityFieldManager->getFieldDefinitions($this->entity->getTargetEntityTypeId(), $this->entity->getTargetBundle()), function (FieldDefinitionInterface $field_definition) use ($context) {
       return $field_definition->isDisplayConfigurable($context);
     });
   }
@@ -147,7 +178,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
     ];
 
     if (empty($field_definitions) && empty($extra_fields) && $route_info = FieldUI::getOverviewRouteInfo($this->entity->getTargetEntityTypeId(), $this->entity->getTargetBundle())) {
-      drupal_set_message($this->t('There are no fields yet added. You can add new fields on the <a href=":link">Manage fields</a> page.', [':link' => $route_info->toString()]), 'warning');
+      $this->messenger()->addWarning($this->t('There are no fields yet added. You can add new fields on the <a href=":link">Manage fields</a> page.', [':link' => $route_info->toString()]));
       return $form;
     }
 
@@ -210,6 +241,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
         if ($enabled_displays = array_filter($this->getDisplayStatuses())) {
           $default = array_keys(array_intersect_key($display_mode_options, $enabled_displays));
         }
+        natcasesort($display_mode_options);
         $form['modes']['display_modes_custom'] = [
           '#type' => 'checkboxes',
           '#title' => $this->t('Use custom display settings for the following @display_context modes', ['@display_context' => $this->displayContext]),
@@ -241,7 +273,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
         // spinners will be added manually by the client-side script.
         'progress' => 'none',
       ],
-      '#attributes' => ['class' => ['visually-hidden']]
+      '#attributes' => ['class' => ['visually-hidden']],
     ];
 
     $form['actions'] = ['#type' => 'actions'];
@@ -537,14 +569,14 @@ abstract class EntityDisplayFormBase extends EntityForm {
           // If no display exists for the newly enabled view mode, initialize
           // it with those from the 'default' view mode, which were used so
           // far.
-          if (!$this->entityManager->getStorage($this->entity->getEntityTypeId())->load($this->entity->getTargetEntityTypeId() . '.' . $this->entity->getTargetBundle() . '.' . $mode)) {
+          if (!$this->entityTypeManager->getStorage($this->entity->getEntityTypeId())->load($this->entity->getTargetEntityTypeId() . '.' . $this->entity->getTargetBundle() . '.' . $mode)) {
             $display = $this->getEntityDisplay($this->entity->getTargetEntityTypeId(), $this->entity->getTargetBundle(), 'default')->createCopy($mode);
             $display->save();
           }
 
           $display_mode_label = $display_modes[$mode]['label'];
           $url = $this->getOverviewUrl($mode);
-          drupal_set_message($this->t('The %display_mode mode now uses custom display settings. You might want to <a href=":url">configure them</a>.', ['%display_mode' => $display_mode_label, ':url' => $url->toString()]));
+          $this->messenger()->addStatus($this->t('The %display_mode mode now uses custom display settings. You might want to <a href=":url">configure them</a>.', ['%display_mode' => $display_mode_label, ':url' => $url->toString()]));
         }
         $statuses[$mode] = !empty($value);
       }
@@ -552,7 +584,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
       $this->saveDisplayStatuses($statuses);
     }
 
-    drupal_set_message($this->t('Your settings have been saved.'));
+    $this->messenger()->addStatus($this->t('Your settings have been saved.'));
   }
 
   /**
@@ -702,10 +734,10 @@ abstract class EntityDisplayFormBase extends EntityForm {
    *
    * @return array
    *
-   * @see drupal_render()
+   * @see \Drupal\Core\Render\RendererInterface::render()
    * @see \Drupal\Core\Render\Element\Table::preRenderTable()
    *
-   * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
+   * @deprecated in drupal:8.0.0 and is removed from drupal:9.0.0.
    */
   public function tablePreRender($elements) {
     return FieldUiTable::tablePreRender($elements);
@@ -717,7 +749,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
    * Callback for array_reduce() within
    * \Drupal\field_ui\Form\EntityDisplayFormBase::tablePreRender().
    *
-   * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
+   * @deprecated in drupal:8.0.0 and is removed from drupal:9.0.0.
    */
   public function reduceOrder($array, $a) {
     return FieldUiTable::reduceOrder($array, $a);
@@ -729,11 +761,11 @@ abstract class EntityDisplayFormBase extends EntityForm {
    * @return array
    *   An array of extra field info.
    *
-   * @see \Drupal\Core\Entity\EntityManagerInterface::getExtraFields()
+   * @see \Drupal\Core\Entity\EntityFieldManagerInterface::getExtraFields()
    */
   protected function getExtraFields() {
     $context = $this->displayContext == 'view' ? 'display' : $this->displayContext;
-    $extra_fields = $this->entityManager->getExtraFields($this->entity->getTargetEntityTypeId(), $this->entity->getTargetBundle());
+    $extra_fields = $this->entityFieldManager->getExtraFields($this->entity->getTargetEntityTypeId(), $this->entity->getTargetBundle());
     return isset($extra_fields[$context]) ? $extra_fields[$context] : [];
   }
 
@@ -834,7 +866,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
   protected function getDisplays() {
     $load_ids = [];
     $display_entity_type = $this->entity->getEntityTypeId();
-    $entity_type = $this->entityManager->getDefinition($display_entity_type);
+    $entity_type = $this->entityTypeManager->getDefinition($display_entity_type);
     $config_prefix = $entity_type->getConfigPrefix();
     $ids = $this->configFactory()->listAll($config_prefix . '.' . $this->entity->getTargetEntityTypeId() . '.' . $this->entity->getTargetBundle() . '.');
     foreach ($ids as $id) {
@@ -844,7 +876,7 @@ abstract class EntityDisplayFormBase extends EntityForm {
         $load_ids[] = $config_id;
       }
     }
-    return $this->entityManager->getStorage($display_entity_type)->loadMultiple($load_ids);
+    return $this->entityTypeManager->getStorage($display_entity_type)->loadMultiple($load_ids);
   }
 
   /**

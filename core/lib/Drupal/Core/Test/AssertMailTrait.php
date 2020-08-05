@@ -2,6 +2,8 @@
 
 namespace Drupal\Core\Test;
 
+use Drupal\Component\Render\FormattableMarkup;
+
 /**
  * Provides methods for testing emails sent during test runs.
  */
@@ -45,7 +47,7 @@ trait AssertMailTrait {
    *   Value of the field to assert.
    * @param string $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    * @param string $group
@@ -74,7 +76,7 @@ trait AssertMailTrait {
    *   Number of emails to search for string, starting with most recent.
    * @param string $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    * @param string $group
@@ -103,7 +105,7 @@ trait AssertMailTrait {
       }
     }
     if (!$message) {
-      $message = format_string('Expected text found in @field of email message: "@expected".', ['@field' => $field_name, '@expected' => $string]);
+      $message = new FormattableMarkup('Expected text found in @field of email message: "@expected".', ['@field' => $field_name, '@expected' => $string]);
     }
     return $this->assertTrue($string_found, $message, $group);
   }
@@ -117,7 +119,7 @@ trait AssertMailTrait {
    *   Pattern to search for.
    * @param string $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    * @param string $group
@@ -134,7 +136,7 @@ trait AssertMailTrait {
     $mail = end($mails);
     $regex_found = preg_match("/$regex/", $mail[$field_name]);
     if (!$message) {
-      $message = format_string('Expected text found in @field of email message: "@expected".', ['@field' => $field_name, '@expected' => $regex]);
+      $message = new FormattableMarkup('Expected text found in @field of email message: "@expected".', ['@field' => $field_name, '@expected' => $regex]);
     }
     return $this->assertTrue($regex_found, $message, $group);
   }

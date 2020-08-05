@@ -21,7 +21,7 @@ class FileAccessControlHandler extends EntityAccessControlHandler {
   protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
     /** @var \Drupal\file\FileInterface $entity */
     if ($operation == 'download' || $operation == 'view') {
-      if (\Drupal::service('file_system')->uriScheme($entity->getFileUri()) === 'public') {
+      if (\Drupal::service('stream_wrapper_manager')->getScheme($entity->getFileUri()) === 'public') {
         if ($operation === 'download') {
           return AccessResult::allowed();
         }
@@ -52,11 +52,11 @@ class FileAccessControlHandler extends EntityAccessControlHandler {
           //   services can be more properly injected.
           $allowed_fids = \Drupal::service('session')->get('anonymous_allowed_file_ids', []);
           if (!empty($allowed_fids[$entity->id()])) {
-            return AccessResult::allowed();
+            return AccessResult::allowed()->addCacheContexts(['session', 'user']);
           }
         }
         else {
-          return AccessResult::allowed();
+          return AccessResult::allowed()->addCacheContexts(['user']);
         }
       }
     }
@@ -64,11 +64,11 @@ class FileAccessControlHandler extends EntityAccessControlHandler {
     if ($operation == 'delete' || $operation == 'update') {
       $account = $this->prepareUser($account);
       $file_uid = $entity->get('uid')->getValue();
-      // Only the file owner can delete and update the file entity.
+      // Only the file owner can update or delete the file entity.
       if ($account->id() == $file_uid[0]['target_id']) {
         return AccessResult::allowed();
       }
-      return AccessResult::forbidden();
+      return AccessResult::forbidden('Only the file owner can update or delete the file entity.');
     }
 
     // No opinion.
@@ -127,8 +127,6 @@ class FileAccessControlHandler extends EntityAccessControlHandler {
     // create file entities that are referenced from another entity
     // (e.g. an image for a article). A contributed module is free to alter
     // this to allow file entities to be created directly.
-    // @todo Update comment to mention REST module when
-    //   https://www.drupal.org/node/1927648 is fixed.
     return AccessResult::neutral();
   }
 

@@ -22,6 +22,11 @@ class TranslatedViewTest extends UITestBase {
   ];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Languages to enable.
    *
    * @var array
@@ -63,7 +68,7 @@ class TranslatedViewTest extends UITestBase {
     $translation_url = 'admin/structure/views/view/files/translate/fr/add';
     $edit_url = 'admin/structure/views/view/files';
 
-    // Check origial string.
+    // Check the original string.
     $this->drupalGet($edit_url);
     $this->assertTitle('Files (File) | Drupal');
 

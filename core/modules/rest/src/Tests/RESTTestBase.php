@@ -2,6 +2,8 @@
 
 namespace Drupal\rest\Tests;
 
+@trigger_error(__NAMESPACE__ . '\RESTTestBase is deprecated in Drupal 8.3.x-dev and will be removed before Drupal 9.0.0. Use \Drupal\Tests\rest\Functional\ResourceTestBase and \Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase instead. Only retained for contributed module tests that may be using this base class.', E_USER_DEPRECATED);
+
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Entity\ConfigEntityType;
 use Drupal\node\NodeInterface;
@@ -13,7 +15,11 @@ use GuzzleHttp\Cookie\SetCookie;
 /**
  * Test helper class that provides a REST client method to send HTTP requests.
  *
- * @deprecated in Drupal 8.3.x-dev and will be removed before Drupal 9.0.0. Use \Drupal\Tests\rest\Functional\ResourceTestBase and \Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase instead. Only retained for contributed module tests that may be using this base class.
+ * @deprecated in drupal:8.3.0 and is removed from drupal:9.0.0. Use
+ *   \Drupal\Tests\rest\Functional\ResourceTestBase and
+ *   \Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase
+ *   instead. Only retained for contributed module tests that may be using this
+ *   base class.
  */
 abstract class RESTTestBase extends WebTestBase {
 
@@ -383,7 +389,7 @@ abstract class RESTTestBase extends WebTestBase {
         $resource_config = $this->resourceConfigStorage->create([
           'id' => $resource_config_id,
           'granularity' => RestResourceConfigInterface::METHOD_GRANULARITY,
-          'configuration' => []
+          'configuration' => [],
         ]);
       }
       $configuration = $resource_config->get('configuration');
@@ -562,7 +568,7 @@ abstract class RESTTestBase extends WebTestBase {
    *   The first value to check.
    * @param $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    * @param $group

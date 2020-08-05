@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\file\Kernel;
 
+use Drupal\Core\Database\Database;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\language\Entity\ConfigurableLanguage;
@@ -15,27 +16,29 @@ use Drupal\node\Entity\NodeType;
  * @group file
  */
 class UsageTest extends FileManagedUnitTestBase {
+
   /**
    * Tests \Drupal\file\FileUsage\DatabaseFileUsageBackend::listUsage().
    */
   public function testGetUsage() {
     $file = $this->createFile();
-    db_insert('file_usage')
+    $connection = Database::getConnection();
+    $connection->insert('file_usage')
       ->fields([
         'fid' => $file->id(),
         'module' => 'testing',
         'type' => 'foo',
         'id' => 1,
-        'count' => 1
+        'count' => 1,
       ])
       ->execute();
-    db_insert('file_usage')
+    $connection->insert('file_usage')
       ->fields([
         'fid' => $file->id(),
         'module' => 'testing',
         'type' => 'bar',
         'id' => 2,
-        'count' => 2
+        'count' => 2,
       ])
       ->execute();
 
@@ -60,7 +63,7 @@ class UsageTest extends FileManagedUnitTestBase {
     $file_usage->add($file, 'testing', 'bar', 2);
     $file_usage->add($file, 'testing', 'bar', 2);
 
-    $usage = db_select('file_usage', 'f')
+    $usage = Database::getConnection()->select('file_usage', 'f')
       ->fields('f')
       ->condition('f.fid', $file->id())
       ->execute()
@@ -103,7 +106,8 @@ class UsageTest extends FileManagedUnitTestBase {
     $file = $this->createFile();
     $file->setPermanent();
     $file_usage = $this->container->get('file.usage');
-    db_insert('file_usage')
+    $connection = Database::getConnection();
+    $connection->insert('file_usage')
       ->fields([
         'fid' => $file->id(),
         'module' => 'testing',
@@ -115,7 +119,7 @@ class UsageTest extends FileManagedUnitTestBase {
 
     // Normal decrement.
     $file_usage->delete($file, 'testing', 'bar', 2);
-    $count = db_select('file_usage', 'f')
+    $count = $connection->select('file_usage', 'f')
       ->fields('f', ['count'])
       ->condition('f.fid', $file->id())
       ->execute()
@@ -124,7 +128,7 @@ class UsageTest extends FileManagedUnitTestBase {
 
     // Multiple decrement and removal.
     $file_usage->delete($file, 'testing', 'bar', 2, 2);
-    $count = db_select('file_usage', 'f')
+    $count = $connection->select('file_usage', 'f')
       ->fields('f', ['count'])
       ->condition('f.fid', $file->id())
       ->execute()
@@ -133,7 +137,7 @@ class UsageTest extends FileManagedUnitTestBase {
 
     // Non-existent decrement.
     $file_usage->delete($file, 'testing', 'bar', 2);
-    $count = db_select('file_usage', 'f')
+    $count = $connection->select('file_usage', 'f')
       ->fields('f', ['count'])
       ->condition('f.fid', $file->id())
       ->execute()
@@ -151,7 +155,8 @@ class UsageTest extends FileManagedUnitTestBase {
   public function createTempFiles() {
     // Temporary file that is old.
     $temp_old = file_save_data('');
-    db_update('file_managed')
+    $connection = Database::getConnection();
+    $connection->update('file_managed')
       ->fields([
         'status' => 0,
         'changed' => REQUEST_TIME - $this->config('system.file')->get('temporary_maximum_age') - 1,
@@ -162,7 +167,7 @@ class UsageTest extends FileManagedUnitTestBase {
 
     // Temporary file that is new.
     $temp_new = file_save_data('');
-    db_update('file_managed')
+    $connection->update('file_managed')
       ->fields(['status' => 0])
       ->condition('fid', $temp_new->id())
       ->execute();
@@ -170,7 +175,7 @@ class UsageTest extends FileManagedUnitTestBase {
 
     // Permanent file that is old.
     $perm_old = file_save_data('');
-    db_update('file_managed')
+    $connection->update('file_managed')
       ->fields(['changed' => REQUEST_TIME - $this->config('system.file')->get('temporary_maximum_age') - 1])
       ->condition('fid', $temp_old->id())
       ->execute();

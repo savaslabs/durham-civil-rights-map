@@ -1,32 +1,58 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\simple_sitemap\Form\SimplesitemapSettingsForm.
- */
-
 namespace Drupal\simple_sitemap\Form;
 
-use Drupal\Core\Form\ConfigFormBase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\simple_sitemap\Simplesitemap;
+use Drupal\Component\Utility\UrlHelper;
+use Drupal\Core\Language\LanguageManager;
 
 /**
- * SimplesitemapSettingsFrom
+ * Class SimplesitemapSettingsForm
+ * @package Drupal\simple_sitemap\Form
  */
-class SimplesitemapSettingsForm extends ConfigFormBase {
+class SimplesitemapSettingsForm extends SimplesitemapFormBase {
 
   /**
-   * {@inheritdoc}
+   * @var \Drupal\Core\Language\LanguageManagerInterface
    */
-  public function getFormID() {
-    return 'simple_sitemap_settings_form';
+  protected $languageManager;
+
+  /**
+   * SimplesitemapSettingsForm constructor.
+   * @param \Drupal\simple_sitemap\Simplesitemap $generator
+   * @param \Drupal\simple_sitemap\Form\FormHelper $form_helper
+   * @param \Drupal\Core\Language\LanguageManager $language_manager
+   */
+  public function __construct(
+    Simplesitemap $generator,
+    FormHelper $form_helper,
+    LanguageManager $language_manager
+  ) {
+    parent::__construct(
+      $generator,
+      $form_helper
+    );
+    $this->languageManager = $language_manager;
   }
 
   /**
    * {@inheritdoc}
    */
-  protected function getEditableConfigNames() {
-    return ['simple_sitemap.settings'];
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('simple_sitemap.generator'),
+      $container->get('simple_sitemap.form_helper'),
+      $container->get('language_manager')
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFormId() {
+    return 'simple_sitemap_settings_form';
   }
 
   /**
@@ -34,64 +60,123 @@ class SimplesitemapSettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
-    $sitemap = \Drupal::service('simple_sitemap.generator');
+    $form['simple_sitemap_settings']['#prefix'] = FormHelper::getDonationText();
 
-    $form['simple_sitemap_settings']['#prefix'] = "<div class='description'>" .t("If you would like to say thanks and support the development of this module, a <a target='_blank' href='@url'>donation</a> is always appreciated.", array('@url' => 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5AFYRSBLGSC3W')) . "</div>";
-
-    $form['simple_sitemap_settings']['regenerate'] = array(
-      '#title' => t('Regenerate sitemap'),
+    $form['simple_sitemap_settings']['settings'] = [
       '#type' => 'fieldset',
-      '#markup' => '<p>' . t('This will regenerate the XML sitemap for all languages.') . '</p>',
-    );
+      '#title' => $this->t('Settings'),
+    ];
 
-    $form['simple_sitemap_settings']['regenerate']['regenerate_submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Regenerate sitemap'),
-      '#submit' => array('::generateSitemap'),
-      '#validate' => array(), // Skip form-level validator.
-    );
-
-    $form['simple_sitemap_settings']['settings'] = array(
-      '#title' => t('Settings'),
-      '#type' => 'fieldset',
-    );
-
-    $form['simple_sitemap_settings']['settings']['cron_generate'] = array(
+    $form['simple_sitemap_settings']['settings']['cron_generate'] = [
       '#type' => 'checkbox',
-      '#title' => t('Regenerate the sitemap on every cron run'),
-      '#description' => t('Uncheck this if you intend to only regenerate the sitemap manually or via drush.'),
-      '#default_value' => $sitemap->getSetting('cron_generate'),
-    );
+      '#title' => $this->t('Regenerate the sitemaps during cron runs'),
+      '#description' => $this->t('Uncheck this if you intend to only regenerate the sitemaps manually or via drush.'),
+      '#default_value' => $this->generator->getSetting('cron_generate', TRUE),
+    ];
 
-    $form['simple_sitemap_settings']['advanced'] = array(
-      '#title' => t('Advanced settings'),
+    $form['simple_sitemap_settings']['settings']['cron_generate_interval'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Sitemap generation interval'),
+      '#description' => $this->t('The sitemap will be generated according to this interval.'),
+      '#default_value' => $this->generator->getSetting('cron_generate_interval', 0),
+      '#options' => FormHelper::getCronIntervalOptions(),
+      '#states' => [
+        'visible' => [':input[name="cron_generate"]' => ['checked' => TRUE]],
+      ],
+    ];
+
+    $form['simple_sitemap_settings']['settings']['xsl'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Add styling and sorting to sitemaps'),
+      '#description' => $this->t('If checked, sitemaps will be displayed as tables with sortable entries and thus become much friendlier towards human visitors. Search engines will not care.'),
+      '#default_value' => $this->generator->getSetting('xsl', TRUE),
+    ];
+
+    $form['simple_sitemap_settings']['settings']['languages'] = [
       '#type' => 'details',
-    );
+      '#title' => $this->t('Language settings'),
+      '#open' => FALSE,
+    ];
 
-    $form['simple_sitemap_settings']['advanced']['remove_duplicates'] = array(
+    $form['simple_sitemap_settings']['settings']['languages']['disable_language_hreflang'] = [
       '#type' => 'checkbox',
-      '#title' => t('Remove duplicate links'),
-      '#description' => t('Uncheck this to significantly speed up the sitemap generation process on a huge site (more than 20 000 indexed entities).'),
-      '#default_value' => $sitemap->getSetting('remove_duplicates'),
-    );
+      '#title' => $this->t('Remove hreflang markup in HTML'),
+      '#description' => $this->t('Google recommends displaying hreflang definitions either in the HTML markup or in the sitemap, but not in both places.<br>If checked, hreflang definitions created by the language module will be removed from the markup reducing its size.'),
+      '#default_value' => $this->generator->getSetting('disable_language_hreflang', FALSE),
+    ];
 
-    $form['simple_sitemap_settings']['advanced']['max_links'] = array(
-      '#title' => t('Maximum links in a sitemap'),
-      '#description' => t("The maximum number of links one sitemap can hold. If more links are generated than set here, a sitemap index will be created and the links split into several sub-sitemaps.<br/>50 000 links is the maximum Google will parse per sitemap, however it is advisable to set this to a lower number. If left blank, all links will be shown on a single sitemap."),
-      '#type' => 'textfield',
-      '#maxlength' => 5,
-      '#size' => 5,
-      '#default_value' => $sitemap->getSetting('max_links'),
-    );
+    $form['simple_sitemap_settings']['settings']['languages']['skip_untranslated'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Skip non-existent translations'),
+      '#description' => $this->t('If checked, entity links are generated exclusively for languages the entity has been translated to as long as the language is not excluded below.<br>Otherwise entity links are generated for every language installed on the site apart from languages excluded below.<br>Bear in mind that non-entity paths like homepage will always be generated for every non-excluded language.'),
+      '#default_value' => $this->generator->getSetting('skip_untranslated', FALSE),
+    ];
 
-    $form['simple_sitemap_settings']['advanced']['batch_process_limit'] = array(
-      '#title' => t('Refresh batch every n links'),
-      '#description' => t("During sitemap generation, the batch process will issue a page refresh after n links processed to prevent PHP timeouts and memory exhaustion. Increasing this number will reduce the number of times Drupal has to bootstrap (thus speeding up the generation process), but will require more memory and less strict PHP timeout settings."),
+    $language_options = [];
+    foreach ($this->languageManager->getLanguages() as $language) {
+      if (!$language->isDefault()) {
+        $language_options[$language->getId()] = $language->getName();
+      }
+    }
+    $form['simple_sitemap_settings']['settings']['languages']['excluded_languages'] = [
+      '#title' => $this->t('Exclude languages'),
+      '#type' => 'checkboxes',
+      '#options' => $language_options,
+      '#description' => !empty($language_options)
+        ? $this->t('There will be no links generated for languages checked here.')
+        : $this->t('There are no languages other than the default language <a href="@url">available</a>.', ['@url' => $GLOBALS['base_url'] . '/admin/config/regional/language']),
+      '#default_value' => $this->generator->getSetting('excluded_languages', []),
+    ];
+
+    $form['simple_sitemap_settings']['advanced'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Advanced settings'),
+      '#open' => TRUE,
+    ];
+
+    $variants = $this->generator->getSitemapManager()->getSitemapVariants(NULL, FALSE);
+    $default_variant = $this->generator->getSetting('default_variant');
+    $form['simple_sitemap_settings']['advanced']['default_variant'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Default sitemap variant'),
+      '#description' => $this->t('This sitemap variant will be available under <em>/sitemap.xml</em> in addition to its default path <em>/variant-name/sitemap.xml</em>.<br>Variants can be configured <a href="@url">here</a>.', ['@url' => $GLOBALS['base_url'] . '/admin/config/search/simplesitemap/variants']),
+      '#default_value' => isset($variants[$default_variant]) ? $default_variant : '',
+      '#options' => ['' => $this->t('- None -')] + array_map(function($variant) { return $this->t($variant['label']); }, $variants),
+      ];
+
+    $form['simple_sitemap_settings']['advanced']['base_url'] = [
       '#type' => 'textfield',
-      '#maxlength' => 5,
-      '#size' => 5,
-      '#default_value' => $sitemap->getSetting('batch_process_limit'),
-    );
+      '#title' => $this->t('Default base URL'),
+      '#default_value' => $this->generator->getSetting('base_url', ''),
+      '#size' => 30,
+      '#description' => $this->t('On some hosting providers it is impossible to pass parameters to cron to tell Drupal which URL to bootstrap with. In this case the base URL of sitemap links can be overridden here.<br>Example: <em>@url</em>', ['@url' => $GLOBALS['base_url']]),
+    ];
+
+    $form['simple_sitemap_settings']['advanced']['remove_duplicates'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Exclude duplicate links'),
+      '#description' => $this->t('Prevent per-sitemap variant duplicate links.<br>Unchecking this may help avoiding PHP memory errors on huge sites.'),
+      '#default_value' => $this->generator->getSetting('remove_duplicates', TRUE),
+    ];
+
+    $form['simple_sitemap_settings']['advanced']['max_links'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Maximum links in a sitemap'),
+      '#min' => 1,
+      '#description' => $this->t('The maximum number of links one sitemap can hold. If more links are generated than set here, a sitemap index will be created and the links split into several sub-sitemaps.<br>50 000 links is the maximum Google will parse per sitemap, but choosing a lower value may be needed to avoid PHP memory errors on huge sites.<br>If left blank, all links will be shown on a single sitemap.'),
+      '#default_value' => $this->generator->getSetting('max_links'),
+    ];
+
+    $form['simple_sitemap_settings']['advanced']['generate_duration'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Sitemap generation max duration'),
+      '#min' => 1,
+      '#description' => $this->t('The maximum duration <strong>in seconds</strong> the generation task can run during a single cron run or during one batch process iteration.<br>The higher the number, the quicker the generation process, but higher the risk of PHP timeout errors.'),
+      '#default_value' => $this->generator->getSetting('generate_duration', 10000) / 1000,
+      '#required' => TRUE,
+    ];
+
+    $this->formHelper->displayRegenerateNow($form['simple_sitemap_settings']);
 
     return parent::buildForm($form, $form_state);
   }
@@ -100,16 +185,10 @@ class SimplesitemapSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $max_links = $form_state->getValue('max_links');
-    if ($max_links != '') {
-      if (!is_numeric($max_links) || $max_links < 1 || $max_links != round($max_links)) {
-        $form_state->setErrorByName('', t("The value of the <em>Maximum links in a sitemap</em> field must be empty, or a positive integer greater than 0."));
-      }
-    }
-
-  $batch_process_limit = $form_state->getValue('batch_process_limit');
-    if (!is_numeric($batch_process_limit) || $batch_process_limit < 1 || $batch_process_limit != round($batch_process_limit)) {
-      $form_state->setErrorByName('', t("The value of the <em>Refresh batch every n links</em> field must be a positive integer greater than 0."));
+    $base_url = $form_state->getValue('base_url');
+    $form_state->setValue('base_url', rtrim($base_url, '/'));
+    if ($base_url !== '' && !UrlHelper::isValid($base_url, TRUE)) {
+      $form_state->setErrorByName('base_url', $this->t('The base URL is invalid.'));
     }
   }
 
@@ -117,16 +196,27 @@ class SimplesitemapSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $sitemap = \Drupal::service('simple_sitemap.generator');
-    $sitemap->saveSetting('max_links', $form_state->getValue('max_links'));
-    $sitemap->saveSetting('cron_generate', $form_state->getValue('cron_generate'));
-    $sitemap->saveSetting('remove_duplicates', $form_state->getValue('remove_duplicates'));
-    $sitemap->saveSetting('batch_process_limit', $form_state->getValue('batch_process_limit'));
-    parent::submitForm($form, $form_state);
-  }
+    foreach (['max_links',
+               'cron_generate',
+               'cron_generate_interval',
+               'remove_duplicates',
+               'skip_untranslated',
+               'xsl',
+               'base_url',
+               'default_variant',
+               'disable_language_hreflang'] as $setting_name) {
+      $this->generator->saveSetting($setting_name, $form_state->getValue($setting_name));
+    }
+    $this->generator->saveSetting('excluded_languages', array_filter($form_state->getValue('excluded_languages')));
+    $this->generator->saveSetting('generate_duration', $form_state->getValue('generate_duration') * 1000);
 
-  public function generateSitemap(array &$form, FormStateInterface $form_state) {
-    $sitemap = \Drupal::service('simple_sitemap.generator');
-    $sitemap->generateSitemap();
+    parent::submitForm($form, $form_state);
+
+    // Regenerate sitemaps according to user setting.
+    if ($form_state->getValue('simple_sitemap_regenerate_now')) {
+      $this->generator->setVariants(TRUE)
+        ->rebuildQueue()
+        ->generateSitemap();
+    }
   }
 }

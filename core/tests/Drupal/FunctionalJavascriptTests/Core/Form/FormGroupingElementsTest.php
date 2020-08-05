@@ -2,14 +2,14 @@
 
 namespace Drupal\FunctionalJavascriptTests\Core\Form;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests for form grouping elements.
  *
  * @group form
  */
-class FormGroupingElementsTest extends JavascriptTestBase {
+class FormGroupingElementsTest extends WebDriverTestBase {
 
   /**
    * Required modules.
@@ -17,6 +17,11 @@ class FormGroupingElementsTest extends JavascriptTestBase {
    * @var array
    */
   public static $modules = ['form_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -126,8 +131,8 @@ class FormGroupingElementsTest extends JavascriptTestBase {
     $summary = $page->find('css', '#edit-meta > summary');
 
     // Assert that both aria-expanded and aria-pressed are true.
-    $this->assertTrue($summary->getAttribute('aria-expanded'));
-    $this->assertTrue($summary->getAttribute('aria-pressed'));
+    $this->assertEquals('true', $summary->getAttribute('aria-expanded'));
+    $this->assertEquals('true', $summary->getAttribute('aria-pressed'));
   }
 
 }

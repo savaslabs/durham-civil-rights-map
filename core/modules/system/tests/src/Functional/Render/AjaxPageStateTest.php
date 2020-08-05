@@ -19,6 +19,11 @@ class AjaxPageStateTest extends BrowserTestBase {
   public static $modules = ['node', 'views'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * User account with all available permissions
    *
    * @var \Drupal\Core\Session\AccountInterface
@@ -67,9 +72,9 @@ class AjaxPageStateTest extends BrowserTestBase {
         "query" =>
           [
             'ajax_page_state' => [
-              'libraries' => 'core/html5shiv'
-            ]
-          ]
+              'libraries' => 'core/html5shiv',
+            ],
+          ],
       ]
     );
     $this->assertNoRaw(

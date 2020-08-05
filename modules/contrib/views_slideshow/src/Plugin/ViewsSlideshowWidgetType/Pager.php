@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\views_slideshow\ViewsSlideshowWidgetType\Pager.
- */
-
 namespace Drupal\views_slideshow\Plugin\ViewsSlideshowWidgetType;
 
 use Drupal\Core\Form\FormStateInterface;
@@ -16,7 +11,12 @@ use Drupal\views_slideshow\ViewsSlideshowWidgetTypeBase;
  * @ViewsSlideshowWidgetType(
  *   id = "views_slideshow_pager",
  *   label = @Translation("Pager"),
- *   accepts = {"transitionBegin" = {"required" = TRUE}, "goToSlide", "previousSlide", "nextSlide"},
+ *   accepts = {
+ *     "transitionBegin" = {"required" = TRUE},
+ *     "goToSlide",
+ *     "previousSlide",
+ *     "nextSlide"
+ *   },
  *   calls = {"goToSlide", "pause", "play"}
  * )
  */
@@ -27,15 +27,14 @@ class Pager extends ViewsSlideshowWidgetTypeBase {
    */
   public function defaultConfiguration() {
     $options = parent::defaultConfiguration() + [
-      'hide_on_single_slide' => array('default' => 0),
-      'type' => array('default' => 0),
-      'views_slideshow_pager_numbered_hover' => array('default' => 0),
-      'views_slideshow_pager_numbered_click_to_page' => array('default' => 0),
-      'views_slideshow_pager_thumbnails_hover' => array('default' => 0),
-      'views_slideshow_pager_thumbnails_click_to_page' => array('default' => 0),
+      'type' => ['default' => 0],
+      'views_slideshow_pager_numbered_hover' => ['default' => 0],
+      'views_slideshow_pager_numbered_click_to_page' => ['default' => 0],
+      'views_slideshow_pager_thumbnails_hover' => ['default' => 0],
+      'views_slideshow_pager_thumbnails_click_to_page' => ['default' => 0],
     ];
 
-    /** @var \Drupal\Component\Plugin\PluginManagerInterface */
+    /* @var \Drupal\Component\Plugin\PluginManagerInterface */
     $widgetManager = \Drupal::service('plugin.manager.views_slideshow.widget');
 
     // Get default configuration of all Pager plugins.
@@ -50,9 +49,10 @@ class Pager extends ViewsSlideshowWidgetTypeBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $form = parent::buildConfigurationForm($form, $form_state);
     $view = $form_state->get('view')->get('executable');
 
-    /** @var \Drupal\Component\Plugin\PluginManagerInterface */
+    /* @var \Drupal\Component\Plugin\PluginManagerInterface */
     $widgetManager = \Drupal::service('plugin.manager.views_slideshow.widget');
 
     // Determine if this widget type is compatible with any slideshow type.
@@ -66,37 +66,23 @@ class Pager extends ViewsSlideshowWidgetTypeBase {
     if (!empty($widgets)) {
 
       // Need to wrap this so it indents correctly.
-      $form['views_slideshow_pager_wrapper'] = array(
+      $form['views_slideshow_pager_wrapper'] = [
         '#markup' => '<div class="vs-dependent">',
-      );
-
-      // Add field to see if they would like to hide pager if there is only one
-      // slide.
-      $form['hide_on_single_slide'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Hide pager if there is only one slide'),
-        '#default_value' => $this->getConfiguration()['hide_on_single_slide'],
-        '#description' => t('Should the pager be hidden if there is only one slide.'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
+      ];
 
       // Create the widget type field.
-      $form['type'] = array(
+      $form['type'] = [
         '#type' => 'select',
-        '#title' => t('Pager Type'),
-        '#description' => t('Style of the pager'),
+        '#title' => $this->t('Pager Type'),
+        '#description' => $this->t('Style of the pager'),
         '#default_value' => $this->getConfiguration()['type'],
         '#options' => $widgets,
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
+        '#states' => [
+          'visible' => [
+            ':input[name="' . $this->getConfiguration()['dependency'] . '[enable]"]' => ['checked' => TRUE],
+          ],
+        ],
+      ];
 
       foreach ($widgetManager->getDefinitions() as $widget_id => $widget_info) {
         // Get the current configuration of this widget.
@@ -113,16 +99,17 @@ class Pager extends ViewsSlideshowWidgetTypeBase {
         $form[$widget_id] = $instance->buildConfigurationForm($form[$widget_id], $form_state);
       }
 
-      $form['views_slideshow_pager_wrapper_close'] = array(
+      $form['views_slideshow_pager_wrapper_close'] = [
         '#markup' => '</div>',
-      );
+      ];
     }
     else {
-      $form['enable_pager'] = array(
+      $form['enable_pager'] = [
         '#markup' => 'There are no pagers available.',
-      );
+      ];
     }
 
     return $form;
   }
+
 }

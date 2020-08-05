@@ -4,16 +4,19 @@ namespace Drupal\Tests\content_moderation\Kernel;
 
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
+use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
 use Drupal\views\Views;
-use Drupal\workflows\Entity\Workflow;
 
 /**
  * Tests the views integration of content_moderation.
  *
  * @group content_moderation
+ * @group legacy
  */
 class ViewsDataIntegrationTest extends ViewsKernelTestBase {
+
+  use ContentModerationTestTrait;
 
   /**
    * {@inheritdoc}
@@ -37,17 +40,18 @@ class ViewsDataIntegrationTest extends ViewsKernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('content_moderation_state');
     $this->installSchema('node', 'node_access');
-    $this->installConfig('content_moderation_test_views');
     $this->installConfig('content_moderation');
 
     $node_type = NodeType::create([
       'type' => 'page',
     ]);
     $node_type->save();
-    $workflow = Workflow::load('editorial');
+    $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('node', 'page');
     $workflow->getTypePlugin()->addEntityTypeAndBundle('entity_test_mulrevpub', 'entity_test_mulrevpub');
     $workflow->save();
+
+    $this->installConfig('content_moderation_test_views');
   }
 
   /**
