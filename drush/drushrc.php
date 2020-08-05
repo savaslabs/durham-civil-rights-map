@@ -42,6 +42,10 @@
  * bootstrapping affects the loading of drush configuration files.
  */
 
+if (!isset($_SERVER['PANTHEON_ENVIRONMENT'])) {
+  $options['uri'] = 'http://' . $_ENV['VIRTUAL_HOST'];
+}
+
 // Specify a particular multisite.
 # $options['l'] = 'http://example.com/subir';
 
