@@ -36,6 +36,9 @@ fin init-site
 fin pull db
 fin pull files
 
+# Clear the cache
+fin drush cr
+
 # Change our file asset permissions
 chmod -R 755 sites/default/files/
 
